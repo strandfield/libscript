@@ -1,0 +1,36 @@
+
+class Distance
+{
+public:
+  double value; // distance stored in meters
+public:
+  Distance() = default;
+  Distance(const Distance &) = default;
+  ~Distance() = default;
+
+  Distance(double val) : value(val) { }
+
+  Distance & operator=(const Distance & other)
+  {
+    value = other.value;
+    return this;
+  }
+};
+
+bool operator==(const Distance & a, const Distance & b)
+{
+  return a.value == b.value;
+}
+
+Distance operator""m(const double & val)
+{
+  return Distance{ val };
+}
+
+Distance operator""km(const double & val)
+{
+  return Distance{ val * 1000. };
+}
+
+auto d = 1km;
+const bool eq = (d == 1000m);

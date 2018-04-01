@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="script::Type">
+    <DisplayString>{{ basetype={d &amp; 0xFFFFF} }}</DisplayString>
+    <Expand>
+      <Item Name="[const]" ExcludeView="simple">bool(d &amp; 0x200000)</Item>
+      <Item Name="[ref]" ExcludeView="simple">bool(d &amp; 0x100000)</Item>
+      <Item Name="[object]" ExcludeView="simple">bool(d &amp; 0x020000)</Item>
+      <Item Name="[closure]" ExcludeView="simple">bool(d &amp; 0x040000)</Item>
+      <Item Name="[function]" ExcludeView="simple">bool(d &amp; 0x080000)</Item>
+      <Item Name="[enum]" ExcludeView="simple">bool(d &amp; 0x010000)</Item>
+      <Item Name="[index]" ExcludeView="simple">d &amp; 0xFFFF</Item>
+    </Expand>
+  </Type>
+  <Type Name="script::StandardConversion">
+    <DisplayString>{{ d={d} }}</DisplayString>
+    <Expand>
+      <Item Name="[ConstQualification]" ExcludeView="simple">bool(d &amp; 1)</Item>
+      <Item Name="[IntegralPromotion]" ExcludeView="simple">bool(d &amp; 2)</Item>
+      <Item Name="[FloatingPointPromotion]" ExcludeView="simple">bool(d &amp; 4)</Item>
+      <Item Name="[IntegralConversion]" ExcludeView="simple">bool(d &amp; 8)</Item>
+      <Item Name="[FloatingPointConversion]" ExcludeView="simple">bool(d &amp; 16)</Item>
+      <Item Name="[BooleanConversion]" ExcludeView="simple">bool(d &amp; 32)</Item>
+      <Item Name="[ReferenceInit]" ExcludeView="simple">bool(d &amp; (3 &lt;&lt; 24))</Item>
+    </Expand>
+  </Type>
+  <Type Name="script::interpreter::Stack">
+    <DisplayString>{{ size={size} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>size</Size>
+        <ValuePointer>data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

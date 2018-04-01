@@ -1,0 +1,6 @@
+
+print("Hello World !");
+
+print("Enter your name:");
+String name = scan();
+print("Hello " + name + "!");
