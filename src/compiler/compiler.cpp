@@ -88,10 +88,37 @@ void CompilerComponent::log(const diagnostic::Message & mssg)
 void CompilerComponent::log(const CompilerException & exception)
 {
   auto mssg = diagnostic::error();
-  if (exception.line > 0)
-    mssg << diagnostic::pos(exception.line, exception.column);
+  if (exception.pos.line >= 0)
+    mssg << exception.pos;
   mssg << exception.what();
   log(mssg.build());
+}
+
+diagnostic::pos_t CompilerComponent::dpos(const std::shared_ptr<ast::Node> & node)
+{
+  const auto & p = node->pos();
+  return diagnostic::pos_t{ p.line, p.col };
+}
+
+diagnostic::pos_t CompilerComponent::dpos(const ast::Node & node)
+{
+  const auto & p = node.pos();
+  return diagnostic::pos_t{ p.line, p.col };
+}
+
+diagnostic::pos_t CompilerComponent::dpos(const parser::Token & tok)
+{
+  return diagnostic::pos_t{ tok.line, tok.column };
+}
+
+std::string CompilerComponent::dstr(const Type & t) const
+{ 
+  return engine()->typeName(t); 
+}
+
+std::string CompilerComponent::dstr(const std::shared_ptr<ast::Identifier> & id)
+{
+  return id->getName();
 }
 
 Class CompilerComponent::build(const ClassBuilder & builder)
@@ -225,8 +252,8 @@ void Compiler::wipe_out(CompileSession *s)
 void Compiler::log(const CompilerException & exception)
 {
   auto mssg = diagnostic::error();
-  if (exception.line > 0)
-    mssg << diagnostic::pos(exception.line, exception.column);
+  if (exception.pos.line >= 0)
+    mssg << exception.pos;
   mssg << exception.what();
 
   auto m = mssg.build();

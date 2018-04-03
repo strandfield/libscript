@@ -721,35 +721,39 @@ class LIBSCRIPT_API Initialization : public Node
 class LIBSCRIPT_API ConstructorInitialization : public Initialization
 {
 public:
+  parser::Token left_par;
   std::vector<std::shared_ptr<Expression>> args;
+  parser::Token right_par;
 
 public:
   ConstructorInitialization() = default;
-  ConstructorInitialization(std::vector<std::shared_ptr<Expression>> && args);
+  ConstructorInitialization(const parser::Token &lp, std::vector<std::shared_ptr<Expression>> && args, const parser::Token &rp);
   ~ConstructorInitialization() = default;
 
-  static std::shared_ptr<ConstructorInitialization> New(std::vector<std::shared_ptr<Expression>> && args);
+  static std::shared_ptr<ConstructorInitialization> New(const parser::Token &lp, std::vector<std::shared_ptr<Expression>> && args, const parser::Token &rp);
 
   static const NodeType type_code = NodeType::ConstructorInitialization;
   inline NodeType type() const override { return type_code; }
-  inline parser::Lexer::Position pos() const override { throw std::runtime_error{ "Not implemented" }; }
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(left_par);  }
 };
 
 class LIBSCRIPT_API BraceInitialization : public Initialization
 {
 public:
+  parser::Token left_brace;
   std::vector<std::shared_ptr<Expression>> args;
+  parser::Token right_brace;
 
 public:
   BraceInitialization() = default;
-  BraceInitialization(std::vector<std::shared_ptr<Expression>> && a);
+  BraceInitialization(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && args, const parser::Token & rb);
   ~BraceInitialization() = default;
 
-  static std::shared_ptr<BraceInitialization> New(std::vector<std::shared_ptr<Expression>> && args);
+  static std::shared_ptr<BraceInitialization> New(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && args, const parser::Token & rb);
 
   static const NodeType type_code = NodeType::BraceInitialization;
   inline NodeType type() const override { return type_code; }
-  inline parser::Lexer::Position pos() const override { throw std::runtime_error{ "Not implemented" }; }
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(left_brace); }
 
 };
 

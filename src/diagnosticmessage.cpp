@@ -97,6 +97,22 @@ const std::string & Message::message() const
   return mMessage;
 }
 
+std::string Message::content() const
+{
+  size_t offset = mMessage.find("[warning]") == 0 ? 9 : 0;
+  offset += mMessage.find("[error]") == 0 ? 7 : 0;
+  offset += mMessage.find("[info]") == 0 ? 6 : 0;
+  while (offset < mMessage.size() && is_digit(mMessage[offset]))
+    ++offset;
+  offset += mMessage[offset] == ':' ? 1 : 0;
+  while (offset < mMessage.size() && is_digit(mMessage[offset]))
+    ++offset;
+  offset += mMessage[offset] == ':' ? 1 : 0;
+  while (offset < mMessage.size() && mMessage[offset] == ' ')
+    ++offset;
+  return std::string(mMessage.begin() + offset, mMessage.end());
+}
+
 int Message::line() const
 {
   size_t offset = mMessage.find("[warning]") == 0 ? 9 : 0;

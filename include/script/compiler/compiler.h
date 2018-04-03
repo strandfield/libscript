@@ -21,9 +21,16 @@
 namespace script
 {
 
+namespace parser
+{
+class Token;
+} // namespace parser
+
 namespace ast
 {
 class Expression;
+class Identifier;
+class Node;
 } // namespace ast
 
 namespace program
@@ -86,6 +93,12 @@ protected:
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);
+
+  static diagnostic::pos_t dpos(const std::shared_ptr<ast::Node> & node);
+  static diagnostic::pos_t dpos(const ast::Node & node);
+  static diagnostic::pos_t dpos(const parser::Token & tok);
+  std::string dstr(const Type & t) const;
+  static std::string dstr(const std::shared_ptr<ast::Identifier> & id);
 
 protected:
   Class build(const ClassBuilder & builder);

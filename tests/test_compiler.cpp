@@ -1094,3 +1094,58 @@ TEST(CompilerTests, function_variable_assignment) {
   ASSERT_EQ(func.toFunction(), bar);
 }
 
+
+TEST(CompilerTests, brace_initialization) {
+  using namespace script;
+
+  /// TODO : remove the need of a copy constructor
+  const char *source =
+    "  int a{5};                   "
+    "  int & ref{a};               "
+    "  class A {                   "
+    "    int n;                    "
+    "    A(const A &) = default;   "
+    "    A(int val) : n(val) { }   "
+    "  };                          "
+    "  A b{5};                     "
+    "  A c = A{5};                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+  s.run();
+}
+
+TEST(CompilerTests, ctor_initialization) {
+  using namespace script;
+
+  /// TODO : remove the need of a copy constructor
+  const char *source =
+    "  int a(5);                   "
+    "  int & ref(a);               "
+    "  class A {                   "
+    "    int n;                    "
+    "    A(const A &) = default;   "
+    "    A(int val) : n(val) { }   "
+    "  };                          "
+    "  A b(5);                     "
+    "  A c = A(5);                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+  s.run();
+}
+
+
+
+
+

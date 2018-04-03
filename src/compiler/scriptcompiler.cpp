@@ -111,7 +111,7 @@ Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 
   NameLookup lookup = NameLookup::resolve(qt.type, currentScope());
   if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ qt.type->pos().line, qt.type->pos().col, repr(qt.type) };
+    throw InvalidTypeName{ dpos(qt.type), repr(qt.type) };
 
   Type t = lookup.typeResult();
   if (qt.constQualifier.isValid())
@@ -270,13 +270,13 @@ void ScriptCompiler::processThirdOrderDeclarations()
     if (var_decl->staticSpecifier.isValid())
     {
       if (var_decl->variable_type.type->name == parser::Token::Auto)
-        throw DataMemberCannotBeAuto{ var_decl->pos().line, var_decl->pos().col };
+        throw DataMemberCannotBeAuto{ dpos(var_decl) };
 
       if (var_decl->init == nullptr)
-        throw MissingStaticInitialization{var_decl->pos().line, var_decl->pos().col};
+        throw MissingStaticInitialization{ dpos(var_decl) };
 
       if (var_decl->init->is<ast::ConstructorInitialization>() || var_decl->init->is<ast::BraceInitialization>())
-        throw InvalidStaticInitialization{ var_decl->pos().line, var_decl->pos().col };
+        throw InvalidStaticInitialization{ dpos(var_decl) };
 
 
       /// TODO : consider variable which are functions
@@ -286,7 +286,7 @@ void ScriptCompiler::processThirdOrderDeclarations()
       /// TODO : consider const-ref qualifications 
       NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, currentScope());
       if (lookup.resultType() != NameLookup::TypeName)
-        throw InvalidTypeName{ var_decl->pos().line, var_decl->pos().col, repr(var_decl->variable_type.type) };
+        throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
 
       Value staticMember = current_class.implementation()->addStaticDataMember(var_decl->name->getName(), lookup.typeResult());
       auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
@@ -295,7 +295,7 @@ void ScriptCompiler::processThirdOrderDeclarations()
     else
     {
       if (var_decl->variable_type.type->name == parser::Token::Auto)
-        throw DataMemberCannotBeAuto{ var_decl->pos().line, var_decl->pos().col };
+        throw DataMemberCannotBeAuto{ dpos(var_decl) };
 
       Class::DataMember dataMember;
       dataMember.name = var_decl->name->getName();
@@ -311,7 +311,7 @@ void ScriptCompiler::processThirdOrderDeclarations()
 
       NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, currentScope());
       if (lookup.resultType() != NameLookup::TypeName)
-        throw InvalidTypeName{ var_decl->pos().line, var_decl->pos().col, repr(var_decl->variable_type.type) };
+        throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
 
       dataMember.type = lookup.typeResult();
 
@@ -416,7 +416,7 @@ bool ScriptCompiler::processClassDeclaration()
   {
     NameLookup lookup = NameLookup::resolve(class_decl->parent, currentScope());
     if (lookup.resultType() != NameLookup::TypeName || !lookup.typeResult().isObjectType())
-      throw InvalidBaseClass{ class_decl->parent->pos().line, class_decl->parent->pos().col };
+      throw InvalidBaseClass{ dpos(class_decl->parent) };
     parentClass = engine()->getClass(lookup.typeResult());
     assert(!parentClass.isNull());
   }
@@ -459,7 +459,7 @@ void ScriptCompiler::processEnumDeclaration()
 
 bool ScriptCompiler::processFirstOrderTemplateDeclaration()
 {
-  throw NotImplementedError{ "Template declarations not supported yet" };
+  throw NotImplementedError{ dpos(currentDeclaration()), "Template declarations not supported yet" };
   return false;
 }
 
@@ -474,7 +474,7 @@ bool ScriptCompiler::processFunctionDeclaration()
   if (fundecl->virtualKeyword.isValid())
   {
     if (!currentScope().isClass())
-      throw InvalidUseOfVirtualKeyword{ fundecl->virtualKeyword.line, fundecl->virtualKeyword.column };
+      throw InvalidUseOfVirtualKeyword{ dpos(fundecl->virtualKeyword) };
 
     builder.setVirtual();
     if (fundecl->virtualPure.isValid())
@@ -585,24 +585,27 @@ bool ScriptCompiler::processOperatorOverloadingDeclaration()
   
   auto arity = proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
   Operator::BuiltInOperator operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
-  if(operation == Operator::Null)
-    throw InvalidParamCountInOperatorOverload{};
+  if (operation == Operator::Null)
+  {
+    // operator++(int) and operator++() trick
+    if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
+      && (proto.argc() == 2 && proto.argv(1) == Type::Int))
+    {
+      proto.popArgument();
+      operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
+    }
+    else
+      throw CouldNotResolveOperatorName{ dpos(over_decl) };
+  }
 
   if (Operator::isBinary(operation) && proto.argc() != 2)
-    throw InvalidParamCountInOperatorOverload{};
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(proto.argc()) };
   else if (Operator::isUnary(operation) && proto.argc() != 1)
-    throw InvalidParamCountInOperatorOverload{};
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(proto.argc()) };
 
-  // operator++(int) and operator++() trick
-  if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
-    && (proto.argc() == 2 && proto.argv(1) == Type::Int))
-  {
-    proto.popArgument();
-    operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
-  }
   
   if (Operator::onlyAsMember(operation) && !is_member)
-    throw OpOverloadMustBeDeclaredAsMember{};
+    throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
 
   FunctionBuilder builder = FunctionBuilder::Operator(operation, proto);
   if (over_decl.deleteKeyword.isValid())
@@ -644,13 +647,13 @@ bool ScriptCompiler::processCastOperatorDeclaration()
 
 bool ScriptCompiler::processSecondOrderTemplateDeclaration()
 {
-  throw NotImplementedError{ "Function templates not supported yet" };
+  throw NotImplementedError{ dpos(currentDeclaration()), "Function templates not supported yet" };
 }
 
 
 TemplateArgument ScriptCompiler::processTemplateArg(const std::shared_ptr<ast::Expression> & arg)
 {
-  throw NotImplementedError{ "Template argument evaluation not implemented yet" };
+  throw NotImplementedError{ dpos(arg), "Template argument evaluation not implemented yet" };
 }
 
 
@@ -684,7 +687,7 @@ Prototype ScriptCompiler::functionPrototype()
     if (fundecl->params.at(i).defaultValue != nullptr)
       argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)
-      throw InvalidUseOfDefaultArgument{ fundecl->params.at(i).defaultValue->pos().line, fundecl->params.at(i).defaultValue->pos().col };
+      throw InvalidUseOfDefaultArgument{ dpos(fundecl->params.at(i).name) };
     result.addArgument(argtype);
   }
 

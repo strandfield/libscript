@@ -1814,7 +1814,7 @@ bool DeclParser::detectDecl()
 std::shared_ptr<ast::Declaration> DeclParser::parse()
 {
   if (mDecision == NotADecl)
-    throw ImplementationError{};
+    throw ImplementationError{"Calling DeclParser::parse() when decision = NotADecl"};
 
   if (mDecision == ParsingDestructor)
     return parseDestructor();
@@ -1826,7 +1826,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   {
     if (mVarDecl == nullptr) /// TODO : is this always true ?
       mVarDecl = ast::VariableDecl::New(mType, mName);
-
+    mVarDecl->staticSpecifier = mStaticKw;
     return parseVarDecl();
   }
 
@@ -1837,17 +1837,23 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
     mDecision = ParsingVariable;
 
     mVarDecl = ast::VariableDecl::New(mType, mName);
+    mVarDecl->staticSpecifier = mStaticKw;
     return parseVarDecl();
   }
   else if (peek() == Token::LeftPar)
   {
     mFuncDecl = ast::FunctionDecl::New(mName);
     mFuncDecl->returnType = mType;
+    mFuncDecl->staticKeyword = mStaticKw;
+    mFuncDecl->virtualKeyword = mVirtualKw;
 
     mVarDecl = ast::VariableDecl::New(mType, mName);
+    mVarDecl->staticSpecifier = mStaticKw;
   }
   else
+  {
     throw UnexpectedToken{};
+  }
 
   readArgsOrParams();
 
@@ -1896,8 +1902,8 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     SentinelFragment sentinel{ Token::RightBrace, fragment() };
     ExpressionListParser argsParser{ &sentinel };
     auto args = argsParser.parse();
-    auto rightBrace = sentinel.consumeSentinel();
-    mVarDecl->init = ast::BraceInitialization::New(std::move(args));
+    const Token rightbrace = sentinel.consumeSentinel();
+    mVarDecl->init = ast::BraceInitialization::New(leftBrace, std::move(args), rightbrace);
   }
   else if (peek() == Token::LeftPar)
   {
@@ -1905,11 +1911,11 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     SentinelFragment sentinel{ Token::RightPar, fragment() };
     ExpressionListParser argsParser{ &sentinel };
     auto args = argsParser.parse();
-    auto rightpar = sentinel.consumeSentinel();
-    mVarDecl->init = ast::ConstructorInitialization::New(std::move(args));
+    const Token rightpar = sentinel.consumeSentinel();
+    mVarDecl->init = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
   }
   else if (peek() != Token::Semicolon)
-    throw ImplementationError{};
+    throw ImplementationError{"DeclParser::parseVarDecl() : a semicolon was expected"};
 
   const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
 
@@ -1970,18 +1976,18 @@ void DeclParser::readOptionalMemberInitializers()
       SentinelFragment sentinel{ Token::RightBrace, fragment() };
       ExpressionListParser argsParser{ &sentinel };
       auto args = argsParser.parse();
-      auto rightBrace = sentinel.consumeSentinel();
-      auto braceinit = ast::BraceInitialization::New(std::move(args));
+      const Token rightBrace = sentinel.consumeSentinel();
+      auto braceinit = ast::BraceInitialization::New(leftBrace, std::move(args), rightBrace);
       ctor->memberInitializationList.push_back(ast::MemberInitialization{ id, braceinit });
     }
     else if (peek() == Token::LeftPar)
     {
-      const Token leftPar = unsafe_read();
+      const Token leftpar = unsafe_read();
       SentinelFragment sentinel{ Token::RightPar, fragment() };
       ExpressionListParser argsParser{ &sentinel };
       auto args = argsParser.parse();
-      auto rightpar = sentinel.consumeSentinel();
-      auto ctorinit = ast::ConstructorInitialization::New(std::move(args));
+      const Token rightpar = sentinel.consumeSentinel();
+      auto ctorinit = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
       ctor->memberInitializationList.push_back(ast::MemberInitialization{ id, ctorinit });
     }
 
@@ -2020,7 +2026,7 @@ DeclParser::Decision DeclParser::decision() const
 void DeclParser::setDecision(Decision d)
 {
   if (mDecision != Undecided)
-    throw ImplementationError{};
+    throw ImplementationError{"DeclParser::setDecision() : decision already set"};
 
   mDecision = d;
   if (mDecision == ParsingVariable)
@@ -2081,19 +2087,20 @@ void DeclParser::readArgs()
   if (leftPar != Token::LeftPar)
     throw ExpectedLeftPar{};
 
-  mVarDecl->init = ast::ConstructorInitialization::New({});
+  std::vector<std::shared_ptr<ast::Expression>> args;
   SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
   {
     ListFragment listfrag{ &sentinel };
     ExpressionParser ep{ &listfrag };
     auto expr = ep.parse();
-    mVarDecl->init->as<ast::ConstructorInitialization>().args.push_back(expr);
+    args.push_back(expr);
       
     listfrag.consumeComma();
   }
 
-  sentinel.consumeSentinel();
+  const Token rightpar = sentinel.consumeSentinel();
+  mVarDecl->init = ast::ConstructorInitialization::New(leftPar, std::move(args), rightpar);
 }
 
 void DeclParser::readParams()
@@ -2121,7 +2128,8 @@ void DeclParser::readArgsOrParams()
   assert(leftPar == Token::LeftPar);
 
   if (mDecision == Undecided || mDecision == ParsingVariable)
-    mVarDecl->init = ast::ConstructorInitialization::New({});
+    mVarDecl->init = ast::ConstructorInitialization::New(leftPar, {}, parser::Token{});
+
   SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
   {
@@ -2176,7 +2184,10 @@ void DeclParser::readArgsOrParams()
     listfrag.consumeComma();
   }
 
-  sentinel.consumeSentinel();
+  const Token rightpar = sentinel.consumeSentinel();
+
+  if (mVarDecl != nullptr)
+    mVarDecl->init->as<ast::ConstructorInitialization>().right_par = rightpar;
 }
 
 bool DeclParser::readOptionalConst()

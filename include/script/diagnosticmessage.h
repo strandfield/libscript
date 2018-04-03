@@ -51,6 +51,7 @@ public:
   Severity severity() const;
   const std::string & message() const;
   inline const std::string & to_string() const { return message(); }
+  std::string content() const;
 
   int line() const;
   int column() const;

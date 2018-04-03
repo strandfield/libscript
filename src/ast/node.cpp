@@ -488,26 +488,30 @@ std::shared_ptr<EnumDeclaration> EnumDeclaration::New(const parser::Token & ek, 
 
 
 
-ConstructorInitialization::ConstructorInitialization(std::vector<std::shared_ptr<Expression>> && args)
-  : args(std::move(args))
+ConstructorInitialization::ConstructorInitialization(const parser::Token &lp, std::vector<std::shared_ptr<Expression>> && args, const parser::Token &rp)
+  : left_par(lp)
+  , args(std::move(args))
+  , right_par(rp)
 {
 
 }
 
-std::shared_ptr<ConstructorInitialization> ConstructorInitialization::New(std::vector<std::shared_ptr<Expression>> && args)
+std::shared_ptr<ConstructorInitialization> ConstructorInitialization::New(const parser::Token &lp, std::vector<std::shared_ptr<Expression>> && args, const parser::Token &rp)
 {
-  return std::make_shared<ConstructorInitialization>(std::move(args));
+  return std::make_shared<ConstructorInitialization>(lp, std::move(args), rp);
 }
 
-BraceInitialization::BraceInitialization(std::vector<std::shared_ptr<Expression>> && a)
-  : args(std::move(a))
+BraceInitialization::BraceInitialization(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && a, const parser::Token & rb)
+  : left_brace(lb)
+  , args(std::move(a))
+  , right_brace(rb)
 {
 
 }
 
-std::shared_ptr<BraceInitialization> BraceInitialization::New(std::vector<std::shared_ptr<Expression>> && args)
+std::shared_ptr<BraceInitialization> BraceInitialization::New(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && args, const parser::Token & rb)
 {
-  return std::make_shared<BraceInitialization>(std::move(args));
+  return std::make_shared<BraceInitialization>(lb, std::move(args), rb);
 }
 
 AssignmentInitialization::AssignmentInitialization(const parser::Token & eq, const std::shared_ptr<Expression> & val)

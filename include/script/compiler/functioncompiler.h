@@ -189,7 +189,7 @@ protected:
 
   std::shared_ptr<program::Expression> generateDefaultArgument(int index);
 
-  std::shared_ptr<program::Expression> defaultConstructMember(const Type & t);
+  std::shared_ptr<program::Expression> defaultConstructMember(const Type & t, const std::string & member_name, const diagnostic::pos_t p);
   std::shared_ptr<program::Expression> constructDataMember(const Type & t, std::vector<std::shared_ptr<program::Expression>> && args);
   std::shared_ptr<program::CompoundStatement> generateConstructorHeader();
   std::shared_ptr<program::Statement> generateDelegateConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args);

@@ -148,7 +148,7 @@ NameLookup LambdaCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identifi
   if (name->name == parser::Token::This)
   {
     if (!this->thisCaptured())
-      throw IllegalUseOfThis{ name->name.line, name->name.column };
+      throw IllegalUseOfThis{ dpos(name) };
 
     auto result = std::make_shared<NameLookupImpl>();
     result->captureIndex = 0;
@@ -224,7 +224,7 @@ void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement
   }
 
   if (val->type() == Type::InitializerList)
-    throw CannotDeduceLambdaReturnType{rs->pos().line, rs->pos().col};
+    throw CannotDeduceLambdaReturnType{ dpos(rs) };
 
   mFunction.implementation()->prototype.setReturnType(val->type().baseType());
 }
@@ -279,7 +279,7 @@ Prototype LambdaCompiler::computePrototype()
     if (lexpr->params.at(i).defaultValue != nullptr)
       paramtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)
-      throw InvalidUseOfDefaultArgument{ lexpr->params.at(i).defaultValue->pos().line, lexpr->params.at(i).defaultValue->pos().col };
+      throw InvalidUseOfDefaultArgument{ dpos(lexpr->params.at(i).defaultValue) };
     result.addArgument(paramtype);
   }
 

@@ -13,7 +13,6 @@ namespace script
 namespace parser
 {
 
-
 class Token
 {
 public:

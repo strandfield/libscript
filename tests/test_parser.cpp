@@ -7,6 +7,7 @@
 #include "script/parser/lexer.h"
 #include "script/parser/token.h"
 #include "script/parser/parser.h"
+#include "script/parser/parsererrors.h"
 
 #include "script/ast/node.h"
 #include "script/ast/ast.h"
@@ -15,16 +16,6 @@
 std::shared_ptr<script::parser::ParserData> parser_data(const char *source)
 {
   return std::make_shared<script::parser::ParserData>(script::SourceFile::fromString(std::string(source)));
-}
-
-template<typename FragmentType, typename ParserType>
-void test_syntax(const char *source, const std::shared_ptr<script::ast::Node> & expected)
-{
-  FragmentType fragment{ parser_data(source) };
-  ParserType parser{ &fragment };
-
-  auto actual = parser.parse();
-  ASSERT_TRUE(syntax::check(actual, expected));
 }
 
 TEST(ParserTests, identifier1) {
@@ -375,17 +366,6 @@ TEST(ParserTests, vardecl2) {
   auto decl = parser.parse();
 
   ASSERT_TRUE(decl->is<ast::VariableDecl>());
-}
-
-
-template<typename FragmentType>
-void test_program_syntax(const char *source, const std::shared_ptr<script::ast::Node> & expected)
-{
-  FragmentType fragment{ parser_data(source) };
-  script::parser::ProgramParser parser{ &fragment };
-
-  auto actual = parser.parseStatement();
-  ASSERT_TRUE(syntax::check(actual, expected));
 }
 
 TEST(ParserTests, empty_enum) {
