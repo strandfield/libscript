@@ -438,20 +438,18 @@ std::vector<LiteralOperator> Scope::literalOperators() const
   return {};
 }
 
-std::vector<Operator> Scope::operators(Operator::BuiltInOperator op) const
+std::vector<Function> Scope::operators(Operator::BuiltInOperator op) const
 {
   std::vector<Operator> candidates = operators();
+  std::vector<Function> ret;
   for (size_t i(0); i < candidates.size(); ++i)
   {
     if (candidates.at(i).operatorId() != op)
-    {
-      std::swap(candidates[i], candidates.back());
-      candidates.pop_back();
-      --i;
-    }
+      continue;
+    ret.push_back(candidates.at(i));
   }
 
-  return candidates;
+  return ret;
 }
 
 

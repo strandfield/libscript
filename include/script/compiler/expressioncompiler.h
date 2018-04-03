@@ -66,7 +66,7 @@ protected:
   struct OperatorLookupPolicy {
     enum Value { RemoveDuplicates = 1, FetchParentOperators = 2, ConsiderCurrentScope = 4 };
   };
-  virtual std::vector<Operator> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope);
+  virtual std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope);
 
   virtual std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) = 0;
 
@@ -84,10 +84,10 @@ protected:
   Type resolveFunctionType(const ast::QualifiedType & qt);
   Type resolve(const ast::QualifiedType & qt);
 
-  static std::vector<Operator> & removeDuplicates(std::vector<Operator> & list);
-  std::vector<Operator> getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy);
-  std::vector<Operator> getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b);
-  std::vector<Operator> getUnaryOperators(Operator::BuiltInOperator op, Type a);
+  static std::vector<Function> & removeDuplicates(std::vector<Function> & list);
+  std::vector<Function> getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy);
+  std::vector<Function> getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b);
+  std::vector<Function> getUnaryOperators(Operator::BuiltInOperator op, Type a);
   std::vector<Function> getCallOperator(const Type & functor_type);
   std::vector<Function> getLiteralOperators(const std::string & suffix);
 
@@ -136,7 +136,7 @@ public:
 protected:
   NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name) override;
   Scope currentScope() const override;
-  std::vector<Operator> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope)  override;
+  std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope)  override;
   std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op) override;
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)  override;
   std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;

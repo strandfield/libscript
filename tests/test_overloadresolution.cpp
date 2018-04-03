@@ -47,16 +47,73 @@ TEST(OverloadResolution, builtin_operators) {
   e.setup();
 
   const std::vector<Operator> & operators = e.rootNamespace().operators();
-  std::vector<Operator> overloads;
+  std::vector<Function> overloads;
   for (const auto & op : operators)
   {
     if (op.operatorId() == Operator::AdditionOperator)
       overloads.push_back(op);
   }
   OverloadResolution resol = OverloadResolution::New(&e);
-  ASSERT_TRUE(resol.process(overloads, Type::Int, Type::Float));
+  ASSERT_TRUE(resol.process(overloads, std::vector<Type>{Type::Int, Type::Float}));
   auto selected = resol.selectedOverload();
   ASSERT_TRUE(selected.prototype().argv(0).baseType() == Type::Float);
   ASSERT_TRUE(selected.prototype().argv(1).baseType() == Type::Float);
 }
 
+TEST(OverloadResolution, failure_indistinguishable) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  std::vector<Function> overloads;
+
+  auto fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Void);
+  overloads.push_back(e.rootNamespace().newFunction(fb));
+
+  fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Int);
+  overloads.push_back(e.rootNamespace().newFunction(fb));
+
+  auto resol = OverloadResolution::New(&e);
+  std::vector<Type> types{ };
+  resol.process(overloads, types);
+  ASSERT_FALSE(resol.success());
+
+  diagnostic::Message mssg = resol.emitDiagnostic();
+  //std::cout << mssg.to_string() << std::endl;
+  ASSERT_TRUE(mssg.message().find("indistinguishable") != std::string::npos);
+}
+
+TEST(OverloadResolution, failure_no_viable_candidates) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  std::vector<Function> overloads;
+
+  auto fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Void).addParam(Type::Int);
+  overloads.push_back(e.rootNamespace().newFunction(fb));
+
+  fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Int).addParam(Type::Float);
+  overloads.push_back(e.rootNamespace().newFunction(fb));
+
+  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Int).addParam(Type::Boolean).addParam(A.id());
+  overloads.push_back(e.rootNamespace().newFunction(fb));
+
+  auto resol = OverloadResolution::New(&e);
+  std::vector<Type> types{Type::Int, Type::Float};
+  resol.process(overloads, types);
+  ASSERT_FALSE(resol.success());
+
+  ASSERT_EQ(resol.arguments().kind(), OverloadResolution::Arguments::TypeArguments);
+  ASSERT_EQ(resol.arguments().size(), 2);
+  ASSERT_EQ(resol.arguments().types().back(), Type::Float);
+ 
+  diagnostic::Message mssg = resol.emitDiagnostic();
+  //std::cout << mssg.to_string() << std::endl;
+  ASSERT_TRUE(mssg.message().find("expects 1 but 2 were provided") != std::string::npos);
+  ASSERT_TRUE(mssg.message().find("Could not convert argument 2") != std::string::npos);
+
+}

@@ -145,3 +145,15 @@ TEST(Conversions, function_type) {
   conv = ConversionSequence::compute(ft.type(), ft2.type(), &e);
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
 }
+
+TEST(Conversions, no_converting_constructor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+
+  ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
+  ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
+}

@@ -420,6 +420,9 @@ ConversionSequence::Rank ConversionSequence::rank() const
 
 ConversionSequence::Rank ConversionSequence::globalRank(const std::vector<ConversionSequence> & convs)
 {
+  if (convs.empty())
+    return Rank::ExactMatch;
+
   Rank r = convs.front().rank();
   for (size_t i(1); i < convs.size(); ++i)
   {

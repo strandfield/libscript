@@ -59,7 +59,7 @@ public:
   std::vector<Function> functions() const;
   std::vector<Namespace> namespaces() const;
   std::vector<Operator> operators() const;
-  std::vector<Operator> operators(Operator::BuiltInOperator op) const;
+  std::vector<Function> operators(Operator::BuiltInOperator op) const;
   std::vector<LiteralOperator> literalOperators() const;
  
   static Scope find(const Class & c);

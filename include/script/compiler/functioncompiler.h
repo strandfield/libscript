@@ -180,7 +180,7 @@ protected:
 
   NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name) override;
 
-  std::vector<Operator> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope) override;
+  std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope) override;
 
   std::shared_ptr<program::Statement> generateStatement(const std::shared_ptr<ast::Statement> & statement);
   void generateStatements(const std::vector<std::shared_ptr<ast::Statement>> & in, std::vector<std::shared_ptr<program::Statement>> & out);

@@ -24,9 +24,9 @@ public:
   OverloadResolution(const OverloadResolution &) = default;
   ~OverloadResolution() = default;
 
+  // no options for now
   enum Option {
     NoOptions = 0,
-    StoreCandidates = 1,
   };
 
   inline bool isNull() const { return d == nullptr; }
@@ -44,40 +44,46 @@ public:
 
   Function ambiguousOverload() const;
 
+  const std::vector<Function> & candidates() const;
+
   enum ViabilityStatus {
     Viable,
     IncorrectParameterCount,
     CouldNotConvertArgument,
   };
 
-  struct Candidate
-  {
-    Candidate();
-    Candidate(const Candidate & ) = default;
-
-    Candidate(const Function & f, ViabilityStatus status = Viable);
-
-    bool isViable() const;
-    ViabilityStatus viabilityStatus() const;
-    int argument() const;
-    Function function;
-    int vastatus;
-    int mArgument;
-  };
-
-  const std::vector<Candidate> & candidates() const;
+  ViabilityStatus getViabilityStatus(const Function & f, std::vector<ConversionSequence> *conversions = nullptr) const;
+  ViabilityStatus getViabilityStatus(int candidate_index, std::vector<ConversionSequence> *conversions = nullptr) const;
 
   class Arguments
   {
   public:
+    Arguments();
     Arguments(const std::vector<Type> *types);
     Arguments(const std::vector<Value> *values);
     Arguments(const std::vector<std::shared_ptr<program::Expression>> *exprs);
-    Arguments(const Arguments &) = delete;
+    Arguments(const Arguments &) = default;
     ~Arguments() = default;
 
+    inline bool is_null() const { return mTypes == nullptr && mValues == nullptr && mExpressions == nullptr; }
+
+    enum Kind {
+      Null = 0,
+      TypeArguments,
+      ValueArguments,
+      ExpressionArguments,
+    };
+
+    Kind kind() const;
+
+    const std::vector<Type> & types() const;
+    const std::vector<Value> & values() const;
+    const std::vector<std::shared_ptr<program::Expression>> & expressions() const;
+    
     int size() const;
     ConversionSequence conversion(int argIndex, const Type & dest, Engine *engine) const;
+
+    Arguments & operator=(const Arguments & other);
 
   private:
     const std::vector<Type> *mTypes;
@@ -85,12 +91,15 @@ public:
     const std::vector<std::shared_ptr<program::Expression>> *mExpressions;
   };
 
+  const Arguments & arguments() const;
+  const std::shared_ptr<program::Expression> & implicit_object() const;
+
+  diagnostic::Message emitDiagnostic() const;
+
   bool process(const std::vector<Function> & candidates, const Arguments & types);
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
-  bool process(const std::vector<Operator> & candidates, const Type & lhs, const Type & rhs);
-  bool process(const std::vector<Operator> & candidates, const Type & arg);
 
 
   enum OverloadComparison {
@@ -99,7 +108,8 @@ public:
     Indistinguishable = 3,
     NotComparable = 4,
   };
-  static OverloadComparison compare(const Candidate & a, const std::vector<ConversionSequence> & conv_a, const Candidate & b, const std::vector<ConversionSequence> & conv_b);
+
+  static OverloadComparison compare(const Function & a, const std::vector<ConversionSequence> & conv_a, const Function & b, const std::vector<ConversionSequence> & conv_b);
 
   static OverloadResolution New(Engine *engine, int options = 0);
 
@@ -114,13 +124,16 @@ public:
   }
 
   static Function select(const std::vector<Function> & candidates, const Arguments & types);
-  static Operator select(const std::vector<Operator> & candidates, const Type & lhs, const Type & rhs);
+  static Operator select(const std::vector<Function> & candidates, const Type & lhs, const Type & rhs);
 
 
   OverloadResolution & operator=(const OverloadResolution & other) = default;
 
 protected:
-  void processCandidate(const Candidate & c, std::vector<ConversionSequence> & conversions);
+  void processCandidate(const Function & f, std::vector<ConversionSequence> & conversions);
+
+  std::string dtype(const Type & t) const;
+  void write_prototype(diagnostic::MessageBuilder & diag, const Function & f) const;
 
 private:
   std::shared_ptr<OverloadResolutionImpl> d;

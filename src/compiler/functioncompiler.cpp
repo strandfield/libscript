@@ -377,9 +377,9 @@ NameLookup FunctionCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identi
   return NameLookup::resolve(name, currentScope());
 }
 
-std::vector<Operator> FunctionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
+std::vector<Function> FunctionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
 {
-  std::vector<Operator> ret = AbstractExpressionCompiler::getOperators(op, type, lookup_policy);
+  std::vector<Function> ret = AbstractExpressionCompiler::getOperators(op, type, lookup_policy);
 
   if (lookup_policy & OperatorLookupPolicy::ConsiderCurrentScope)
   {

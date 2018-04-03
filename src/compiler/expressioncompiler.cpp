@@ -167,7 +167,7 @@ Type AbstractExpressionCompiler::resolve(const ast::QualifiedType & qt)
   return t;
 }
 
-std::vector<Operator> & AbstractExpressionCompiler::removeDuplicates(std::vector<Operator> & list)
+std::vector<Function> & AbstractExpressionCompiler::removeDuplicates(std::vector<Function> & list)
 {
   /// TODO
 
@@ -175,9 +175,9 @@ std::vector<Operator> & AbstractExpressionCompiler::removeDuplicates(std::vector
 }
 
 
-std::vector<Operator> AbstractExpressionCompiler::getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy)
+std::vector<Function> AbstractExpressionCompiler::getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy)
 {
-  std::vector<Operator> ret = scp.operators(op);
+  std::vector<Function> ret = scp.operators(op);
   if ((lookup_policy & OperatorLookupPolicy::FetchParentOperators) && !scp.parent().isNull())
   {
     const auto & ops = getScopeOperators(op, scp.parent(), OperatorLookupPolicy::FetchParentOperators);
@@ -190,17 +190,17 @@ std::vector<Operator> AbstractExpressionCompiler::getScopeOperators(Operator::Bu
   return ret;
 }
 
-std::vector<Operator> AbstractExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
+std::vector<Function> AbstractExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
 {
-  std::vector<Operator> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
-  const std::vector<Operator> & others = getOperators(op, b, OperatorLookupPolicy::FetchParentOperators);
+  std::vector<Function> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
+  const std::vector<Function> & others = getOperators(op, b, OperatorLookupPolicy::FetchParentOperators);
   result.insert(result.end(), others.begin(), others.end());
   return removeDuplicates(result);
 }
 
-std::vector<Operator> AbstractExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
+std::vector<Function> AbstractExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
 {
-  std::vector<Operator> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
+  std::vector<Function> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
   return removeDuplicates(result);
 }
 
@@ -485,12 +485,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateArraySu
 
   const Type & argType = index->type();
 
-  std::vector<Operator> candidates = this->getBinaryOperators(Operator::SubscriptOperator, objType, argType);
+  std::vector<Function> candidates = this->getBinaryOperators(Operator::SubscriptOperator, objType, argType);
   if (candidates.empty())
     throw CouldNotFindValidSubscriptOperator{ dpos(as) };
 
   OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(candidates, objType, argType))
+  if (!resol.process(candidates, std::vector<Type>{objType, argType}))
     throw CouldNotFindValidSubscriptOperator{ dpos(as) };
 
   Function selected = resol.selectedOverload();
@@ -820,9 +820,9 @@ NameLookup AbstractExpressionCompiler::resolve(const std::shared_ptr<ast::Identi
   return NameLookup::resolve(identifier, this);
 }
 
-std::vector<Operator> AbstractExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
+std::vector<Function> AbstractExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
 {
-  std::vector<Operator> ret;
+  std::vector<Function> ret;
 
   if (type.isClosureType() || type.isFunctionType())
   {
@@ -922,10 +922,10 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBinaryO
 
   Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(operation->operatorToken, ast::OperatorName::BuiltInOpResol::InfixOp);
 
-  const std::vector<Operator> operators = getBinaryOperators(op, lhs->type(), rhs->type());
+  const std::vector<Function> operators = getBinaryOperators(op, lhs->type(), rhs->type());
 
   OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(operators, lhs->type(), rhs->type()))
+  if (!resol.process(operators, std::vector<Type>{lhs->type(), rhs->type()}))
     throw CouldNotFindValidOperator{ dpos(operation) };
 
   Operator selected = resol.selectedOverload().toOperator();
@@ -945,10 +945,10 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUnaryOp
   const auto opts = postfix ? ast::OperatorName::BuiltInOpResol::PostFixOp : ast::OperatorName::BuiltInOpResol::PrefixOp;
   Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(operation->operatorToken, opts);
 
-  const std::vector<Operator> operators = getUnaryOperators(op, operand->type());
+  const std::vector<Function> operators = getUnaryOperators(op, operand->type());
 
   OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(operators, operand->type()))
+  if (!resol.process(operators, std::vector<Type>{operand->type()}))
     throw CouldNotFindValidOperator{ dpos(operation) };
 
   Operator selected = resol.selectedOverload().toOperator();
@@ -1043,7 +1043,7 @@ Scope ExpressionCompiler::currentScope() const
   return Scope{ engine()->rootNamespace() };
 }
 
-std::vector<Operator> ExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
+std::vector<Function> ExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
 {
   return AbstractExpressionCompiler::getOperators(op, type, lookup_policy);
 }
