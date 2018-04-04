@@ -11,6 +11,7 @@
 
 #include "script/class.h"
 #include "script/diagnosticmessage.h"
+#include "script/enum.h"
 #include "script/sourcefile.h"
 #include "script/types.h"
 
@@ -172,4 +173,61 @@ TEST(CoreUtilsTests, diagnostic) {
   ASSERT_EQ(mssg.to_string(), "Message #1 : this is a great test");
   ASSERT_EQ(mssg.severity(), diagnostic::Info);
 }
+
+
+TEST(CoreUtilsTests, scopes) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Enum E = e.rootNamespace().newEnum("E");
+
+  Namespace foo = e.rootNamespace().newNamespace("foo");
+  Namespace bar = e.rootNamespace().newNamespace("bar");
+  Namespace foobar = foo.newNamespace("bar");
+
+  Scope s{ e.rootNamespace() };
+
+  s = s.child("A");
+  ASSERT_FALSE(s.isNull());
+  ASSERT_EQ(s.type(), Scope::ClassScope);
+  ASSERT_EQ(s.asClass(), A);
+  {
+    const auto & ns = s.namespaces();
+    ASSERT_TRUE(ns.empty());
+    const auto & lops = s.literalOperators();
+    ASSERT_TRUE(lops.empty());
+  }
+
+  ASSERT_TRUE(s.hasParent());
+  s = s.parent();
+  ASSERT_EQ(s.type(), Scope::NamespaceScope);
+  ASSERT_EQ(s.asNamespace(), e.rootNamespace());
+  {
+    const auto & ns = s.namespaces();
+    ASSERT_EQ(ns.size(), 2);
+  }
+
+  s = s.child("foo");
+  ASSERT_EQ(s.type(), Scope::NamespaceScope);
+  ASSERT_EQ(s.asNamespace(), foo);
+  s = s.child("bar");
+  ASSERT_EQ(s.type(), Scope::NamespaceScope);
+  ASSERT_EQ(s.asNamespace(), foobar);
+
+  s = s.parent().parent().child("bar");
+  ASSERT_EQ(s.type(), Scope::NamespaceScope);
+  ASSERT_EQ(s.asNamespace(), bar);
+
+  s = s.parent().child("E");
+  ASSERT_EQ(s.type(), Scope::EnumClassScope);
+  ASSERT_EQ(s.asEnum(), E);
+
+  s = s.parent().parent();
+  ASSERT_TRUE(s.isNull());
+}
+
+
 

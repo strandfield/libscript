@@ -16,7 +16,7 @@ class ScopeImpl;
 
 class Enum;
 class Namespace;
-
+class Template;
 
 class LIBSCRIPT_API Scope
 {
@@ -54,17 +54,19 @@ public:
   Enum asEnum() const;
   Script asScript() const;
 
-  std::vector<Class> classes() const;
-  std::vector<Enum> enums() const;
-  std::vector<Function> functions() const;
-  std::vector<Namespace> namespaces() const;
-  std::vector<Operator> operators() const;
+  const std::vector<Class> & classes() const;
+  const std::vector<Enum> & enums() const;
+  const std::vector<Function> & functions() const;
+  const std::vector<Namespace> & namespaces() const;
+  const std::vector<Operator> & operators() const;
   std::vector<Function> operators(Operator::BuiltInOperator op) const;
-  std::vector<LiteralOperator> literalOperators() const;
+  const std::vector<LiteralOperator> & literalOperators() const;
+  const std::vector<Template> & templates() const;
  
+  Scope child(const std::string & name) const;
+
   static Scope find(const Class & c);
   static Scope find(const Enum & entity);
-  static Scope find(const Namespace & entity); /// TODO : is this overload useful ?
 
   const std::shared_ptr<ScopeImpl> & impl() const;
 

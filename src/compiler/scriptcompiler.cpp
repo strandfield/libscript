@@ -425,7 +425,7 @@ bool ScriptCompiler::processClassDeclaration()
   builder.setParent(parentClass);
   Class cla = build(builder);
   cla.implementation()->script = script().weakref();
-  currentScope().impl()->addClass(cla);
+  currentScope().impl()->add_class(cla);
 
   script::Scope classScope = script::Scope(cla, currentScope());
   for (size_t i(0); i < class_decl->content.size(); ++i)
@@ -446,7 +446,7 @@ void ScriptCompiler::processEnumDeclaration()
 
   Enum e = build(Enum{}, enum_decl.name->getName());
   e.implementation()->script = script().weakref();
-  currentScope().impl()->addEnum(e);
+  currentScope().impl()->add_enum(e);
 
   for (size_t i(0); i < enum_decl.values.size(); ++i)
   {
@@ -482,7 +482,7 @@ bool ScriptCompiler::processFunctionDeclaration()
   }
   Function function = build(builder);
 
-  currentScope().impl()->addFunction(function);
+  currentScope().impl()->add_function(function);
 
   if (function.isVirtual() && !fundecl->virtualKeyword.isValid())
     log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
@@ -612,7 +612,7 @@ bool ScriptCompiler::processOperatorOverloadingDeclaration()
     builder.setDeleted();
   Operator function = build(builder).toOperator();
 
-  this->currentScope().impl()->addOperator(function);
+  this->currentScope().impl()->add_operator(function);
   
   if(!function.isDeleted())
     schedule(CompileFunctionTask{ function, std::dynamic_pointer_cast<ast::FunctionDecl>(currentDeclaration()), currentScope() });
@@ -637,7 +637,7 @@ bool ScriptCompiler::processCastOperatorDeclaration()
 
   Cast cast = build(builder).toCast();
 
-  this->currentScope().impl()->addCast(cast);
+  this->currentScope().impl()->add_cast(cast);
   
   if (!cast.isDeleted())
     schedule(CompileFunctionTask{ cast, std::dynamic_pointer_cast<ast::FunctionDecl>(currentDeclaration()) , currentScope() });

@@ -230,7 +230,7 @@ void EngineImpl::destroyClass(Class c)
   Scope decl = engine->scope(c);
   if (decl.isNull())
     return;
-  decl.impl()->removeClass(c);
+  decl.impl()->remove_class(c);
   auto & name = c.implementation()->name;
   name.insert(0, "deleted_");
   const int index = c.id() & 0xFFFF;
@@ -245,7 +245,7 @@ void EngineImpl::destroyEnum(Enum e)
   Scope decl = engine->scope(e);
   if (decl.isNull())
     return;
-  decl.impl()->removeEnum(e);
+  decl.impl()->remove_enum(e);
   auto & name = e.implementation()->name;
   name.insert(0, "deleted_");
   const int index = e.id() & 0xFFFF;
@@ -756,11 +756,6 @@ Scope Engine::scope(const Class & cla)
 Scope Engine::scope(const Enum & e)
 {
   return Scope::find(e);
-}
-
-Scope Engine::scope(const Namespace & n)
-{
-  return Scope::find(n);
 }
 
 Scope Engine::scope(Type type)

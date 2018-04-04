@@ -63,244 +63,352 @@ static Scope find_enum_decl_routine(const Enum & entity, const Scope & scp)
   return Scope{};
 }
 
-static Scope find_namespace_decl_routine(const Namespace & entity, const Scope & scp)
-{
-  const std::vector<Namespace> & namespaces = scp.namespaces();
-  if (std::find(namespaces.begin(), namespaces.end(), entity) != namespaces.end())
-    return scp;
 
-  for (const Namespace & n : scp.namespaces())
-  {
-    Scope ret = find_namespace_decl_routine(entity, Scope{ n, scp });
-    if (!ret.isNull())
-      return ret;
-  }
-
-  return Scope{};
-}
-
-
-ScopeImpl::ScopeImpl(Enum e, Scope p)
-  : parent(p.impl())
-  , theEnum(e)
+ScopeImpl::ScopeImpl(std::shared_ptr<ScopeImpl> p)
+  : parent(p)
 {
 
 }
 
-ScopeImpl::ScopeImpl(Class c, Scope p)
-  : parent(p.impl())
-  , theClass(c)
+
+NamespaceScope::NamespaceScope(const Namespace & ns, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mNamespace(ns)
 {
 
 }
 
-ScopeImpl::ScopeImpl(Namespace n, Scope p)
-  : parent(p.impl())
-  , theNamespace(n)
+Engine * NamespaceScope::engine() const
+{
+  return mNamespace.engine();
+}
+
+int NamespaceScope::kind() const
+{
+  return Scope::NamespaceScope;
+}
+
+const std::vector<Class> & NamespaceScope::classes() const
+{
+  return mNamespace.classes();
+}
+
+const std::vector<Enum> & NamespaceScope::enums() const
+{
+  return mNamespace.enums();
+}
+
+const std::vector<Function> & NamespaceScope::functions() const
+{
+  return mNamespace.functions();
+}
+
+const std::vector<LiteralOperator> & NamespaceScope::literal_operators() const
+{
+  return mNamespace.literalOperators();
+}
+
+const std::vector<Namespace> & NamespaceScope::namespaces() const
+{
+  return mNamespace.namespaces();
+}
+
+const std::vector<Operator> & NamespaceScope::operators() const
+{
+  return mNamespace.operators();
+}
+
+const std::vector<Template> & NamespaceScope::templates() const
+{
+  return mNamespace.templates();
+}
+
+void NamespaceScope::add_class(const Class & c)
+{
+  mNamespace.implementation()->classes.push_back(c);
+}
+
+void NamespaceScope::add_function(const Function & f)
+{
+  mNamespace.implementation()->functions.push_back(f);
+}
+
+void NamespaceScope::add_operator(const Operator & op)
+{
+  mNamespace.implementation()->operators.push_back(op);
+}
+
+void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
+{
+  mNamespace.implementation()->literal_operators.push_back(lo);
+}
+
+void NamespaceScope::add_enum(const Enum & e)
+{
+  mNamespace.implementation()->enums.push_back(e);
+}
+
+
+ClassScope::ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mClass(c)
 {
 
 }
 
-ScopeImpl::ScopeImpl(Script s, Scope p)
-  : parent(p.impl())
-  , theScript(s)
+Engine * ClassScope::engine() const
+{
+  return mClass.engine();
+}
+
+int ClassScope::kind() const
+{
+  return Scope::ClassScope;
+}
+
+const std::vector<Class> & ClassScope::classes() const
+{
+  return mClass.classes();
+}
+
+const std::vector<Enum> & ClassScope::enums() const
+{
+  return mClass.enums();
+}
+
+const std::vector<Function> & ClassScope::functions() const
+{
+  return mClass.memberFunctions();
+}
+
+const std::vector<LiteralOperator> ClassScope::static_dummy_literal_operators = std::vector<LiteralOperator>{};
+
+const std::vector<LiteralOperator> & ClassScope::literal_operators() const
+{
+  return static_dummy_literal_operators;
+}
+
+const std::vector<Namespace> & ClassScope::namespaces() const
+{
+  return static_dummy_namespaces;
+}
+
+const std::vector<Namespace> ClassScope::static_dummy_namespaces = std::vector<Namespace>{};
+
+const std::vector<Operator> & ClassScope::operators() const
+{
+  return mClass.operators();
+}
+
+const std::vector<Template> & ClassScope::templates() const
+{
+  return mClass.templates();
+}
+
+void ClassScope::add_class(const Class & c)
+{
+  mClass.implementation()->classes.push_back(c);
+}
+
+void ClassScope::add_function(const Function & f)
+{
+  mClass.implementation()->register_function(f);
+}
+
+void ClassScope::add_operator(const Operator & op)
+{
+  mClass.implementation()->operators.push_back(op);
+}
+
+void ClassScope::add_cast(const Cast & c)
+{
+  mClass.implementation()->casts.push_back(c);
+}
+
+void ClassScope::add_enum(const Enum & e)
+{
+  mClass.implementation()->enums.push_back(e);
+}
+
+
+EnumScope::EnumScope(const Enum & e, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mEnum(e)
 {
 
 }
 
-void ScopeImpl::addClass(const Class & c)
+Engine * EnumScope::engine() const
 {
-  if (!theClass.isNull())
-    theClass.implementation()->classes.push_back(c);
-  else if (!theNamespace.isNull())
-    theNamespace.implementation()->classes.push_back(c);
-  else if (!theScript.isNull())
-    theScript.rootNamespace().implementation()->classes.push_back(c);
+  return mEnum.engine();
 }
 
-void ScopeImpl::addFunction(const Function & f)
+int EnumScope::kind() const
 {
-  if (!theClass.isNull())
-    theClass.implementation()->register_function(f);
-  else if (!theNamespace.isNull())
-    theNamespace.implementation()->functions.push_back(f);
-  else if (!theScript.isNull())
-    theScript.rootNamespace().implementation()->functions.push_back(f);
+  return Scope::EnumClassScope;
 }
 
-void ScopeImpl::addOperator(const Operator & op)
+const std::vector<Class> EnumScope::static_dummy_classes = std::vector<Class>{};
+
+const std::vector<Class> & EnumScope::classes() const
 {
-  if (!theClass.isNull())
-    theClass.implementation()->operators.push_back(op);
-  else if (!theNamespace.isNull())
-    theNamespace.implementation()->operators.push_back(op);
-  else if (!theScript.isNull())
-    theScript.rootNamespace().implementation()->operators.push_back(op);
+  return static_dummy_classes;
 }
 
-void ScopeImpl::add_literal_operator(const LiteralOperator & lo)
+const std::vector<Enum> EnumScope::static_dummy_enums = std::vector<Enum>{};
+
+const std::vector<Enum> & EnumScope::enums() const
 {
-  if (!theClass.isNull())
-    throw std::runtime_error{ "Implementation error : ScopeImpl::add_literal_operator()" };
-  else if (!theNamespace.isNull())
-    theNamespace.implementation()->literal_operators.push_back(lo);
-  else if (!theScript.isNull())
-    theScript.rootNamespace().implementation()->literal_operators.push_back(lo);
+  return static_dummy_enums;
 }
 
-void ScopeImpl::addCast(const Cast & c)
+const std::vector<Function> EnumScope::static_dummy_functions = std::vector<Function>{};
+
+const std::vector<Function> & EnumScope::functions() const
 {
-  assert(!theClass.isNull());
-  theClass.implementation()->casts.push_back(c);
+  return static_dummy_functions;
 }
 
-void ScopeImpl::addEnum(const Enum & e)
+const std::vector<LiteralOperator> EnumScope::static_dummy_literal_operators = std::vector<LiteralOperator>{};
+
+const std::vector<LiteralOperator> & EnumScope::literal_operators() const
 {
-  if (!theClass.isNull())
-    theClass.implementation()->enums.push_back(e);
-  else if (!theNamespace.isNull())
-    theNamespace.implementation()->enums.push_back(e);
-  else if (!theScript.isNull())
-    theScript.rootNamespace().implementation()->enums.push_back(e);
+  return static_dummy_literal_operators;
 }
 
-void ScopeImpl::removeClass(const Class & c)
+const std::vector<Namespace> EnumScope::static_dummy_namespaces = std::vector<Namespace>{};
+
+const std::vector<Namespace> & EnumScope::namespaces() const
 {
-  if (!theClass.isNull())
-  {
-    auto & container = theClass.implementation()->classes;
-    auto it = std::find(container.begin(), container.end(), c);
-    container.erase(it);
-  }
-  else if (!theNamespace.isNull())
-  {
-    auto & container = theNamespace.implementation()->classes;
-    auto it = std::find(container.begin(), container.end(), c);
-    container.erase(it);
-  }
-  else if (!theScript.isNull())
-  {
-    auto & container = theScript.rootNamespace().implementation()->classes;
-    auto it = std::find(container.begin(), container.end(), c);
-    container.erase(it);
-  }
+  return static_dummy_namespaces;
 }
 
-void ScopeImpl::removeFunction(const Function & f)
-{
-  if (f.isOperator())
-    return removeOperator(f.toOperator());
-  else if (f.isCast())
-    return removeCast(f.toCast());
+const std::vector<Operator> EnumScope::static_dummy_operators = std::vector<Operator>{};
 
-  if (!theClass.isNull())
-  {
-    if (f.isConstructor())
-    {
-      auto & container = theClass.implementation()->constructors;
-      auto it = std::find(container.begin(), container.end(), f);
-      container.erase(it);
-    }
-    else if (f.isDestructor())
-    {
-      theClass.implementation()->destructor = Function{};
-    }
-    else
-    {
-      auto & container = theClass.implementation()->functions;
-      auto it = std::find(container.begin(), container.end(), f);
-      container.erase(it);
-    }
-  }
-  else if (!theNamespace.isNull())
-  {
-    auto & container = theNamespace.implementation()->functions;
-    auto it = std::find(container.begin(), container.end(), f);
-    container.erase(it);
-  }
-  else if (!theScript.isNull())
-  {
-    auto & container = theScript.rootNamespace().implementation()->functions;
-    auto it = std::find(container.begin(), container.end(), f);
-    container.erase(it);
-  }
+const std::vector<Operator> & EnumScope::operators() const
+{
+  return static_dummy_operators;
 }
 
-void ScopeImpl::removeOperator(const Operator & op)
+const std::vector<Template> EnumScope::static_dummy_templates = std::vector<Template>{};
+
+const std::vector<Template> & EnumScope::templates() const
 {
-  if (!theClass.isNull())
-  {
-    auto & container = theClass.implementation()->operators;
-    auto it = std::find(container.begin(), container.end(), op);
-    container.erase(it);
-  }
-  else if (!theNamespace.isNull())
-  {
-    auto & container = theNamespace.implementation()->operators;
-    auto it = std::find(container.begin(), container.end(), op);
-    container.erase(it);
-  }
-  else if (!theScript.isNull())
-  {
-    auto & container = theScript.rootNamespace().implementation()->operators;
-    auto it = std::find(container.begin(), container.end(), op);
-    container.erase(it);
-  }
+  return static_dummy_templates;
 }
 
-void ScopeImpl::removeCast(const Cast & c)
+ScriptScope::ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mScript(s)
 {
-  if (!theClass.isNull())
-  {
-    auto & container = theClass.implementation()->casts;
-    auto it = std::find(container.begin(), container.end(), c);
-    container.erase(it);
-  }
+
 }
 
-void ScopeImpl::removeEnum(const Enum & e)
+Engine * ScriptScope::engine() const
 {
-  if (!theClass.isNull())
-  {
-    auto & container = theClass.implementation()->enums;
-    auto it = std::find(container.begin(), container.end(), e);
-    container.erase(it);
-  }
-  else if (!theNamespace.isNull())
-  {
-    auto & container = theNamespace.implementation()->enums;
-    auto it = std::find(container.begin(), container.end(), e);
-    container.erase(it);
-  }
-  else if (!theScript.isNull())
-  {
-    auto & container = theScript.rootNamespace().implementation()->enums;
-    auto it = std::find(container.begin(), container.end(), e);
-    container.erase(it);
-  }
+  return mScript.engine();
 }
 
+int ScriptScope::kind() const
+{
+  return Scope::ScriptScope;
+}
+
+const std::vector<Class> & ScriptScope::classes() const
+{
+  return mScript.classes();
+}
+
+const std::vector<Enum> & ScriptScope::enums() const
+{
+  return mScript.rootNamespace().enums();
+}
+
+const std::vector<Function> & ScriptScope::functions() const
+{
+  return mScript.rootNamespace().functions();
+}
+
+const std::vector<LiteralOperator> & ScriptScope::literal_operators() const
+{
+  return mScript.rootNamespace().literalOperators();
+}
+
+
+const std::vector<Namespace> & ScriptScope::namespaces() const
+{
+  return mScript.rootNamespace().namespaces();
+}
+
+const std::vector<Operator> & ScriptScope::operators() const
+{
+  return mScript.rootNamespace().operators();
+}
+
+const std::vector<Template> & ScriptScope::templates() const
+{
+  return mScript.rootNamespace().templates();
+}
+
+void ScriptScope::add_class(const Class & c)
+{
+  mScript.rootNamespace().implementation()->classes.push_back(c);
+}
+
+void ScriptScope::add_function(const Function & f)
+{
+  mScript.rootNamespace().implementation()->functions.push_back(f);
+}
+
+void ScriptScope::add_operator(const Operator & op)
+{
+  mScript.rootNamespace().implementation()->operators.push_back(op);
+}
+
+void ScriptScope::add_literal_operator(const LiteralOperator & lo)
+{
+  mScript.rootNamespace().implementation()->literal_operators.push_back(lo);
+}
+
+void ScriptScope::add_enum(const Enum & e)
+{
+  mScript.rootNamespace().implementation()->enums.push_back(e);
+}
+
+void ScriptScope::remove_class(const Class & c)
+{
+  auto & container = mScript.rootNamespace().implementation()->classes;
+  auto it = std::find(container.begin(), container.end(), c);
+  container.erase(it);
+}
+
+void ScriptScope::remove_enum(const Enum & e)
+{
+  auto & container = mScript.rootNamespace().implementation()->enums;
+  auto it = std::find(container.begin(), container.end(), e);
+  container.erase(it);
+}
 
 
 
 Scope::Scope(const Enum & e, const Scope & parent)
 {
-  d = std::make_shared<ScopeImpl>(e, parent);
+  d = std::make_shared<script::EnumScope>(e, parent.impl());
 }
 
 Scope::Scope(const Class & cla, const Scope & parent)
 {
-  d = std::make_shared<ScopeImpl>(cla, parent);
+  d = std::make_shared<script::ClassScope>(cla, parent.impl());
 }
 
 Scope::Scope(const Namespace & na, const Scope & parent)
 {
-  d = std::make_shared<ScopeImpl>(na, parent);
+  d = std::make_shared<script::NamespaceScope>(na, parent.impl());
 }
 
 Scope::Scope(const Script & s, const Scope & parent)
 {
-  d = std::make_shared<ScopeImpl>(s, parent);
+  d = std::make_shared<script::ScriptScope>(s, parent.impl());
 }
 
 Scope::Scope(const std::shared_ptr<ScopeImpl> & impl)
@@ -318,27 +426,13 @@ Scope::Type Scope::type() const
 {
   if (isNull())
     return InvalidScope;
-  else if (!d->theClass.isNull())
-    return ClassScope;
-  else if (!d->theNamespace.isNull())
-    return NamespaceScope;
-  else if (!d->theScript.isNull())
-    return ScriptScope;
-
-  return InvalidScope;
+  return static_cast<Scope::Type>(d->kind());
 }
 
 
 Engine * Scope::engine() const
 {
-  if (!d->theClass.isNull())
-    return d->theClass.engine();
-  else if (!d->theNamespace.isNull())
-    return d->theNamespace.engine();
-  else if (!d->theScript.isNull())
-    return d->theScript.engine();
-
-  throw std::runtime_error{ "Call of engine() on a null FunctionScope" };
+  return d->engine();
 }
 
 bool Scope::hasParent() const
@@ -354,93 +448,68 @@ Scope Scope::parent() const
 
 bool Scope::isClass() const
 {
-  return !d->theClass.isNull();
+  return dynamic_cast<const script::ClassScope*>(d.get()) != nullptr;
 }
 
 Class Scope::asClass() const
 {
-  return d->theClass;
+  return std::dynamic_pointer_cast<script::ClassScope>(d)->mClass;
 }
 
 Namespace Scope::asNamespace() const
 {
-  return d->theNamespace;
+  return std::dynamic_pointer_cast<script::NamespaceScope>(d)->mNamespace;
 }
 
 Enum Scope::asEnum() const
 {
-  return d->theEnum;
+  return std::dynamic_pointer_cast<script::EnumScope>(d)->mEnum;
 }
 
 Script Scope::asScript() const
 {
-  return d->theScript;
+  return std::dynamic_pointer_cast<script::ScriptScope>(d)->mScript;
 }
 
 
-std::vector<Class> Scope::classes() const
+const std::vector<Class> & Scope::classes() const
 {
-  if (!d->theClass.isNull())
-    return d->theClass.classes();
-  else if (!d->theNamespace.isNull())
-    return d->theNamespace.classes();
-  else if (!d->theScript.isNull())
-    return d->theScript.classes();
-  return {};
+  return d->classes();
 }
 
-std::vector<Enum> Scope::enums() const
+const std::vector<Enum> & Scope::enums() const
 {
-  if (!d->theClass.isNull())
-    return d->theClass.enums();
-  else if (!d->theNamespace.isNull())
-    return d->theNamespace.enums();
-  else if (!d->theScript.isNull())
-    return d->theScript.rootNamespace().enums();
-  return {};
+  return d->enums();
 }
 
-std::vector<Function> Scope::functions() const
+const std::vector<Function> & Scope::functions() const
 {
-  if (!d->theNamespace.isNull())
-    return d->theNamespace.functions();
-  else if (!d->theClass.isNull())
-    return d->theClass.memberFunctions();
-  return {};
+  return d->functions();
 }
 
-std::vector<Namespace> Scope::namespaces() const
+const std::vector<Namespace> & Scope::namespaces() const
 {
-  if (!d->theNamespace.isNull())
-    return d->theNamespace.namespaces();
-  else if (!d->theScript.isNull())
-    return d->theScript.rootNamespace().namespaces();
-  return {};
+  return d->namespaces();
 }
 
-std::vector<Operator> Scope::operators() const
+const std::vector<Operator> & Scope::operators() const
 {
-  if (!d->theNamespace.isNull())
-    return d->theNamespace.operators();
-  else if (!d->theClass.isNull())
-    return d->theClass.operators();
-  else if (!d->theScript.isNull())
-    return d->theScript.operators();
-  return {};
+  return d->operators();
 }
 
-std::vector<LiteralOperator> Scope::literalOperators() const
+const std::vector<LiteralOperator> & Scope::literalOperators() const
 {
-  if (!d->theNamespace.isNull())
-    return d->theNamespace.literalOperators();
-  else if (!d->theScript.isNull())
-    return d->theScript.rootNamespace().literalOperators();
-  return {};
+  return d->literal_operators();
+}
+
+const std::vector<Template> & Scope::templates() const
+{
+  return d->templates();
 }
 
 std::vector<Function> Scope::operators(Operator::BuiltInOperator op) const
 {
-  std::vector<Operator> candidates = operators();
+  const std::vector<Operator> & candidates = operators();
   std::vector<Function> ret;
   for (size_t i(0); i < candidates.size(); ++i)
   {
@@ -452,6 +521,31 @@ std::vector<Function> Scope::operators(Operator::BuiltInOperator op) const
   return ret;
 }
 
+Scope Scope::child(const std::string & name) const
+{
+  if (isNull())
+    return Scope{};
+
+  for (const auto & cla : this->classes())
+  {
+    if (cla.name() == name)
+      return Scope{ cla, *this };
+  }
+
+  for (const auto & n : this->namespaces())
+  {
+    if (n.name() == name)
+      return Scope{ n, *this };
+  }
+
+  for (const auto & e : this->enums())
+  {
+    if (e.name() == name)
+      return Scope{ e, *this };
+  }
+
+  return Scope{};
+}
 
 Scope Scope::find(const Class & c)
 {
@@ -494,28 +588,6 @@ Scope Scope::find(const Enum & entity)
 
   return Scope{};
 }
-
-Scope Scope::find(const Namespace & entity)
-{
-  if (entity.isNull())
-    throw std::runtime_error{ "Invalid namespace" };
-
-  Engine *e = entity.engine();
-
-  Scope scp = find_namespace_decl_routine(entity, Scope{ e->rootNamespace() });
-  if (!scp.isNull())
-    return scp;
-
-  for (const Script & s : e->scripts())
-  {
-    scp = find_namespace_decl_routine(entity, Scope{ s });
-    if (!scp.isNull())
-      return scp;
-  }
-
-  return Scope{};
-}
-
 
 const std::shared_ptr<ScopeImpl> & Scope::impl() const
 {

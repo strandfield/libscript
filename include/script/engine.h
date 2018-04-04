@@ -94,7 +94,6 @@ public:
   // Returns the scope in which the class is declared
   Scope scope(const Class & cla);
   Scope scope(const Enum & e);
-  Scope scope(const Namespace & n);
   Scope scope(Type type);
 
   Type typeId(const std::string & typeName, const Scope & scope = Scope()) const;
