@@ -25,6 +25,10 @@ bool Context::isNull() const
   return d == nullptr;
 }
 
+Engine * Context::engine() const
+{
+  return d->engine;
+}
 
 const std::string & Context::name() const
 {

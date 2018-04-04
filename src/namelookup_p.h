@@ -13,8 +13,9 @@ namespace script
 
 class Class;
 
-struct NameLookupImpl
+class NameLookupImpl
 {
+public:
   std::string name;
   Scope scope;
   std::vector<Function> functions;

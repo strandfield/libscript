@@ -270,7 +270,7 @@ Engine::~Engine()
 
 void Engine::setup()
 {
-  d->context = Context{ std::make_shared<ContextImpl>(0, "main_context") };
+  d->context = Context{ std::make_shared<ContextImpl>(this, 0, "main_context") };
 
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
 
@@ -284,8 +284,6 @@ void Engine::setup()
 
   auto ec = std::make_shared<interpreter::ExecutionContext>(this, 1024, 256);
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
-
-  /// TODO : register Array template and String type
 }
 
 Value Engine::newBool(bool bval)
@@ -822,7 +820,7 @@ std::string Engine::typeName(Type t) const
 
 Context Engine::newContext()
 {
-  Context c{ std::make_shared<ContextImpl>(d->allContexts.size() + 1, "") };
+  Context c{ std::make_shared<ContextImpl>(this, d->allContexts.size() + 1, "") };
   d->allContexts.push_back(c);
   return c;
 }

@@ -30,7 +30,7 @@ namespace compiler
 class AbstractExpressionCompiler;
 } // namespace compiler
 
-struct NameLookupImpl;
+class NameLookupImpl;
 
 
 class LIBSCRIPT_API NameLookup

@@ -8,7 +8,9 @@
 #include "script/scope.h"
 
 #include "script/class.h"
+#include "script/context.h"
 #include "script/enum.h"
+#include "script/lambda.h"
 #include "script/namespace.h"
 #include "script/script.h"
 
@@ -26,13 +28,24 @@ public:
   virtual Engine * engine() const = 0;
   virtual int kind() const = 0;
 
-  virtual const std::vector<Class> & classes() const = 0;
-  virtual const std::vector<Enum> & enums() const = 0;
-  virtual const std::vector<Function> & functions() const = 0;
-  virtual const std::vector<LiteralOperator> & literal_operators() const = 0;
-  virtual const std::vector<Namespace> & namespaces() const = 0;
-  virtual const std::vector<Operator> & operators() const = 0;
-  virtual const std::vector<Template> & templates() const = 0;
+  static const std::vector<Class> static_dummy_classes;
+  static const std::vector<Enum> static_dummy_enums;
+  static const std::vector<Function> static_dummy_functions;
+  static const std::vector<LiteralOperator> static_dummy_literal_operators;
+  static const std::vector<Namespace> static_dummy_namespaces;
+  static const std::vector<Operator> static_dummy_operators;
+  static const std::vector<Template> static_dummy_templates;
+  static const std::map<std::string, Value> static_dummy_values;
+
+  virtual const std::vector<Class> & classes() const;
+  virtual const std::vector<Enum> & enums() const;
+  virtual const std::vector<Function> & functions() const;
+  virtual const std::vector<LiteralOperator> & literal_operators() const;
+  virtual const std::vector<Namespace> & namespaces() const;
+  virtual const std::vector<Operator> & operators() const;
+  virtual const std::vector<Template> & templates() const;
+  virtual const std::map<std::string, Value> & values() const;
+
 
   virtual void add_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_class()" }; }
   virtual void add_function(const Function & f) { throw std::runtime_error{ "Bad call to ScopeImpl::add_function()" }; }
@@ -46,6 +59,8 @@ public:
   virtual void remove_operator(const Operator & op) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_operator()" }; }
   virtual void remove_cast(const Cast & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_cast()" }; }
   virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
+
+  virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
 };
 
 class NamespaceScope : public ScopeImpl
@@ -66,6 +81,7 @@ public:
   const std::vector<Namespace> & namespaces() const override;
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
+  const std::map<std::string, Value> & values() const override;
 
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
@@ -91,17 +107,27 @@ public:
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
 
-  static const std::vector<LiteralOperator> static_dummy_literal_operators;
-  const std::vector<LiteralOperator> & literal_operators() const override;
-
-  static const std::vector<Namespace> static_dummy_namespaces;
-  const std::vector<Namespace> & namespaces() const override;
-
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
   void add_operator(const Operator & op) override;
   void add_cast(const Cast & c) override;
   void add_enum(const Enum & e) override;
+
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
+};
+
+class LambdaScope : public ScopeImpl
+{
+public:
+  LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p = nullptr);
+  ~LambdaScope() = default;
+
+  Lambda mClosure;
+
+  Engine * engine() const override;
+  int kind() const override;
+
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
 class EnumScope : public ScopeImpl
@@ -115,26 +141,7 @@ public:
   Engine * engine() const override;
   int kind() const override;
 
-  static const std::vector<Class> static_dummy_classes;
-  const std::vector<Class> & classes() const override;
-
-  static const std::vector<Enum> static_dummy_enums;
-  const std::vector<Enum> & enums() const override;
-
-  static const std::vector<Function> static_dummy_functions;
-  const std::vector<Function> & functions() const override;
-
-  static const std::vector<LiteralOperator> static_dummy_literal_operators;
-  const std::vector<LiteralOperator> & literal_operators() const override;
-
-  static const std::vector<Namespace> static_dummy_namespaces;
-  const std::vector<Namespace> & namespaces() const override;
-
-  static const std::vector<Operator> static_dummy_operators;
-  const std::vector<Operator> & operators() const override;
-
-  static const std::vector<Template> static_dummy_templates;
-  const std::vector<Template> & templates() const override;
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
 class ScriptScope : public ScopeImpl
@@ -155,6 +162,7 @@ public:
   const std::vector<Namespace> & namespaces() const override;
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
+  const std::map<std::string, Value> & values() const override;
 
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
@@ -164,6 +172,22 @@ public:
 
   void remove_class(const Class & c) override;
   void remove_enum(const Enum & e) override;
+
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
+};
+
+class ContextScope : public ScopeImpl
+{
+public:
+  ContextScope(const Context & c, std::shared_ptr<ScopeImpl> p = nullptr);
+  ~ContextScope() = default;
+
+  Context mContext;
+
+  Engine * engine() const override;
+  int kind() const override;
+
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
 } // namespace script

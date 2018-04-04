@@ -15,12 +15,14 @@ namespace script
 class ContextImpl
 {
 public:
+  Engine *engine;
   int id;
   std::string name;
   std::map<std::string, Value> variables;
 
-  ContextImpl(int i, const std::string & n)
-    : id(i)
+  ContextImpl(Engine *e, int i, const std::string & n)
+    : engine(e)
+    , id(i)
     , name(n)
   {
 

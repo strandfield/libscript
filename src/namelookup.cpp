@@ -4,6 +4,7 @@
 
 #include "script/namelookup.h"
 #include "namelookup_p.h"
+#include "scope_p.h"
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/program/expression.h"
@@ -11,70 +12,23 @@
 namespace script
 {
 
-
-static Scope find_scope(const std::string & name, const std::vector<Namespace> & namespaces)
+class ScopeParentGuard
 {
-  // this function returns a scope without any parent
-  // rational : when looking for A::B::C
-  // we don't want to find A::D in A::B
-
-  for (const auto & ns : namespaces)
+  std::shared_ptr<ScopeImpl> guarded_scope;
+  std::shared_ptr<ScopeImpl> parent_value;
+public:
+  ScopeParentGuard(const Scope & s)
   {
-    if (ns.name() == name)
-      return Scope{ ns };
+    guarded_scope = s.impl();
+    parent_value = guarded_scope->parent;
   }
 
-  return Scope{};
-}
-
-
-static Scope find_scope(const std::string & name, const std::vector<Class> & classes)
-{
-  for (const auto & cla : classes)
+  ~ScopeParentGuard()
   {
-    if (cla.name() == name)
-      return Scope{ cla };
+    guarded_scope->parent = parent_value;
   }
+};
 
-  return Scope{};
-}
-
-
-static Scope find_scope(const std::string & name, const std::vector<Enum> & enums)
-{
-  for (const auto & e : enums)
-  {
-    if (!e.isEnumClass())
-      continue;
-
-    if (e.name() == name)
-      return Scope{ e };
-  }
-
-  return Scope{};
-}
-
-static Scope find_scope(const std::string & name, const Namespace & ns)
-{
-  Scope scp = find_scope(name, ns.namespaces());
-  if (!scp.isNull())
-    return scp;
-
-  scp = find_scope(name, ns.enums());
-  if (!scp.isNull())
-    return scp;
-
-  return find_scope(name, ns.classes());
-}
-
-static Scope find_scope(const std::string & name, const Class & cla)
-{
-  Scope scp = find_scope(name, cla.enums());
-  if (!scp.isNull())
-    return scp;
-
-  return find_scope(name, cla.classes());
-}
 
 static Scope find_scope(const std::shared_ptr<ast::Identifier> & name, const Scope & scope, const Scope & startScope)
 {
@@ -91,20 +45,7 @@ static Scope find_scope(const std::shared_ptr<ast::Identifier> & name, const Sco
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     const std::string & str = name->getName();
-
-    switch (scope.type())
-    {
-    case Scope::NamespaceScope:
-      result = find_scope(str, scope.asNamespace());
-      break;
-    case Scope::ClassScope:
-      result = find_scope(str, scope.asClass());
-      break;
-    case Scope::EnumClassScope:
-      throw std::runtime_error{ "Enum class scope not implemented" };
-    default:
-      break;
-    }
+    result = scope.child(str);
   }
   else if (name->is<ast::OperatorName>())
     return Scope{};
@@ -121,189 +62,18 @@ static Scope find_scope(const std::shared_ptr<ast::Identifier> & name, const Sco
   return find_scope(name, scope.parent(), startScope);
 }
 
-static bool resolve(const std::string & name, const std::vector<Class> & classes, const std::vector<Enum> & enums, const std::vector<Namespace> & namespaces, const std::vector<Function> & functions, const std::vector<Template> & tmplates, NameLookupImpl *result)
-{
-  for (const auto & c : classes)
-  {
-    if (c.name() == name)
-    {
-      result->typeResult = c.id();
-      return true;
-    }
-  }
-
-  for (const auto & e : enums)
-  {
-    if (e.name() == name)
-    {
-      result->typeResult = e.id();
-      return true;
-    }
-
-    if (e.isEnumClass())
-      continue;
-
-    for (const auto & ev : e.values())
-    {
-      if (ev.first == name)
-      {
-        result->enumValueResult = EnumValue{ e, ev.second };
-        return true;
-      }
-    }
-  }
-
-  for (const auto & ns : namespaces)
-  {
-    if (ns.name() == name)
-    {
-      result->namespaceResult = ns;
-      return true;
-    }
-  }
-
-  bool foundFunction = false;
-  for (const auto & f : functions)
-  {
-    if (f.name() == name)
-    {
-      result->functions.push_back(f);
-      foundFunction = true;
-    }
-  }
-
-  /// TODO : improve this implementation,
-  // several templates may have the same name
-  bool foundTemplate = false;
-  for (const auto & t : tmplates)
-  {
-    if (t.name() == name)
-    {
-      result->templateResult = t;
-      foundTemplate = true;
-    }
-  }
-
-  return foundFunction || foundTemplate;
-}
-
-static bool resolve(const std::string & name, const Enum & e, NameLookupImpl *result)
-{
-  if (!e.hasKey(name))
-    return false;
-
-  result->enumValueResult = EnumValue{ e, e.getValue(name) };
-
-  return true;
-}
-
-static bool resolve(const std::string & name, const Class & cla, NameLookupImpl *result)
-{
-  if (resolve(name, cla.classes(), cla.enums(), std::vector<Namespace>{}, cla.methods(), cla.templates(), result))
-    return true;
-
-  /// TODO : class static data members
-  /// TODO : test for constructors
-
-  const int dmi = cla.attributeIndex(name);
-  if (dmi != -1)
-  {
-    result->dataMemberIndex = dmi;
-    return true;
-  }
-
-  return false;
-}
-
-static bool resolve(const std::string & name, const Namespace & ns, NameLookupImpl *result)
-{
-  if (resolve(name, ns.classes(), ns.enums(), ns.namespaces(), ns.functions(), ns.templates(), result))
-    return true;
-
-  for (const auto & var : ns.vars())
-  {
-    if (var.first == name)
-    {
-      result->valueResult = var.second;
-      return true;
-    }
-  }
-
-  return false;
-}
-
-static bool resolve(const std::string & name, const Script & s, NameLookupImpl *result)
-{
-  if (resolve(name, s.rootNamespace(), result))
-    return true;
-
-  const auto & globals = s.globalNames();
-  auto it = globals.find(name);
-  if (it == globals.end())
-    return false;
-
-  result->globalIndex = it->second;
-  return true;
-}
-
-static void resolve(Operator::BuiltInOperator op, const std::vector<Operator> & operators, NameLookupImpl *result)
-{
-  for (const auto & o : operators)
-  {
-    if (o.operatorId() != op)
-      continue;
-    result->functions.push_back(o);
-  }
-}
-
-static void resolve(Operator::BuiltInOperator op, const Namespace & ns, NameLookupImpl *result)
-{
-	resolve(op, ns.operators(), result);
-}
-
-static void resolve(Operator::BuiltInOperator op, const Class & cla, NameLookupImpl *result)
-{
-  resolve(op, cla.operators(), result);
-}
-
 static void resolve_routine(Engine *e, const std::shared_ptr<ast::Identifier> & name, const Scope & s, const Scope & startScope, NameLookupImpl *result)
 {
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    const std::string & n = name->getName();
-    bool ok = false; 
-    switch (s.type())
-    {
-    case Scope::ClassScope:
-      ok = resolve(n, s.asClass(), result);
-      break;
-    case Scope::NamespaceScope:
-      ok = resolve(n, s.asNamespace(), result);
-      break;
-    case Scope::ScriptScope:
-      ok = resolve(n, s.asScript(), result);
-      break;
-    }
-
-    if (ok)
-      return;
+    s.lookup(name->getName(), result);
+    return;
   }
   else if (name->is<ast::OperatorName>())
   {
     Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-
-	  switch (s.type())
-	  {
-	  case Scope::ClassScope:
-		  resolve(op, s.asClass(), result);
-		  break;
-	  case Scope::NamespaceScope:
-		  resolve(op, s.asNamespace(), result);
-		  break;
-    case Scope::ScriptScope:
-      resolve(op, s.asScript().rootNamespace(), result);
-      break;
-	  }
+    const auto & ops = s.lookup(op);
+    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
   }
   else if (name->is<ast::ScopedIdentifier>())
   {
@@ -314,52 +84,6 @@ static void resolve_routine(Engine *e, const std::shared_ptr<ast::Identifier> & 
   
   if (!s.parent().isNull())
     resolve_routine(e, name, s.parent(), startScope, result);
-}
-
-static void resolve_routine(Engine *e, const std::string & name, const Scope & s, const Scope & startScope, NameLookupImpl *result)
-{
-  bool ok = false; 
-  switch (s.type())
-  {
-  case Scope::ClassScope:
-    ok = resolve(name, s.asClass(), result);
-    break;
-  case Scope::NamespaceScope:
-    ok = resolve(name, s.asNamespace(), result);
-    break;
-  case Scope::ScriptScope:
-    ok = resolve(name, s.asNamespace(), result);
-    break;
-  }
-
-  if (ok)
-    return;
-
-  if (!s.parent().isNull())
-    resolve_routine(e, name, s.parent(), startScope, result);
-}
-
-
-static void resolve_routine(Engine *e, Operator::BuiltInOperator op, const Scope & s, const Scope & startScope, NameLookupImpl *result)
-{
-  switch (s.type())
-  {
-  case Scope::ClassScope:
-    resolve(op, s.asClass(), result);
-    break;
-  case Scope::NamespaceScope:
-    resolve(op, s.asNamespace(), result);
-    break;
-  case Scope::ScriptScope:
-    resolve(op, s.asScript().rootNamespace(), result);
-    break;
-  }
-
-  if (!result->functions.empty())
-    return;
-
-  if (!s.parent().isNull())
-    resolve_routine(e, op, s.parent(), startScope, result);
 }
 
 NameLookupImpl::NameLookupImpl()
@@ -532,6 +256,9 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
 
     if (stop)
       return NameLookup{ result };
+
+    scope.lookup(name->getName(), result);
+    return NameLookup{ result };
   }
 
   resolve_routine(scope.engine(), name, scope, scope, result.get());
@@ -564,7 +291,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     return NameLookup{ result };
   }
 
-  resolve_routine(scope.engine(), name, scope, scope, result.get());
+  scope.lookup(name, result);
 
   return NameLookup{ result };
 }
@@ -574,7 +301,7 @@ NameLookup NameLookup::resolve(Operator::BuiltInOperator op, const Scope & scope
   std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
   result->scope = scope;
 
-  resolve_routine(scope.engine(), op, scope, scope, result.get());
+  result->functions = scope.lookup(op);
 
   return NameLookup{ result };
 }
@@ -618,37 +345,20 @@ static NameLookup qualified_lookup(const std::shared_ptr<ast::Identifier> & name
 {
   assert(!name->is<ast::ScopedIdentifier>());
 
+  ScopeParentGuard guard{ s };
+  s.impl()->parent = nullptr; // temporarily setting parent to nullptr
+
   auto result = std::make_shared<NameLookupImpl>();
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    const std::string & n = name->getName();
-    switch (s.type())
-    {
-    case Scope::ClassScope:
-      resolve(n, s.asClass(), result.get());
-      break;
-    case Scope::NamespaceScope:
-      resolve(n, s.asNamespace(), result.get());
-      break;
-    case Scope::EnumClassScope:
-      throw std::runtime_error{ "Enum class scope not implemented yet" };
-      break;
-    }
+    s.lookup(name->getName(), result);
   }
   else if (name->is<ast::OperatorName>())
   {
     Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-
-    switch (s.type())
-    {
-    case Scope::ClassScope:
-      resolve(op, s.asClass(), result.get());
-      break;
-    case Scope::NamespaceScope:
-      resolve(op, s.asNamespace(), result.get());
-      break;
-    }
+    const auto & ops = s.lookup(op);
+    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
   }
   else if (name->is<ast::TemplateIdentifier>())
   {
@@ -670,20 +380,16 @@ static NameLookup qualified_lookup(const std::shared_ptr<ast::Identifier> & name
 {
   assert(!name->is<ast::ScopedIdentifier>());
 
+  ScopeParentGuard guard{ s };
+  s.impl()->parent = nullptr; // temporarily setting parent to nullptr
+
   auto result = std::make_shared<NameLookupImpl>();
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     const std::string & n = name->getName();
-    switch (s.type())
-    {
-    case Scope::ClassScope:
-      resolve(n, s.asClass(), result.get());
-      break;
-    case Scope::NamespaceScope:
-      resolve(n, s.asNamespace(), result.get());
-      break;
-    }
+    s.lookup(n, result);
+
 
     if (!result->templateResult.isNull())
     {
@@ -699,16 +405,8 @@ static NameLookup qualified_lookup(const std::shared_ptr<ast::Identifier> & name
   else if (name->is<ast::OperatorName>())
   {
     Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-
-    switch (s.type())
-    {
-    case Scope::ClassScope:
-      resolve(op, s.asClass(), result.get());
-      break;
-    case Scope::NamespaceScope:
-      resolve(op, s.asNamespace(), result.get());
-      break;
-    }
+    const auto & ops = s.lookup(op);
+    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
   }
   else if (name->is<ast::TemplateIdentifier>())
   {
@@ -749,20 +447,7 @@ static Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & nam
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     const std::string & str = name->getName();
-
-    switch (scope.type())
-    {
-    case Scope::NamespaceScope:
-      result = find_scope(str, scope.asNamespace());
-      break;
-    case Scope::ClassScope:
-      result = find_scope(str, scope.asClass());
-      break;
-    case Scope::EnumClassScope:
-      throw std::runtime_error{ "Enum class scope not implemented" };
-    default:
-      break;
-    }
+    result = scope.child(str);
   }
   else if (name->is<ast::TemplateIdentifier>())
   {
@@ -787,20 +472,7 @@ static Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & n
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     const std::string & str = name->getName();
-
-    switch (scope.type())
-    {
-    case Scope::NamespaceScope:
-      result = find_scope(str, scope.asNamespace());
-      break;
-    case Scope::ClassScope:
-      result = find_scope(str, scope.asClass());
-      break;
-    case Scope::EnumClassScope:
-      throw std::runtime_error{ "Enum class scope not implemented" };
-    default:
-      break;
-    }
+    result = scope.child(str);
   }
   else if (name->is<ast::OperatorName>())
     throw std::runtime_error{ "NameLookup error : an operator cannot be used as a scope" };
@@ -864,7 +536,9 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   }
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
-    return compiler->unqualifiedLookup(name);
+  {
+    return compiler->currentScope().lookup(name->getName());
+  }
   else if (name->type() == ast::NodeType::QualifiedIdentifier)
   {
     auto qualid = std::dynamic_pointer_cast<ast::ScopedIdentifier>(name);
@@ -875,7 +549,7 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   {
     auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
     auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = compiler->unqualifiedLookup(template_name);
+    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
     if (tlookup.resultType() != NameLookup::TemplateName)
       throw std::runtime_error{ "Not a template name" };
 
@@ -930,7 +604,7 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    NameLookup lookup = compiler->unqualifiedLookup(name);
+    NameLookup lookup = compiler->currentScope().lookup(name->getName());
     if (!lookup.templateResult().isNull())
     {
       std::vector<TemplateArgument> template_args;
@@ -953,7 +627,7 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   {
     auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
     auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = compiler->unqualifiedLookup(template_name);
+    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
     if (tlookup.resultType() != NameLookup::TemplateName)
       throw std::runtime_error{ "Not a template name" };
 

@@ -1146,6 +1146,32 @@ TEST(CompilerTests, ctor_initialization) {
 }
 
 
+TEST(CompilerTests, access_global) {
+  using namespace script;
+
+  const char *source =
+    "  int n = 5;                 "
+    "  int get_n() { return n; }  "
+    "  int a = get_n() + 5;       ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.toInt(), 5);
+  Value a = s.globals().back();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 10);
+}
+
+
 
 
 

@@ -28,6 +28,8 @@ public:
   int id() const;
   bool isNull() const;
 
+  Engine * engine() const;
+
   const std::string & name() const;
   void setName(const std::string & name);
 

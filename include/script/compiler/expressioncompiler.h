@@ -58,7 +58,6 @@ public:
   Value evalConstExpr(const std::shared_ptr<program::Expression> & expr);
 
   virtual Scope currentScope() const = 0;
-  virtual NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name);
 
 protected:
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
@@ -134,7 +133,6 @@ public:
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Context & context);
 
 protected:
-  NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name) override;
   Scope currentScope() const override;
   std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope)  override;
   std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op) override;

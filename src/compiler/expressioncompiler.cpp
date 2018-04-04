@@ -868,11 +868,6 @@ std::vector<Function> AbstractExpressionCompiler::getOperators(Operator::BuiltIn
   return ret;
 }
 
-NameLookup AbstractExpressionCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name)
-{
-  return NameLookup::resolve(name, currentScope());
-}
-
 std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)
 {
   auto operation = std::dynamic_pointer_cast<ast::Operation>(in_op);
@@ -1013,34 +1008,13 @@ void ExpressionCompiler::setScope(const Scope & s)
 std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)
 {
   mContext = context;
+  mScope = Scope{ std::make_shared<ContextScope>(mContext, mScope.impl()) };
   return generateExpression(expr);
-}
-
-NameLookup ExpressionCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name)
-{
-  assert(name->type() == ast::NodeType::SimpleIdentifier);
-
-  if (name->name == parser::Token::This)
-    throw IllegalUseOfThis{ dpos(name) };
-
-  const std::string & str = name->getName();
-  const auto & globals = mContext.vars();
-  auto it = globals.find(str);
-  if (it != globals.end())
-  {
-    Value val = it->second;
-    auto ret = std::make_shared<NameLookupImpl>();
-    ret->valueResult = val;
-    return NameLookup{ ret };
-  }
-
-  return NameLookup::resolve(name, mScope);
 }
 
 Scope ExpressionCompiler::currentScope() const
 {
-  /// TODO : when possible, return the context instead
-  return Scope{ engine()->rootNamespace() };
+  return mScope;
 }
 
 std::vector<Function> ExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)

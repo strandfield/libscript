@@ -71,8 +71,6 @@ protected:
   void removeUnusedCaptures();
 
 protected:
-  NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name) override;
-
   using FunctionCompiler::resolve;
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
 

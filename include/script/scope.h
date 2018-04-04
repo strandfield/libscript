@@ -18,6 +18,9 @@ class Enum;
 class Namespace;
 class Template;
 
+class NameLookup;
+class NameLookupImpl;
+
 class LIBSCRIPT_API Scope
 {
 public:
@@ -37,6 +40,9 @@ public:
     NamespaceScope,
     ScriptScope,
     EnumClassScope,
+    FunctionScope,
+    LambdaScope,
+    ContextScope,
   };
 
   bool isNull() const;
@@ -65,6 +71,13 @@ public:
  
   Scope child(const std::string & name) const;
 
+  std::vector<Function> lookup(const LiteralOperator &, const std::string & suffix) const;
+  std::vector<Function> lookup(Operator::BuiltInOperator op) const;
+
+  NameLookup lookup(const std::string & name) const;
+  bool lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const;
+  bool lookup(const std::string & name, NameLookupImpl *nl) const;
+
   static Scope find(const Class & c);
   static Scope find(const Enum & entity);
 
@@ -72,6 +85,18 @@ public:
 
 private:
   std::shared_ptr<ScopeImpl> d;
+};
+
+
+class LIBSCRIPT_API ScopeGuard
+{
+public:
+  ScopeGuard(Scope & gs);
+  ~ScopeGuard();
+
+private:
+  Scope *guarded_scope;
+  Scope old_value;
 };
 
 } // namespace script

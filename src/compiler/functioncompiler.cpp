@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/compiler/functioncompiler.h"
+#include "functionscope_p.h"
 
 #include "script/compiler/compilererrors.h"
 
@@ -18,6 +19,7 @@
 #include "../function_p.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
+#include "script/literals.h"
 #include "script/namelookup.h"
 #include "../namelookup_p.h"
 #include "script/overloadresolution.h"
@@ -29,33 +31,120 @@ namespace script
 namespace compiler
 {
 
-compiler::FunctionScope::FunctionScope(FunctionCompiler *c, Type st)
-  : compiler(c)
+FunctionScope::FunctionScope(FunctionCompiler *fc, Category cat, Scope p)
+  : ScopeImpl(p.impl())
+  , mCompiler(fc)
+  , mCategory(cat)
 {
-  enterScope(st);
+  mSize = 0;
+  mSp = mCompiler->mStack.size;
 }
 
-FunctionScope::~FunctionScope()
+Engine * FunctionScope::engine() const
 {
-  leaveScope();
+  return mCompiler->engine();
 }
 
-int FunctionScope::sp() const
+int FunctionScope::kind() const
 {
-  return this->compiler->mScopeStack.at(mIndex).offset;
+  return Scope::FunctionScope;
 }
 
-void FunctionScope::enterScope(Type scopeType)
+
+const std::vector<Class> & FunctionScope::classes() const
 {
-  this->compiler->mScopeStack.push_back(ScopeData{ scopeType, this->compiler->mStack.size });
-  mIndex = this->compiler->mScopeStack.size() - 1;
+  static const std::vector<Class> dummy = std::vector<Class>{};
+  return dummy;
 }
 
-void FunctionScope::leaveScope()
+const std::vector<Enum> & FunctionScope::enums() const
 {
-  ScopeData scp = this->compiler->mScopeStack.back();
-  this->compiler->mScopeStack.pop_back();
-  this->compiler->mStack.destroy(compiler->mStack.size - scp.offset);
+  static const std::vector<Enum> dummy = std::vector<Enum>{};
+  return dummy;
+}
+
+const std::vector<Function> & FunctionScope::functions() const
+{
+  static const std::vector<Function> dummy = std::vector<Function>{};
+  return dummy;
+}
+
+const std::vector<LiteralOperator> & FunctionScope::literal_operators() const
+{
+  static const std::vector<LiteralOperator> dummy = std::vector<LiteralOperator>{};
+  return dummy;
+}
+
+const std::vector<Namespace> & FunctionScope::namespaces() const
+{
+  static const std::vector<Namespace> dummy = std::vector<Namespace>{};
+  return dummy;
+}
+
+const std::vector<Operator> & FunctionScope::operators() const
+{
+  static const std::vector<Operator> dummy = std::vector<Operator>{};
+  return dummy;
+}
+
+const std::vector<Template> & FunctionScope::templates() const
+{
+  static const std::vector<Template> dummy = std::vector<Template>{};
+  return dummy;
+}
+
+bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  if (name == "this")
+  {
+    if (!mCompiler->canUseThis())
+      throw IllegalUseOfThis{ };
+
+    nl->localIndex = 1;
+    return true;
+  }
+
+  for (int i(mSp + mSize - 1); i >= mSp; --i)
+  {
+    if (mCompiler->mStack[i].name == name)
+    {
+      nl->localIndex = i;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+int FunctionScope::add_var(const std::string & name, const Type & t, bool global)
+{
+  int stack_index;
+
+  if (global)
+    stack_index = mCompiler->mStack.addGlobal(t, name);
+  else
+    stack_index = mCompiler->mStack.addVar(t, name);
+
+  mSize++;
+
+  return stack_index;
+}
+
+void FunctionScope::destroy()
+{
+  mCompiler->mStack.destroy(mSize);
+  mSize = 0;
+}
+
+
+FunctionScope::Category FunctionScope::category() const
+{
+  return mCategory;
+}
+
+bool FunctionScope::catch_break() const
+{
+  return mCategory == ForInit || mCategory == WhileBody;
 }
 
 
@@ -211,18 +300,21 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
   
   mFunction = task.function;
   mDeclaration = task.declaration;
+  mBaseScope = task.scope;
   mCurrentScope = task.scope;
 
-  mScopeStack.clear();
   mStack.clear();
 
   const Prototype & proto = mFunction.prototype();
   if(!mFunction.isDestructor())
     mStack.addVar(proto.returnType(), "return-value");
+
+  enterScope(FunctionScope::FunctionArguments);
   for (int i(0); i < proto.argc(); ++i)
-    mStack.addVar(proto.argv(i), argumentName(i));
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(argumentName(i), proto.argv(i));
 
   std::shared_ptr<program::CompoundStatement> body = generateBody();
+  /// TODO : add implicit return statement in void functions
 
   std::vector<std::shared_ptr<program::Statement>> default_arg_inits;
   if (mFunction.prototype().hasDefaultArgument())
@@ -235,6 +327,8 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
     }
   }
   body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
+  
+  leaveScope();
 
   mFunction.implementation()->set_impl(body);
 }
@@ -252,7 +346,7 @@ script::Scope FunctionCompiler::currentScope() const
 
 Class FunctionCompiler::classScope()
 {
-  return mCurrentScope.asClass();
+  return mBaseScope.asClass();
 }
 
 const std::shared_ptr<ast::Declaration> & FunctionCompiler::declaration() const
@@ -304,77 +398,30 @@ bool FunctionCompiler::canUseThis() const
 }
 
 
-void FunctionCompiler::enterScope(FunctionScope::Type scopeType)
+void FunctionCompiler::enterScope(FunctionScope::Category scopeType)
 {
-  mScopeStack.push_back(ScopeData{ scopeType, mStack.size });
+  mCurrentScope = Scope{ std::make_shared<FunctionScope>(this, scopeType, mCurrentScope) };
+  if (scopeType == FunctionScope::FunctionBody)
+    mFunctionBodyScope = mCurrentScope;
+  else if (scopeType == FunctionScope::FunctionArguments)
+    mFunctionArgumentsScope = mCurrentScope;
 }
 
 void FunctionCompiler::leaveScope(int depth)
 {
-  assert(depth <= static_cast<int>(mScopeStack.size()));
-
   for (int i(0); i < depth; ++i)
   {
-    ScopeData scp = mScopeStack.back();
-    mScopeStack.pop_back();
-    mStack.destroy(mStack.size - scp.offset);
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->destroy();
+    mCurrentScope = mCurrentScope.parent();
   }
 }
 
-
-int FunctionCompiler::breakDepth()
+Scope FunctionCompiler::breakScope() const
 {
-  // Returns the number of scopes that would be affected by a break statement.
-  // This includes all scopes up to a 'while-body' or a 'for-init' scope.
-  // Returns -1 if no scope are affected by the 'break'.
-
-  const ScopeStack & scpStack = mScopeStack;
-
-  int i(scpStack.size() - 1);
-  int depth(1);
-  while (i >= 0)
-  {
-    if (scpStack[i].type == FunctionScope::ForInit || scpStack[i].type == FunctionScope::WhileBody)
-      return depth;
-
-    ++depth;
-    --i;
-  }
-
-  return -1;
-}
-
-int FunctionCompiler::continueDepth()
-{
-  return breakDepth();
-}
-
-
-NameLookup FunctionCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name)
-{
-  assert(name->type() == ast::NodeType::SimpleIdentifier);
-
-  if (name->name == parser::Token::This)
-  {
-    if (!this->canUseThis())
-      throw IllegalUseOfThis{ dpos(name) };
-
-    auto result = std::make_shared<NameLookupImpl>();
-    result->localIndex = 1;
-    return NameLookup{ result };
-  }
-
-  const Stack & stack = mStack;
-  const std::string & str = name->getName();
-  const int offset = stack.lastIndexOf(str);
-  if (offset != -1)
-  {
-    auto result = std::make_shared<NameLookupImpl>();
-    result->localIndex = offset;
-    return NameLookup{ result };
-  }
-
-  return NameLookup::resolve(name, currentScope());
+  Scope s = mCurrentScope;
+  while (!std::dynamic_pointer_cast<FunctionScope>(s.impl())->catch_break())
+    s = s.parent();
+  return s;
 }
 
 std::vector<Function> FunctionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
@@ -407,7 +454,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateStatement(const st
   case ast::NodeType::ForLoop:
     return generateForLoop(std::dynamic_pointer_cast<ast::ForLoop>(statement));
   case ast::NodeType::CompoundStatement:
-    return generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(statement), compiler::FunctionScope::CompoundStatement);
+    return generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(statement), FunctionScope::CompoundStatement);
   case ast::NodeType::VariableDeclaration:
     return generateVariableDeclaration(std::dynamic_pointer_cast<ast::VariableDecl>(statement));
   case ast::NodeType::BreakStatement:
@@ -1117,18 +1164,19 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateCall(const std::s
     return AbstractExpressionCompiler::generateCall(call);
 }
 
-std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, compiler::FunctionScope::Type scopeType)
+std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType)
 {
   auto ret = program::CompoundStatement::New();
 
-  FunctionScope scp{ this, scopeType,  };
+  ScopeGuard guard{ mCurrentScope };
+  enterScope(scopeType);
 
   for (const auto & s : compoundStatement->statements)
   {
     ret->statements.push_back(generateStatement(s));
   }
 
-  generateScopeDestruction(scp, ret->statements);
+  generateExitScope(mCurrentScope, ret->statements);
 
   return ret;
 }
@@ -1141,7 +1189,8 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateExpressionStatemen
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateForLoop(const std::shared_ptr<ast::ForLoop> & forLoop)
 {
-  FunctionScope for_init_scope{this, compiler::FunctionScope::ForInit};
+  ScopeGuard guard{ mCurrentScope };
+  enterScope(FunctionScope::ForInit);
 
   std::shared_ptr<program::Statement> for_init = nullptr;
   if (forLoop->initStatement != nullptr)
@@ -1176,7 +1225,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateForLoop(const std:
   }
 
   std::vector<std::shared_ptr<program::Statement>> statements;
-  generateScopeDestruction(for_init_scope, statements);
+  generateExitScope(mCurrentScope, statements);
 
   return program::ForLoop::New(for_init, for_cond, for_loop_incr, body, program::CompoundStatement::New(std::move(statements)));
 }
@@ -1186,7 +1235,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateIfStatement(const 
   auto cond = generateExpression(is->condition);
   std::shared_ptr<program::Statement> body;
   if (is->body->is<ast::CompoundStatement>())
-    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(is->body), compiler::FunctionScope::IfBody);
+    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(is->body), FunctionScope::IfBody);
   else
     body = generateStatement(is->body);
 
@@ -1207,8 +1256,8 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateJumpStatement(cons
 
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const int depth = breakDepth();
-  generateScopeDestruction(depth, statements);
+  const Scope scp = breakScope();
+  generateExitScope(scp, statements);
 
   if (js->is<ast::BreakStatement>())
     statements.push_back(program::BreakStatement::New());
@@ -1222,8 +1271,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateReturnStatement(co
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const int depth = mScopeStack.size();
-  generateScopeDestruction(depth, statements);
+  generateExitScope(mFunctionBodyScope, statements);
 
   if (rs->expression == nullptr)
   {
@@ -1248,25 +1296,16 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateReturnStatement(co
   return program::ReturnStatement::New(retval, std::move(statements));
 }
 
-
-void FunctionCompiler::generateScopeDestruction(int depth, std::vector<std::shared_ptr<program::Statement>> & statements)
+void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)
 {
-  if (depth == 0)
-    return;
+  const int sp = std::dynamic_pointer_cast<FunctionScope>(scp.impl())->sp();
+  Stack & stack = mStack;
 
-  const ScopeStack & scpStack = mScopeStack;
-
-  if (scpStack[scpStack.size() - depth].type == compiler::FunctionScope::FunctionBody && isCompilingAnonymousFunction())
-    return generateScopeDestruction(depth - 1, statements);
-
-  const Stack & stack = mStack;
-
-  const int scope_offset = scpStack[scpStack.size() - depth].offset;
-  for (int i(stack.size - 1); i >= scope_offset; --i)
+  for (int i(stack.size - 1); i >= sp; --i)
     statements.push_back(generateVariableDestruction(stack.at(i)));
 
   // destroying default arguments
-  if (scpStack[scpStack.size() - depth].type == compiler::FunctionScope::FunctionBody)
+  if (std::dynamic_pointer_cast<FunctionScope>(scp.impl())->category() == FunctionScope::FunctionBody)
   {
     const int default_count = mFunction.prototype().defaultArgCount();
     for (int i(mFunction.prototype().argc() - 1); i >= mFunction.prototype().argc() - default_count; --i)
@@ -1276,14 +1315,6 @@ void FunctionCompiler::generateScopeDestruction(int depth, std::vector<std::shar
       statements.push_back(program::PopDefaultArgument::New(i, destroy));
     }
   }
-}
-
-void FunctionCompiler::generateScopeDestruction(compiler::FunctionScope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)
-{
-  Stack & stack = mStack;
-
-  for (int i(stack.size - 1); i >= scp.sp(); --i)
-    statements.push_back(generateVariableDestruction(stack.at(i)));
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier)
@@ -1614,11 +1645,11 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateFundamentalVariabl
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
 {
-  const int stack_index = mStack.addVar(type, name);
+  const int stack_index = std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(name, type);
 
   auto var_decl = program::PushValue::New(type, name, value, stack_index);
 
-  if (mScopeStack.back().type == compiler::FunctionScope::FunctionBody && isCompilingAnonymousFunction())
+  if (std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->category() == FunctionScope::FunctionBody && isCompilingAnonymousFunction())
   {
     mStack[stack_index].global = true;
     std::vector<std::shared_ptr<program::Statement>> statements;
@@ -1677,7 +1708,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateWhileLoop(const st
 
   std::shared_ptr<program::Statement> body;
   if (whileLoop->body->is<ast::CompoundStatement>())
-    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(body), compiler::FunctionScope::WhileBody);
+    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(body), FunctionScope::WhileBody);
   else
     body = generateStatement(whileLoop->body);
 

@@ -48,6 +48,13 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mLambda = build(Lambda{});
 
+  for (const auto & cap : task.captures)
+  {
+    mLambda.impl()->captures.push_back(Lambda::Capture{ cap.type, cap.name });
+  }
+
+  mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
+
   const Prototype proto = computePrototype();
   FunctionBuilder builder = FunctionBuilder::Operator(Operator::FunctionCallOperator, proto);
   Operator function = build(builder).toOperator();
@@ -55,9 +62,11 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   mLambda.impl()->function = function;
   mFunction = function;
 
+  /// TODO : where is the return value ?
+  enterScope(FunctionScope::FunctionArguments);
   mStack.addVar(proto.argv(0), "lambda-object");
   for (int i(1); i < proto.argc(); ++i)
-    mStack.addVar(proto.argv(i), task.lexpr->parameterName(i-1));
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), proto.argv(i));
 
   std::shared_ptr<program::CompoundStatement> body = this->generateCompoundStatement(task.lexpr->body, FunctionScope::FunctionBody);
 
@@ -74,6 +83,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   }
   body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
 
+  leaveScope(); // leaves the FunctionScope::FunctionArguments scope
+
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
   function.implementation()->set_impl(body);
@@ -85,7 +96,6 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   for (const auto & cap : mCaptures)
   {
     lexpr->captures.push_back(cap.value);
-    mLambda.impl()->captures.push_back(Lambda::Capture{cap.type, cap.name});
   }
 
   return { lexpr, mLambda };
@@ -141,57 +151,6 @@ void LambdaCompiler::removeUnusedCaptures()
   /// TODO : remove unused captures
 }
 
-NameLookup LambdaCompiler::unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name)
-{
-  assert(name->type() == ast::NodeType::SimpleIdentifier);
-
-  if (name->name == parser::Token::This)
-  {
-    if (!this->thisCaptured())
-      throw IllegalUseOfThis{ dpos(name) };
-
-    auto result = std::make_shared<NameLookupImpl>();
-    result->captureIndex = 0;
-    return NameLookup{ result };
-  }
-
-  const Stack & stack = mStack;
-  const std::string & str = name->getName();
-  const int offset = stack.lastIndexOf(str);
-  if (offset != -1)
-  {
-    auto result = std::make_shared<NameLookupImpl>();
-    result->localIndex = offset;
-    return NameLookup{ result };
-  }
-
-  const auto & captures = task().captures;
-  for (int i(captures.size() - 1); i >= 0; --i)
-  {
-    if (captures.at(i).name == str)
-    {
-      auto result = std::make_shared<NameLookupImpl>();
-      result->captureIndex = i + (thisCaptured() ? 1 : 0);
-      return NameLookup{ result };
-    }
-  }
-
-  if (thisCaptured())
-  {
-    Class cla = task().capturedObject;
-    const int dmi = cla.attributeIndex(str);
-    if (dmi != -1)
-    {
-      auto result = std::make_shared<NameLookupImpl>();
-      result->dataMemberIndex = dmi;
-      return NameLookup{ result };
-    }
-  }
-
-  return NameLookup::resolve(name, currentScope());
-}
-
-
 std::shared_ptr<program::Expression> LambdaCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
 {
   if (lookup.resultType() == NameLookup::CaptureName)
@@ -233,8 +192,7 @@ std::shared_ptr<program::Statement> LambdaCompiler::generateReturnStatement(cons
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const int depth = mScopeStack.size();
-  generateScopeDestruction(depth, statements);
+  generateExitScope(mFunctionBodyScope, statements);
 
   std::shared_ptr<program::Expression> retval = rs->expression != nullptr ? generateExpression(rs->expression) : nullptr;
   deduceReturnType(rs, retval);

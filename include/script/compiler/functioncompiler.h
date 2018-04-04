@@ -6,6 +6,7 @@
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
 #include "script/compiler/expressioncompiler.h"
+#include "../src/compiler/functionscope_p.h" /// TODO : ugly ! try to remove this
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -53,44 +54,6 @@ namespace compiler
 
 class Compiler;
 class FunctionCompiler;
-
-struct ScopeData;
-
-class FunctionScope
-{
-public:
-  enum Type {
-    Invalid = 0,
-    FunctionBody = 1,
-    IfBody = 2,
-    WhileBody = 3,
-    ForInit = 4,
-    ForBody = 5,
-    CompoundStatement = 6,
-  };
-
-  FunctionScope(FunctionCompiler *c, Type st);
-  ~FunctionScope();
-
-  int sp() const;
-
-protected:
-  void enterScope(Type scopeType);
-  void leaveScope();
-
-private:
-  FunctionCompiler *compiler;
-  int mIndex; // index of this scope in the scope stack
-};
-
-struct ScopeData
-{
-  FunctionScope::Type type;
-  int offset; // offset in the variable stack
-};
-
-typedef std::vector<ScopeData> ScopeStack;
-
 
 struct Variable
 {
@@ -157,7 +120,6 @@ public:
 
   void compile(const CompileFunctionTask & task);
 
-
   Script script();
   script::Scope currentScope() const override;
   Class classScope();
@@ -172,13 +134,11 @@ protected:
 
   bool canUseThis() const;
 
-  void enterScope(FunctionScope::Type scopeType);
+  void enterScope(FunctionScope::Category scopeType);
   void leaveScope(int depth = 1);
 
-  int breakDepth();
-  int continueDepth();
-
-  NameLookup unqualifiedLookup(const std::shared_ptr<ast::Identifier> & name) override;
+  Scope breakScope() const;
+  inline Scope continueScope() const { return breakScope(); }
 
   std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope) override;
 
@@ -209,14 +169,13 @@ protected:
 
   std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;
   std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call) override;
-  std::shared_ptr<program::CompoundStatement> generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, compiler::FunctionScope::Type scopeType);
+  std::shared_ptr<program::CompoundStatement> generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
   std::shared_ptr<program::Statement> generateExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
   std::shared_ptr<program::Statement> generateForLoop(const std::shared_ptr<ast::ForLoop> & forLoop);
   std::shared_ptr<program::Statement> generateIfStatement(const std::shared_ptr<ast::IfStatement> & ifStatement);
   std::shared_ptr<program::Statement> generateJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
   virtual std::shared_ptr<program::Statement> generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);
-  void generateScopeDestruction(int depth, std::vector<std::shared_ptr<program::Statement>> & statements);
-  void generateScopeDestruction(compiler::FunctionScope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
+  void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
   std::shared_ptr<program::Expression> generateThisAccess();
@@ -244,8 +203,10 @@ protected:
   Script mScript;
 
   Stack mStack;
-  ScopeStack mScopeStack;
   Function mFunction;
+  Scope mBaseScope;
+  Scope mFunctionArgumentsScope;
+  Scope mFunctionBodyScope;
   script::Scope mCurrentScope;
   std::shared_ptr<ast::Declaration> mDeclaration;
 };

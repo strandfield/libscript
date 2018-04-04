@@ -12,6 +12,9 @@
 #include "script/operator.h"
 #include "script_p.h"
 
+#include "script/namelookup.h"
+#include "namelookup_p.h"
+
 namespace script
 {
 
@@ -71,6 +74,128 @@ ScopeImpl::ScopeImpl(std::shared_ptr<ScopeImpl> p)
 }
 
 
+const std::vector<Class> ScopeImpl::static_dummy_classes = std::vector<Class>{};
+const std::vector<Enum> ScopeImpl::static_dummy_enums = std::vector<Enum>{};
+const std::vector<Function> ScopeImpl::static_dummy_functions = std::vector<Function>{};
+const std::vector<LiteralOperator> ScopeImpl::static_dummy_literal_operators = std::vector<LiteralOperator>{};
+const std::vector<Namespace> ScopeImpl::static_dummy_namespaces = std::vector<Namespace>{};
+const std::vector<Operator> ScopeImpl::static_dummy_operators = std::vector<Operator>{};
+const std::vector<Template> ScopeImpl::static_dummy_templates = std::vector<Template>{};
+const std::map<std::string, Value> ScopeImpl::static_dummy_values = std::map<std::string, Value>{};
+
+const std::vector<Class> & ScopeImpl::classes() const
+{
+  return static_dummy_classes;
+}
+
+const std::vector<Enum> & ScopeImpl::enums() const
+{
+  return static_dummy_enums;
+}
+
+const std::vector<Function> & ScopeImpl::functions() const
+{
+  return static_dummy_functions;
+}
+
+const std::vector<LiteralOperator> & ScopeImpl::literal_operators() const
+{
+  return static_dummy_literal_operators;
+}
+
+const std::vector<Namespace> & ScopeImpl::namespaces() const
+{
+  return static_dummy_namespaces;
+}
+
+const std::vector<Operator> & ScopeImpl::operators() const
+{
+  return static_dummy_operators;
+}
+
+const std::vector<Template> & ScopeImpl::templates() const
+{
+  return static_dummy_templates;
+}
+
+const std::map<std::string, Value> & ScopeImpl::values() const
+{
+  return static_dummy_values;
+}
+
+bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  bool found_something = false;
+  for (const auto & fn : functions())
+  {
+    if (fn.name() == name)
+    {
+      nl->functions.push_back(fn);
+      found_something = true;
+    }
+  }
+
+  if (found_something)
+    return true;
+
+  for (const auto & e : enums())
+  {
+    if (e.name() == name)
+    {
+      nl->typeResult = e.id();
+      return true;
+    }
+
+    if (e.isEnumClass())
+      continue;
+
+    auto it = e.values().find(name);
+    if (it != e.values().end())
+    {
+      nl->enumValueResult = EnumValue{ e, it->second };
+      return true;
+    }
+  }
+
+  for (const auto & c : classes())
+  {
+    if (c.name() == name)
+    {
+      nl->typeResult = c.id();
+      return true;
+    }
+  }
+
+  for (const auto & n : namespaces())
+  {
+    if (n.name() == name)
+    {
+      nl->namespaceResult = n;
+      return true;
+    }
+  }
+
+  for (const auto & t : templates())
+  {
+    if (t.name() == name)
+    {
+      nl->templateResult = t;
+      return true;
+    }
+  }
+
+  const auto & vars = values();
+  auto it = vars.find(name);
+  if (it != vars.end())
+  {
+    nl->valueResult = it->second;
+    return true;
+  }
+
+  return false;
+}
+
+
 NamespaceScope::NamespaceScope(const Namespace & ns, std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
   , mNamespace(ns)
@@ -121,6 +246,11 @@ const std::vector<Operator> & NamespaceScope::operators() const
 const std::vector<Template> & NamespaceScope::templates() const
 {
   return mNamespace.templates();
+}
+
+const std::map<std::string, Value> & NamespaceScope::values() const
+{
+  return mNamespace.vars();
 }
 
 void NamespaceScope::add_class(const Class & c)
@@ -181,20 +311,6 @@ const std::vector<Function> & ClassScope::functions() const
   return mClass.memberFunctions();
 }
 
-const std::vector<LiteralOperator> ClassScope::static_dummy_literal_operators = std::vector<LiteralOperator>{};
-
-const std::vector<LiteralOperator> & ClassScope::literal_operators() const
-{
-  return static_dummy_literal_operators;
-}
-
-const std::vector<Namespace> & ClassScope::namespaces() const
-{
-  return static_dummy_namespaces;
-}
-
-const std::vector<Namespace> ClassScope::static_dummy_namespaces = std::vector<Namespace>{};
-
 const std::vector<Operator> & ClassScope::operators() const
 {
   return mClass.operators();
@@ -230,6 +346,77 @@ void ClassScope::add_enum(const Enum & e)
   mClass.implementation()->enums.push_back(e);
 }
 
+bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  Class c = mClass;
+  while (!c.isNull())
+  {
+    const auto & dm = c.dataMembers();
+    for (int i(dm.size() - 1); i >= 0; --i)
+    {
+      if (dm.at(i).name == name)
+      {
+        nl->dataMemberIndex = i + c.attributesOffset();
+        return true;
+      }
+    }
+
+    c = c.parent();
+  }
+
+
+  return ScopeImpl::lookup(name, nl);
+}
+
+
+
+LambdaScope::LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mClosure(l)
+{
+
+}
+
+Engine * LambdaScope::engine() const
+{
+  return mClosure.engine();
+}
+
+int LambdaScope::kind() const
+{
+  return Scope::LambdaScope;
+}
+
+bool LambdaScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  const auto & captures = mClosure.captures();
+  if (captures.empty())
+    return false;
+
+  for (int i(captures.size() - 1); i >= 0; --i)
+  {
+    if (captures.at(i).name == name)
+    {
+      nl->captureIndex = i;
+      return true;
+    }
+  }
+
+  if (captures.front().name == "this")
+  {
+    Class cla = engine()->getClass(captures.front().type);
+    const int dmi = cla.attributeIndex(name);
+    if (dmi != -1)
+    {
+      nl->dataMemberIndex = dmi;
+      return true;
+    }
+  }
+
+  /// TODO : should it be ScopeImpl::lookup(name, nl) ?
+  return false;
+}
+
 
 EnumScope::EnumScope(const Enum & e, std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
@@ -248,54 +435,16 @@ int EnumScope::kind() const
   return Scope::EnumClassScope;
 }
 
-const std::vector<Class> EnumScope::static_dummy_classes = std::vector<Class>{};
-
-const std::vector<Class> & EnumScope::classes() const
+bool EnumScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
-  return static_dummy_classes;
+  const auto & vals = mEnum.values();
+  auto it = vals.find(name);
+  if (it == vals.end())
+    return false;
+  nl->enumValueResult = EnumValue{ mEnum, it->second };
+  return true;
 }
 
-const std::vector<Enum> EnumScope::static_dummy_enums = std::vector<Enum>{};
-
-const std::vector<Enum> & EnumScope::enums() const
-{
-  return static_dummy_enums;
-}
-
-const std::vector<Function> EnumScope::static_dummy_functions = std::vector<Function>{};
-
-const std::vector<Function> & EnumScope::functions() const
-{
-  return static_dummy_functions;
-}
-
-const std::vector<LiteralOperator> EnumScope::static_dummy_literal_operators = std::vector<LiteralOperator>{};
-
-const std::vector<LiteralOperator> & EnumScope::literal_operators() const
-{
-  return static_dummy_literal_operators;
-}
-
-const std::vector<Namespace> EnumScope::static_dummy_namespaces = std::vector<Namespace>{};
-
-const std::vector<Namespace> & EnumScope::namespaces() const
-{
-  return static_dummy_namespaces;
-}
-
-const std::vector<Operator> EnumScope::static_dummy_operators = std::vector<Operator>{};
-
-const std::vector<Operator> & EnumScope::operators() const
-{
-  return static_dummy_operators;
-}
-
-const std::vector<Template> EnumScope::static_dummy_templates = std::vector<Template>{};
-
-const std::vector<Template> & EnumScope::templates() const
-{
-  return static_dummy_templates;
-}
 
 ScriptScope::ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
@@ -350,6 +499,12 @@ const std::vector<Template> & ScriptScope::templates() const
   return mScript.rootNamespace().templates();
 }
 
+const std::map<std::string, Value> & ScriptScope::values() const
+{
+  return mScript.rootNamespace().vars();
+}
+
+
 void ScriptScope::add_class(const Class & c)
 {
   mScript.rootNamespace().implementation()->classes.push_back(c);
@@ -389,6 +544,48 @@ void ScriptScope::remove_enum(const Enum & e)
   container.erase(it);
 }
 
+bool ScriptScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  const auto & globals = mScript.globalNames();
+  auto it = globals.find(name);
+  if (it != globals.end())
+  {
+    nl->globalIndex = it->second;
+    return true;
+  }
+
+  return ScopeImpl::lookup(name, nl);
+}
+
+
+
+ContextScope::ContextScope(const Context & c, std::shared_ptr<ScopeImpl> p)
+  : ScopeImpl(p)
+  , mContext(c)
+{
+
+}
+
+Engine * ContextScope::engine() const
+{
+  return mContext.engine();
+}
+
+int ContextScope::kind() const
+{
+  return Scope::ContextScope;
+}
+
+bool ContextScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  const auto & vals = mContext.vars();
+  auto it = vals.find(name);
+  if (it == vals.end())
+    return false;
+
+  nl->valueResult = it->second;
+  return true;
+}
 
 
 Scope::Scope(const Enum & e, const Scope & parent)
@@ -547,6 +744,65 @@ Scope Scope::child(const std::string & name) const
   return Scope{};
 }
 
+std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string & suffix) const
+{
+  std::vector<Function> ret;
+  for (const auto & lop : literalOperators())
+  {
+    if (lop.suffix() == suffix)
+      ret.push_back(lop);
+  }
+
+  if (ret.empty() && hasParent())
+    return parent().lookup(LiteralOperator{}, suffix);
+
+  return ret;
+}
+
+std::vector<Function> Scope::lookup(Operator::BuiltInOperator op) const
+{
+  std::vector<Function> ret;
+  for (const auto & candidate : operators())
+  {
+    if (candidate.operatorId() == op)
+      ret.push_back(candidate);
+  }
+
+  if (ret.empty() && hasParent())
+    return parent().lookup(op);
+
+  return ret;
+}
+
+NameLookup Scope::lookup(const std::string & name) const
+{
+  auto nl = std::make_shared<NameLookupImpl>();
+  lookup(name, nl);
+  return NameLookup{ nl };
+}
+
+bool Scope::lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const
+{
+  if (d->lookup(name, nl.get()))
+    return true;
+
+  if (d->parent == nullptr)
+    return false;
+
+  return Scope{ d->parent }.lookup(name, nl);
+}
+
+bool Scope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  if (d->lookup(name, nl))
+    return true;
+
+  if (d->parent == nullptr)
+    return false;
+
+  return Scope{ d->parent }.lookup(name, nl);
+}
+
 Scope Scope::find(const Class & c)
 {
   if (c.isNull())
@@ -592,6 +848,17 @@ Scope Scope::find(const Enum & entity)
 const std::shared_ptr<ScopeImpl> & Scope::impl() const
 {
   return d;
+}
+
+ScopeGuard::ScopeGuard(Scope & gs)
+{
+  guarded_scope = &gs;
+  old_value = gs;
+}
+
+ScopeGuard::~ScopeGuard()
+{
+  *guarded_scope = old_value;
 }
 
 } // namespace script
