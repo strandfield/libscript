@@ -328,6 +328,162 @@ void AbstractExpressionCompiler::prepareFunctionArguments(std::vector<std::share
   }
 }
 
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructFundamentalValue(const Type & t, bool copy)
+{
+  assert(t.isFundamentalType());
+
+  Value val;
+  switch (t.baseType().data())
+  {
+  case Type::Null:
+  case Type::Void:
+    throw NotImplementedError{ "Could not construct value of type void" };
+  case Type::Boolean:
+    val = engine()->newBool(false);
+    break;
+  case Type::Char:
+    val = engine()->newChar('\0');
+    break;
+  case Type::Int:
+    val = engine()->newInt(0);
+    break;
+  case Type::Float:
+    val = engine()->newFloat(0.f);
+    break;
+  case Type::Double:
+    val = engine()->newDouble(0.);
+    break;
+  default:
+    throw NotImplementedError{ "Could not construct value of given fundamental type" };
+  }
+
+  engine()->manage(val);
+
+  auto lit = program::Literal::New(val);
+  if (copy)
+    return program::Copy::New(t, lit);
+  return lit;
+}
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::braceConstructValue(const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
+{
+  if (args.size() == 0)
+    return constructValue(type, nullptr, dp);
+
+  if (!type.isObjectType() && args.size() != 1)
+    throw TooManyArgumentInInitialization{ dp };
+
+  if ((type.isReference() || type.isRefRef()) && args.size() != 1)
+    throw TooManyArgumentInReferenceInitialization{ dp };
+
+  if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
+  {
+    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
+    if (seq == ConversionSequence::NotConvertible())
+      throw CouldNotConvert{ dp, dstr(args.front()->type()), dstr(type) };
+
+    if (seq.isNarrowing())
+      throw NarrowingConversionInBraceInitialization{ dp, dstr(args.front()->type()), dstr(type) };
+
+    return prepareFunctionArgument(args.front(), type, seq);
+  }
+  else if (type.isObjectType())
+  {
+    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
+    OverloadResolution resol = OverloadResolution::New(engine());
+    if (!resol.process(ctors, args))
+      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
+
+    const Function ctor = resol.selectedOverload();
+    const auto & conversions = resol.conversionSequence();
+    for (std::size_t i(0); i < conversions.size(); ++i)
+    {
+      const auto & conv = conversions.at(i);
+      if (conv.isNarrowing())
+        throw NarrowingConversionInBraceInitialization{ dp, dstr(args.at(i)->type()), dstr(ctor.parameter(i)) };
+    }
+
+    prepareFunctionArguments(args, ctor.prototype(), conversions);
+    return program::ConstructorCall::New(ctor, std::move(args));
+  }
+  else
+    throw std::runtime_error{ "Not implemented" };
+}
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & type, std::nullptr_t, diagnostic::pos_t dp)
+{
+  if (type.isReference() || type.isRefRef())
+    throw ReferencesMustBeInitialized{ dp };
+
+  if (type.isFundamentalType())
+    return constructFundamentalValue(type, true);
+  else if (type.isEnumType())
+    throw EnumerationsCannotBeDefaultConstructed{ dp };
+  else if (type.isFunctionType())
+    throw FunctionVariablesMustBeInitialized{ dp };
+  else if (type.isObjectType())
+  {
+    Function default_ctor = engine()->getClass(type).defaultConstructor();
+    if (default_ctor.isNull())
+      throw VariableCannotBeDefaultConstructed{ dp, dstr(type) };
+    else if (default_ctor.isDeleted())
+      throw ClassHasDeletedDefaultCtor{ dp, dstr(type) };
+
+    return program::ConstructorCall::New(default_ctor, {});
+  }
+
+  throw NotImplementedError{ dp, "AbstractExpressionCompiler::constructValue() : cannot default construct value" };
+}
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
+{
+  if (args.size() == 0)
+    return constructValue(type, nullptr, dp);
+
+  if (!type.isObjectType() && args.size() != 1)
+    throw TooManyArgumentInInitialization{ dp };
+
+  if ((type.isReference() || type.isRefRef()) && args.size() != 1)
+    throw TooManyArgumentInReferenceInitialization{ dp };
+
+  if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
+  {
+    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
+    if (seq == ConversionSequence::NotConvertible())
+      throw CouldNotConvert{ dp, dstr(args.front()->type()), dstr(type) };
+
+    return prepareFunctionArgument(args.front(), type, seq);
+  }
+  else if (type.isObjectType())
+  {
+    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
+    OverloadResolution resol = OverloadResolution::New(engine());
+    if (!resol.process(ctors, args))
+      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
+
+    const Function ctor = resol.selectedOverload();
+    const auto & conversions = resol.conversionSequence();
+    prepareFunctionArguments(args, ctor.prototype(), conversions);
+    return program::ConstructorCall::New(ctor, std::move(args));
+  }
+  else
+    throw NotImplementedError{ dp, "AbstractExpressionCompiler::constructValue() : type not implemented" };
+}
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init)
+{
+  auto args = generateExpressions(init->args);
+  return constructValue(t, std::move(args), dpos(init));
+}
+
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & t, const std::shared_ptr<ast::BraceInitialization> & init)
+{
+  auto args = generateExpressions(init->args);
+  return braceConstructValue(t, std::move(args), dpos(init));
+}
+
+
 int AbstractExpressionCompiler::generateIntegerLiteral(const std::shared_ptr<ast::IntegerLiteral> & l)
 {
   std::string i = l->toString();
@@ -385,86 +541,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBraceCo
 
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(bc->arguments);
 
-  if (type.isFundamentalType())
-  {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(bc->arguments.front()), dstr(args.front()->type()), dstr(type) };
-
-    if (seq.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dpos(bc), dstr(args.front()->type()), dstr(type) };
-
-    return prepareFunctionArgument(args.front(), type, seq);
-  }
-  else if (type.isEnumType())
-  {
-    if (args.front()->type().baseType() != type.baseType())
-      throw CouldNotConvert{ dpos(bc->arguments.front()), dstr(args.front()->type()), dstr(type) };
-
-    return program::Copy::New(type, args.front());
-  }
-  else if (type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dpos(bc) }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    for (std::size_t i(0); i < conversions.size(); ++i)
-    {
-      const auto & conv = conversions.at(i);
-      if(conv.isNarrowing())
-          throw NarrowingConversionInBraceInitialization{ dpos(bc), dstr(args.at(i)->type()), dstr(ctor.parameter(i)) };
-    }
-
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-    return program::ConstructorCall::New(ctor, std::move(args));
-  }
-  else
-    throw std::runtime_error{ "Not implemented" };
+  return braceConstructValue(type, std::move(args), dpos(bc));
 }
 
 std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateConstructorCall(const std::shared_ptr<ast::FunctionCall> & fc, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
 {
-  /// TODO : again, huge duplicate of FunctionCompiler::generateVariableDeclaration()
-
-  if (!type.isObjectType() && args.size() != 1)
-    throw TooManyArgumentInVariableInitialization{ dpos(fc) };
-
-  if (type.isFundamentalType())
-  {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(fc->arguments.front()), dstr(args.front()->type()), dstr(type) };
-
-
-    return prepareFunctionArgument(args.front(), type, seq);
-  }
-  else if (type.isEnumType())
-  {
-    if (args.front()->type().baseType() != type.baseType())
-      throw CouldNotConvert{ dpos(fc->arguments.front()), dstr(args.front()->type()), dstr(type) };
-
-
-    return program::Copy::New(type, args.front());
-  }
-  else if (type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dpos(fc) }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-    return program::ConstructorCall::New(ctor, std::move(args));
-  }
-  else
-    throw std::runtime_error{ "Not implemented" };
+  return constructValue(type, std::move(args), dpos(fc));
 }
 
 std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateListExpression(const std::shared_ptr<ast::ListExpression> & list_expr)

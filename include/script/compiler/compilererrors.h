@@ -92,9 +92,11 @@ DECLARE_COMPILER_ERROR(ReturnStatementWithoutValue, "Cannot have return-statemen
 DECLARE_COMPILER_ERROR(ReturnStatementWithValue, "A function returning void cannot return a value");
 
 DECLARE_COMPILER_ERROR(ReferencesMustBeInitialized, "References must be initialized");
+DECLARE_COMPILER_ERROR(EnumerationsCannotBeDefaultConstructed, "Enumerations cannot be default constructed");
 DECLARE_COMPILER_ERROR(EnumerationsMustBeInitialized, "Variables of enumeration type must be initialized");
 DECLARE_COMPILER_ERROR(FunctionVariablesMustBeInitialized, "Variables of function-type must be initialized");
 DECLARE_COMPILER_ERROR(VariableCannotBeDefaultConstructed, "Class '%1' does not provide a default constructor", std::string);
+DECLARE_COMPILER_ERROR(ClassHasDeletedDefaultCtor, "Class '%1' has a deleted default constructor", std::string);
 DECLARE_COMPILER_ERROR(VariableCannotBeDestroyed, "Class '%1' does not provide a destructor", std::string);
 
 DECLARE_COMPILER_ERROR(CouldNotResolveOperatorName, "Could not resolve operator name based on parameter count and operator symbol.");
@@ -139,6 +141,7 @@ DECLARE_COMPILER_ERROR(TypeNameInExpression, "Name refers to a type and cannot b
 DECLARE_COMPILER_ERROR(NamespaceNameInExpression, "Name refers to a namespace and cannot be used inside an expression");
 
 DECLARE_COMPILER_ERROR(TooManyArgumentInVariableInitialization, "Too many arguments provided in variable initialization.");
+DECLARE_COMPILER_ERROR(TooManyArgumentInInitialization, "Too many arguments provided in initialization.");
 DECLARE_COMPILER_ERROR(TooManyArgumentInReferenceInitialization, "More than one argument provided in reference initialization.");
 DECLARE_COMPILER_ERROR(TooManyArgumentsInMemberInitialization, "Too many arguments in member initialization.");
 

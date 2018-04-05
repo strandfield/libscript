@@ -23,7 +23,9 @@ class Expression;
 class ArrayExpression;
 class ArraySubscript;
 class BraceConstruction;
+class BraceInitialization;
 class ConditionalExpression;
+class ConstructorInitialization;
 class FunctionCall;
 class Identifier;
 class IntegerLiteral;
@@ -99,6 +101,14 @@ protected:
   std::shared_ptr<program::Expression> prepareFunctionArgument(const std::shared_ptr<program::Expression> & arg, const Type & type, const ConversionSequence & conv);
   void prepareFunctionArguments(std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<ConversionSequence> & conversions);
 
+
+  std::shared_ptr<program::Expression> constructFundamentalValue(const Type & t, bool copy);
+  std::shared_ptr<program::Expression> braceConstructValue(const Type & t, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp);
+  std::shared_ptr<program::Expression> constructValue(const Type & t, std::nullptr_t, diagnostic::pos_t dp);
+  std::shared_ptr<program::Expression> constructValue(const Type & t, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp);
+  std::shared_ptr<program::Expression> constructValue(const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init);
+  std::shared_ptr<program::Expression> constructValue(const Type & t, const std::shared_ptr<ast::BraceInitialization> & init);
+
   int generateIntegerLiteral(const std::shared_ptr<ast::IntegerLiteral> & l);
 
   std::shared_ptr<program::Expression> generateArrayConstruction(const std::shared_ptr<ast::ArrayExpression> & array_expr);
@@ -119,7 +129,6 @@ protected:
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
   std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index);
-
 };
 
 

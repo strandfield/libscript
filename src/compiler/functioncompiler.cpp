@@ -541,72 +541,6 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateDefaultArgument(i
   return prepareFunctionArgument(expr, mFunction.prototype().argv(index), conv);
 }
 
-std::shared_ptr<program::Expression> FunctionCompiler::defaultConstructMember(const Type & t, const std::string & member_name, const diagnostic::pos_t p)
-{
-  assert(!t.isReference());
-
-  if (t.isFundamentalType())
-    return constructFundamentalValue(t, true);
-  else if (t.isEnumType())
-    throw EnumMemberCannotBeDefaultConstructed{ p, member_name, dstr(t) };
-  else if (t.isObjectType())
-  {
-    Function default_ctor = engine()->getClass(t).defaultConstructor();
-    if (default_ctor.isNull())
-      throw DataMemberHasNoDefaultConstructor{ p, member_name, dstr(t) };
-    else if (default_ctor.isDeleted())
-      throw DataMemberHasDeletedDefaultConstructor{ p, member_name, dstr(t) };
-
-    return program::ConstructorCall::New(default_ctor, {});
-  }
-
-  throw NotImplementedError{ "FunctionCompiler::defaultConstructMember()" };
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::constructDataMember(const Type & t, std::vector<std::shared_ptr<program::Expression>> && args)
-{
-  assert(!t.isReference());
-
-  /// TODO : add better diagnostic for this first two blocks
-  if (t.isFundamentalType())
-  {
-    if (args.size() > 1)
-      throw TooManyArgumentsInMemberInitialization{};
-
-    ConversionSequence seq = ConversionSequence::compute(args.front(), t, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw NotImplementedError{"FunctionCompiler::constructDataMember() :  not convertible"  };
-
-    auto value = prepareFunctionArgument(args.front(), t, seq);
-    return value;
-  }
-  else if (t.isEnumType()) /// TODO : could this block be merged with the one above ?
-  {
-    if (args.size() > 1)
-      throw TooManyArgumentsInMemberInitialization{};
-
-    ConversionSequence seq = ConversionSequence::compute(args.front(), t, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw NotImplementedError{ "FunctionCompiler::constructDataMember() :  not convertible" };
-
-    auto value = prepareFunctionArgument(args.front(), t, seq);
-    return value;
-  }
-  else if (t.isFunctionType())
-    throw NotImplementedError{ "FunctionCompiler::constructDataMember() : function data member" };
-
-  const std::vector<Function> & ctors = engine()->getClass(t).constructors();
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args))
-    throw CouldNotFindValidConstructor{ }; /// TODO add a better diagnostic message
-
-  const Function ctor = resol.selectedOverload();
-  const auto & conversions = resol.conversionSequence();
-
-  prepareFunctionArguments(args, ctor.prototype(), conversions);
-  return program::ConstructorCall::New(ctor, std::move(args));
-}
-
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructorHeader()
 {
   /// TODO : refactor and disallow narrowing conversions when braceinitialization is used
@@ -675,36 +609,13 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructo
     if (members_initialization.at(index) != nullptr)
       throw DataMemberAlreadyHasInitializer{ dpos(minit.name), dstr(minit.name) };
 
-    std::vector<std::shared_ptr<program::Expression>> args;
-    if (minit.init->is<ast::ConstructorInitialization>())
-      args = generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
-    else
-      args = generateExpressions(minit.init->as<ast::BraceInitialization>().args);
+    const auto & dm = data_members.at(index);
 
     std::shared_ptr<program::Expression> member_value;
-    const auto & dm = data_members.at(index);
-    if (dm.type.isReference())
-    {
-      if (args.size() != 1)
-        throw InvalidArgumentCountInDataMemberRefInit{ dpos(minit.name) };
-
-      auto value = args.front();
-      if (value->type().isConst() && !dm.type.isConst())
-        throw CannotInitializeNonConstRefDataMemberWithConst{ dpos(minit.init) };
-
-      if (!engine()->canCast(value->type(), dm.type))
-        throw BadDataMemberRefInit{ dpos(minit.init), dm.name };
-
-      member_value = value;
-    }
-    else
-    {
-      if (args.empty())
-        member_value = defaultConstructMember(dm.type, dm.name, dpos(ctor_decl));
-      else
-        member_value = constructDataMember(dm.type, std::move(args));
-    }
-
+    if (minit.init->is<ast::ConstructorInitialization>())
+      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init));
+    else 
+      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init));
 
     members_initialization[index] = program::PushDataMember::New(member_value);
   }
@@ -716,7 +627,8 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructo
 
     const auto & dm = data_members.at(i);
 
-    std::shared_ptr<program::Expression> default_constructed_value = defaultConstructMember(dm.type, dm.name, dpos(ctor_decl));
+    //std::shared_ptr<program::Expression> default_constructed_value = defaultConstructMember(dm.type, dm.name, dpos(ctor_decl));
+    std::shared_ptr<program::Expression> default_constructed_value = constructValue(dm.type, nullptr, dpos(ctor_decl));
     members_initialization[i] = program::PushDataMember::New(default_constructed_value);
   }
 
@@ -1424,28 +1336,17 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, std::nullptr_t)
 {
-  if (var_type.isReference() || var_type.isRefRef())
-    throw ReferencesMustBeInitialized{};
-
-  if (var_type.isFundamentalType())
-    return generateFundamentalVariableCreation(var_type, var_decl->name->getName());
-  else if (var_type.isEnumType())
-    throw EnumerationsMustBeInitialized{ dpos(var_decl) };
-  else if (var_type.isFunctionType())
-    throw FunctionVariablesMustBeInitialized{ dpos(var_decl) };
-  else if (var_type.isObjectType())
+  if (var_type.baseType() == Type::Auto)
+    throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
+  
+  try
   {
-    Class cla = engine()->getClass(var_type);
-    Function ctor = cla.defaultConstructor();
-    if (ctor.isNull())
-      throw VariableCannotBeDefaultConstructed{ dpos(var_decl), cla.name() };
-    else if (ctor.isDeleted())
-      throw VariableCannotBeDestroyed{ dpos(var_decl), cla.name() }; /// TODO : move in generateScopeDestruction()
-
-    return generateVariableCreation(var_type, var_decl->name->getName(), program::ConstructorCall::New(ctor, {}));
+    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, nullptr, dpos(var_decl)));
   }
-  else
-    throw std::runtime_error{ "Not implemented" };
+  catch (const EnumerationsCannotBeDefaultConstructed & e)
+  {
+    throw EnumerationsMustBeInitialized{ e.pos };
+  }
 }
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init)
@@ -1453,59 +1354,14 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   if (var_type.baseType() == Type::Auto)
     throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
 
-  if (!var_type.isObjectType() && init->args.size() != 1)
-    throw TooManyArgumentInVariableInitialization{ dpos(var_decl) };
-
-  if((var_type.isReference() || var_type.isRefRef()) && init->args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dpos(var_decl) };
-
-  std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(init->args);
-  
-  if (var_type.isReference() && !var_type.isConst())
+  try
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), var_type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    return generateVariableCreation(var_type, var_decl->name->getName(), prepareFunctionArgument(args.front(), var_type, seq));
+    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
   }
-
-  if (var_type.isFundamentalType())
+  catch (const TooManyArgumentInInitialization & e)
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), var_type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    /// TODO : this is not optimal I believe
-    auto value = prepareFunctionArgument(args.front(), var_type, seq);
-    return generateVariableCreation(var_type, var_decl->name->getName(), value);
+    throw TooManyArgumentInVariableInitialization{ e.pos };
   }
-  else if (var_type.isEnumType())
-  {
-    if(args.front()->type().baseType() != var_type.baseType())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    return generateVariableCreation(var_type, var_decl->name->getName(), program::Copy::New(var_type, args.front()));
-  }
-  else if (var_type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(var_type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dpos(var_decl) }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-
-    /// TODO : handle initialization of references
-
-    auto ctor_call = program::ConstructorCall::New(ctor, std::move(args));
-    return generateVariableCreation(var_type, var_decl->name->getName(), ctor_call);
-  }
-  else
-    throw std::runtime_error{ "Not implemented" };
 }
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init)
@@ -1513,69 +1369,14 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   if (var_type.baseType() == Type::Auto)
     throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
 
-  if (!var_type.isObjectType() && init->args.size() != 1)
-    throw TooManyArgumentInVariableInitialization{ dpos(var_decl) };
-
-  if ((var_type.isReference() || var_type.isRefRef()) && init->args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dpos(var_decl) };
-
-  std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(init->args);
-
-  if (var_type.isReference() && !var_type.isConst())
+  try
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), var_type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    return generateVariableCreation(var_type, var_decl->name->getName(), prepareFunctionArgument(args.front(), var_type, seq));
+    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
   }
-
-  if (var_type.isFundamentalType())
+  catch (const TooManyArgumentInInitialization & e)
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), var_type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    if (seq.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dpos(var_decl), dstr(args.front()->type()), dstr(var_type) };
-
-    /// TODO : this is not optimal I believe
-    auto value = prepareFunctionArgument(args.front(), var_type, seq);
-    return generateVariableCreation(var_type, var_decl->name->getName(), value);
+    throw TooManyArgumentInVariableInitialization{ e.pos };
   }
-  else if (var_type.isEnumType())
-  {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), var_type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(init->args.front()), dstr(args.front()->type()), dstr(var_type) };
-
-    return generateVariableCreation(var_type, var_decl->name->getName(), prepareFunctionArgument(args.front(), var_type, seq));
-  }
-  else if (var_type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(var_type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dpos(var_decl) }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    for (std::size_t i(0); i < conversions.size(); ++i)
-    {
-      const auto & conv = conversions.at(i);
-      if (conv.isNarrowing())
-        throw NarrowingConversionInBraceInitialization{ dpos(var_decl), dstr(args.at(i)->type()), dstr(ctor.parameter(i)) };
-    }
-
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-
-    /// TODO : handle initialization of references
-
-    auto ctor_call = program::ConstructorCall::New(ctor, std::move(args));
-    return generateVariableCreation(var_type, var_decl->name->getName(), ctor_call);
-  }
-  else
-    throw std::runtime_error{ "Not implemented" };
 }
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & input_var_type, const std::shared_ptr<ast::AssignmentInitialization> & init)
@@ -1602,40 +1403,6 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   return generateVariableCreation(var_type, var_decl->name->getName(), value);
 }
 
-std::shared_ptr<program::Expression> FunctionCompiler::constructFundamentalValue(const Type & t, bool copy)
-{
-  Value val;
-  switch (t.baseType().data())
-  {
-  case Type::Null:
-  case Type::Void:
-    throw std::runtime_error{ "Invalid variable type" };
-  case Type::Boolean:
-    val = engine()->newBool(false);
-    break;
-  case Type::Char:
-    val = engine()->newChar('\0');
-    break;
-  case Type::Int:
-    val = engine()->newInt(0);
-    break;
-  case Type::Float:
-    val = engine()->newFloat(0.f);
-    break;
-  case Type::Double:
-    val = engine()->newDouble(0.);
-    break;
-  default:
-    throw std::runtime_error{ "Not implemented" };
-  }
-
-  engine()->manage(val);
-
-  auto lit = program::Literal::New(val);
-  if (copy)
-    return program::Copy::New(t, lit);
-  return lit;
-}
 
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateFundamentalVariableCreation(const Type & type, const std::string & name)
@@ -1680,22 +1447,6 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDestructio
   }
 
   return program::PopValue::New(true, Function{}, var.index);
-}
-
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableInitialization(const Variable & var)
-{
-  throw std::runtime_error{ "Not implemented" };
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableInitialization(const Variable & var, const std::vector<std::shared_ptr<program::Expression>> & args)
-{
-  throw std::runtime_error{ "Not implemented" };
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableInitialization(const std::shared_ptr<program::Expression> & var, int type, const std::vector<std::shared_ptr<program::Expression>> & args)
-{
-  throw std::runtime_error{ "Not implemented" };
 }
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)

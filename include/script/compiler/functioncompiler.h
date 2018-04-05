@@ -149,8 +149,6 @@ protected:
 
   std::shared_ptr<program::Expression> generateDefaultArgument(int index);
 
-  std::shared_ptr<program::Expression> defaultConstructMember(const Type & t, const std::string & member_name, const diagnostic::pos_t p);
-  std::shared_ptr<program::Expression> constructDataMember(const Type & t, std::vector<std::shared_ptr<program::Expression>> && args);
   std::shared_ptr<program::CompoundStatement> generateConstructorHeader();
   std::shared_ptr<program::Statement> generateDelegateConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateParentConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args);
@@ -188,13 +186,9 @@ protected:
   std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
   std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init);
   std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::AssignmentInitialization> & init);
-  std::shared_ptr<program::Expression> constructFundamentalValue(const Type & t, bool copy);
   std::shared_ptr<program::Statement> generateFundamentalVariableCreation(const Type & type, const std::string & name);
   std::shared_ptr<program::Statement> generateVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value);
   std::shared_ptr<program::Statement> generateVariableDestruction(const Variable & var);
-  std::shared_ptr<program::Statement> generateVariableInitialization(const Variable & var);
-  std::shared_ptr<program::Statement> generateVariableInitialization(const Variable & var, const std::vector<std::shared_ptr<program::Expression>> & args);
-  std::shared_ptr<program::Statement> generateVariableInitialization(const std::shared_ptr<program::Expression> & var, int type, const std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);
 
 protected:
