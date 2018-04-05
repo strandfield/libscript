@@ -27,6 +27,7 @@ class Expression;
 
 namespace compiler
 {
+class Compiler;
 class AbstractExpressionCompiler;
 } // namespace compiler
 
@@ -45,7 +46,10 @@ public:
   inline bool isNull() const { return d == nullptr; }
 
   const Scope & scope() const;
-  const std::string & name() const;
+  const std::shared_ptr<ast::Identifier> & identifier() const;
+
+  bool hasArguments() const;
+  const std::vector<std::shared_ptr<program::Expression>> & arguments() const;
 
   enum ResultType {
     UnknownName,
@@ -86,6 +90,14 @@ public:
   NameLookup & operator=(const NameLookup &) = default;
 
   inline std::shared_ptr<NameLookupImpl> impl() const { return d; }
+
+protected:
+  compiler::AbstractExpressionCompiler * getCompiler();
+
+  bool checkBuiltinName();
+  void process();
+  void qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
+  void instantiate_function_template(const std::shared_ptr<ast::Identifier> & name);
 
 protected:
   std::shared_ptr<NameLookupImpl> d;

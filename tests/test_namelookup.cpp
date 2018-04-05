@@ -81,6 +81,10 @@ TEST(NameLookup, builtin_types) {
   lookup = NameLookup::resolve("double", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::TypeName);
   ASSERT_EQ(lookup.typeResult(), Type{ Type::Double });
+
+  lookup = NameLookup::resolve("auto", e.rootNamespace());
+  ASSERT_EQ(lookup.resultType(), NameLookup::TypeName);
+  ASSERT_EQ(lookup.typeResult(), Type{ Type::Auto });
 }
 
 
@@ -132,4 +136,33 @@ TEST(NameLookup, operators) {
   NameLookup lookup = NameLookup::resolve(Operator::AssignmentOperator, e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
   ASSERT_EQ(lookup.functions().size(), 5);
+}
+
+TEST(NameLookup, parsing_operator_name) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  // this is less interesting than passing directly the operator name 
+  // because it can be ambiguous (that is the case here)
+  NameLookup lookup = NameLookup::resolve("operator++", e.rootNamespace());
+  ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
+  ASSERT_EQ(lookup.functions().size(), 4);
+}
+
+TEST(NameLookup, parsing_nested_name) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace nested = e.rootNamespace().newNamespace("nested");
+  Value n = e.newInt(3);
+  e.manage(n);
+  nested.addValue("n", n);
+
+  NameLookup lookup = NameLookup::resolve("nested::n", e.rootNamespace());
+  ASSERT_EQ(lookup.resultType(), NameLookup::VariableName);
+  ASSERT_EQ(lookup.variable().toInt(), 3);
 }

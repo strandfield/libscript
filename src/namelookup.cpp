@@ -6,6 +6,8 @@
 #include "namelookup_p.h"
 #include "scope_p.h"
 
+#include "script/parser/parser.h"
+
 #include "script/compiler/expressioncompiler.h"
 #include "script/program/expression.h"
 
@@ -30,96 +32,21 @@ public:
 };
 
 
-static Scope find_scope(const std::shared_ptr<ast::Identifier> & name, const Scope & scope, const Scope & startScope)
-{
-  // this function returns a scope without any parent
-  // rational : when looking for A::B::C
-  // we don't want to find A::D in A::B
-
-  if (scope.isNull())
-    return Scope{};
-
-  Scope result;
-
-
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    const std::string & str = name->getName();
-    result = scope.child(str);
-  }
-  else if (name->is<ast::OperatorName>())
-    return Scope{};
-  else if (name->is<ast::ScopedIdentifier>())
-  {
-    const auto & scpid = name->as<ast::ScopedIdentifier>();
-    Scope leftScope = find_scope(scpid.lhs, scope, startScope);
-    return find_scope(scpid.rhs, leftScope, startScope);
-  }
-
-  if (!result.isNull())
-    return result;
-
-  return find_scope(name, scope.parent(), startScope);
-}
-
-static void resolve_routine(Engine *e, const std::shared_ptr<ast::Identifier> & name, const Scope & s, const Scope & startScope, NameLookupImpl *result)
-{
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    s.lookup(name->getName(), result);
-    return;
-  }
-  else if (name->is<ast::OperatorName>())
-  {
-    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-    const auto & ops = s.lookup(op);
-    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
-  }
-  else if (name->is<ast::ScopedIdentifier>())
-  {
-    const auto & scpid = name->as<ast::ScopedIdentifier>();
-    Scope leftScope = find_scope(scpid.lhs, s, startScope);
-    return resolve_routine(e, scpid.rhs, leftScope, startScope, result);
-  }
-  
-  if (!s.parent().isNull())
-    resolve_routine(e, name, s.parent(), startScope, result);
-}
-
 NameLookupImpl::NameLookupImpl()
   : dataMemberIndex(-1)
   , globalIndex(-1)
   , localIndex(-1)
   , captureIndex(-1)
+  , arguments(nullptr)
+  , compiler(nullptr)
 {
 
 }
 
-NameLookupImpl::NameLookupImpl(const Type & t)
-  : dataMemberIndex(-1)
-  , globalIndex(-1)
-  , localIndex(-1)
-  , captureIndex(-1)
+NameLookupImpl::~NameLookupImpl()
 {
-  this->typeResult = t;
-}
-
-NameLookupImpl::NameLookupImpl(const Class & cla)
-  : dataMemberIndex(-1)
-  , globalIndex(-1)
-  , localIndex(-1)
-  , captureIndex(-1)
-{
-  this->typeResult = cla.id();
-}
-
-NameLookupImpl::NameLookupImpl(const Function & f)
-  : dataMemberIndex(-1)
-  , globalIndex(-1)
-  , localIndex(-1)
-  , captureIndex(-1)
-{
-  this->functions.push_back(f);
+  this->compiler = nullptr;
+  this->arguments = nullptr;
 }
 
 
@@ -134,11 +61,20 @@ const Scope & NameLookup::scope() const
   return d->scope;
 }
 
-const std::string & NameLookup::name() const
+const std::shared_ptr<ast::Identifier> & NameLookup::identifier() const
 {
-  return d->name;
+  return d->identifier;
 }
 
+bool NameLookup::hasArguments() const
+{
+  return d->arguments != nullptr;
+}
+
+const std::vector<std::shared_ptr<program::Expression>> & NameLookup::arguments() const
+{
+  return *(d->arguments);
+}
 
 NameLookup::ResultType NameLookup::resultType() const
 {
@@ -219,61 +155,59 @@ const Namespace & NameLookup::namespaceResult() const
 
 NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scope)
 {
-  std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
+  auto result = std::make_shared<NameLookupImpl>();
+  result->identifier = name;
   result->scope = scope;
-  result->name = std::string{}; // we don't set any name in this overload, we do only so in a std::string overload
 
-  if (name->type() == ast::NodeType::SimpleIdentifier)
+  NameLookup l{ result };
+  l.process();
+  return l;
+}
+
+static bool need_parse(const std::string & name)
+{
+  for (const char & c : name)
   {
-    bool stop = true;
-    switch (name->name.type)
-    {
-    case parser::Token::Void:
-      result->typeResult = Type::Void;
-      break;
-    case parser::Token::Bool:
-      result->typeResult = Type::Boolean;
-      break;
-    case parser::Token::Char:
-      result->typeResult = Type::Char;
-      break;
-    case parser::Token::Int:
-      result->typeResult = Type::Int;
-      break;
-    case parser::Token::Float:
-      result->typeResult = Type::Float;
-      break;
-    case parser::Token::Double:
-      result->typeResult = Type::Double;
-      break;
-    case parser::Token::Auto:
-      result->typeResult = Type::Auto;
-      break;
-    default:
-      stop = false;
-      break;
-    }
-
-    if (stop)
-      return NameLookup{ result };
-
-    scope.lookup(name->getName(), result);
-    return NameLookup{ result };
+    const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_');
+    if (!ok)
+      return true;
   }
 
-  resolve_routine(scope.engine(), name, scope, scope, result.get());
-
-  return NameLookup{ result };
+  return false;
 }
 
 NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
 {
-  if (name.find("::") != std::string::npos || name.find("<") != std::string::npos) /// TODO : use the parser
-    throw std::runtime_error{ "Not implemented" }; 
+  if (need_parse(name))
+  {
+    /// TODO : make this whole block less ugly !!
+
+    auto source = SourceFile::fromString(name);
+    auto pdata = std::make_shared<parser::ParserData>(source);
+    pdata->mAst = std::make_shared<ast::AST>(source);
+    parser::ScriptFragment fragment{ pdata };
+    parser::IdentifierParser idp{ &fragment };
+    std::shared_ptr<ast::Identifier> id;
+    try
+    {
+      id = idp.parse();
+    }
+    catch (...)
+    {
+
+    }
+
+    if (!pdata->atEnd() || id == nullptr)
+      throw std::runtime_error{ "Could not fully parse identifier" };
+
+    auto result = NameLookup::resolve(id, scope);
+    // the AST is going to die here so the identifier will no longer be valid
+    result.impl()->identifier = nullptr;
+    return result;
+  }
 
   std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
   result->scope = scope;
-  result->name = name; 
 
   static const std::map<std::string, Type::BuiltInType> built_in_types = {
     { "void", Type::Void },
@@ -282,6 +216,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     { "int", Type::Int },
     { "float", Type::Float },
     { "double", Type::Double },
+    { "auto", Type::Auto },
   };
 
   auto it = built_in_types.find(name);
@@ -320,7 +255,7 @@ static Class instantiate_class_template(const Template & t, const std::shared_pt
 }
 
 
-static Function instantiate_function_template(const Template & t, std::vector<TemplateArgument> && args, const std::vector<Type> & input_types, compiler::AbstractExpressionCompiler *compiler)
+static Function instantiate_function_template_procedure(const Template & t, std::vector<TemplateArgument> && args, const std::vector<Type> & input_types, compiler::AbstractExpressionCompiler *compiler)
 {
   if (t.isClassTemplate())
     throw std::runtime_error{ "Name does not refer to a function template" };
@@ -334,103 +269,25 @@ static Function instantiate_function_template(const Template & t, std::vector<Te
   return instantiated;
 }
 
-static Function instantiate_function_template(const Template & t, const std::shared_ptr<ast::TemplateIdentifier> & name, const std::vector<Type> & input_types, compiler::AbstractExpressionCompiler *compiler)
+static Function instantiate_function_template_procedure(const Template & t, const std::shared_ptr<ast::TemplateIdentifier> & name, const std::vector<Type> & input_types, compiler::AbstractExpressionCompiler *compiler)
 {
   std::vector<TemplateArgument> args = compiler->generateTemplateArguments(name->arguments);
-  return instantiate_function_template(t, std::move(args), input_types, compiler);
+  return instantiate_function_template_procedure(t, std::move(args), input_types, compiler);
 }
 
-
-static NameLookup qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & s, compiler::AbstractExpressionCompiler *compiler)
+static Template qualified_template_lookup(const std::string & name, const Scope & scp)
 {
-  assert(!name->is<ast::ScopedIdentifier>());
-
-  ScopeParentGuard guard{ s };
-  s.impl()->parent = nullptr; // temporarily setting parent to nullptr
-
-  auto result = std::make_shared<NameLookupImpl>();
-
-  if (name->type() == ast::NodeType::SimpleIdentifier)
+  const auto & tmplts = scp.templates();
+  for (const auto & t : tmplts)
   {
-    s.lookup(name->getName(), result);
-  }
-  else if (name->is<ast::OperatorName>())
-  {
-    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-    const auto & ops = s.lookup(op);
-    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
-  }
-  else if (name->is<ast::TemplateIdentifier>())
-  {
-    const auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup lookup = qualified_lookup(fake_template_name, s, compiler);
-    if (lookup.templateResult().isNull())
-      throw std::runtime_error{ "Name does not refer to a template" };
-    Class cla = instantiate_class_template(lookup.templateResult(), tempid, compiler);
-    result->typeResult = cla.id();
+    if (t.name() == name)
+      return t;
   }
 
-  // we don't search in the scope' parent since this is a qualified lookup
-  return NameLookup{ result };
+  return Template{};
 }
-
-
-static NameLookup qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & s, const std::vector<Type> & input_types, compiler::AbstractExpressionCompiler *compiler)
-{
-  assert(!name->is<ast::ScopedIdentifier>());
-
-  ScopeParentGuard guard{ s };
-  s.impl()->parent = nullptr; // temporarily setting parent to nullptr
-
-  auto result = std::make_shared<NameLookupImpl>();
-
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    const std::string & n = name->getName();
-    s.lookup(n, result);
-
-
-    if (!result->templateResult.isNull())
-    {
-      std::vector<TemplateArgument> template_args;
-      Function f = instantiate_function_template(result->templateResult, std::move(template_args), input_types, compiler);
-      if (!f.isNull())
-      {
-        result->templateResult = Template{};
-        result->functions.push_back(f);
-      }
-    }
-  }
-  else if (name->is<ast::OperatorName>())
-  {
-    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
-    const auto & ops = s.lookup(op);
-    result->functions.insert(result->functions.end(), ops.begin(), ops.end());
-  }
-  else if (name->is<ast::TemplateIdentifier>())
-  {
-    auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = qualified_lookup(template_name, s, compiler);
-    if (tlookup.resultType() != NameLookup::TemplateName)
-      throw std::runtime_error{ "Not a template name" };
-
-    Template t = tlookup.templateResult();
-    Function f = instantiate_function_template(t, tempid, input_types, compiler);
-    if (f.isNull())
-      return NameLookup{ std::make_shared<NameLookupImpl>() };
-    return NameLookup{ std::make_shared<NameLookupImpl>(f) };
-  }
-
-  // we don't search in the scope' parent since this is a qualified lookup
-  return NameLookup{ result };
-}
-
 
 /// TODO : merge this function with the unqualified overload
-// qualified scope lookup can be achieved with the unqualified version 
-// because this function returns a Scope without any parent
 static Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope, compiler::AbstractExpressionCompiler *compiler)
 {
   assert(!name->is<ast::ScopedIdentifier>());
@@ -452,11 +309,10 @@ static Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & nam
   else if (name->is<ast::TemplateIdentifier>())
   {
     const auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup lookup = qualified_lookup(fake_template_name, scope, compiler);
-    if (lookup.templateResult().isNull())
+    Template t = qualified_template_lookup(tempid->getName(), scope);
+    if (t.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
-    return instantiate_class_template(lookup.templateResult(), tempid, compiler);
+    return instantiate_class_template(t, tempid, compiler);
   }
 
   return result;
@@ -479,11 +335,10 @@ static Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & n
   else if (name->is<ast::TemplateIdentifier>())
   {
     const auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup lookup = qualified_lookup(fake_template_name, scope, compiler);
-    if(lookup.templateResult().isNull())
+    Template t = qualified_template_lookup(tempid->getName(), scope);
+    if (t.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
-    return instantiate_class_template(lookup.templateResult(), tempid, compiler);
+    return instantiate_class_template(t, tempid, compiler);
   }
   else if (name->is<ast::ScopedIdentifier>())
   {
@@ -501,144 +356,28 @@ static Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & n
  
 NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, compiler::AbstractExpressionCompiler *compiler)
 {
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    Type t;
-    switch (name->name.type)
-    {
-    case parser::Token::Void:
-      t = Type::Void;
-      break;
-    case parser::Token::Bool:
-      t = Type::Boolean;
-      break;
-    case parser::Token::Char:
-      t = Type::Char;
-      break;
-    case parser::Token::Int:
-      t = Type::Int;
-      break;
-    case parser::Token::Float:
-      t = Type::Float;
-      break;
-    case parser::Token::Double:
-      t = Type::Double;
-      break;
-    case parser::Token::Auto:
-      t = Type::Auto;
-      break;
-    default:
-      break;
-    }
+  auto result = std::make_shared<NameLookupImpl>();
+  result->identifier = name;
+  result->compiler = compiler;
+  result->scope = compiler->currentScope();
 
-    if (!t.isNull())
-      return NameLookup{ std::make_shared<NameLookupImpl>(t) };
-  }
-
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    return compiler->currentScope().lookup(name->getName());
-  }
-  else if (name->type() == ast::NodeType::QualifiedIdentifier)
-  {
-    auto qualid = std::dynamic_pointer_cast<ast::ScopedIdentifier>(name);
-    Scope scp = unqualified_scope_lookup(qualid->lhs, compiler->currentScope(), compiler);
-    return qualified_lookup(qualid->rhs, scp, compiler);
-  }
-  else if (name->type() == ast::NodeType::TemplateIdentifier)
-  {
-    auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
-    if (tlookup.resultType() != NameLookup::TemplateName)
-      throw std::runtime_error{ "Not a template name" };
-
-    Template t = tlookup.templateResult();
-    Class cla = instantiate_class_template(t, tempid, compiler);
-    return NameLookup{ std::make_shared<NameLookupImpl>(cla) };
-  }
-
-  throw std::runtime_error{ "NameLookup::resolve() : not implemented" };
+  NameLookup l{ result };
+  l.process();
+  return l;
 }
 
 
 NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const std::vector<std::shared_ptr<program::Expression>> & args, compiler::AbstractExpressionCompiler *compiler)
 {
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    Type t;
-    switch (name->name.type)
-    {
-    case parser::Token::Void:
-      t = Type::Void;
-      break;
-    case parser::Token::Bool:
-      t = Type::Boolean;
-      break;
-    case parser::Token::Char:
-      t = Type::Char;
-      break;
-    case parser::Token::Int:
-      t = Type::Int;
-      break;
-    case parser::Token::Float:
-      t = Type::Float;
-      break;
-    case parser::Token::Double:
-      t = Type::Double;
-      break;
-    case parser::Token::Auto:
-      t = Type::Auto;
-      break;
-    default:
-      break;
-    }
+  auto result = std::make_shared<NameLookupImpl>();
+  result->identifier = name;
+  result->arguments = &args;
+  result->compiler = compiler;
+  result->scope = compiler->currentScope();
 
-    if (!t.isNull())
-      return NameLookup{ std::make_shared<NameLookupImpl>(t) };
-  }
-
-  std::vector<Type> input_types;
-  for (const auto & a : args)
-    input_types.push_back(a->type());
-
-  if (name->type() == ast::NodeType::SimpleIdentifier)
-  {
-    NameLookup lookup = compiler->currentScope().lookup(name->getName());
-    if (!lookup.templateResult().isNull())
-    {
-      std::vector<TemplateArgument> template_args;
-      Function f = instantiate_function_template(lookup.templateResult(), std::move(template_args), input_types, compiler);
-      if (!f.isNull())
-      {
-        lookup.impl()->templateResult = Template{};
-        lookup.impl()->functions.push_back(f);
-      }
-    }
-    return lookup;
-  }
-  else if (name->type() == ast::NodeType::QualifiedIdentifier)
-  {
-    auto qualid = std::dynamic_pointer_cast<ast::ScopedIdentifier>(name);
-    Scope scp = unqualified_scope_lookup(qualid->lhs, compiler->currentScope(), compiler);
-    return qualified_lookup(qualid->rhs, scp, input_types, compiler);
-  }
-  else if (name->type() == ast::NodeType::TemplateIdentifier)
-  {
-    auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
-    auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
-    if (tlookup.resultType() != NameLookup::TemplateName)
-      throw std::runtime_error{ "Not a template name" };
-
-    Template t = tlookup.templateResult();
-    Function f = instantiate_function_template(t, tempid, input_types, compiler);
-    if (f.isNull())
-      return NameLookup{ std::make_shared<NameLookupImpl>() };
-    return NameLookup{ std::make_shared<NameLookupImpl>(f) };
-  }
-  
-  throw std::runtime_error{ "Not implemented" };
+  NameLookup l{ result };
+  l.process();
+  return l;
 }
 
 
@@ -675,6 +414,159 @@ NameLookup NameLookup::member(const std::string & name, const Class & cla)
     return NameLookup{ result };
 
   return NameLookup::member(name, base);
+}
+
+compiler::AbstractExpressionCompiler * NameLookup::getCompiler()
+{
+  if (d->compiler != nullptr)
+    return d->compiler;
+
+  d->default_compiler_compiler = std::unique_ptr<compiler::Compiler>(new compiler::Compiler{ scope().engine() });
+  auto *c = new compiler::ExpressionCompiler{ d->default_compiler_compiler.get(), d->default_compiler_compiler->session() };
+  c->setScope(d->scope);
+  d->default_compiler = std::unique_ptr<compiler::AbstractExpressionCompiler>(c);
+  d->compiler = d->default_compiler.get();
+  return d->compiler;
+}
+
+bool NameLookup::checkBuiltinName()
+{
+  if (d->identifier->type() != ast::NodeType::SimpleIdentifier)
+    return false;
+
+  switch (d->identifier->name.type)
+  {
+  case parser::Token::Void:
+    d->typeResult = Type::Void;
+    return true;
+  case parser::Token::Bool:
+    d->typeResult = Type::Boolean;
+    return true;
+  case parser::Token::Char:
+    d->typeResult = Type::Char;
+    return true;
+  case parser::Token::Int:
+    d->typeResult = Type::Int;
+    return true;
+  case parser::Token::Float:
+    d->typeResult = Type::Float;
+    return true;
+  case parser::Token::Double:
+    d->typeResult = Type::Double;
+    return true;
+  case parser::Token::Auto:
+    d->typeResult = Type::Auto;
+    return true;
+  default:
+    break;
+  }
+
+  return false;
+}
+
+void NameLookup::process()
+{
+  if (checkBuiltinName())
+    return;
+
+  auto name = d->identifier;
+  auto compiler = getCompiler();
+  auto scope = d->scope;
+
+  if (name->type() == ast::NodeType::SimpleIdentifier)
+  {
+    scope.lookup(name->getName(), d.get());
+    instantiate_function_template(name);
+  }
+  else if (name->is<ast::OperatorName>())
+  {
+    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    const auto & ops = scope.lookup(op);
+    d->functions.insert(d->functions.end(), ops.begin(), ops.end());
+  }
+  else if (name->type() == ast::NodeType::QualifiedIdentifier)
+  {
+    auto qualid = std::dynamic_pointer_cast<ast::ScopedIdentifier>(name);
+    Scope scp = unqualified_scope_lookup(qualid->lhs, compiler->currentScope(), compiler);
+    return qualified_lookup(qualid->rhs, scp);
+  }
+  else if (name->type() == ast::NodeType::TemplateIdentifier)
+  {
+    auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
+    auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
+    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
+    if (tlookup.resultType() != NameLookup::TemplateName)
+      throw std::runtime_error{ "Not a template name" };
+
+    Template t = tlookup.templateResult();
+    Class cla = instantiate_class_template(t, tempid, compiler);
+    d->typeResult = cla.id();
+  }
+}
+
+void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & s)
+{
+  assert(!name->is<ast::ScopedIdentifier>());
+
+  ScopeParentGuard guard{ s };
+  s.impl()->parent = nullptr; // temporarily setting parent to nullptr
+
+  if (name->type() == ast::NodeType::SimpleIdentifier)
+  {
+    s.lookup(name->getName(), d.get());
+    instantiate_function_template(name);
+  }
+  else if (name->is<ast::OperatorName>())
+  {
+    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    const auto & ops = s.lookup(op);
+    d->functions.insert(d->functions.end(), ops.begin(), ops.end());
+  }
+  else if (name->is<ast::TemplateIdentifier>())
+  {
+    const auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
+    auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
+    qualified_lookup(fake_template_name, s);
+    if (d->templateResult.isNull())
+      throw std::runtime_error{ "Name does not refer to a template" };
+
+    if (d->templateResult.isClassTemplate())
+    {
+      Class cla = instantiate_class_template(d->templateResult, tempid, getCompiler());
+      d->templateResult = Template{};
+      d->typeResult = cla.id();
+    }
+    else if (d->templateResult.isFunctionTemplate())
+    {
+      instantiate_function_template(tempid);
+    }
+  }
+}
+
+void NameLookup::instantiate_function_template(const std::shared_ptr<ast::Identifier> & name)
+{
+  if (!hasArguments())
+    return;
+
+  if (d->templateResult.isNull())
+    return;
+
+  std::vector<Type> input_types;
+  for (const auto & a : arguments())
+    input_types.push_back(a->type());
+
+  std::vector<TemplateArgument> template_args;
+  if (name->is<ast::TemplateIdentifier>())
+  {
+    template_args = getCompiler()->generateTemplateArguments(name->as<ast::TemplateIdentifier>().arguments);
+  }
+
+  Function f = instantiate_function_template_procedure(d->templateResult, std::move(template_args), input_types, getCompiler());
+  if (!f.isNull())
+  {
+    d->templateResult = Template{};
+    d->functions.push_back(f);
+  }
 }
 
 } // namespace script

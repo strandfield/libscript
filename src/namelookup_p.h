@@ -16,8 +16,16 @@ class Class;
 class NameLookupImpl
 {
 public:
-  std::string name;
+  // user inputs
   Scope scope;
+  std::shared_ptr<ast::Identifier> identifier;
+  std::vector<std::shared_ptr<program::Expression>> const * arguments;
+  compiler::AbstractExpressionCompiler *compiler;
+  // 
+  std::unique_ptr<compiler::Compiler> default_compiler_compiler;
+  std::unique_ptr<compiler::AbstractExpressionCompiler> default_compiler; // used if none is provided
+
+  // storing results
   std::vector<Function> functions;
   Type typeResult;
   Value valueResult;
@@ -31,9 +39,7 @@ public:
 
 public:
   NameLookupImpl();
-  NameLookupImpl(const Type & t);
-  NameLookupImpl(const Class & cla);
-  NameLookupImpl(const Function & f);
+  ~NameLookupImpl();
 };
 
 } // namespace script
