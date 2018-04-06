@@ -9,7 +9,7 @@ namespace script
 {
 
 
-OperatorImpl::OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, uint8 flags)
+OperatorImpl::OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
   : FunctionImpl(proto, engine, flags)
   , operatorId(op)
 {

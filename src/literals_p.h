@@ -15,7 +15,7 @@ class LiteralOperatorImpl : public FunctionImpl
 public:
   std::string suffix;
 public:
-  LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, uint8 flags = 0);
+  LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~LiteralOperatorImpl() = default;
 
   std::string name() const override

@@ -8,7 +8,7 @@
 namespace script
 {
 
-LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, uint8 flags)
+LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
   : FunctionImpl(proto, engine, flags)
   , suffix(std::move(suffix))
 {

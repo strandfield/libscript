@@ -13,7 +13,7 @@ namespace script
 class CastImpl : public FunctionImpl
 {
 public:
-  CastImpl(const Prototype &p, Engine *e, uint8 f = 0);
+  CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   ~CastImpl() = default;
 
   std::string name() const override;

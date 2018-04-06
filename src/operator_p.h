@@ -17,7 +17,7 @@ class OperatorImpl : public FunctionImpl
 public:
   Operator::BuiltInOperator operatorId;
 public:
-  OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, uint8 flags = 0);
+  OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
 
   std::string name() const override

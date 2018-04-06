@@ -8,7 +8,7 @@
 namespace script
 {
 
-CastImpl::CastImpl(const Prototype &p, Engine *e, uint8 f)
+CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : FunctionImpl(p, e, f)
 {
 
