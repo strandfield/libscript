@@ -7,6 +7,9 @@
 
 #include "script/compiler/compilererrors.h"
 
+#include "script/compiler/assignmentcompiler.h"
+#include "script/compiler/constructorcompiler.h"
+#include "script/compiler/destructorcompiler.h"
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/ast/ast.h"
@@ -522,7 +525,7 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
     if (op.returnType() == Type::ref(op.memberOf().id())
       && op.prototype().argv(0) == Type::ref(op.memberOf().id())
       && op.prototype().argv(1) == Type::cref(op.memberOf().id()))
-      return generateAssignmentOperator();
+      return AssignmentCompiler{ this }.generateAssignmentOperator();
   }
 
   throw FunctionCannotBeDefaulted{ dpos(mDeclaration) };
@@ -543,150 +546,12 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateDefaultArgument(i
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructorHeader()
 {
-  /// TODO : refactor and disallow narrowing conversions when braceinitialization is used
-
-  auto ctor_decl = std::dynamic_pointer_cast<ast::ConstructorDecl>(declaration());
-
-  auto this_object = generateThisAccess();
-
-  std::vector<ast::MemberInitialization> initializers = ctor_decl->memberInitializationList;
-
-  std::shared_ptr<program::Statement> parent_ctor_call;
-  for (size_t i(0); i < initializers.size(); ++i)
-  {
-    const auto & minit = initializers.at(i);
-    NameLookup lookup = resolve(minit.name);
-    if (lookup.typeResult() == classScope().id()) // delegating constructor
-    {
-      if (initializers.size() != 1)
-        throw InvalidUseOfDelegatedConstructor{ dpos(minit.name) };
-
-      std::vector<std::shared_ptr<program::Expression>> args;
-      if (minit.init->is<ast::ConstructorInitialization>())
-        args = generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
-      else
-        args = generateExpressions(minit.init->as<ast::BraceInitialization>().args);
-      return program::CompoundStatement::New({ generateDelegateConstructorCall(args) });
-    }
-    else if (!classScope().parent().isNull() && lookup.typeResult() == classScope().parent().id()) // parent constructor call
-    {
-      std::vector<std::shared_ptr<program::Expression>> args;
-      if (minit.init->is<ast::ConstructorInitialization>())
-        args = generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
-      else
-        args = generateExpressions(minit.init->as<ast::BraceInitialization>().args);
-      parent_ctor_call = generateParentConstructorCall(args);
-
-      // removes m-initializer from list
-      std::swap(initializers.back(), initializers.at(i));
-      initializers.pop_back();
-      break;
-    }
-  }
-
-  if (parent_ctor_call == nullptr && !classScope().parent().isNull())
-  {
-    std::vector<std::shared_ptr<program::Expression>> args;
-    parent_ctor_call = generateParentConstructorCall(args);
-  }
-
-  // Initializating data members
-  const auto & data_members = classScope().dataMembers();
-  const int data_members_offset = classScope().attributesOffset();
-  std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
-  for (const auto & minit : initializers)
-  {
-    NameLookup lookup = resolve(minit.name);
-    if (lookup.resultType() != NameLookup::DataMemberName)
-      throw NotDataMember{ dpos(minit.name), dstr(minit.name) };
-
-    if (lookup.dataMemberIndex() - data_members_offset < 0)
-      throw InheritedDataMember{ dpos(minit.name), dstr(minit.name) };
-
-    assert(lookup.dataMemberIndex() - data_members_offset < static_cast<int>(members_initialization.size()));
-
-    const int index = lookup.dataMemberIndex() - data_members_offset;
-    if (members_initialization.at(index) != nullptr)
-      throw DataMemberAlreadyHasInitializer{ dpos(minit.name), dstr(minit.name) };
-
-    const auto & dm = data_members.at(index);
-
-    std::shared_ptr<program::Expression> member_value;
-    if (minit.init->is<ast::ConstructorInitialization>())
-      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init));
-    else 
-      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init));
-
-    members_initialization[index] = program::PushDataMember::New(member_value);
-  }
-
-  for (size_t i(0); i < members_initialization.size(); ++i)
-  {
-    if (members_initialization[i] != nullptr)
-      continue;
-
-    const auto & dm = data_members.at(i);
-
-    //std::shared_ptr<program::Expression> default_constructed_value = defaultConstructMember(dm.type, dm.name, dpos(ctor_decl));
-    std::shared_ptr<program::Expression> default_constructed_value = constructValue(dm.type, nullptr, dpos(ctor_decl));
-    members_initialization[i] = program::PushDataMember::New(default_constructed_value);
-  }
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-  auto init_object = program::InitObjectStatement::New(classScope().id());
-  statements.push_back(init_object);
-  if (parent_ctor_call)
-    statements.push_back(parent_ctor_call);
-  statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
-  return program::CompoundStatement::New(std::move(statements));
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateDelegateConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args)
-{
-  const std::vector<Function> & ctors = classScope().constructors();
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args))
-    throw NoDelegatingConstructorFound{};
-
-  auto object = program::StackValue::New(0, Type::ref(classScope().id()));
-  Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, ctor.prototype(), convs);
-  return program::PlacementStatement::New(object, ctor, std::move(args));
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateParentConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args)
-{
-  const std::vector<Function> & ctors = classScope().parent().constructors();
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args))
-    throw CouldNotFindValidBaseConstructor{};
-
-  auto object = program::StackValue::New(0, Type::ref(classScope().id()));
-  Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, ctor.prototype(), convs);
-  return program::PlacementStatement::New(object, ctor, std::move(args));
+  return ConstructorCompiler{ this }.generateHeader();
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDestructorFooter()
 {
-  std::vector<std::shared_ptr<program::Statement>> statements;
-
-  const auto & data_members = classScope().dataMembers();
-  for (int i(data_members.size() - 1); i >= 0; --i)
-    statements.push_back(program::PopDataMember::New(getDestructor(data_members.at(i).type)));
-
-  if (!classScope().parent().isNull())
-  {
-    /// TODO : check if dtor exists and is not deleted
-    auto this_object = generateThisAccess();
-    std::vector<std::shared_ptr<program::Expression>> args{ this_object };
-    auto dtor_call = program::FunctionCall::New(classScope().parent().destructor(), std::move(args));
-    statements.push_back(program::ExpressionStatement::New(dtor_call));
-  }
-
-  return program::CompoundStatement::New(std::move(statements));
+  return DestructorCompiler{ this }.generateFooter();
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDefaultConstructor()
@@ -696,231 +561,17 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDefaultCon
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCopyConstructor()
 {
-  auto this_object = generateThisAccess();
-  auto other_object = program::StackValue::New(1, mStack[1].type);
-
-  std::shared_ptr<program::Statement> parent_ctor_call;
-  if (!classScope().parent().isNull())
-  {
-    Function parent_copy_ctor = classScope().parent().copyConstructor();
-    if (parent_copy_ctor.isNull())
-      throw ParentHasNoCopyConstructor{};
-    else if (parent_copy_ctor.isDeleted())
-      throw ParentHasDeletedCopyConstructor{};
-
-    parent_ctor_call = program::PlacementStatement::New(this_object, parent_copy_ctor, { other_object });
-  }
-
-  // Initializating data members
-  const auto & data_members = classScope().dataMembers();
-  const int data_members_offset = classScope().attributesOffset();
-  std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
-  for (size_t i(0); i < data_members.size(); ++i)
-  {
-    const auto & dm = data_members.at(i);
-
-    const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
-
-    const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-    if (conv == ConversionSequence::NotConvertible())
-      throw DataMemberIsNotCopyable{};
-
-    members_initialization[i] = program::PushDataMember::New(prepareFunctionArgument(member_access, dm.type, conv));
-  }
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-  if (parent_ctor_call)
-    statements.push_back(parent_ctor_call);
-  else
-    statements.push_back(program::InitObjectStatement::New(classScope().id()));
-  statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
-  return program::CompoundStatement::New(std::move(statements));
+  return ConstructorCompiler{ this }.generateCopyConstructor();
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateMoveConstructor()
 {
-  auto this_object = generateThisAccess();
-  auto other_object = program::StackValue::New(1, mStack[1].type);
-
-  std::shared_ptr<program::Statement> parent_ctor_call;
-  if (!classScope().parent().isNull())
-  {
-    Function parent_move_ctor = classScope().parent().moveConstructor();
-    if (!parent_move_ctor.isNull())
-    {
-      if (parent_move_ctor.isDeleted())
-        throw ParentHasDeletedMoveConstructor{};
-      parent_ctor_call = program::PlacementStatement::New(this_object, parent_move_ctor, { other_object });
-    }
-    else
-    {
-      Function parent_copy_ctor = classScope().parent().copyConstructor();
-      if (parent_copy_ctor.isNull())
-        throw ParentHasNoCopyConstructor{};
-      else if (parent_copy_ctor.isDeleted())
-        throw ParentHasDeletedCopyConstructor{};
-
-      parent_ctor_call = program::PlacementStatement::New(this_object, parent_copy_ctor, { other_object });
-    }
-  }
-
-  // Initializating data members
-  const auto & data_members = classScope().dataMembers();
-  const int data_members_offset = classScope().attributesOffset();
-  std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
-  for (size_t i(0); i < data_members.size(); ++i)
-  {
-    const auto & dm = data_members.at(i);
-
-    const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
-    std::shared_ptr<program::Expression> member_value = nullptr;
-    if (dm.type.isReference())
-      member_value = member_access;
-    else
-    {
-      if (dm.type.isObjectType())
-      {
-        Function dm_move_ctor = engine()->getClass(dm.type).moveConstructor();
-        if (!dm_move_ctor.isNull())
-        {
-          if (dm_move_ctor.isDeleted())
-            throw DataMemberIsNotMovable{};
-          member_value = program::ConstructorCall::New(dm_move_ctor, { member_access });
-        }
-        else
-        {
-          Function dm_copy_ctor = engine()->getClass(dm.type).copyConstructor();
-          if(dm_copy_ctor.isNull() || dm_copy_ctor.isDeleted())
-            throw DataMemberIsNotMovable{};
-          member_value = program::ConstructorCall::New(dm_copy_ctor, { member_access });
-        }
-      }
-      else
-      {
-        const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-        if (conv == ConversionSequence::NotConvertible())
-          throw DataMemberIsNotCopyable{};
-
-        member_value = prepareFunctionArgument(member_access, dm.type, conv);
-      }
-    }
-
-    members_initialization[i] = program::PushDataMember::New(member_value);
-  }
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-  if (parent_ctor_call)
-    statements.push_back(parent_ctor_call);
-  else
-    statements.push_back(program::InitObjectStatement::New(classScope().id()));
-  statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
-  return program::CompoundStatement::New(std::move(statements));
+  return ConstructorCompiler{ this }.generateMoveConstructor();
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDestructor()
 {
   return generateDestructorFooter();
-}
-
-
-std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateAssignmentOperator()
-{
-  auto this_object = generateThisAccess();
-  auto other_object = program::StackValue::New(1, mStack[1].type);
-
-  std::shared_ptr<program::Statement> parent_assign_call;
-  if (!classScope().parent().isNull())
-  {
-    Operator parent_assign = findAssignmentOperator(classScope().parent().id());
-    if (parent_assign.isNull())
-      throw ParentHasNoAssignmentOperator{};
-    else if (parent_assign.isDeleted())
-      throw ParentHasDeletedAssignmentOperator{};
-
-    parent_assign_call = program::ExpressionStatement::New(program::FunctionCall::New(parent_assign, { this_object, other_object }));
-  }
-
-  // Assigns data members
-  const auto & data_members = classScope().dataMembers();
-  const int data_members_offset = classScope().attributesOffset();
-  std::vector<std::shared_ptr<program::Statement>> members_assign{ data_members.size(), nullptr };
-  for (size_t i(0); i < data_members.size(); ++i)
-  {
-    const auto & dm = data_members.at(i);
-    if (dm.type.isReference())
-      throw DataMemberIsReferenceAndCannotBeAssigned{};
-
-    Operator dm_assign = findAssignmentOperator(dm.type);
-    if (dm_assign.isNull())
-      throw DataMemberHasNoAssignmentOperator{};
-    else if (dm_assign.isDeleted())
-      throw DataMemberHasDeletedAssignmentOperator{};
-
-    auto fetch_this_member = program::MemberAccess::New(dm.type, this_object, i + data_members_offset);
-    auto fetch_other_member = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
-
-    auto assign = program::FunctionCall::New(dm_assign, { fetch_this_member, fetch_other_member });
-    members_assign[i] = program::ExpressionStatement::New(assign);
-  }
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-  if (parent_assign_call)
-    statements.push_back(parent_assign_call);
-  statements.insert(statements.end(), members_assign.begin(), members_assign.end());
-  statements.insert(statements.end(), program::ReturnStatement::New(this_object));
-  return program::CompoundStatement::New(std::move(statements));
-}
-
-bool FunctionCompiler::isAssignmentOperator(const Operator & op, const Type & t) const
-{
-  if (op.operatorId() != Operator::AssignmentOperator)
-    return false;
-
-  if (op.returnType() != Type::ref(t.baseType()))
-    return false;
-  if (op.firstOperand() != Type::ref(t.baseType()))
-    return false;
-  if (op.secondOperand() != Type::cref(t.baseType()))
-    return false;
-
-  return true;
-}
-
-Operator FunctionCompiler::findAssignmentOperator(const Type & t)
-{
-  if (t.isFundamentalType())
-  {
-    const auto & ops = engine()->rootNamespace().operators();
-    for (const auto & o : ops)
-    {
-      if (isAssignmentOperator(o, t))
-        return o;
-    }
-
-  }
-  else if (t.isEnumType())
-  {
-    return engine()->getEnum(t).getAssignmentOperator();
-  }
-  else if (t.isObjectType())
-  {
-    const auto & ops = engine()->getClass(t).operators();
-    for (const auto & o : ops)
-    {
-      if (isAssignmentOperator(o, t))
-        return o;
-    }
-  }
-
-  return Operator{};
-}
-
-
-Function FunctionCompiler::getDestructor(const Type & t)
-{
-  if (t.isObjectType())
-    return engine()->getClass(t).destructor();
-  return Function{};
 }
 
 std::shared_ptr<program::LambdaExpression> FunctionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)

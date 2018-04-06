@@ -150,20 +150,13 @@ protected:
   std::shared_ptr<program::Expression> generateDefaultArgument(int index);
 
   std::shared_ptr<program::CompoundStatement> generateConstructorHeader();
-  std::shared_ptr<program::Statement> generateDelegateConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args);
-  std::shared_ptr<program::Statement> generateParentConstructorCall(std::vector<std::shared_ptr<program::Expression>> & args);
 
   std::shared_ptr<program::CompoundStatement> generateDestructorFooter();
-  Function getDestructor(const Type & t);
 
   std::shared_ptr<program::CompoundStatement> generateDefaultConstructor();
   std::shared_ptr<program::CompoundStatement> generateCopyConstructor();
   std::shared_ptr<program::CompoundStatement> generateMoveConstructor();
   std::shared_ptr<program::CompoundStatement> generateDestructor();
-
-  std::shared_ptr<program::CompoundStatement> generateAssignmentOperator();
-  bool isAssignmentOperator(const Operator & op, const Type & t) const;
-  Operator findAssignmentOperator(const Type & t);
 
   std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;
   std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call) override;
@@ -193,6 +186,9 @@ protected:
 
 protected:
   friend class FunctionScope;
+  friend class AssignmentCompiler;
+  friend class ConstructorCompiler;
+  friend class DestructorCompiler;
 
   Script mScript;
 

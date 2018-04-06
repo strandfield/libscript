@@ -62,6 +62,7 @@ public:
   virtual Scope currentScope() const = 0;
 
 protected:
+  friend class ConstructorCompiler;
   friend class LambdaCompiler;
 
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
