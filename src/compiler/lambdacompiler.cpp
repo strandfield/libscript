@@ -41,6 +41,104 @@ LambdaCompiler::LambdaCompiler(Compiler *c, CompileSession *s)
 
 }
 
+void LambdaCompiler::preprocess(CompileLambdaTask & task, AbstractExpressionCompiler *c, const Stack & stack, int first_capture_offset)
+{
+  auto can_use_this = [&stack, first_capture_offset]() -> bool {
+    return stack.size > first_capture_offset && stack.at(first_capture_offset).name == "this";
+  };
+
+  // fetching all captures
+  const parser::Token capture_all_by_value = LambdaCompiler::captureAllByValue(*task.lexpr);
+  const parser::Token capture_all_by_reference = LambdaCompiler::captureAllByReference(*task.lexpr);
+  parser::Token catpure_this = LambdaCompiler::captureThis(*task.lexpr);
+  if (!catpure_this.isValid() && can_use_this())
+  {
+    if (capture_all_by_reference.isValid())
+      catpure_this = capture_all_by_reference;
+    else
+      catpure_this = capture_all_by_value;
+  }
+
+  if (capture_all_by_reference.isValid() && capture_all_by_value.isValid())
+    throw CannotCaptureByValueAndByRef{ dpos(capture_all_by_reference) };
+
+  std::vector<bool> capture_flags(stack.size, false);
+  std::vector<Capture> captures;
+
+  Class captured_class;
+  if (catpure_this.isValid())
+  {
+    if (!can_use_this())
+      throw CannotCaptureThis{ dpos(catpure_this) };
+
+    std::shared_ptr<program::Expression> this_object = program::StackValue::New(first_capture_offset, stack.at(first_capture_offset).type);
+    capture_flags[first_capture_offset] = true;
+
+    captures.push_back(Capture{ "this", this_object });
+    captured_class = c->engine()->getClass(this_object->type());
+  }
+
+  for (const auto & cap : task.lexpr->captures)
+  {
+    if (cap.byValueSign.isValid() || (cap.reference.isValid() && !cap.name.isValid()))
+      continue;
+
+    const auto & name = task.lexpr->captureName(cap);
+    std::shared_ptr<program::Expression> value;
+    if (cap.value != nullptr)
+      value = c->generateExpression(cap.value);
+    else
+    {
+      const int offset = stack.lastIndexOf(name);
+      if (offset == -1)
+        throw UnknownCaptureName{ dpos(cap.name) };
+      value = program::StackValue::New(offset, stack.at(offset).type);
+      if (!cap.reference.isValid())
+      {
+        StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+        if (conv == StandardConversion::NotConvertible())
+          throw CannotCaptureNonCopyable{ dpos(cap.name) };
+        value = c->applyStandardConversion(value, value->type().baseType(), conv);
+      }
+
+      capture_flags[offset] = true;
+    }
+
+    captures.push_back(Capture{ name, value });
+  }
+
+  /// TODO : what about the capture of this ?
+
+  if (capture_all_by_value.isValid())
+  {
+    for (int i(first_capture_offset); i < stack.size; ++i)
+    {
+      if (capture_flags[i])
+        continue;
+      std::shared_ptr<program::Expression> value = program::StackValue::New(i, stack.at(i).type);
+      StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+      if (conv == StandardConversion::NotConvertible())
+        throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
+      value = c->applyStandardConversion(value, value->type().baseType(), conv);
+      captures.push_back(Capture{ stack.at(i).name, value });
+    }
+  }
+  else if (capture_all_by_reference.isValid())
+  {
+    for (int i(first_capture_offset); i < stack.size; ++i)
+    {
+      if (capture_flags[i])
+        continue;
+      auto value = program::StackValue::New(i, stack.at(i).type);
+      captures.push_back(Capture{ stack.at(i).name, value });
+    }
+  }
+
+
+  task.captures = std::move(captures);
+  task.capturedObject = captured_class;
+}
+
 LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 {
   mCurrentTask = &task;

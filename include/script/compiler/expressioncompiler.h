@@ -62,6 +62,8 @@ public:
   virtual Scope currentScope() const = 0;
 
 protected:
+  friend class LambdaCompiler;
+
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
 
   struct OperatorLookupPolicy {

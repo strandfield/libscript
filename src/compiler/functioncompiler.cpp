@@ -925,99 +925,12 @@ Function FunctionCompiler::getDestructor(const Type & t)
 
 std::shared_ptr<program::LambdaExpression> FunctionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)
 {
-  // fetching all captures
-  const parser::Token capture_all_by_value = LambdaCompiler::captureAllByValue(*lambda_expr);
-  const parser::Token capture_all_by_reference = LambdaCompiler::captureAllByReference(*lambda_expr);
-  parser::Token catpure_this = LambdaCompiler::captureThis(*lambda_expr);
-  if (!catpure_this.isValid() && canUseThis())
-  {
-    if (capture_all_by_reference.isValid())
-      catpure_this = capture_all_by_reference;
-    else 
-      catpure_this = capture_all_by_value;
-  }
-
-  if (capture_all_by_reference.isValid() && capture_all_by_value.isValid())
-    throw CannotCaptureByValueAndByRef{ dpos(capture_all_by_reference) };
-
-  std::vector<bool> capture_flags(mStack.size, false);
-  capture_flags[0] = true; // this or return value
-  std::vector<Capture> captures;
-
-  const int first_capture_offset = catpure_this.isValid() ? 1 : 0;
-  Class captured_class;
-  if (catpure_this.isValid())
-  {
-    if (!canUseThis())
-      throw CannotCaptureThis{ dpos(catpure_this) };
-
-    std::shared_ptr<program::Expression> this_object = generateThisAccess();
-
-    captures.push_back(Capture{ "this", this_object });
-    captured_class = engine()->getClass(this_object->type());
-  }
-
-  for (const auto & cap : lambda_expr->captures)
-  {
-    if (cap.byValueSign.isValid() || (cap.reference.isValid() && !cap.name.isValid()))
-      continue;
-
-    const auto & name = lambda_expr->captureName(cap);
-    std::shared_ptr<program::Expression> value;
-    if (cap.value != nullptr)
-      value = generateExpression(cap.value);
-    else
-    {
-      const int offset = mStack.lastIndexOf(name);
-      if (offset == -1)
-        throw UnknownCaptureName{ dpos(cap.name) };
-      value = program::StackValue::New(offset, mStack.at(offset).type);
-      if (!cap.reference.isValid())
-      {
-        StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), engine());
-        if (conv == StandardConversion::NotConvertible())
-          throw CannotCaptureNonCopyable{ dpos(cap.name) };
-        value = applyStandardConversion(value, value->type().baseType(), conv);
-      }
-
-      capture_flags[offset] = true;
-    }
-
-    captures.push_back(Capture{ name, value });
-  }
-
-  /// TODO : what about the capture of this ?
-
-  if (capture_all_by_value.isValid())
-  {
-    for (int i(1 + first_capture_offset); i < mStack.size; ++i)
-    {
-      if (capture_flags[i])
-        continue;
-      std::shared_ptr<program::Expression> value = program::StackValue::New(i, mStack.at(i).type);
-      StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), engine());
-      if (conv == StandardConversion::NotConvertible())
-        throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
-      value = applyStandardConversion(value, value->type().baseType(), conv);
-      captures.push_back(Capture{ mStack.at(i).name, value });
-    }
-  }
-  else if (capture_all_by_reference.isValid())
-  {
-    for (int i(1 + first_capture_offset); i < mStack.size; ++i)
-    {
-      if (capture_flags[i])
-        continue;
-      auto value = program::StackValue::New(i, mStack.at(i).type);
-      captures.push_back(Capture{ mStack.at(i).name, value });
-    }
-  }
-
   CompileLambdaTask task;
   task.lexpr = lambda_expr;
-  task.capturedObject = captured_class;
   task.scope = currentScope();
-  task.captures = std::move(captures);
+
+  const int first_capturable = mFunction.isDestructor() || mFunction.isConstructor() ? 0 : 1;
+  LambdaCompiler::preprocess(task, this, mStack, first_capturable);
 
   std::shared_ptr<LambdaCompiler> compiler{ getComponent<LambdaCompiler>() };
   LambdaCompilationResult result = compiler->compile(task);

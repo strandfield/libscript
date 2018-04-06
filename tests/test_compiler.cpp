@@ -445,7 +445,6 @@ TEST(CompilerTests, lambda_capture_all_by_value) {
   ASSERT_EQ(y.toInt(), 57);
 }
 
-
 TEST(CompilerTests, lambda_capture_all_by_ref) {
   using namespace script;
 
@@ -476,6 +475,44 @@ TEST(CompilerTests, lambda_capture_all_by_ref) {
   Value y = s.globals().back();
   ASSERT_EQ(y.type(), Type::Int);
   ASSERT_EQ(y.toInt(), 57);
+}
+
+TEST(CompilerTests, lambda_capture_all_by_value_and_one_by_ref) {
+  using namespace script;
+
+  const char *source =
+    " int x = 1;                                         "
+    " int y = 2;                                         "
+    " int z = 3;                                         "
+    " auto f = [=, &z](){ z = z + x + y; y = y + 1; };   "
+    " f();                                               ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+  ASSERT_EQ(s.globalNames().size(), 4);
+
+  ASSERT_EQ(s.globals().size(), 0);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 4);
+
+  Value x = s.globals().front();
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 1);
+
+  Value y = s.globals().at(1);
+  ASSERT_EQ(y.type(), Type::Int);
+  ASSERT_EQ(y.toInt(), 2);
+
+  Value z = s.globals().at(2);
+  ASSERT_EQ(z.type(), Type::Int);
+  ASSERT_EQ(z.toInt(), 6);
 }
 
 TEST(CompilerTests, operator_overload) {

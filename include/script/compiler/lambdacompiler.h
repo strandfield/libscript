@@ -58,6 +58,8 @@ class LambdaCompiler : public FunctionCompiler
 public:
   LambdaCompiler(Compiler *c, CompileSession *s);
 
+  static void preprocess(CompileLambdaTask & task, AbstractExpressionCompiler *c, const Stack & stack, int first_capture_offset);
+
   LambdaCompilationResult compile(const CompileLambdaTask & task);
   const CompileLambdaTask & task() const;
 
