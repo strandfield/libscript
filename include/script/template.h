@@ -40,6 +40,7 @@ struct LIBSCRIPT_API TemplateArgument
   static TemplateArgument make(bool val);
 };
 
+// implements operator< for template arguments
 struct TemplateArgumentComparison
 {
   static int compare(const TemplateArgument & a, const TemplateArgument & b);

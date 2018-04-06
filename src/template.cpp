@@ -118,10 +118,10 @@ bool TemplateArgumentComparison::operator()(const std::vector<TemplateArgument> 
   {
     const int c = compare(a.at(i), b.at(i));
     if (c != 0)
-      return c;
+      return c < 0;
   }
 
-  return 0;
+  return false; // a == b
 }
 
 
