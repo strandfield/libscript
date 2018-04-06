@@ -13,6 +13,7 @@
 #include "script/class.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
+#include "script/functionbuilder.h"
 #include "script/sourcefile.h"
 #include "script/types.h"
 
@@ -246,6 +247,67 @@ TEST(CoreUtilsTests, array_creation) {
 
   Array b = e.newArray(Engine::ArrayType{ array_int });
   ASSERT_EQ(b.typeId(), a.typeId());
+}
+
+TEST(CoreUtilsTests, function_builder) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace root = e.rootNamespace();
+  Class A = root.newClass(ClassBuilder::New("A"));
+
+  Function foo = A.Method("foo").create();
+  ASSERT_EQ(foo.name(), "foo");
+  ASSERT_TRUE(foo.isMemberFunction());
+  ASSERT_EQ(foo.memberOf(), A);
+  ASSERT_EQ(A.memberFunctions().size(), 1);
+  ASSERT_EQ(foo.returnType(), Type::Void);
+  ASSERT_EQ(foo.prototype().argc(), 1);
+  ASSERT_TRUE(foo.prototype().argv(0).testFlag(Type::ThisFlag));
+
+  Function bar = A.Method("bar").setConst().create();
+  ASSERT_EQ(bar.name(), "bar");
+  ASSERT_EQ(A.memberFunctions().size(), 2);
+  ASSERT_TRUE(bar.isConst());
+
+  foo = root.Function("foo").returns(Type::Int).params(Type::Int, Type::Boolean).create();
+  ASSERT_EQ(foo.name(), "foo");
+  ASSERT_FALSE(foo.isMemberFunction());
+  ASSERT_EQ(root.functions().size(), 1);
+  ASSERT_EQ(foo.returnType(), Type::Int);
+  ASSERT_EQ(foo.prototype().argc(), 2);
+  ASSERT_EQ(foo.prototype().argv(0), Type::Int);
+  ASSERT_EQ(foo.prototype().argv(1), Type::Boolean);
+
+  Operator assign = A.Operation(Operator::AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().create().toOperator();
+  ASSERT_EQ(assign.operatorId(), Operator::AssignmentOperator);
+  ASSERT_TRUE(assign.isMemberFunction());
+  ASSERT_EQ(assign.memberOf(), A);
+  ASSERT_EQ(A.operators().size(), 1);
+  ASSERT_EQ(assign.returnType(), Type::ref(A.id()));
+  ASSERT_EQ(assign.prototype().argc(), 2);
+  ASSERT_EQ(assign.prototype().argv(0), Type::ref(A.id()));
+  ASSERT_EQ(assign.prototype().argv(1), Type::cref(A.id()));
+  ASSERT_TRUE(assign.isDeleted());
+
+  Namespace ops = root.newNamespace("ops");
+  assign = ops.Operation(Operator::AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).create().toOperator();
+  ASSERT_EQ(assign.operatorId(), Operator::AdditionOperator);
+  ASSERT_FALSE(assign.isMemberFunction());
+  ASSERT_EQ(ops.operators().size(), 1);
+  ASSERT_EQ(assign.returnType(), A.id());
+  ASSERT_EQ(assign.prototype().argc(), 2);
+  ASSERT_EQ(assign.prototype().argv(0), Type::cref(A.id()));
+  ASSERT_EQ(assign.prototype().argv(1), Type::cref(A.id()));
+
+  Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
+  ASSERT_EQ(to_int.destType(), Type::Int);
+  ASSERT_EQ(to_int.sourceType(), Type::cref(A.id()));
+  ASSERT_TRUE(to_int.isMemberFunction());
+  ASSERT_EQ(to_int.memberOf(), A);
+  ASSERT_EQ(A.casts().size(), 1);
 }
 
 

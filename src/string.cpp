@@ -375,86 +375,38 @@ void register_string_type(Class string)
     .addParam(Type::cref(string.id()));
   string.newConstructor(fb);
 
-  fb = FunctionBuilder::Constructor(string, callbacks::string::char_ctor)
+  fb = FunctionBuilder::Constructor(string, callbacks::string::char_ctor).setExplicit()
     .addParam(Type::Char);
   string.newConstructor(fb);
 
   string.newDestructor(callbacks::string::dtor);
 
-  fb = FunctionBuilder::Method(string, "at", callbacks::string::at)
-    .setConst()
-    .setReturnType(Type::Char)
-    .addParam(Type::Int);
-  string.newMethod(fb);
+  string.Method("at", callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  string.Method("capacity", callbacks::string::capacity).setConst().returns(Type::Int).create();
+  string.Method("clear", callbacks::string::clear).create();
+  string.Method("empty", callbacks::string::empty).setConst().returns(Type::Boolean).create();
+  string.Method("erase", callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
+  string.Method("insert", callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
+  string.Method("length", callbacks::string::length).setConst().returns(Type::Int).create();
+  string.Method("size", callbacks::string::length).setConst().returns(Type::Int).create();
+  string.Method("replace", callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
+  string.Method("swap", callbacks::string::swap).params(Type::ref(string.id())).create();
 
-  fb = FunctionBuilder::Method(string, "capacity", callbacks::string::capacity)
-    .setConst()
-    .setReturnType(Type::Int);
-  string.newMethod(fb);
+  string.Operation(Operator::EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(Operator::InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(Operator::GreaterOperator, callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(Operator::GreaterEqualOperator, callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(Operator::LessOperator, callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(Operator::LessEqualOperator, callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
 
-  fb = FunctionBuilder::Method(string, "clear", callbacks::string::clear);
-  string.newMethod(fb);
+  string.Operation(Operator::AssignmentOperator, callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
 
-  fb = FunctionBuilder::Method(string, "empty", callbacks::string::empty)
-    .setConst()
-    .setReturnType(Type::Boolean);
-  string.newMethod(fb);
+  string.Operation(Operator::AdditionOperator, callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
 
-  fb = FunctionBuilder::Method(string, "erase", callbacks::string::erase)
-    .setReturnType(Type::ref(string.id()))
-    .addParam(Type::Int).addParam(Type::Int);
-  string.newMethod(fb);
+  string.Operation(Operator::SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
 
-  fb = FunctionBuilder::Method(string, "insert", callbacks::string::insert)
-    .setReturnType(Type::ref(string.id()))
-    .addParam(Type::Int).addParam(Type::cref(string.id()));
-  string.newMethod(fb);
-
-  fb = FunctionBuilder::Method(string, "length", callbacks::string::length)
-    .setConst()
-    .setReturnType(Type::Int);
-  string.newMethod(fb);
-
-  fb = FunctionBuilder::Method(string, "size", callbacks::string::length)
-    .setConst()
-    .setReturnType(Type::Int);
-  string.newMethod(fb);
-
-  fb = FunctionBuilder::Method(string, "insert", callbacks::string::insert)
-    .setReturnType(Type::ref(string.id()))
-    .addParam(Type::Int).addParam(Type::Int).addParam(Type::cref(string.id()));
-  string.newMethod(fb);
-  
-  fb = FunctionBuilder::Method(string, "swap", callbacks::string::swap)
-    .addParam(Type::ref(string.id()));
-  string.newMethod(fb);
-
-  fb = FunctionBuilder::Operator(Operator::EqualOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::eq);
-  string.newOperator(fb);
-  fb = FunctionBuilder::Operator(Operator::InequalOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::neq);
-  string.newOperator(fb);
-  fb = FunctionBuilder::Operator(Operator::GreaterOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::greater);
-  string.newOperator(fb);
-  fb = FunctionBuilder::Operator(Operator::GreaterEqualOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::geq);
-  string.newOperator(fb);
-  fb = FunctionBuilder::Operator(Operator::LessOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::less);
-  string.newOperator(fb);
-  fb = FunctionBuilder::Operator(Operator::LessEqualOperator, Type::Boolean, Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::leq);
-  string.newOperator(fb);
-
-  fb = FunctionBuilder::Operator(Operator::AssignmentOperator, Type::ref(string.id()), Type::ref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::assign);
-  string.newOperator(fb);
-
-  fb = FunctionBuilder::Operator(Operator::AdditionOperator, Type(string.id()), Type::cref(string.id() | Type::ThisFlag), Type::cref(string.id()), callbacks::string::operators::add);
-  string.newOperator(fb);
-
-  fb = FunctionBuilder::Operator(Operator::SubscriptOperator, Type::Char, Type::cref(string.id() | Type::ThisFlag), Type::Int, callbacks::string::at);
-  string.newOperator(fb);
-
-  Type charref = register_charref_type(string.engine());
-
-  fb = FunctionBuilder::Operator(Operator::SubscriptOperator, charref, Type::ref(string.id() | Type::ThisFlag), Type::Int, callbacks::string::operators::subscript);
-  string.newOperator(fb);
+  const Type charref = register_charref_type(string.engine());
+  string.Operation(Operator::SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
 }
 
 } // namespace script

@@ -4,17 +4,71 @@
 
 #include "script/functionbuilder.h"
 
+#include "script/class.h"
+#include "class_p.h"
+#include "script/engine.h"
+#include "script/namespace.h"
+#include "namespace_p.h"
+
 namespace script
 {
 
 FunctionBuilder::FunctionBuilder(Function::Kind k)
   : callback(nullptr)
+  , engine(nullptr)
   , kind(k)
   , flags(0)
   , operation(Operator::Null)
 {
 
 }
+
+FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
+  : callback(nullptr)
+  , engine(cla.engine())
+  , special(cla)
+  , kind(k)
+  , flags(0)
+  , operation(Operator::Null)
+{
+  this->proto.setReturnType(Type::Void);
+  this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+}
+
+FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)
+  : callback(nullptr)
+  , engine(cla.engine())
+  , special(cla)
+  , kind(Function::OperatorFunction)
+  , flags(0)
+  , operation(op)
+{
+  this->proto.setReturnType(Type::Void);
+  this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+}
+
+FunctionBuilder::FunctionBuilder(Namespace ns)
+  : callback(nullptr)
+  , engine(ns.engine())
+  , namespace_scope(ns)
+  , kind(Function::StandardFunction)
+  , flags(0)
+  , operation(Operator::Null)
+{
+
+}
+
+FunctionBuilder::FunctionBuilder(Namespace ns, Operator::BuiltInOperator op)
+  : callback(nullptr)
+  , engine(ns.engine())
+  , namespace_scope(ns)
+  , kind(Function::OperatorFunction)
+  , flags(0)
+  , operation(op)
+{
+
+}
+
 
 FunctionBuilder FunctionBuilder::Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl)
 {
@@ -188,5 +242,54 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
   return *(this);
 }
 
+script::Function FunctionBuilder::create()
+{
+  if (this->engine == nullptr)
+    throw std::runtime_error{ "FunctionBuilder::create() : null engine" };
+
+  if (is_member_function())
+  {
+    Class cla = member_of();
+    script::Function f = this->engine->newFunction(*this);
+    if (f.isOperator())
+      cla.implementation()->operators.push_back(f.toOperator());
+    else if (f.isCast())
+      cla.implementation()->casts.push_back(f.toCast());
+    else if (f.isConstructor())
+      cla.implementation()->registerConstructor(f);
+    else if (f.isDestructor())
+      cla.implementation()->destructor = f;
+    else
+      cla.implementation()->register_function(f);
+    return f;
+  }
+  else if (!this->namespace_scope.isNull())
+  {
+    Namespace ns = this->namespace_scope;
+    script::Function f = this->engine->newFunction(*this);
+    if (f.isOperator())
+      ns.implementation()->operators.push_back(f.toOperator());
+    else if (f.isLiteralOperator())
+      ns.implementation()->literal_operators.push_back(f.toLiteralOperator());
+    else
+      ns.implementation()->functions.push_back(f);
+    return f;
+  }
+
+  throw std::runtime_error{ "FunctionBuilder::create() : not implemented" };
+}
+
+bool FunctionBuilder::is_member_function() const
+{
+  return this->special.isNull() == false || (this->proto.argc() > 0 && this->proto.argv(0).testFlag(Type::ThisFlag));
+}
+
+Class FunctionBuilder::member_of() const
+{
+  if (!this->special.isNull())
+    return this->special;
+
+  return this->engine->getClass(this->proto.argv(0));
+}
 
 } // namespace script

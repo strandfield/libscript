@@ -9,6 +9,7 @@
 #include "script/operator.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/namespace.h"
 
 namespace script
 {
@@ -16,14 +17,22 @@ namespace script
 class LIBSCRIPT_API FunctionBuilder
 {
 public:
+  Engine *engine;
   NativeFunctionSignature callback;
   Function::Kind kind;
   std::string name;
   Prototype proto;
   int flags;
+  Namespace namespace_scope;
   Class special;
   Operator::BuiltInOperator operation;
   std::shared_ptr<UserData> data;
+
+public:
+  FunctionBuilder(Class cla, Function::Kind k);
+  FunctionBuilder(Class cla, Operator::BuiltInOperator op);
+  FunctionBuilder(Namespace ns);
+  FunctionBuilder(Namespace ns, Operator::BuiltInOperator op);
 
   static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Constructor(const Class & cla, Prototype proto, NativeFunctionSignature impl = nullptr);
@@ -33,8 +42,8 @@ public:
 
   static FunctionBuilder Operator(Operator::BuiltInOperator op);
   static FunctionBuilder Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl = nullptr);
-  static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, NativeFunctionSignature impl = nullptr);
-  static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, const Type & b, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, const Type & b, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl = nullptr);
 
   static FunctionBuilder Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl = nullptr);
@@ -51,11 +60,25 @@ public:
   FunctionBuilder & setData(const std::shared_ptr<UserData> & data);
 
   FunctionBuilder & setReturnType(const Type & t);
+  inline FunctionBuilder & returns(const Type & t) { return setReturnType(t); }
+
   FunctionBuilder & addParam(const Type & t);
+  inline FunctionBuilder & params(const Type & arg) { return addParam(arg); }
+
+  template<typename...Args>
+  FunctionBuilder & params(const Type & arg, const Args &... args)
+  {
+    addParam(arg);
+    return params(args...);
+  }
+
+  script::Function create();
 
 protected:
   FunctionBuilder(Function::Kind k);
 
+  bool is_member_function() const;
+  Class member_of() const;
 };
 
 } // namespace script

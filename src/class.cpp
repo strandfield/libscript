@@ -380,6 +380,29 @@ Cast Class::newCast(const FunctionBuilder & builder)
   return cast;
 }
 
+FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, Function::StandardFunction };
+  builder.name = name;
+  builder.callback = func;
+  return builder;
+}
+
+FunctionBuilder Class::Operation(Operator::BuiltInOperator op, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, op };
+  builder.callback = func;
+  return builder;
+}
+
+FunctionBuilder Class::Conversion(const Type & dest, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, Function::CastFunction };
+  builder.callback = func;
+  builder.returns(dest);
+  return builder;
+}
+
 void Class::addStaticDataMember(const std::string & name, const Value & value)
 {
   StaticDataMember sdm{ name, value };

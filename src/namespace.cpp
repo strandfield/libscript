@@ -56,7 +56,7 @@ Enum Namespace::newEnum(const std::string & name)
 
 Function Namespace::newFunction(const FunctionBuilder & opts)
 {
-  Function f = engine()->newFunction(opts);
+  script::Function f = engine()->newFunction(opts);
   if (f.isOperator())
     d->operators.push_back(f.toOperator());
   else if (f.isCast() || f.isMemberFunction() || f.isConstructor() || f.isDestructor())
@@ -169,9 +169,9 @@ Namespace Namespace::findNamespace(const std::string & name) const
   return Namespace{};
 }
 
-std::vector<Function> Namespace::findFunctions(const std::string & name) const
+std::vector<script::Function> Namespace::findFunctions(const std::string & name) const
 {
-  std::vector<Function> ret;
+  std::vector<script::Function> ret;
   for (const auto & f : d->functions)
   {
     if (f.name() == name)
@@ -179,6 +179,21 @@ std::vector<Function> Namespace::findFunctions(const std::string & name) const
   }
 
   return ret;
+}
+
+FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this };
+  builder.name = name;
+  builder.callback = func;
+  return builder;
+}
+
+FunctionBuilder Namespace::Operation(Operator::BuiltInOperator op, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, op };
+  builder.callback = func;
+  return builder;
 }
 
 Engine * Namespace::engine() const

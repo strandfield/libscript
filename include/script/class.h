@@ -7,6 +7,7 @@
 
 #include "libscriptdefs.h"
 #include "function.h"
+#include "operator.h"
 
 #include <map>
 
@@ -91,6 +92,10 @@ public:
 
   Operator newOperator(const FunctionBuilder & builder);
   Cast newCast(const FunctionBuilder & builder);
+
+  FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }

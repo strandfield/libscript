@@ -58,6 +58,9 @@ public:
   Namespace findNamespace(const std::string & name) const;
   std::vector<Function> findFunctions(const std::string & name) const;
 
+  FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
+
   Engine * engine() const;
   NamespaceImpl * implementation() const;
   std::weak_ptr<NamespaceImpl> weakref() const;
