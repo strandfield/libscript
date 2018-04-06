@@ -328,21 +328,35 @@ Value Engine::newString(const String & sval)
   return v;
 }
 
-Array Engine::newArray(const Type & valueType)
+Array Engine::newArray(ArrayType array_type)
+{
+  Class array_class = getClass(array_type.type);
+  auto data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
+  auto impl = std::make_shared<ArrayImpl>(data->data, this);
+  return Array{ impl };
+}
+
+Array Engine::newArray(ElementType element_type)
+{
+  ClassTemplate array = d->templates.array.asClassTemplate();
+  Class array_class = array.getInstance({ TemplateArgument::make(element_type.type.baseType()) });
+  auto data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
+  auto impl = std::make_shared<ArrayImpl>(data->data, this);
+  return Array{ impl };
+}
+
+const Engine::fail_if_not_instantiated_t Engine::FailIfNotInstantiated;
+
+Array Engine::newArray(ElementType element_type, fail_if_not_instantiated_t)
 {
   ClassTemplate array = d->templates.array.asClassTemplate();
   Class arrayClass;
-  if (array.hasInstance({ TemplateArgument::make(valueType.baseType()) }, &arrayClass))
-  {
-    auto data = std::dynamic_pointer_cast<SharedArrayData>(arrayClass.data());
-    auto impl = std::make_shared<ArrayImpl>(data->data, this);
-    return Array{ impl };
-  }
-  else
-  {
-    // TODO : should we instantiate the type
+  if (!array.hasInstance({ TemplateArgument::make(element_type.type.baseType()) }, &arrayClass))
     throw std::runtime_error{ "No array of that type" };
-  }
+
+  auto data = std::dynamic_pointer_cast<SharedArrayData>(arrayClass.data());
+  auto impl = std::make_shared<ArrayImpl>(data->data, this);
+  return Array{ impl };
 }
 
 static Value default_construct_fundamental(int type, Engine *e)

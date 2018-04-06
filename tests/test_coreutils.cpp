@@ -9,6 +9,7 @@
 
 #include "script/engine.h"
 
+#include "script/array.h"
 #include "script/class.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
@@ -229,5 +230,22 @@ TEST(CoreUtilsTests, scopes) {
   ASSERT_TRUE(s.isNull());
 }
 
+TEST(CoreUtilsTests, array_creation) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Array a = e.newArray(Engine::ElementType{ Type::Int });
+  ASSERT_EQ(a.elementTypeId(), Type::Int);
+  ASSERT_EQ(a.size(), 0);
+  
+  Type array_int = a.typeId();
+
+  ASSERT_ANY_THROW(e.newArray(Engine::ElementType{ Type::Float }, Engine::FailIfNotInstantiated));
+
+  Array b = e.newArray(Engine::ArrayType{ array_int });
+  ASSERT_EQ(b.typeId(), a.typeId());
+}
 
 

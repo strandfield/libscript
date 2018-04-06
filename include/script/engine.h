@@ -54,7 +54,13 @@ public:
   Value newDouble(double dval);
   Value newString(const String & sval);
   
-  Array newArray(const Type & valueType);
+  struct ArrayType { Type type; };
+  struct ElementType { Type type; };
+  struct fail_if_not_instantiated_t {};
+  static const fail_if_not_instantiated_t FailIfNotInstantiated;
+  Array newArray(ArrayType t);
+  Array newArray(ElementType t);
+  Array newArray(ElementType t, fail_if_not_instantiated_t);
 
   Value construct(Type t, const std::vector<Value> & args);
 
