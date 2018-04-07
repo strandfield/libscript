@@ -64,6 +64,7 @@ enum class LIBSCRIPT_API NodeType {
   ConstructorInitialization,
   BraceInitialization,
   AssignmentInitialization,
+  Typedef,
 };
 
 class LIBSCRIPT_API Node
@@ -1059,9 +1060,26 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return parser::Lexer::position(this->leftBracket); }
-
 };
 
+class LIBSCRIPT_API Typedef : public Declaration
+{
+public:
+  parser::Token typedef_token;
+  QualifiedType qualified_type;
+  std::shared_ptr<ast::Identifier> name;
+
+public:
+  Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n);
+  ~Typedef() = default;
+
+  static std::shared_ptr<Typedef> New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n);
+
+  static const NodeType type_code = NodeType::Typedef;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return name->pos(); }
+};
 
 } // namespace ast
 

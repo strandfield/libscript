@@ -674,6 +674,21 @@ std::shared_ptr<LambdaExpression> LambdaExpression::New(std::shared_ptr<AST> a, 
   return std::make_shared<LambdaExpression>(a, lb);
 }
 
+
+Typedef::Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n)
+  : typedef_token(typedef_tok)
+  , qualified_type(qtype)
+  , name(n)
+{
+
+}
+
+std::shared_ptr<Typedef> Typedef::New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n)
+{
+  return std::make_shared<Typedef>(typedef_tok, qtype, n);
+}
+
+
 } // namespace ast
 
 } // namespace script

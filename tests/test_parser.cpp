@@ -715,3 +715,47 @@ TEST(ParserTests, user_defined_literal) {
     ASSERT_EQ(decl.name->getName(), std::string("km"));
   }
 }
+
+TEST(ParserTests, typedefs) {
+
+  const char *source = 
+    "typedef double Distance;"
+    "typedef const double RealConstant;"
+    "typedef double& DoubleRef;"
+    "typedef Array<int> AInt;";
+
+  using namespace script;
+  
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_TRUE(actual->type() == ast::NodeType::Typedef);
+
+  actual = parser.parseStatement();
+  ASSERT_TRUE(actual->type() == ast::NodeType::Typedef);
+  {
+    const auto & tdef = actual->as<ast::Typedef>();
+    ASSERT_TRUE(tdef.qualified_type.constQualifier.isValid());
+    ASSERT_EQ(tdef.name->getName(), "RealConstant");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_TRUE(actual->type() == ast::NodeType::Typedef);
+  {
+    const auto & tdef = actual->as<ast::Typedef>();
+    ASSERT_FALSE(tdef.qualified_type.constQualifier.isValid());
+    ASSERT_TRUE(tdef.qualified_type.reference.isValid());
+    ASSERT_EQ(tdef.name->getName(), "DoubleRef");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_TRUE(actual->type() == ast::NodeType::Typedef);
+  {
+    const auto & tdef = actual->as<ast::Typedef>();
+    ASSERT_FALSE(tdef.qualified_type.constQualifier.isValid());
+    ASSERT_TRUE(tdef.qualified_type.type->is<ast::TemplateIdentifier>());
+    ASSERT_EQ(tdef.qualified_type.type->getName(), "Array");
+    ASSERT_EQ(tdef.name->getName(), "AInt");
+  }
+}
+

@@ -1208,6 +1208,31 @@ TEST(CompilerTests, access_global) {
   ASSERT_EQ(a.toInt(), 10);
 }
 
+TEST(CompilerTests, typedef_script_scope) {
+  using namespace script;
+
+  const char *source =
+    "  typedef double Distance;   "
+    "  Distance d = 3.0;          ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().typedefs().size(), 1);
+  ASSERT_EQ(s.rootNamespace().typedefs().front(), Typedef("Distance", Type::Double));
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value d = s.globals().front();
+  ASSERT_EQ(d.type(), Type::Double);
+  ASSERT_EQ(d.toDouble(), 3.0);
+}
 
 
 

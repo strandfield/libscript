@@ -14,6 +14,7 @@
 #include "script/namespace.h"
 #include "script/template.h"
 #include "script/value.h"
+#include "script/typedefs.h"
 #include "script_p.h"
 
 namespace script
@@ -32,6 +33,7 @@ public:
   std::vector<Operator> operators;
   std::vector<LiteralOperator> literal_operators;
   std::vector<Template> templates;
+  std::vector<Typedef> typedefs;
   std::weak_ptr<ScriptImpl> script;
 
 public:

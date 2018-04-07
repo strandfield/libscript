@@ -107,6 +107,7 @@ protected:
 
   bool processClassDeclaration();
   void processEnumDeclaration();
+  void processTypedef();
   bool processFirstOrderTemplateDeclaration();
 
   bool processFunctionDeclaration();

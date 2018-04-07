@@ -138,6 +138,7 @@ Function ScriptCompiler::registerRootFunction()
     {
     case ast::NodeType::ClassDeclaration:
     case ast::NodeType::EnumDeclaration:
+    case ast::NodeType::Typedef:
     case ast::NodeType::FunctionDeclaration:
     case ast::NodeType::OperatorOverloadDeclaration:
       break;
@@ -176,6 +177,9 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
       break;
     case ast::NodeType::EnumDeclaration:
       processEnumDeclaration();
+      break;
+    case ast::NodeType::Typedef:
+      processTypedef();
       break;
       //case ast::NodeType::TemplateDeclaration:
       //  processFirstOrderTemplateDeclaration();
@@ -363,7 +367,7 @@ bool ScriptCompiler::initializeStaticVariables()
 
 bool ScriptCompiler::isFirstOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const
 {
-  if (decl->is<ast::ClassDecl>() || decl->is<ast::EnumDeclaration>())
+  if (decl->is<ast::ClassDecl>() || decl->is<ast::EnumDeclaration>() || decl->is<ast::Typedef>())
     return true;
 
   /*
@@ -455,6 +459,16 @@ void ScriptCompiler::processEnumDeclaration()
     else
       e.addValue(enum_decl.values.at(i).name->getName());
   }
+}
+
+void ScriptCompiler::processTypedef()
+{
+  const ast::Typedef & tdef = currentDeclaration()->as<ast::Typedef>();
+
+  const Type t = resolve(tdef.qualified_type);
+  const std::string & name = tdef.name->getName();
+
+  currentScope().impl()->add_typedef(Typedef{ name, t });
 }
 
 bool ScriptCompiler::processFirstOrderTemplateDeclaration()

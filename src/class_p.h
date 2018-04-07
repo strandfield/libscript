@@ -9,6 +9,7 @@
 #include "script/function.h"
 #include "script/cast.h"
 #include "script/template.h"
+#include "script/typedefs.h"
 
 #include <map>
 
@@ -39,6 +40,7 @@ public:
   std::vector<Operator> operators;
   std::vector<Cast> casts;
   std::vector<Template> templates;
+  std::vector<Typedef> typedefs;
   std::map<std::string, Class::StaticDataMember> staticMembers;
   std::vector<Class::DataMember> dataMembers;
   std::vector<Function> virtualMembers;

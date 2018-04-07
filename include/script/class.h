@@ -21,6 +21,7 @@ class UserData;
 class ClassBuilder;
 class FunctionBuilder;
 class Template;
+class Typedef;
 
 class LIBSCRIPT_API Class
 {
@@ -70,6 +71,7 @@ public:
   const std::vector<Enum> & enums() const;
 
   const std::vector<Template> & templates() const;
+  const std::vector<Typedef> & typedefs() const;
 
   const std::vector<Operator> & operators() const;
   const std::vector<Cast> & casts() const;

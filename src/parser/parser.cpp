@@ -1074,6 +1074,8 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     return parseForLoop();
   case Token::LeftBrace:
     return parseCompoundStatement();
+  case Token::Typedef:
+    return parseTypedef();
   default:
     break;
   }
@@ -1251,6 +1253,24 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
   forLoop->body = parseStatement();
 
   return forLoop;
+}
+
+std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
+{
+  const parser::Token typedef_tok = unsafe_read();
+
+  TypeParser tp{ fragment() };
+  const ast::QualifiedType qtype = tp.parse();
+
+  IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
+  const std::shared_ptr<ast::Identifier> name = idp.parse();
+
+  if (peek() != parser::Token::Semicolon)
+    throw ExpectedSemicolon{};
+
+  const parser::Token semicolon = unsafe_read();
+
+  return ast::Typedef::New(typedef_tok, qtype, name);
 }
 
 

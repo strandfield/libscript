@@ -17,6 +17,7 @@ class NamespaceImpl;
 
 class FunctionBuilder;
 class Template;
+class Typedef;
 
 class LIBSCRIPT_API Namespace
 {
@@ -53,6 +54,7 @@ public:
   const std::vector<Class> & classes() const;
   const std::vector<Namespace> & namespaces() const;
   const std::vector<Template> & templates() const;
+  const std::vector<Typedef> & typedefs() const;
 
   Class findClass(const std::string & name) const;
   Namespace findNamespace(const std::string & name) const;

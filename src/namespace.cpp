@@ -147,6 +147,11 @@ const std::vector<Template> & Namespace::templates() const
   return d->templates;
 }
 
+const std::vector<Typedef> & Namespace::typedefs() const
+{
+  return d->typedefs;
+}
+
 Class Namespace::findClass(const std::string & name) const
 {
   for (const auto & c : d->classes)

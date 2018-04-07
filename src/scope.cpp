@@ -82,6 +82,7 @@ const std::vector<Namespace> ScopeImpl::static_dummy_namespaces = std::vector<Na
 const std::vector<Operator> ScopeImpl::static_dummy_operators = std::vector<Operator>{};
 const std::vector<Template> ScopeImpl::static_dummy_templates = std::vector<Template>{};
 const std::map<std::string, Value> ScopeImpl::static_dummy_values = std::map<std::string, Value>{};
+const std::vector<Typedef> ScopeImpl::static_dummy_typedefs = std::vector<Typedef>{};
 
 const std::vector<Class> & ScopeImpl::classes() const
 {
@@ -121,6 +122,11 @@ const std::vector<Template> & ScopeImpl::templates() const
 const std::map<std::string, Value> & ScopeImpl::values() const
 {
   return static_dummy_values;
+}
+
+const std::vector<Typedef> & ScopeImpl::typedefs() const
+{
+  return static_dummy_typedefs;
 }
 
 bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
@@ -192,6 +198,16 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
     return true;
   }
 
+
+  for (const auto & td : typedefs())
+  {
+    if (td.name() == name)
+    {
+      nl->typeResult = td.type();
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -248,6 +264,11 @@ const std::vector<Template> & NamespaceScope::templates() const
   return mNamespace.templates();
 }
 
+const std::vector<Typedef> & NamespaceScope::typedefs() const
+{
+  return mNamespace.typedefs();
+}
+
 const std::map<std::string, Value> & NamespaceScope::values() const
 {
   return mNamespace.vars();
@@ -277,6 +298,12 @@ void NamespaceScope::add_enum(const Enum & e)
 {
   mNamespace.implementation()->enums.push_back(e);
 }
+
+void NamespaceScope::add_typedef(const Typedef & td)
+{
+  mNamespace.implementation()->typedefs.push_back(td);
+}
+
 
 
 ClassScope::ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p)
@@ -321,6 +348,11 @@ const std::vector<Template> & ClassScope::templates() const
   return mClass.templates();
 }
 
+const std::vector<Typedef> & ClassScope::typedefs() const
+{
+  return mClass.typedefs();
+}
+
 void ClassScope::add_class(const Class & c)
 {
   mClass.implementation()->classes.push_back(c);
@@ -345,6 +377,12 @@ void ClassScope::add_enum(const Enum & e)
 {
   mClass.implementation()->enums.push_back(e);
 }
+
+void ClassScope::add_typedef(const Typedef & td)
+{
+  mClass.implementation()->typedefs.push_back(td);
+}
+
 
 bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
@@ -504,6 +542,12 @@ const std::map<std::string, Value> & ScriptScope::values() const
   return mScript.rootNamespace().vars();
 }
 
+const std::vector<Typedef> & ScriptScope::typedefs() const
+{
+  return mScript.rootNamespace().typedefs();
+}
+
+
 
 void ScriptScope::add_class(const Class & c)
 {
@@ -528,6 +572,11 @@ void ScriptScope::add_literal_operator(const LiteralOperator & lo)
 void ScriptScope::add_enum(const Enum & e)
 {
   mScript.rootNamespace().implementation()->enums.push_back(e);
+}
+
+void ScriptScope::add_typedef(const Typedef & td)
+{
+  mScript.rootNamespace().implementation()->typedefs.push_back(td);
 }
 
 void ScriptScope::remove_class(const Class & c)

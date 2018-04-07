@@ -13,6 +13,7 @@
 #include "script/lambda.h"
 #include "script/namespace.h"
 #include "script/script.h"
+#include "script/typedefs.h"
 
 namespace script
 {
@@ -36,6 +37,7 @@ public:
   static const std::vector<Operator> static_dummy_operators;
   static const std::vector<Template> static_dummy_templates;
   static const std::map<std::string, Value> static_dummy_values;
+  static const std::vector<Typedef> static_dummy_typedefs;
 
   virtual const std::vector<Class> & classes() const;
   virtual const std::vector<Enum> & enums() const;
@@ -45,6 +47,7 @@ public:
   virtual const std::vector<Operator> & operators() const;
   virtual const std::vector<Template> & templates() const;
   virtual const std::map<std::string, Value> & values() const;
+  virtual const std::vector<Typedef> & typedefs() const;
 
 
   virtual void add_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_class()" }; }
@@ -53,6 +56,7 @@ public:
   virtual void add_literal_operator(const LiteralOperator & lo) { throw std::runtime_error{ "Bad call to ScopeImpl::add_literal_operator()" }; }
   virtual void add_cast(const Cast & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_cast()" }; }
   virtual void add_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::add_enum()" }; }
+  virtual void add_typedef(const Typedef & td) { throw std::runtime_error{ "Bad call to ScopeImpl::add_typedef()" }; }
 
   virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
   virtual void remove_function(const Function & f) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_function()" }; }
@@ -82,12 +86,14 @@ public:
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
   const std::map<std::string, Value> & values() const override;
+  const std::vector<Typedef> & typedefs() const override;
 
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
   void add_operator(const Operator & op) override;
   void add_literal_operator(const LiteralOperator & lo) override;
   void add_enum(const Enum & e) override;
+  void add_typedef(const Typedef & td) override;
 };
 
 class ClassScope : public ScopeImpl
@@ -106,12 +112,14 @@ public:
   const std::vector<Function> & functions() const override;
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
+  const std::vector<Typedef> & typedefs() const override;
 
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
   void add_operator(const Operator & op) override;
   void add_cast(const Cast & c) override;
   void add_enum(const Enum & e) override;
+  void add_typedef(const Typedef & td) override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
@@ -163,12 +171,14 @@ public:
   const std::vector<Operator> & operators() const override;
   const std::vector<Template> & templates() const override;
   const std::map<std::string, Value> & values() const override;
+  const std::vector<Typedef> & typedefs() const override;
 
   void add_class(const Class & c) override;
   void add_function(const Function & f) override;
   void add_operator(const Operator & op) override;
   void add_literal_operator(const LiteralOperator & lo) override;
   void add_enum(const Enum & e) override;
+  void add_typedef(const Typedef & td) override;
 
   void remove_class(const Class & c) override;
   void remove_enum(const Enum & e) override;

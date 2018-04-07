@@ -154,6 +154,11 @@ const std::vector<Template> & Class::templates() const
   return d->templates;
 }
 
+const std::vector<Typedef> & Class::typedefs() const
+{
+  return d->typedefs;
+}
+
 const std::vector<Operator> & Class::operators() const
 {
   return d->operators;

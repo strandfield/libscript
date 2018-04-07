@@ -300,6 +300,7 @@ protected:
   std::shared_ptr<ast::IfStatement> parseIfStatement();
   std::shared_ptr<ast::WhileLoop> parseWhileLoop();
   std::shared_ptr<ast::ForLoop> parseForLoop();
+  std::shared_ptr<ast::Typedef> parseTypedef();
 };
 
 class IdentifierParser : public ParserBase
