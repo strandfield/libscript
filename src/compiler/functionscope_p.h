@@ -15,7 +15,7 @@ namespace compiler
 
 class FunctionCompiler;
 
-class FunctionScope : public ScopeImpl
+class FunctionScope : public ExtensibleScope
 {
 public:
   enum Category {
@@ -30,10 +30,12 @@ public:
   };
 
   FunctionScope(FunctionCompiler *fc, Category cat, Scope p);
+  FunctionScope(const FunctionScope & other);
   ~FunctionScope() = default;
 
   Engine * engine() const override;
   int kind() const override;
+  FunctionScope * clone() const override;
 
   const std::vector<Class> & classes() const override;
   const std::vector<Enum> & enums() const override;

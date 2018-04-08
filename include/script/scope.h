@@ -71,6 +71,15 @@ public:
  
   Scope child(const std::string & name) const;
 
+  void inject(const std::string & name, const script::Type & t);
+  void inject(const Class & cla);
+  void inject(const Enum & e);
+  void inject(const NameLookupImpl *nl);
+
+  void inject(const Scope & scp); // injects a NamespaceScope
+
+  void merge(const Scope & scp); // merges recursively this scope with scp
+
   std::vector<Function> lookup(const LiteralOperator &, const std::string & suffix) const;
   std::vector<Function> lookup(Operator::BuiltInOperator op) const;
 

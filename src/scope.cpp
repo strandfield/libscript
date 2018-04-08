@@ -73,6 +73,94 @@ ScopeImpl::ScopeImpl(std::shared_ptr<ScopeImpl> p)
 
 }
 
+ScopeImpl::ScopeImpl(const ScopeImpl & other)
+{
+  if (other.parent != nullptr)
+  {
+    this->parent = std::shared_ptr<ScopeImpl>(other.parent->clone());
+  }
+}
+
+bool ScopeImpl::handle_injections() const
+{
+  return dynamic_cast<const ExtensibleScope *>(this) != nullptr;
+}
+
+void ScopeImpl::inject(const NameLookupImpl *nl)
+{
+  ExtensibleScope *extensible = dynamic_cast<ExtensibleScope*>(this);
+  if (!extensible)
+  {
+    if (this->parent == nullptr)
+      throw std::runtime_error{ "Scope does not supprot injection" };
+
+    if (this->parent.use_count() == 1)
+    {
+      this->parent->inject(nl);
+    }
+    else
+    {
+      if (this->parent->handle_injections())
+      {
+        this->parent = std::shared_ptr<ScopeImpl>(this->parent->clone());
+      }
+
+      this->parent->inject(nl);
+    }
+
+    return;
+  }
+
+  if (!nl->typeResult.isNull())
+  {
+    if (nl->typeResult.isEnumType())
+    {
+      extensible->injected_enums.push_back(engine()->getEnum(nl->typeResult));
+    }
+    else if (nl->typeResult.isObjectType())
+    {
+      extensible->injected_classes.push_back(engine()->getClass(nl->typeResult));
+    }
+    else
+    {
+      throw std::runtime_error{ "ScopeImpl::inject() : injection of type not implemented" };
+    }
+  }
+  else if (!nl->functions.empty())
+  {
+    extensible->injected_functions.insert(extensible->injected_functions.end(), nl->functions.begin(), nl->functions.end());
+  }
+  
+  /// TODO : handle values and templates
+}
+
+void ScopeImpl::inject(const std::string & name, const Type & t)
+{
+  ExtensibleScope *extensible = dynamic_cast<ExtensibleScope*>(this);
+  if (!extensible)
+  {
+    if (this->parent == nullptr)
+      throw std::runtime_error{ "Scope does not supprot injection" };
+
+    if (this->parent.use_count() == 1)
+    {
+      this->parent->inject(name, t);
+    }
+    else
+    {
+      if (this->parent->handle_injections())
+      {
+        this->parent = std::shared_ptr<ScopeImpl>(this->parent->clone());
+      }
+
+      this->parent->inject(name, t);
+    }
+
+    return;
+  }
+
+  extensible->type_aliases[name] = t;
+}
 
 const std::vector<Class> ScopeImpl::static_dummy_classes = std::vector<Class>{};
 const std::vector<Enum> ScopeImpl::static_dummy_enums = std::vector<Enum>{};
@@ -212,9 +300,94 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
 }
 
 
-NamespaceScope::NamespaceScope(const Namespace & ns, std::shared_ptr<ScopeImpl> p)
+ExtensibleScope::ExtensibleScope(std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
+{
+
+}
+
+ExtensibleScope::ExtensibleScope(const ExtensibleScope & other)
+  : ScopeImpl(other)
+  , type_aliases(other.type_aliases)
+  , injected_classes(other.injected_classes)
+  , injected_enums(other.injected_enums)
+  , injected_functions(other.injected_functions)
+  , injected_values(other.injected_values)
+  , injected_typedefs(other.injected_typedefs)
+{
+
+}
+
+bool ExtensibleScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  {
+    auto it = type_aliases.find(name);
+    if (it != type_aliases.end())
+    {
+      nl->typeResult = it->second;
+      return true;
+    }
+  }
+
+  for (const auto & c : injected_classes)
+  {
+    if (c.name() == name)
+    {
+      nl->typeResult = c.id();
+      return true;
+    }
+  }
+
+  for (const auto & e : injected_enums)
+  {
+    if (e.name() == name)
+    {
+      nl->typeResult = e.id();
+      return true;
+    }
+  }
+
+  {
+    auto it = injected_values.find(name);
+    if (it != injected_values.end())
+    {
+      nl->valueResult = it->second;
+      return true;
+    }
+  }
+
+  for (const auto & td : injected_typedefs)
+  {
+    if (td.name() == name)
+    {
+      nl->typeResult = td.type();
+      return true;
+    }
+  }
+
+  const int size_before = nl->functions.size();
+  for (const auto & f : injected_functions)
+  {
+    if (f.name() == name)
+      nl->functions.push_back(f);
+  }
+
+  const bool found = ScopeImpl::lookup(name, nl);
+  return found || (nl->functions.size() != size_before);
+}
+
+
+NamespaceScope::NamespaceScope(const Namespace & ns, std::shared_ptr<ScopeImpl> p)
+  : ExtensibleScope(p)
   , mNamespace(ns)
+{
+
+}
+
+NamespaceScope::NamespaceScope(const NamespaceScope & other)
+  : ExtensibleScope(other)
+  , mNamespace(other.mNamespace)
+  , mImportedNamespaces(other.mImportedNamespaces)
 {
 
 }
@@ -229,24 +402,106 @@ int NamespaceScope::kind() const
   return Scope::NamespaceScope;
 }
 
+NamespaceScope * NamespaceScope::clone() const
+{
+  return new NamespaceScope(*this);
+}
+
+std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::shared_ptr<NamespaceScope> & that, const std::string & name)
+{
+  Namespace base;
+  std::vector<Namespace> imported;
+
+  if (!that->mNamespace.isNull())
+  {
+    for (const auto & ns : that->mNamespace.namespaces())
+    {
+      if (ns.name() == name)
+      {
+        base = ns;
+        break;
+      }
+    }
+  }
+
+  for (const auto & ins : that->mImportedNamespaces)
+  {
+    for (const auto & ns : ins.namespaces())
+    {
+      if (ns.name() == name)
+      {
+        imported.push_back(ns);
+        break;
+      }
+    }
+  }
+
+  if (base.isNull() && imported.empty())
+    return nullptr;
+
+  auto ret = std::make_shared<script::NamespaceScope>(base, that);
+  ret->mImportedNamespaces = std::move(imported);
+  return ret;
+}
+
 const std::vector<Class> & NamespaceScope::classes() const
 {
-  return mNamespace.classes();
+  if (mImportedNamespaces.empty())
+    return mNamespace.classes();
+
+  if (mClasses.empty())
+  {
+    mClasses = mNamespace.classes();
+    for (const auto & ns : mImportedNamespaces)
+      mClasses.insert(mClasses.end(), ns.classes().begin(), ns.classes().end());
+  }
+
+  return mClasses;
 }
 
 const std::vector<Enum> & NamespaceScope::enums() const
 {
-  return mNamespace.enums();
+  if (mImportedNamespaces.empty())
+    return mNamespace.enums();
+
+  if (mEnums.empty())
+  {
+    mEnums = mNamespace.enums();
+    for (const auto & ns : mImportedNamespaces)
+      mEnums.insert(mEnums.end(), ns.enums().begin(), ns.enums().end());
+  }
+
+  return mEnums;
 }
 
 const std::vector<Function> & NamespaceScope::functions() const
 {
-  return mNamespace.functions();
+  if (mImportedNamespaces.empty())
+    return mNamespace.functions();
+
+  if (mFunctions.empty())
+  {
+    mFunctions = mNamespace.functions();
+    for (const auto & ns : mImportedNamespaces)
+      mFunctions.insert(mFunctions.end(), ns.functions().begin(), ns.functions().end());
+  }
+
+  return mFunctions;
 }
 
 const std::vector<LiteralOperator> & NamespaceScope::literal_operators() const
 {
-  return mNamespace.literalOperators();
+  if (mImportedNamespaces.empty())
+    return mNamespace.literalOperators();
+
+  if (mLiteralOperators.empty())
+  {
+    mLiteralOperators = mNamespace.literalOperators();
+    for (const auto & ns : mImportedNamespaces)
+      mLiteralOperators.insert(mLiteralOperators.end(), ns.literalOperators().begin(), ns.literalOperators().end());
+  }
+
+  return mLiteralOperators;
 }
 
 const std::vector<Namespace> & NamespaceScope::namespaces() const
@@ -256,22 +511,67 @@ const std::vector<Namespace> & NamespaceScope::namespaces() const
 
 const std::vector<Operator> & NamespaceScope::operators() const
 {
-  return mNamespace.operators();
+  if (mImportedNamespaces.empty())
+    return mNamespace.operators();
+
+  if (mOperators.empty())
+  {
+    mOperators = mNamespace.operators();
+    for (const auto & ns : mImportedNamespaces)
+      mOperators.insert(mOperators.end(), ns.operators().begin(), ns.operators().end());
+  }
+
+  return mOperators;
 }
 
 const std::vector<Template> & NamespaceScope::templates() const
 {
-  return mNamespace.templates();
+  if (mImportedNamespaces.empty())
+    return mNamespace.templates();
+
+  if (mTemplates.empty())
+  {
+    mTemplates = mNamespace.templates();
+    for (const auto & ns : mImportedNamespaces)
+      mTemplates.insert(mTemplates.end(), ns.templates().begin(), ns.templates().end());
+  }
+
+  return mTemplates;
 }
 
 const std::vector<Typedef> & NamespaceScope::typedefs() const
 {
-  return mNamespace.typedefs();
+  if (mImportedNamespaces.empty())
+    return mNamespace.typedefs();
+
+  if (mTypedefs.empty())
+  {
+    mTypedefs = mNamespace.typedefs();
+    for (const auto & ns : mImportedNamespaces)
+      mTypedefs.insert(mTypedefs.end(), ns.typedefs().begin(), ns.typedefs().end());
+  }
+
+  return mTypedefs;
 }
 
 const std::map<std::string, Value> & NamespaceScope::values() const
 {
-  return mNamespace.vars();
+  if (mImportedNamespaces.empty())
+    return mNamespace.vars();
+
+  if (mValues.empty())
+  {
+    mValues = mNamespace.vars();
+    for (const auto & ns : mImportedNamespaces)
+    {
+      for (const auto & it : ns.vars())
+      {
+        mValues[it.first] = it.second;
+      }
+    }
+  }
+
+  return mValues;
 }
 
 void NamespaceScope::add_class(const Class & c)
@@ -304,11 +604,36 @@ void NamespaceScope::add_typedef(const Typedef & td)
   mNamespace.implementation()->typedefs.push_back(td);
 }
 
+void NamespaceScope::import_namespace(const NamespaceScope & other)
+{
+  if (!other.mNamespace.isNull())
+    mImportedNamespaces.push_back(other.mNamespace);
+
+  for (const auto & ns : other.mImportedNamespaces)
+    mImportedNamespaces.push_back(ns);
+
+  mClasses.clear();
+  mEnums.clear();
+  mFunctions.clear();
+  mLiteralOperators.clear();
+  mOperators.clear();
+  mTemplates.clear();
+  mValues.clear();
+  mTypedefs.clear();
+}
+
 
 
 ClassScope::ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p)
-  : ScopeImpl(p)
+  : ExtensibleScope(p)
   , mClass(c)
+{
+
+}
+
+ClassScope::ClassScope(const ClassScope & other)
+  : ExtensibleScope(other)
+  , mClass(other.mClass)
 {
 
 }
@@ -321,6 +646,11 @@ Engine * ClassScope::engine() const
 int ClassScope::kind() const
 {
   return Scope::ClassScope;
+}
+
+ClassScope * ClassScope::clone() const
+{
+  return new ClassScope(*this);
 }
 
 const std::vector<Class> & ClassScope::classes() const
@@ -403,7 +733,7 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
   }
 
 
-  return ScopeImpl::lookup(name, nl);
+  return ExtensibleScope::lookup(name, nl);
 }
 
 
@@ -411,6 +741,13 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
 LambdaScope::LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
   , mClosure(l)
+{
+
+}
+
+LambdaScope::LambdaScope(const LambdaScope & other)
+  : ScopeImpl(other)
+  , mClosure(other.mClosure)
 {
 
 }
@@ -423,6 +760,11 @@ Engine * LambdaScope::engine() const
 int LambdaScope::kind() const
 {
   return Scope::LambdaScope;
+}
+
+LambdaScope * LambdaScope::clone() const
+{
+  return new LambdaScope(*this);
 }
 
 bool LambdaScope::lookup(const std::string & name, NameLookupImpl *nl) const
@@ -463,6 +805,13 @@ EnumScope::EnumScope(const Enum & e, std::shared_ptr<ScopeImpl> p)
 
 }
 
+EnumScope::EnumScope(const EnumScope & other)
+  : ScopeImpl(other)
+  , mEnum(other.mEnum)
+{
+
+}
+
 Engine * EnumScope::engine() const
 {
   return mEnum.engine();
@@ -471,6 +820,11 @@ Engine * EnumScope::engine() const
 int EnumScope::kind() const
 {
   return Scope::EnumClassScope;
+}
+
+EnumScope * EnumScope::clone() const
+{
+  return new EnumScope(*this);
 }
 
 bool EnumScope::lookup(const std::string & name, NameLookupImpl *nl) const
@@ -485,8 +839,15 @@ bool EnumScope::lookup(const std::string & name, NameLookupImpl *nl) const
 
 
 ScriptScope::ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p)
-  : ScopeImpl(p)
+  : ExtensibleScope(p)
   , mScript(s)
+{
+
+}
+
+ScriptScope::ScriptScope(const ScriptScope & other)
+  : ExtensibleScope(other)
+  , mScript(other.mScript)
 {
 
 }
@@ -499,6 +860,11 @@ Engine * ScriptScope::engine() const
 int ScriptScope::kind() const
 {
   return Scope::ScriptScope;
+}
+
+ScriptScope * ScriptScope::clone() const
+{
+  return new ScriptScope(*this);
 }
 
 const std::vector<Class> & ScriptScope::classes() const
@@ -603,14 +969,21 @@ bool ScriptScope::lookup(const std::string & name, NameLookupImpl *nl) const
     return true;
   }
 
-  return ScopeImpl::lookup(name, nl);
+  return ExtensibleScope::lookup(name, nl);
 }
 
 
 
 ContextScope::ContextScope(const Context & c, std::shared_ptr<ScopeImpl> p)
-  : ScopeImpl(p)
+  : ExtensibleScope(p)
   , mContext(c)
+{
+
+}
+
+ContextScope::ContextScope(const ContextScope & other)
+  : ExtensibleScope(other)
+  , mContext(other.mContext)
 {
 
 }
@@ -625,12 +998,17 @@ int ContextScope::kind() const
   return Scope::ContextScope;
 }
 
+ContextScope * ContextScope::clone() const
+{
+  return new ContextScope(*this);
+}
+
 bool ContextScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
   const auto & vals = mContext.vars();
   auto it = vals.find(name);
   if (it == vals.end())
-    return false;
+    return ExtensibleScope::lookup(name, nl);
 
   nl->valueResult = it->second;
   return true;
@@ -778,19 +1156,153 @@ Scope Scope::child(const std::string & name) const
       return Scope{ cla, *this };
   }
 
-  for (const auto & n : this->namespaces())
-  {
-    if (n.name() == name)
-      return Scope{ n, *this };
-  }
-
   for (const auto & e : this->enums())
   {
     if (e.name() == name)
       return Scope{ e, *this };
   }
 
+  if (d->kind() == Scope::NamespaceScope)
+  {
+    auto nsscope = std::dynamic_pointer_cast<script::NamespaceScope>(d);
+    return Scope{ script::NamespaceScope::child_scope(nsscope, name) };
+  }
+  else
+  {
+    for (const auto & ns : this->namespaces())
+    {
+      if (ns.name() == name)
+        return Scope{ ns, *this };
+    }
+  }
+
   return Scope{};
+}
+
+void Scope::inject(const std::string & name, const script::Type & t)
+{
+  if (d->handle_injections())
+  {
+    if (d.use_count() != 1)
+    {
+      d = std::shared_ptr<ScopeImpl>(d->clone());
+    }
+
+    d->inject(name, t);
+  }
+  else
+  {
+    d->inject(name, t);
+  }
+}
+
+void Scope::inject(const Class & cla)
+{
+  NameLookupImpl lookup;
+  lookup.typeResult = cla.id();
+  if (d->handle_injections())
+  {
+    if (d.use_count() != 1)
+    {
+      d = std::shared_ptr<ScopeImpl>(d->clone());
+    }
+
+    d->inject(&lookup);
+  }
+  else
+  {
+    d->inject(&lookup);
+  }
+}
+
+void Scope::inject(const Enum & e)
+{
+  NameLookupImpl lookup;
+  lookup.typeResult = e.id();
+  if (d->handle_injections())
+  {
+    if (d.use_count() != 1)
+    {
+      d = std::shared_ptr<ScopeImpl>(d->clone());
+    }
+
+    d->inject(&lookup);
+  }
+  else
+  {
+    d->inject(&lookup);
+  }
+}
+
+void Scope::inject(const NameLookupImpl *nl)
+{
+  if (d->handle_injections())
+  {
+    if (d.use_count() != 1)
+    {
+      d = std::shared_ptr<ScopeImpl>(d->clone());
+    }
+
+    d->inject(nl);
+  }
+  else
+  {
+    d->inject(nl);
+  }
+}
+
+void Scope::inject(const Scope & scp)
+{
+  if (scp.type() != Scope::NamespaceScope)
+    throw std::runtime_error{ "Cannot inject non-namespace scope" };
+
+  d = std::shared_ptr<ScopeImpl>(d->clone());
+  auto target = d;
+  while (target->kind() != Scope::NamespaceScope)
+  {
+    if (target->parent == nullptr)
+      throw std::runtime_error{ "Cannot inject namespace scope into non-namespace scope" };
+
+    target = target->parent;
+  }
+
+  script::NamespaceScope *nam_scope = dynamic_cast<script::NamespaceScope*>(target.get());
+  assert(nam_scope != nullptr);
+  nam_scope->import_namespace(dynamic_cast<const script::NamespaceScope &>(*scp.impl()));
+}
+
+void Scope::merge(const Scope & scp)
+{
+  if (!scp.parent().isNull())
+    throw std::runtime_error{ "Scope::merge() : Cannot merge scope with parent" };
+
+  d = std::shared_ptr<ScopeImpl>(d->clone());
+
+  std::vector<std::shared_ptr<ScopeImpl>> scopes;
+  {
+    auto it = d;
+    while (it != nullptr)
+    {
+      scopes.push_back(it);
+      it = it->parent;
+    }
+    
+    std::reverse(scopes.begin(), scopes.end());
+  }
+
+  auto imported = std::dynamic_pointer_cast<script::NamespaceScope>(scp.impl());
+  
+  int i = 0;
+  while (i < int(scopes.size()) && scopes[i]->kind() == Scope::NamespaceScope)
+  {
+    dynamic_cast<script::NamespaceScope*>(scopes[i].get())->import_namespace(dynamic_cast<const script::NamespaceScope &>(*imported));
+    if (i < int(scopes.size()) - 1 && scopes[i+1]->kind() == Scope::NamespaceScope)
+    {
+      const std::string & child_name = std::dynamic_pointer_cast<script::NamespaceScope>(scopes[i + 1])->name();
+      imported = script::NamespaceScope::child_scope(imported, child_name);
+    }
+    ++i;
+  }
 }
 
 std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string & suffix) const

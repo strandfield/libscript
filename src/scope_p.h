@@ -22,12 +22,18 @@ class ScopeImpl
 {
 public:
   ScopeImpl(std::shared_ptr<ScopeImpl> p = nullptr);
+  ScopeImpl(const ScopeImpl & other);
   virtual ~ScopeImpl() = default;
 
   std::shared_ptr<ScopeImpl> parent;
 
   virtual Engine * engine() const = 0;
   virtual int kind() const = 0;
+  virtual ScopeImpl * clone() const = 0;
+
+  bool handle_injections() const;
+  void inject(const NameLookupImpl *nl);
+  void inject(const std::string & name, const Type & t);
 
   static const std::vector<Class> static_dummy_classes;
   static const std::vector<Enum> static_dummy_enums;
@@ -67,16 +73,50 @@ public:
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
 };
 
-class NamespaceScope : public ScopeImpl
+class ExtensibleScope : public ScopeImpl
+{
+public:
+  ExtensibleScope(std::shared_ptr<ScopeImpl> p = nullptr);
+  ExtensibleScope(const ExtensibleScope & other);
+  ~ExtensibleScope() = default;
+
+  std::map<std::string, Type> type_aliases;
+
+  std::vector<Class> injected_classes;
+  std::vector<Enum> injected_enums;
+  std::vector<Function> injected_functions;
+  std::map<std::string, Value> injected_values;
+  std::vector<Typedef> injected_typedefs;
+
+  virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
+};
+
+class NamespaceScope : public ExtensibleScope
 {
 public:
   NamespaceScope(const Namespace & ns, std::shared_ptr<ScopeImpl> p = nullptr);
+  NamespaceScope(const NamespaceScope & other);
   ~NamespaceScope() = default;
 
   Namespace mNamespace;
+  std::vector<Namespace> mImportedNamespaces;
 
   Engine * engine() const override;
   int kind() const override;
+  NamespaceScope * clone() const override;
+
+  inline const std::string & name() const { return mNamespace.name(); }
+
+  static std::shared_ptr<NamespaceScope> child_scope(const std::shared_ptr<NamespaceScope> & that, const std::string & name);
+
+  mutable std::vector<Class> mClasses;
+  mutable std::vector<Enum> mEnums;
+  mutable std::vector<Function> mFunctions;
+  mutable std::vector<LiteralOperator> mLiteralOperators;
+  mutable std::vector<Operator> mOperators;
+  mutable std::vector<Template> mTemplates;
+  mutable std::map<std::string, Value> mValues;
+  mutable std::vector<Typedef> mTypedefs;
 
   const std::vector<Class> & classes() const override;
   const std::vector<Enum> & enums() const override;
@@ -94,18 +134,22 @@ public:
   void add_literal_operator(const LiteralOperator & lo) override;
   void add_enum(const Enum & e) override;
   void add_typedef(const Typedef & td) override;
+
+  void import_namespace(const NamespaceScope & other);
 };
 
-class ClassScope : public ScopeImpl
+class ClassScope : public ExtensibleScope
 {
 public:
   ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p = nullptr);
+  ClassScope(const ClassScope & other);
   ~ClassScope() = default;
 
   Class mClass;
 
   Engine * engine() const override;
   int kind() const override;
+  ClassScope * clone() const override;
 
   const std::vector<Class> & classes() const override;
   const std::vector<Enum> & enums() const override;
@@ -128,12 +172,14 @@ class LambdaScope : public ScopeImpl
 {
 public:
   LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p = nullptr);
+  LambdaScope(const LambdaScope & other);
   ~LambdaScope() = default;
 
   Lambda mClosure;
 
   Engine * engine() const override;
   int kind() const override;
+  LambdaScope * clone() const override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
@@ -142,26 +188,30 @@ class EnumScope : public ScopeImpl
 {
 public:
   EnumScope(const Enum & e, std::shared_ptr<ScopeImpl> p = nullptr);
+  EnumScope(const EnumScope & other);
   ~EnumScope() = default;
 
   Enum mEnum;
 
   Engine * engine() const override;
   int kind() const override;
+  EnumScope * clone() const override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
-class ScriptScope : public ScopeImpl
+class ScriptScope : public ExtensibleScope
 {
 public:
   ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p = nullptr);
+  ScriptScope(const ScriptScope & other);
   ~ScriptScope() = default;
 
   Script mScript;
 
   Engine * engine() const override;
   int kind() const override;
+  ScriptScope * clone() const override;
 
   const std::vector<Class> & classes() const override;
   const std::vector<Enum> & enums() const override;
@@ -186,16 +236,18 @@ public:
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
-class ContextScope : public ScopeImpl
+class ContextScope : public ExtensibleScope
 {
 public:
   ContextScope(const Context & c, std::shared_ptr<ScopeImpl> p = nullptr);
+  ContextScope(const ContextScope & other);
   ~ContextScope() = default;
 
   Context mContext;
 
   Engine * engine() const override;
   int kind() const override;
+  ContextScope * clone() const override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };

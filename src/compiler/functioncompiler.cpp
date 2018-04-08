@@ -35,12 +35,20 @@ namespace compiler
 {
 
 FunctionScope::FunctionScope(FunctionCompiler *fc, Category cat, Scope p)
-  : ScopeImpl(p.impl())
+  : ExtensibleScope(p.impl())
   , mCompiler(fc)
   , mCategory(cat)
 {
   mSize = 0;
   mSp = mCompiler->mStack.size;
+}
+
+FunctionScope::FunctionScope(const FunctionScope & other)
+  : ExtensibleScope(other)
+  , mCompiler(other.mCompiler)
+  , mCategory(other.mCategory)
+{
+
 }
 
 Engine * FunctionScope::engine() const
@@ -51,6 +59,11 @@ Engine * FunctionScope::engine() const
 int FunctionScope::kind() const
 {
   return Scope::FunctionScope;
+}
+
+FunctionScope * FunctionScope::clone() const
+{
+  return new FunctionScope(*this);
 }
 
 
