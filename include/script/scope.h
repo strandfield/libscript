@@ -16,6 +16,7 @@ class ScopeImpl;
 
 class Enum;
 class Namespace;
+class NamespaceAlias;
 class Template;
 
 class NameLookup;
@@ -70,6 +71,7 @@ public:
   const std::vector<Template> & templates() const;
  
   Scope child(const std::string & name) const;
+  Scope child(const std::vector<std::string> & name) const;
 
   void inject(const std::string & name, const script::Type & t);
   void inject(const Class & cla);
@@ -79,6 +81,8 @@ public:
   void inject(const Scope & scp); // injects a NamespaceScope
 
   void merge(const Scope & scp); // merges recursively this scope with scp
+
+  void inject(const NamespaceAlias & alias);
 
   std::vector<Function> lookup(const LiteralOperator &, const std::string & suffix) const;
   std::vector<Function> lookup(Operator::BuiltInOperator op) const;

@@ -15,6 +15,7 @@
 #include "script/enum.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
+#include "script/namespacealias.h"
 #include "script/sourcefile.h"
 #include "script/types.h"
 
@@ -379,6 +380,32 @@ TEST(CoreUtilsTests, scope_merge) {
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
   ASSERT_EQ(lookup.functions().size(), 1);
   ASSERT_EQ(lookup.functions().front(), anon_1_bar_func);
+}
+
+TEST(CoreUtilsTests, scope_namespace_alias) {
+  // This test simulates the effect of 'namespace fbq = foo::bar::qux'.
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace foo = e.rootNamespace().newNamespace("foo");
+  Namespace bar = foo.newNamespace("bar");
+  Namespace qux = bar.newNamespace("qux");
+
+  Function func = qux.Function("func").create();
+
+  Scope base{ e.rootNamespace() };
+  Scope s = base.child("foo");
+
+  s.inject(NamespaceAlias{ "fbz", {"foo", "bar", "qux"} });
+
+  NameLookup lookup = NameLookup::resolve("fbz::func", s);
+  ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
+  ASSERT_EQ(lookup.functions().size(), 1);
+  ASSERT_EQ(lookup.functions().front(), func);
+
+  ASSERT_ANY_THROW(s.inject(NamespaceAlias{ "b", { "bla" } }));
 }
 
 TEST(CoreUtilsTests, array_creation) {

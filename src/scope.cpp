@@ -388,6 +388,7 @@ NamespaceScope::NamespaceScope(const NamespaceScope & other)
   : ExtensibleScope(other)
   , mNamespace(other.mNamespace)
   , mImportedNamespaces(other.mImportedNamespaces)
+  , mNamespaceAliases(other.mNamespaceAliases)
 {
 
 }
@@ -442,6 +443,32 @@ std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::shared_pt
   auto ret = std::make_shared<script::NamespaceScope>(base, that);
   ret->mImportedNamespaces = std::move(imported);
   return ret;
+}
+
+bool NamespaceScope::has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name)
+{
+  Namespace base;
+  std::vector<Namespace> imported;
+
+  if (!that->mNamespace.isNull())
+  {
+    for (const auto & ns : that->mNamespace.namespaces())
+    {
+      if (ns.name() == name)
+        return true;
+    }
+  }
+
+  for (const auto & ins : that->mImportedNamespaces)
+  {
+    for (const auto & ns : ins.namespaces())
+    {
+      if (ns.name() == name)
+        return true;
+    }
+  }
+
+  return false;
 }
 
 const std::vector<Class> & NamespaceScope::classes() const
@@ -1165,6 +1192,11 @@ Scope Scope::child(const std::string & name) const
   if (d->kind() == Scope::NamespaceScope)
   {
     auto nsscope = std::dynamic_pointer_cast<script::NamespaceScope>(d);
+
+    auto it = nsscope->mNamespaceAliases.find(name);
+    if (it != nsscope->mNamespaceAliases.end())
+      return this->child(it->second.nested());
+
     return Scope{ script::NamespaceScope::child_scope(nsscope, name) };
   }
   else
@@ -1177,6 +1209,19 @@ Scope Scope::child(const std::string & name) const
   }
 
   return Scope{};
+}
+
+Scope Scope::child(const std::vector<std::string> & name) const
+{
+  Scope ret = *this;
+  for (size_t i(0); i < name.size(); ++i)
+  {
+    ret = ret.child(name.at(i));
+    if (ret.isNull())
+      break;
+  }
+
+  return ret;
 }
 
 void Scope::inject(const std::string & name, const script::Type & t)
@@ -1303,6 +1348,31 @@ void Scope::merge(const Scope & scp)
     }
     ++i;
   }
+}
+
+void Scope::inject(const NamespaceAlias & alias)
+{
+  d = std::shared_ptr<ScopeImpl>(d->clone());
+  auto target = d;
+  while (target != nullptr)
+  {
+    if (target->kind() != Scope::NamespaceScope)
+    {
+      target = target->parent;
+      continue;
+    }
+
+    auto ns_scope = std::dynamic_pointer_cast<script::NamespaceScope>(target);
+    if (script::NamespaceScope::has_child(ns_scope, alias.nested().front()))
+    {
+      ns_scope->mNamespaceAliases[alias.name()] = alias;
+      return;
+    }
+
+    target = target->parent;
+  }
+
+  throw std::runtime_error{ "Scope::inject() : could not inject namespace alias" };
 }
 
 std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string & suffix) const

@@ -12,6 +12,7 @@
 #include "script/enum.h"
 #include "script/lambda.h"
 #include "script/namespace.h"
+#include "script/namespacealias.h"
 #include "script/script.h"
 #include "script/typedefs.h"
 
@@ -100,6 +101,7 @@ public:
 
   Namespace mNamespace;
   std::vector<Namespace> mImportedNamespaces;
+  std::map<std::string, NamespaceAlias> mNamespaceAliases;
 
   Engine * engine() const override;
   int kind() const override;
@@ -108,6 +110,7 @@ public:
   inline const std::string & name() const { return mNamespace.name(); }
 
   static std::shared_ptr<NamespaceScope> child_scope(const std::shared_ptr<NamespaceScope> & that, const std::string & name);
+  static bool has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name);
 
   mutable std::vector<Class> mClasses;
   mutable std::vector<Enum> mEnums;
