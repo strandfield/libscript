@@ -22,13 +22,21 @@ struct TemplateArgument;
 namespace ast
 {
 class AST;
+class CastDecl;
+class ClassDecl;
 class CompoundStatement;
+class ConstructorDecl;
 class Declaration;
+class DestructorDecl;
+class EnumDeclaration;
 class Expression;
 class FunctionDecl;
 class Identifier;
+class NamespaceDeclaration;
+class OperatorOverloadDecl;
 class VariableDecl;
 class QualifiedType;
+class Typedef;
 } // namespace ast
 
 namespace compiler
@@ -39,21 +47,21 @@ class Compiler;
 struct StaticVariable
 {
   StaticVariable() { }
-  StaticVariable(const Value & var, const std::shared_ptr<ast::Expression> & ie, const script::Scope & scp) :
-    variable(var), init(ie), scope(scp) { }
+  StaticVariable(const Value & var, const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp) :
+    variable(var), declaration(decl), scope(scp) { }
 
   Value variable;
-  std::shared_ptr<ast::Expression> init;
-  script::Scope scope;
+  std::shared_ptr<ast::VariableDecl> declaration;
+  Scope scope;
 };
 
 
-struct Declaration
+struct ScopedDeclaration
 {
-  Declaration() { }
-  Declaration(const script::Scope & scp, const std::shared_ptr<ast::Declaration> & decl) : scope(scp), declaration(decl) { }
+  ScopedDeclaration() { }
+  ScopedDeclaration(const script::Scope & scp, const std::shared_ptr<ast::Declaration> & decl) : scope(scp), declaration(decl) { }
 
-  script::Scope scope;
+  Scope scope;
   std::shared_ptr<ast::Declaration> declaration;
 };
 
@@ -75,31 +83,18 @@ public:
 
   inline Script script() const { return mScript; }
 
-  struct StatePasskey
-  {
-  private:
-    friend class StateLock;
-    StatePasskey() {}
-  };
-
-  inline const script::Scope & currentScope() const { return mCurrentScope; }
-  inline void setCurrentScope(script::Scope scope, const StatePasskey &) { setCurrentScope(scope); }
-  inline const std::shared_ptr<ast::Declaration> & currentDeclaration() const { return mCurrentDeclaration; }
-  inline void setCurrentDeclaration(const std::shared_ptr<ast::Declaration> & decl, const StatePasskey &) { setCurrentDeclaration(decl); }
-
 protected:
-  NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
   std::string repr(const std::shared_ptr<ast::Identifier> & id); /// TODO : merge this duplicate of AbstractExpressionCompiler::repr()
-  Type resolveFunctionType(const ast::QualifiedType & qt);
-  Type resolve(const ast::QualifiedType & qt);
+  Type resolveFunctionType(const ast::QualifiedType & qt, const Scope & scp);
+  Type resolve(const ast::QualifiedType & qt, const Scope & scp);
 
-  Function registerRootFunction();
+  Function registerRootFunction(const Scope & scp);
   bool processFirstOrderDeclarationsAndCollectHigherOrderDeclarations();
-  void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const script::Scope & scope);
+  void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scope);
   void processSecondOrderDeclarations();
-  bool processSecondOrderDeclaration(const compiler::Declaration & decl);
-  void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl);
-  void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl);
+  void processSecondOrderDeclaration(const ScopedDeclaration & decl);
+  void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
+  void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
   void processThirdOrderDeclarations();
   bool compileFunctions();
   static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
@@ -110,32 +105,28 @@ protected:
   bool isSecondOrderDeclaration(const std::shared_ptr<ast::Declaration>& decl) const;
   bool isThirdOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const;
 
-  bool processClassDeclaration();
-  void processEnumDeclaration();
-  void processTypedef();
-  void processNamespaceDecl();
-  bool processFirstOrderTemplateDeclaration();
+  void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl, const Scope & scp);
+  void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl, const Scope & scp);
+  void processTypedef(const std::shared_ptr<ast::Typedef> & decl, const Scope & scp);
+  void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl, const Scope & scp);
+  void processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl, const Scope &);
 
-  bool processFunctionDeclaration();
-  bool processConstructorDeclaration();
-  bool processDestructorDeclaration();
-  bool processLiteralOperatorDecl();
-  bool processOperatorOverloadingDeclaration();
-  bool processCastOperatorDeclaration();
-  bool processSecondOrderTemplateDeclaration();
+  void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl, const Scope & scp);
+  void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl, const Scope & scp);
+  void processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl, const Scope & scp);
+  void processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl, const Scope & scp);
+  void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl, const Scope & scp);
+  void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl, const Scope & scp);
+  void processSecondOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl, const Scope &);
 
   // template-related functions
   TemplateArgument processTemplateArg(const std::shared_ptr<ast::Expression> & arg);
 
 
   // function-related functions
-  Prototype functionPrototype();
+  Prototype functionPrototype(const std::shared_ptr<ast::FunctionDecl> & decl, const Scope & scp);
 
 protected:
-  void setCurrentScope(script::Scope scope);
-  void setCurrentDeclaration(const std::shared_ptr<ast::Declaration> & decl);
-  void setState(const script::Scope & scope, const std::shared_ptr<ast::Declaration> & decl);
-
   void schedule(const CompileFunctionTask & task);
 
 protected:
@@ -147,35 +138,17 @@ protected:
   Script mScript;
   std::shared_ptr<ast::AST> mAst;
 
-  std::vector<Declaration> mSecondOrderDeclarations; // functions, operators, casts
-  std::vector<Declaration> mThirdOrderDeclarations; // data members (including static data members)
+  std::vector<ScopedDeclaration> mSecondOrderDeclarations; // functions, operators, casts
+  std::vector<ScopedDeclaration> mThirdOrderDeclarations; // data members (including static data members)
 
-  script::Scope mCurrentScope;
-  std::shared_ptr<ast::Declaration> mCurrentDeclaration;
+  Scope mCurrentScope;
 
   std::vector<StaticVariable> mStaticVariables;
   std::vector<CompileFunctionTask> mCompilationTasks;
 };
 
-class StateLock
-{
-public:
-  StateLock(ScriptCompiler *c);
-  StateLock(const StateLock &) = delete;
-  ~StateLock();
-
-  StateLock & operator=(const StateLock &) = delete;
-
-private:
-  ScriptCompiler *compiler;
-  script::Scope scope;
-  std::shared_ptr<ast::Declaration> decl;
-};
-
 } // namespace compiler
 
-
 } // namespace script
-
 
 #endif // LIBSCRIPT_COMPILE_SCRIPT_H
