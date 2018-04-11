@@ -65,6 +65,7 @@ enum class LIBSCRIPT_API NodeType {
   BraceInitialization,
   AssignmentInitialization,
   Typedef,
+  NamespaceDecl,
 };
 
 class LIBSCRIPT_API Node
@@ -1079,6 +1080,27 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return name->pos(); }
+};
+
+class LIBSCRIPT_API NamespaceDeclaration : public Declaration
+{
+public:
+  parser::Token namespace_token;
+  std::shared_ptr<Identifier> namespace_name;
+  parser::Token left_brace;
+  std::vector<std::shared_ptr<Statement>> statements;
+  parser::Token right_brace;
+
+public:
+  NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
+  ~NamespaceDeclaration() = default;
+
+  static std::shared_ptr<NamespaceDeclaration> New(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
+
+  static const NodeType type_code = NodeType::NamespaceDecl;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return namespace_name->pos(); }
 };
 
 } // namespace ast

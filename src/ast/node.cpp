@@ -689,6 +689,22 @@ std::shared_ptr<Typedef> Typedef::New(const parser::Token & typedef_tok, const Q
 }
 
 
+
+NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
+  : namespace_token(ns_tok)
+  , namespace_name(n)
+  , left_brace(lb)
+  , statements(std::move(stats))
+  , right_brace(rb)
+{
+
+}
+
+std::shared_ptr<NamespaceDeclaration> NamespaceDeclaration::New(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
+{
+  return std::make_shared<NamespaceDeclaration>(ns_tok, n, lb, std::move(stats), rb);
+}
+
 } // namespace ast
 
 } // namespace script

@@ -1076,6 +1076,8 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     return parseCompoundStatement();
   case Token::Typedef:
     return parseTypedef();
+  case Token::Namespace:
+    return parseNamespace();
   default:
     break;
   }
@@ -1271,6 +1273,12 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
   const parser::Token semicolon = unsafe_read();
 
   return ast::Typedef::New(typedef_tok, qtype, name);
+}
+
+std::shared_ptr<ast::NamespaceDeclaration> ProgramParser::parseNamespace()
+{
+  NamespaceParser np{ fragment() };
+  return np.parse();
 }
 
 
@@ -2686,6 +2694,43 @@ Token ClassParser::read(Token::Type tt)
     throw UnexpectedToken{};
   return r;
 }
+
+
+NamespaceParser::NamespaceParser(AbstractFragment *fragment)
+  : ParserBase(fragment)
+{
+
+}
+
+std::shared_ptr<ast::NamespaceDeclaration> NamespaceParser::parse()
+{
+  const Token ns_tok = unsafe_read();
+
+  auto name = readNamespaceName();
+
+  if (peek() != Token::LeftBrace)
+    throw ExpectedLeftBrace{};
+
+  const Token lb = unsafe_read();
+
+  SentinelFragment sentinel{ Token::RightBrace, fragment() };
+  Parser parser;
+  parser.reset(&sentinel);
+
+  auto statements = parser.parseProgram();
+
+  const Token rb = sentinel.consumeSentinel();
+
+  return ast::NamespaceDeclaration::New(ns_tok, name, lb, std::move(statements), rb);
+}
+
+std::shared_ptr<ast::Identifier> NamespaceParser::readNamespaceName()
+{
+  IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
+  return idp.parse();
+}
+
+
 
 Parser::Parser()
   : ProgramParser(nullptr)

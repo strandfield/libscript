@@ -195,6 +195,12 @@ DECLARE_COMPILER_ERROR(CouldNotFindValidLiteralOperator, "Could not find valid l
 DECLARE_COMPILER_ERROR(UnknownTypeInBraceInitialization, "Unknown type %1 in brace initialization", std::string);
 DECLARE_COMPILER_ERROR(NarrowingConversionInBraceInitialization, "Narrowing conversion from %1 to %2 in brace initialization", std::string, std::string);
 
+DECLARE_COMPILER_ERROR(NamespaceDeclarationCannotAppearAtThisLevel, "Namespace declarations cannot appear at this level");
+DECLARE_COMPILER_ERROR(ExpectedDeclaration, "Expected a declaration.");
+DECLARE_COMPILER_ERROR(GlobalVariablesCannotBeAuto, "Global variables cannot be declared with auto.");
+DECLARE_COMPILER_ERROR(GlobalVariablesMustBeInitialized, "Global variables must have an initializer.");
+DECLARE_COMPILER_ERROR(GlobalVariablesMustBeAssigned, "Global variables must be initialized through assignment.");
+
 DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
 
 #undef DECLARE_COMPILER_ERROR

@@ -1271,6 +1271,64 @@ TEST(CompilerTests, static_data_member) {
   ASSERT_EQ(it->second.value.toInt(), 4);
 }
 
+TEST(CompilerTests, namespace_decl_with_function) {
+  using namespace script;
 
+  const char *source =
+    "  namespace ns {            "
+    "    int foo() { return 4; } "
+    "    namespace bar { }       "
+    "  }                         ";
 
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().namespaces().size(), 1);
+  
+  Namespace ns = s.rootNamespace().namespaces().front();
+  ASSERT_EQ(ns.name(), "ns");
+
+  ASSERT_EQ(ns.functions().size(), 1);
+  ASSERT_EQ(ns.functions().front().name(), "foo");
+
+  ASSERT_EQ(ns.namespaces().size(), 1);
+  
+  Namespace bar = ns.namespaces().front();
+  ASSERT_EQ(bar.name(), "bar");
+}
+
+TEST(CompilerTests, namespace_decl_with_variable) {
+  using namespace script;
+
+  const char *source =
+    "  namespace ns {   "
+    "    int n = 4;     "
+    "  }                ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().namespaces().size(), 1);
+
+  Namespace ns = s.rootNamespace().namespaces().front();
+  ASSERT_EQ(ns.name(), "ns");
+
+  ASSERT_EQ(ns.vars().size(), 1);
+
+  auto it = ns.vars().find("n");
+  ASSERT_TRUE(it != ns.vars().end());
+  ASSERT_TRUE(it->second.isInitialized());
+  ASSERT_EQ(it->second.type(), Type::Int);
+  ASSERT_EQ(it->second.toInt(), 4);
+}
 

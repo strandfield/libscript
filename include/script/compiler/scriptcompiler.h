@@ -99,6 +99,7 @@ protected:
   void processSecondOrderDeclarations();
   bool processSecondOrderDeclaration(const compiler::Declaration & decl);
   void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl);
+  void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl);
   void processThirdOrderDeclarations();
   bool compileFunctions();
   static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
@@ -112,6 +113,7 @@ protected:
   bool processClassDeclaration();
   void processEnumDeclaration();
   void processTypedef();
+  void processNamespaceDecl();
   bool processFirstOrderTemplateDeclaration();
 
   bool processFunctionDeclaration();

@@ -759,3 +759,26 @@ TEST(ParserTests, typedefs) {
   }
 }
 
+TEST(ParserTests, namespace_decl) {
+
+  const char *source =
+    "  namespace ns {         "
+    "    int a;               "
+    "    int foo() { }        "
+    "    namespace bar { }    "
+    "  }                      ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_TRUE(actual->type() == ast::NodeType::NamespaceDecl);
+
+  const auto & ndecl = actual->as<ast::NamespaceDeclaration>();
+  ASSERT_EQ(ndecl.statements.size(), 3);
+
+  ASSERT_EQ(ndecl.statements.front()->type(), ast::NodeType::VariableDeclaration);
+  ASSERT_EQ(ndecl.statements.at(1)->type(), ast::NodeType::FunctionDeclaration);
+  ASSERT_EQ(ndecl.statements.back()->type(), ast::NodeType::NamespaceDecl);
+}

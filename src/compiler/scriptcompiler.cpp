@@ -23,6 +23,7 @@
 #include "script/functiontype.h"
 #include "script/literals.h"
 #include "../literals_p.h"
+#include "../namespace_p.h"
 #include "../scope_p.h"
 #include "../script_p.h"
 
@@ -144,6 +145,7 @@ Function ScriptCompiler::registerRootFunction()
     case ast::NodeType::Typedef:
     case ast::NodeType::FunctionDeclaration:
     case ast::NodeType::OperatorOverloadDeclaration:
+    case ast::NodeType::NamespaceDecl:
       break;
     case ast::NodeType::CastDeclaration:
       throw NotImplementedError{ "ScriptCompiler::registerRootFunction() : cast declaration are not allowed at this scope" };
@@ -183,6 +185,9 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
       break;
     case ast::NodeType::Typedef:
       processTypedef();
+      break;
+    case ast::NodeType::NamespaceDecl:
+      processNamespaceDecl();
       break;
       //case ast::NodeType::TemplateDeclaration:
       //  processFirstOrderTemplateDeclaration();
@@ -272,9 +277,6 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
 
   if (var_decl->staticSpecifier.isValid())
   {
-    if (var_decl->variable_type.type->name == parser::Token::Auto)
-      throw DataMemberCannotBeAuto{ dpos(var_decl) };
-
     if (var_decl->init == nullptr)
       throw MissingStaticInitialization{ dpos(var_decl) };
 
@@ -306,6 +308,47 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
   }
 }
 
+void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl)
+{
+  Namespace ns = currentScope().asNamespace();
+  assert(!ns.isNull());
+
+  if (decl->variable_type.type->name == parser::Token::Auto)
+    throw GlobalVariablesCannotBeAuto{ dpos(decl) };
+
+  /// TODO : consider variable which are functions
+  if (decl->variable_type.functionType != nullptr)
+    throw NotImplementedError{ "Static variables of function-type are not implemented yet" };
+
+  /// TODO : consider const-ref qualifications 
+  NameLookup lookup = NameLookup::resolve(decl->variable_type.type, currentScope());
+  if (lookup.resultType() != NameLookup::TypeName)
+    throw InvalidTypeName{ dpos(decl), repr(decl->variable_type.type) };
+
+  if (decl->init == nullptr)
+    throw GlobalVariablesMustBeInitialized{ dpos(decl) };
+
+  if (decl->init->is<ast::ConstructorInitialization>() || decl->init->is<ast::BraceInitialization>())
+    throw GlobalVariablesMustBeAssigned{ dpos(decl) };
+
+  auto expr = decl->init->as<ast::AssignmentInitialization>().value;
+  Value val;
+  if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
+  {
+    auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
+    auto execexpr = exprcomp->compile(expr, currentScope());
+    val = engine()->implementation()->interpreter->eval(execexpr);
+  }
+  else
+  {
+    val = engine()->uninitialized(lookup.typeResult());
+    mStaticVariables.push_back(StaticVariable{ val, expr, currentScope() });
+  }
+
+  engine()->manage(val);
+  ns.implementation()->variables[decl->name->getName()] = val;
+}
+
 void ScriptCompiler::processThirdOrderDeclarations()
 {
   for (size_t i(0); i < mThirdOrderDeclarations.size(); ++i)
@@ -325,6 +368,8 @@ void ScriptCompiler::processThirdOrderDeclarations()
 
     if (currentScope().isClass())
       processDataMemberDecl(var_decl);
+    else if (currentScope().type() == Scope::NamespaceScope)
+      processNamespaceVariableDecl(var_decl);
     else
       throw std::runtime_error{ "Not implemented" };
     
@@ -565,7 +610,7 @@ bool ScriptCompiler::initializeStaticVariables()
 
 bool ScriptCompiler::isFirstOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const
 {
-  if (decl->is<ast::ClassDecl>() || decl->is<ast::EnumDeclaration>() || decl->is<ast::Typedef>())
+  if (decl->is<ast::ClassDecl>() || decl->is<ast::EnumDeclaration>() || decl->is<ast::Typedef>() || decl->is<ast::NamespaceDeclaration>())
     return true;
 
   /*
@@ -667,6 +712,30 @@ void ScriptCompiler::processTypedef()
   const std::string & name = tdef.name->getName();
 
   currentScope().impl()->add_typedef(Typedef{ name, t });
+}
+
+void ScriptCompiler::processNamespaceDecl()
+{
+  const ast::NamespaceDeclaration & ndecl = currentDeclaration()->as<ast::NamespaceDeclaration>();
+
+  if (currentScope().type() != Scope::NamespaceScope && currentScope().type() != Scope::ScriptScope)
+    throw NamespaceDeclarationCannotAppearAtThisLevel{ dpos(currentDeclaration()) };
+
+  Namespace parent_ns = currentScope().type() == Scope::NamespaceScope ? currentScope().asNamespace() : currentScope().asScript().rootNamespace();
+  const std::string name = ndecl.namespace_name->getName();
+
+  Namespace ns = parent_ns.newNamespace(name); /// TODO : what-if the namespace already exists ?
+
+  StateLock lock{ this }; 
+  Scope child_scope = currentScope().child(name);
+  
+  for (const auto & s : ndecl.statements)
+  {
+    if (!s->is<ast::Declaration>())
+      throw ExpectedDeclaration{ dpos(s) };
+
+    processOrCollectDeclaration(std::dynamic_pointer_cast<ast::Declaration>(s), child_scope);
+  }
 }
 
 bool ScriptCompiler::processFirstOrderTemplateDeclaration()

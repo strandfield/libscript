@@ -301,6 +301,7 @@ protected:
   std::shared_ptr<ast::WhileLoop> parseWhileLoop();
   std::shared_ptr<ast::ForLoop> parseForLoop();
   std::shared_ptr<ast::Typedef> parseTypedef();
+  std::shared_ptr<ast::NamespaceDeclaration> parseNamespace();
 };
 
 class IdentifierParser : public ParserBase
@@ -521,6 +522,21 @@ protected:
 protected:
   std::shared_ptr<ast::ClassDecl> mClass;
   bool mTemplateSpecialization;
+};
+
+class NamespaceParser : public ParserBase
+{
+public:
+  NamespaceParser(AbstractFragment *fragment);
+  ~NamespaceParser() = default;
+
+  std::shared_ptr<ast::NamespaceDeclaration> parse();
+
+protected:
+  std::shared_ptr<ast::Identifier> readNamespaceName();
+
+protected:
+  std::shared_ptr<ast::NamespaceDeclaration> mNamespaceDecl;
 };
 
 class Parser : public ProgramParser
