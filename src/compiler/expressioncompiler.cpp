@@ -167,41 +167,14 @@ Type AbstractExpressionCompiler::resolve(const ast::QualifiedType & qt)
   return t;
 }
 
-std::vector<Function> & AbstractExpressionCompiler::removeDuplicates(std::vector<Function> & list)
-{
-  /// TODO
-
-  return list;
-}
-
-
-std::vector<Function> AbstractExpressionCompiler::getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy)
-{
-  std::vector<Function> ret = scp.operators(op);
-  if ((lookup_policy & OperatorLookupPolicy::FetchParentOperators) && !scp.parent().isNull())
-  {
-    const auto & ops = getScopeOperators(op, scp.parent(), OperatorLookupPolicy::FetchParentOperators);
-    ret.insert(ret.end(), ops.begin(), ops.end());
-  }
-
-  if (lookup_policy & OperatorLookupPolicy::RemoveDuplicates)
-    return removeDuplicates(ret);
-
-  return ret;
-}
-
 std::vector<Function> AbstractExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
 {
-  std::vector<Function> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
-  const std::vector<Function> & others = getOperators(op, b, OperatorLookupPolicy::FetchParentOperators);
-  result.insert(result.end(), others.begin(), others.end());
-  return removeDuplicates(result);
+  return NameLookup::resolve(op, a, b, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }
 
 std::vector<Function> AbstractExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
 {
-  std::vector<Function> result = getOperators(op, a, OperatorLookupPolicy::ConsiderCurrentScope | OperatorLookupPolicy::FetchParentOperators);
-  return removeDuplicates(result);
+  return NameLookup::resolve(op, a, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }
 
 std::vector<Function> AbstractExpressionCompiler::getLiteralOperators(const std::string & suffix)
@@ -214,7 +187,7 @@ std::vector<Function> AbstractExpressionCompiler::getLiteralOperators(const std:
       ret.push_back(lop);
   };
 
-  Scope s = currentScope();
+  Scope s = scope();
   while (!s.isNull())
   {
     const auto & lops = s.literalOperators();
@@ -902,54 +875,6 @@ NameLookup AbstractExpressionCompiler::resolve(const std::shared_ptr<ast::Identi
   return NameLookup::resolve(identifier, this);
 }
 
-std::vector<Function> AbstractExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
-{
-  std::vector<Function> ret;
-
-  if (type.isClosureType() || type.isFunctionType())
-  {
-    // these two don't have a definition scope, so we must process them separatly
-    if (type.isFunctionType() && op == Operator::AssignmentOperator)
-    {
-      return {engine()->getFunctionType(type).assignment()};
-    }
-    else if (type.isClosureType() && op == Operator::FunctionCallOperator)
-    {
-      return { engine()->getLambda(type).function() };
-    }
-
-    return ret;
-  }
-
-  script::Scope type_decl_scope = engine()->scope(type);
-  if (type.isObjectType())
-  {
-    script::Scope class_scope = script::Scope{ engine()->getClass(type), type_decl_scope };
-    const auto & ops = getScopeOperators(op, class_scope, OperatorLookupPolicy::FetchParentOperators);
-    ret.insert(ret.end(), ops.begin(), ops.end());
-
-    Class parent = class_scope.asClass().parent();
-    if (!parent.isNull())
-    {
-      const auto & parent_ops = getOperators(op, parent.id(), OperatorLookupPolicy::FetchParentOperators);
-      ret.insert(ret.end(), parent_ops.begin(), parent_ops.end());
-    }
-  }
-  else
-  {
-    const auto & ops = getScopeOperators(op, type_decl_scope, OperatorLookupPolicy::FetchParentOperators);
-    ret.insert(ret.end(), ops.begin(), ops.end());
-  }
-
-  if (type.isEnumType() && op == Operator::AssignmentOperator)
-    ret.insert(ret.end(), engine()->getEnum(type).getAssignmentOperator());
-
-  if (lookup_policy & OperatorLookupPolicy::RemoveDuplicates)
-    return removeDuplicates(ret);
-
-  return ret;
-}
-
 std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)
 {
   auto operation = std::dynamic_pointer_cast<ast::Operation>(in_op);
@@ -1101,14 +1026,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shar
   return generateExpression(expr);
 }
 
-Scope ExpressionCompiler::currentScope() const
+Scope ExpressionCompiler::scope() const
 {
   return mScope;
-}
-
-std::vector<Function> ExpressionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
-{
-  return AbstractExpressionCompiler::getOperators(op, type, lookup_policy);
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & op)

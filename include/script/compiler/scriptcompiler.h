@@ -7,6 +7,8 @@
 
 #include "script/compiler/compiler.h"
 
+#include "script/compiler/expressioncompiler.h"
+
 #include "script/types.h"
 #include "script/engine.h"
 
@@ -84,8 +86,7 @@ public:
   inline Script script() const { return mScript; }
 
 protected:
-  std::string repr(const std::shared_ptr<ast::Identifier> & id); /// TODO : merge this duplicate of AbstractExpressionCompiler::repr()
-  Type resolveFunctionType(const ast::QualifiedType & qt, const Scope & scp);
+  std::string repr(const std::shared_ptr<ast::Identifier> & id);
   Type resolve(const ast::QualifiedType & qt, const Scope & scp);
 
   Function registerRootFunction(const Scope & scp);
@@ -145,6 +146,8 @@ protected:
 
   std::vector<StaticVariable> mStaticVariables;
   std::vector<CompileFunctionTask> mCompilationTasks;
+
+  ExpressionCompiler mExprCompiler;
 };
 
 } // namespace compiler

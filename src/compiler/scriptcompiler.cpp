@@ -35,6 +35,7 @@ namespace compiler
 
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
+  , mExprCompiler(c, s)
 {
 
 }
@@ -59,52 +60,13 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
 
 std::string ScriptCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
 {
-  if (id->type() == ast::NodeType::SimpleIdentifier)
-    return id->getName();
-
-  /// TODO : implemented other identifier types
-
-  return id->getName();
-}
-
-/// TODO : remove this ugly duplicate of AbstractExpressionCompiler
-Type ScriptCompiler::resolveFunctionType(const ast::QualifiedType & qt, const Scope & scp)
-{
-  Prototype proto;
-  proto.setReturnType(resolve(qt.functionType->returnType, scp));
-
-  for (const auto & p : qt.functionType->params)
-    proto.addArgument(resolve(p, scp));
-
-  auto ft = engine()->getFunctionType(proto);
-  Type t = ft.type();
-  if (qt.constQualifier.isValid())
-    t = t.withFlag(Type::ConstFlag);
-  if (qt.reference == parser::Token::Ref)
-    t = t.withFlag(Type::ReferenceFlag);
-  else if (qt.reference == parser::Token::RefRef)
-    t = t.withFlag(Type::ForwardReferenceFlag);
-  return t;
+  return mExprCompiler.repr(id);
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt, const Scope & scp)
 {
-  if (qt.functionType != nullptr)
-    return resolveFunctionType(qt, scp);
-
-  NameLookup lookup = NameLookup::resolve(qt.type, scp);
-  if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(qt.type), repr(qt.type) };
-
-  Type t = lookup.typeResult();
-  if (qt.constQualifier.isValid())
-    t.setFlag(Type::ConstFlag);
-  if (qt.isRef())
-    t.setFlag(Type::ReferenceFlag);
-  else if (qt.isRefRef())
-    t.setFlag(Type::ForwardReferenceFlag);
-
-  return t;
+  mExprCompiler.setScope(scp);
+  return mExprCompiler.resolve(qt);
 }
 
 Function ScriptCompiler::registerRootFunction(const Scope & scp)
@@ -242,8 +204,7 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
     auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
     if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
     {
-      auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
-      auto execexpr = exprcomp->compile(expr, scp);
+      auto execexpr = mExprCompiler.compile(expr, scp);
       
       Value val = engine()->implementation()->interpreter->eval(execexpr);
       current_class.addStaticDataMember(var_decl->name->getName(), val);
@@ -291,8 +252,7 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
   Value val;
   if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
   {
-    auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
-    auto execexpr = exprcomp->compile(expr, scp);
+    auto execexpr = mExprCompiler.compile(expr, scp);
     val = engine()->implementation()->interpreter->eval(execexpr);
   }
   else
@@ -491,8 +451,7 @@ bool ScriptCompiler::checkStaticInitialization(const std::shared_ptr<program::Ex
 
 bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
 {
-  auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
-  exprcomp->setScope(svar.scope);
+  mExprCompiler.setScope(svar.scope);
 
   const auto & init = svar.declaration->init;
   auto parsed_initexpr = init->as<ast::AssignmentInitialization>().value;
@@ -510,8 +469,7 @@ bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
   }
   else
   {
-    auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
-    std::shared_ptr<program::Expression> initexpr = exprcomp->compile(parsed_initexpr, svar.scope);
+    std::shared_ptr<program::Expression> initexpr = mExprCompiler.compile(parsed_initexpr, svar.scope);
 
     if (!checkStaticInitialization(initexpr))
       throw InvalidStaticInitialization{};

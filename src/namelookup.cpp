@@ -4,7 +4,10 @@
 
 #include "script/namelookup.h"
 #include "namelookup_p.h"
+
+#include "script/engine.h"
 #include "scope_p.h"
+#include "script/functiontype.h"
 
 #include "script/parser/parser.h"
 
@@ -359,7 +362,7 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   auto result = std::make_shared<NameLookupImpl>();
   result->identifier = name;
   result->compiler = compiler;
-  result->scope = compiler->currentScope();
+  result->scope = compiler->scope();
 
   NameLookup l{ result };
   l.process();
@@ -373,7 +376,7 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   result->identifier = name;
   result->arguments = &args;
   result->compiler = compiler;
-  result->scope = compiler->currentScope();
+  result->scope = compiler->scope();
 
   NameLookup l{ result };
   l.process();
@@ -414,6 +417,97 @@ NameLookup NameLookup::member(const std::string & name, const Class & cla)
     return NameLookup{ result };
 
   return NameLookup::member(name, base);
+}
+
+static void remove_duplicated_operators(std::vector<Function> & list)
+{
+  /// TODO : quicksort and remove duplicate
+  // note that this is not required for OverloadResolution to work
+  // we need to check if that is faster to remove the duplicates or not
+}
+
+static void get_scope_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const script::Scope & scp, int opts)
+{
+  const auto & candidates = scp.operators();
+  for (const auto & c : candidates)
+  {
+    if (c.operatorId() != op)
+      continue;
+    list.push_back(c);
+  }
+
+  if ((opts & OperatorLookup::FetchParentOperators) && !scp.parent().isNull())
+    get_scope_operators(list, op, scp.parent(), OperatorLookup::FetchParentOperators);
+
+  if (opts & OperatorLookup::RemoveDuplicates)
+    return remove_duplicated_operators(list);
+}
+
+
+static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOperator op, const Type & type, const Scope & scp, int opts)
+{
+  Engine *engine = scp.engine();
+
+  if (type.isClosureType() || type.isFunctionType())
+  {
+    // these two don't have a definition scope, so we must process them separatly
+    if (type.isFunctionType() && op == Operator::AssignmentOperator)
+    {
+      result.push_back(engine->getFunctionType(type).assignment());
+      return;
+    }
+    else if (type.isClosureType() && op == Operator::FunctionCallOperator)
+    {
+      result.push_back(engine->getLambda(type).function());
+      return;
+    }
+
+    return;
+  }
+
+  script::Scope type_decl_scope = engine->scope(type);
+  if (type.isObjectType())
+  {
+    script::Scope class_scope = script::Scope{ engine->getClass(type), type_decl_scope };
+    get_scope_operators(result, op, class_scope, OperatorLookup::FetchParentOperators);
+
+    Class parent = class_scope.asClass().parent();
+    if (!parent.isNull())
+      resolve_operators(result, op, parent.id(), scp, OperatorLookup::FetchParentOperators);
+  }
+  else
+  {
+    get_scope_operators(result, op, type_decl_scope, OperatorLookup::FetchParentOperators);
+  }
+
+  if (type.isEnumType() && op == Operator::AssignmentOperator)
+    result.push_back(engine->getEnum(type).getAssignmentOperator());
+
+  if (opts & OperatorLookup::ConsiderCurrentScope)
+  {
+    /// TODO : check if type_decl_scope == scp to avoid unesseccary operation
+
+    get_scope_operators(result, op, scp, OperatorLookup::FetchParentOperators);
+  }
+
+  if (opts & OperatorLookup::RemoveDuplicates)
+    remove_duplicated_operators(result);
+}
+
+std::vector<Function> NameLookup::resolve(Operator::BuiltInOperator op, const Type & type, const Scope & scp, int opts)
+{
+  std::vector<Function> result;
+  resolve_operators(result, op, type, scp, opts);
+  return result;
+}
+
+std::vector<Function> NameLookup::resolve(Operator::BuiltInOperator op, const Type & lhs, const Type & rhs, const Scope & scp, int opts)
+{
+  /// TODO : this needs some optimization !!
+  std::vector<Function> result;
+  resolve_operators(result, op, lhs, scp, opts);
+  resolve_operators(result, op, rhs, scp, opts & ~OperatorLookup::ConsiderCurrentScope);
+  return result;
 }
 
 compiler::AbstractExpressionCompiler * NameLookup::getCompiler()
@@ -487,14 +581,14 @@ void NameLookup::process()
   else if (name->type() == ast::NodeType::QualifiedIdentifier)
   {
     auto qualid = std::dynamic_pointer_cast<ast::ScopedIdentifier>(name);
-    Scope scp = unqualified_scope_lookup(qualid->lhs, compiler->currentScope(), compiler);
+    Scope scp = unqualified_scope_lookup(qualid->lhs, compiler->scope(), compiler);
     return qualified_lookup(qualid->rhs, scp);
   }
   else if (name->type() == ast::NodeType::TemplateIdentifier)
   {
     auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
     auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = compiler->currentScope().lookup(template_name->getName());
+    NameLookup tlookup = compiler->scope().lookup(template_name->getName());
     if (tlookup.resultType() != NameLookup::TemplateName)
       throw std::runtime_error{ "Not a template name" };
 

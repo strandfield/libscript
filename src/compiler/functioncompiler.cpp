@@ -355,7 +355,7 @@ Script FunctionCompiler::script()
   return mScript;
 }
 
-script::Scope FunctionCompiler::currentScope() const
+script::Scope FunctionCompiler::scope() const
 {
   return mCurrentScope;
 }
@@ -439,23 +439,6 @@ Scope FunctionCompiler::breakScope() const
     s = s.parent();
   return s;
 }
-
-std::vector<Function> FunctionCompiler::getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy)
-{
-  std::vector<Function> ret = AbstractExpressionCompiler::getOperators(op, type, lookup_policy);
-
-  if (lookup_policy & OperatorLookupPolicy::ConsiderCurrentScope)
-  {
-    const auto & ops = getScopeOperators(op, currentScope(), OperatorLookupPolicy::FetchParentOperators);
-    ret.insert(ret.end(), ops.begin(), ops.end());
-  }
-
-  if (lookup_policy & OperatorLookupPolicy::RemoveDuplicates)
-    return removeDuplicates(ret);
-
-  return ret;
-}
-
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateStatement(const std::shared_ptr<ast::Statement> & statement)
 {
@@ -591,7 +574,7 @@ std::shared_ptr<program::LambdaExpression> FunctionCompiler::generateLambdaExpre
 {
   CompileLambdaTask task;
   task.lexpr = lambda_expr;
-  task.scope = currentScope();
+  task.scope = scope();
 
   const int first_capturable = mFunction.isDestructor() || mFunction.isConstructor() ? 0 : 1;
   LambdaCompiler::preprocess(task, this, mStack, first_capturable);

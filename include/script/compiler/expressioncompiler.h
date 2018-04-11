@@ -59,18 +59,14 @@ public:
   bool isConstExpr(const std::shared_ptr<program::Expression> & expr);
   Value evalConstExpr(const std::shared_ptr<program::Expression> & expr);
 
-  virtual Scope currentScope() const = 0;
+  virtual Scope scope() const = 0;
 
 protected:
   friend class ConstructorCompiler;
   friend class LambdaCompiler;
+  friend class ScriptCompiler;
 
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
-
-  struct OperatorLookupPolicy {
-    enum Value { RemoveDuplicates = 1, FetchParentOperators = 2, ConsiderCurrentScope = 4 };
-  };
-  virtual std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope);
 
   virtual std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) = 0;
 
@@ -88,8 +84,6 @@ protected:
   Type resolveFunctionType(const ast::QualifiedType & qt);
   Type resolve(const ast::QualifiedType & qt);
 
-  static std::vector<Function> & removeDuplicates(std::vector<Function> & list);
-  std::vector<Function> getScopeOperators(Operator::BuiltInOperator op, const script::Scope & scp, int lookup_policy);
   std::vector<Function> getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b);
   std::vector<Function> getUnaryOperators(Operator::BuiltInOperator op, Type a);
   std::vector<Function> getCallOperator(const Type & functor_type);
@@ -146,8 +140,7 @@ public:
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp);
 
 protected:
-  Scope currentScope() const override;
-  std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope)  override;
+  Scope scope() const override;
   std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op) override;
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)  override;
   std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;

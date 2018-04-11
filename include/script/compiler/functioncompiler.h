@@ -121,7 +121,7 @@ public:
   void compile(const CompileFunctionTask & task);
 
   Script script();
-  script::Scope currentScope() const override;
+  script::Scope scope() const override;
   Class classScope();
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;
@@ -139,8 +139,6 @@ protected:
 
   Scope breakScope() const;
   inline Scope continueScope() const { return breakScope(); }
-
-  std::vector<Function> getOperators(Operator::BuiltInOperator op, Type type, int lookup_policy = OperatorLookupPolicy::FetchParentOperators | OperatorLookupPolicy::RemoveDuplicates | OperatorLookupPolicy::ConsiderCurrentScope) override;
 
   std::shared_ptr<program::Statement> generateStatement(const std::shared_ptr<ast::Statement> & statement);
   void generateStatements(const std::vector<std::shared_ptr<ast::Statement>> & in, std::vector<std::shared_ptr<program::Statement>> & out);
