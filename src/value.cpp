@@ -169,6 +169,11 @@ bool Value::isConst() const
   return type().isConst();
 }
 
+bool Value::isInitialized() const
+{
+  return !type().testFlag(Type::UninitializedFlag);
+}
+
 bool Value::isBool() const
 {
   return d->type.baseType() == Type::Boolean;

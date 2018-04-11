@@ -143,6 +143,7 @@ public:
   void setScope(const Scope & s);
 
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Context & context);
+  std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp);
 
 protected:
   Scope currentScope() const override;

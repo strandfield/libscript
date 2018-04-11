@@ -111,6 +111,7 @@ DECLARE_COMPILER_ERROR(DeclarationProcessingError, "Some declarations could not 
 DECLARE_COMPILER_ERROR(DataMemberCannotBeAuto, "Data members cannot be declared 'auto'.");
 DECLARE_COMPILER_ERROR(MissingStaticInitialization, "A static variable must be initialized.");
 DECLARE_COMPILER_ERROR(InvalidStaticInitialization, "Static variables can only be initialized through assignment.");
+DECLARE_COMPILER_ERROR(FailedToInitializeStaticVariable, "Failed to initialized static variable.");
 
 DECLARE_COMPILER_ERROR(InvalidBaseClass, "Invalid base class.");
 

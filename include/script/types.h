@@ -30,6 +30,7 @@ public:
     ThisFlag             = 0x800000,
     ManagedFlag          = 0x1000000,
     OptionalFlag         = 0x2000000, // used for optional function arguments
+    UninitializedFlag    = OptionalFlag,
   };
 
   enum BuiltInType {

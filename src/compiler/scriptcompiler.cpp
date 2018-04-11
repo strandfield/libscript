@@ -12,9 +12,12 @@
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
 
+#include "script/program/expression.h"
+
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "../class_p.h"
+#include "../engine_p.h"
 #include "../enum_p.h"
 #include "../function_p.h"
 #include "script/functiontype.h"
@@ -250,6 +253,58 @@ bool ScriptCompiler::processSecondOrderDeclaration(const compiler::Declaration &
   throw NotImplementedError{"ScriptCompiler::processSecondOrderDeclaration() : implementation error"};
 }
 
+void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & var_decl)
+{
+  Class current_class = currentScope().asClass();
+  assert(!current_class.isNull());
+
+  if (var_decl->variable_type.type->name == parser::Token::Auto)
+    throw DataMemberCannotBeAuto{ dpos(var_decl) };
+
+  /// TODO : consider variable which are functions
+  if (var_decl->variable_type.functionType != nullptr)
+    throw NotImplementedError{ "Static variables of function-type are not implemented yet" };
+
+  /// TODO : consider const-ref qualifications 
+  NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, currentScope());
+  if (lookup.resultType() != NameLookup::TypeName)
+    throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
+
+  if (var_decl->staticSpecifier.isValid())
+  {
+    if (var_decl->variable_type.type->name == parser::Token::Auto)
+      throw DataMemberCannotBeAuto{ dpos(var_decl) };
+
+    if (var_decl->init == nullptr)
+      throw MissingStaticInitialization{ dpos(var_decl) };
+
+    if (var_decl->init->is<ast::ConstructorInitialization>() || var_decl->init->is<ast::BraceInitialization>())
+      throw InvalidStaticInitialization{ dpos(var_decl) };
+
+    auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
+    if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
+    {
+      auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
+      auto execexpr = exprcomp->compile(expr, currentScope());
+      
+      Value val = engine()->implementation()->interpreter->eval(execexpr);
+      current_class.addStaticDataMember(var_decl->name->getName(), val);
+    }
+    else
+    {
+      Value staticMember = current_class.implementation()->add_static_data_member(var_decl->name->getName(), lookup.typeResult());
+      mStaticVariables.push_back(StaticVariable{ staticMember, expr, currentScope() });
+    }
+  }
+  else
+  {
+    Class::DataMember dataMember;
+    dataMember.name = var_decl->name->getName();
+    dataMember.type = lookup.typeResult();
+
+    current_class.implementation()->dataMembers.push_back(dataMember);
+  }
+}
 
 void ScriptCompiler::processThirdOrderDeclarations()
 {
@@ -259,68 +314,20 @@ void ScriptCompiler::processThirdOrderDeclarations()
     StateLock lock{ this };
     this->setState(decl.scope, decl.declaration);
 
-    if (!currentScope().isClass())
+    if (currentScope().type() == Scope::ScriptScope)
     {
       // Global variables are processed by the function compiler
       continue;
     }
 
-    Class current_class = currentScope().asClass();
-    assert(!current_class.isNull());
-
     std::shared_ptr<ast::VariableDecl> var_decl = std::dynamic_pointer_cast<ast::VariableDecl>(currentDeclaration());
     assert(var_decl != nullptr);
 
-    if (var_decl->staticSpecifier.isValid())
-    {
-      if (var_decl->variable_type.type->name == parser::Token::Auto)
-        throw DataMemberCannotBeAuto{ dpos(var_decl) };
-
-      if (var_decl->init == nullptr)
-        throw MissingStaticInitialization{ dpos(var_decl) };
-
-      if (var_decl->init->is<ast::ConstructorInitialization>() || var_decl->init->is<ast::BraceInitialization>())
-        throw InvalidStaticInitialization{ dpos(var_decl) };
-
-
-      /// TODO : consider variable which are functions
-      if (var_decl->variable_type.functionType != nullptr)
-        throw NotImplementedError{ "Static variables of function-type are not implemented yet" };
-
-      /// TODO : consider const-ref qualifications 
-      NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, currentScope());
-      if (lookup.resultType() != NameLookup::TypeName)
-        throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
-
-      Value staticMember = current_class.implementation()->addStaticDataMember(var_decl->name->getName(), lookup.typeResult());
-      auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
-      mStaticVariables.push_back(StaticVariable{ staticMember, expr, currentScope() });
-    }
+    if (currentScope().isClass())
+      processDataMemberDecl(var_decl);
     else
-    {
-      if (var_decl->variable_type.type->name == parser::Token::Auto)
-        throw DataMemberCannotBeAuto{ dpos(var_decl) };
-
-      Class::DataMember dataMember;
-      dataMember.name = var_decl->name->getName();
-
-      /// TODO : consider variable which are functions
-      if (var_decl->variable_type.functionType != nullptr)
-        throw NotImplementedError{ "Data members of function-type are not implemented yet" };
-
-      /// TODO : consider const-ref qualifications 
-      if (var_decl->variable_type.constQualifier.isValid() || var_decl->variable_type.reference.isValid())
-        log(diagnostic::warning() << diagnostic::pos(var_decl->pos().line, var_decl->pos().col)
-          << "ref and const qualifiers are ignored for now");
-
-      NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, currentScope());
-      if (lookup.resultType() != NameLookup::TypeName)
-        throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
-
-      dataMember.type = lookup.typeResult();
-
-      current_class.implementation()->dataMembers.push_back(dataMember);
-    }
+      throw std::runtime_error{ "Not implemented" };
+    
   }
 }
 
@@ -339,27 +346,218 @@ bool ScriptCompiler::compileFunctions()
   return true;
 }
 
+static bool check_static_init(program::Expression &);
+
+static bool check_static_init(const std::vector<std::shared_ptr<program::Expression>> & exprs)
+{
+  for (const auto & e : exprs)
+  {
+    if (!check_static_init(*e))
+      return false;
+  }
+
+  return true;
+}
+
+class StaticInitializationChecker : public program::ExpressionVisitor
+{
+public:
+  bool result;
+public:
+  StaticInitializationChecker() : result(true) { }
+  ~StaticInitializationChecker() = default;
+
+  Value visit(const program::ArrayExpression & ae)
+  {
+    result = check_static_init(ae.elements);
+    return Value{};
+  }
+
+  Value visit(const program::BindExpression &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::CaptureAccess &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::CommaExpression &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::ConditionalExpression & ce)
+  {
+    result = check_static_init(*ce.cond) && check_static_init(*ce.onTrue) && check_static_init(*ce.onFalse);
+    return Value{};
+  }
+
+
+  Value visit(const program::ConstructorCall & cc)
+  {
+    result = check_static_init(cc.arguments);
+    return Value{};
+  }
+
+  Value visit(const program::Copy &)
+  {
+    result = true;
+    return Value{};
+  }
+
+  Value visit(const program::FetchGlobal &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::FunctionCall & fc)
+  {
+    result = check_static_init(fc.args);
+    return Value{};
+  }
+
+  Value visit(const program::FunctionVariableCall & fvc)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::FundamentalConversion &)
+  {
+    result = true;
+    return Value{};
+  }
+
+  Value visit(const program::LambdaExpression &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::Literal &)
+  {
+    result = true;
+    return Value{};
+  }
+
+  Value visit(const program::LogicalAnd &)
+  {
+    result = true;
+    return Value{};
+  }
+
+  Value visit(const program::LogicalOr &)
+  {
+    result = true;
+    return Value{};
+  }
+
+  Value visit(const program::MemberAccess & ma)
+  {
+    result = check_static_init(*ma.object);
+    return Value{};
+  }
+
+  Value visit(const program::StackValue &)
+  {
+    result = false;
+    return Value{};
+  }
+
+  Value visit(const program::VirtualCall &)
+  {
+    result = false;
+    return Value{};
+  }
+
+};
+
+bool check_static_init(program::Expression & expr)
+{
+  StaticInitializationChecker checker;
+  expr.accept(checker);
+  return checker.result;
+}
+
+
+bool ScriptCompiler::checkStaticInitialization(const std::shared_ptr<program::Expression> & expr)
+{
+  return check_static_init(*expr);
+}
+
+bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
+{
+  auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
+  exprcomp->setScope(svar.scope);
+
+  if (svar.init == nullptr)
+  {
+    try
+    {
+      Value val = svar.variable;
+      engine()->placement(val, {});
+    }
+    catch (...)
+    {
+      throw FailedToInitializeStaticVariable{};
+    }
+  }
+  else
+  {
+    auto exprcomp = std::unique_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
+    std::shared_ptr<program::Expression> initexpr = exprcomp->compile(svar.init, svar.scope);
+
+    if (!checkStaticInitialization(initexpr))
+      throw InvalidStaticInitialization{};
+
+    if (initexpr->is<program::ConstructorCall>())
+    {
+      auto ctorcall = std::dynamic_pointer_cast<program::ConstructorCall>(initexpr);
+      try
+      {
+        std::vector<Value> args;
+        for (const auto & a : ctorcall->arguments)
+        {
+          args.push_back(engine()->implementation()->interpreter->eval(a));
+        }
+        Value val = svar.variable;
+        engine()->placement(val, args);
+      }
+      catch (...)
+      {
+        throw FailedToInitializeStaticVariable{};
+      }
+    }
+    else
+    {
+      try
+      {
+        Value val = svar.variable;
+        Value arg = engine()->implementation()->interpreter->eval(initexpr);
+        engine()->placement(val, { arg });
+      }
+      catch (...)
+      {
+        throw FailedToInitializeStaticVariable{};
+      }
+    }
+  }
+
+  return true;
+}
+
 bool ScriptCompiler::initializeStaticVariables()
 {
   for (size_t i(0); i < mStaticVariables.size(); ++i)
   {
-    const StaticVariable & svar = mStaticVariables.at(i);
-
-    throw NotImplementedError{ "Static variable initialization not implemented yet" };
-
-    if (svar.init == nullptr)
-    {
-      /// TODO : create a ScopedExpressionCompiler
-      //auto exprcomp = std::shared_ptr<ExpressionCompiler>(getComponent<ExpressionCompiler>());
-
-    }
-    else
-    {
-
-    }
-
+    initializeStaticVariable(mStaticVariables.at(i));
   }
-
 
   return true;
 }

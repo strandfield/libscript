@@ -759,6 +759,15 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
     c = c.parent();
   }
 
+  {
+    const auto & sdm = mClass.staticDataMembers();
+    auto it = sdm.find(name);
+    if (it != sdm.end())
+    {
+      nl->valueResult = it->second.value;
+      return true;
+    }
+  }
 
   return ExtensibleScope::lookup(name, nl);
 }

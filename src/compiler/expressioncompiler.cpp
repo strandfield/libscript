@@ -1094,6 +1094,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shar
   return generateExpression(expr);
 }
 
+std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp)
+{
+  mContext = Context{};
+  mScope = scp;
+  return generateExpression(expr);
+}
+
 Scope ExpressionCompiler::currentScope() const
 {
   return mScope;
@@ -1106,6 +1113,9 @@ std::vector<Function> ExpressionCompiler::getOperators(Operator::BuiltInOperator
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & op)
 {
+  if (mContext.isNull())
+    return AbstractExpressionCompiler::generateOperation(op);
+
   const ast::Operation & oper = op->as<ast::Operation>();
   if (oper.operatorToken == parser::Token::Eq)
   {

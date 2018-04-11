@@ -1234,6 +1234,43 @@ TEST(CompilerTests, typedef_script_scope) {
   ASSERT_EQ(d.toDouble(), 3.0);
 }
 
+TEST(CompilerTests, static_data_member) {
+  using namespace script;
+
+  const char *source =
+    "  class A                "
+    "  {                      "
+    "    static int n = 3;    "
+    "    static int p = n+1;  "
+    "  };                     ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().classes().size(), 1);
+
+  Class A = s.rootNamespace().classes().front();
+  ASSERT_EQ(A.staticDataMembers().size(), 2);
+
+  const auto & sdm = A.staticDataMembers();
+  auto it = sdm.find("n");
+  ASSERT_TRUE(it != sdm.end());
+  ASSERT_TRUE(it->second.value.isInitialized());
+  ASSERT_EQ(it->second.value.type(), Type::Int);
+  ASSERT_EQ(it->second.value.toInt(), 3);
+
+  it = sdm.find("p");
+  ASSERT_TRUE(it != sdm.end());
+  ASSERT_TRUE(it->second.value.isInitialized());
+  ASSERT_EQ(it->second.value.type(), Type::Int);
+  ASSERT_EQ(it->second.value.toInt(), 4);
+}
+
 
 
 

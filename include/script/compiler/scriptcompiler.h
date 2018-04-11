@@ -27,6 +27,7 @@ class Declaration;
 class Expression;
 class FunctionDecl;
 class Identifier;
+class VariableDecl;
 class QualifiedType;
 } // namespace ast
 
@@ -97,8 +98,11 @@ protected:
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const script::Scope & scope);
   void processSecondOrderDeclarations();
   bool processSecondOrderDeclaration(const compiler::Declaration & decl);
+  void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl);
   void processThirdOrderDeclarations();
   bool compileFunctions();
+  static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
+  bool initializeStaticVariable(const StaticVariable & svar);
   bool initializeStaticVariables();
 
   bool isFirstOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const;

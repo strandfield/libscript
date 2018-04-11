@@ -39,6 +39,7 @@ public:
   bool isNull() const;
   Type type() const;
   bool isConst() const;
+  bool isInitialized() const;
 
   static const Value Void;
 

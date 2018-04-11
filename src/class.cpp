@@ -15,9 +15,9 @@
 namespace script
 {
 
-Value ClassImpl::addStaticDataMember(const std::string & name, const Type & t)
+Value ClassImpl::add_static_data_member(const std::string & name, const Type & t)
 {
-  Value ret = this->engine->implementation()->buildValue(t);
+  Value ret = this->engine->uninitialized(t);
   this->staticMembers[name] = Class::StaticDataMember{ name, ret };
   return ret;
 }

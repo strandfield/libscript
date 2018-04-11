@@ -487,4 +487,25 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(A.casts().size(), 1);
 }
 
+TEST(CoreUtilsTests, value_placement) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Value v = e.uninitialized(Type::Int);
+  ASSERT_EQ(v.type(), Type::Int);
+  ASSERT_FALSE(v.isInitialized());
+
+  Value init = e.newFloat(3.14);
+  e.placement(v, { init });
+  e.destroy(init);
+
+  ASSERT_TRUE(v.isInitialized());
+  ASSERT_EQ(v.type(), Type::Int);
+  ASSERT_EQ(v.toInt(), 3);
+  e.destroy(v);
+};
+
+
 
