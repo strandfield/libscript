@@ -507,5 +507,31 @@ TEST(CoreUtilsTests, value_placement) {
   e.destroy(v);
 };
 
+TEST(CoreUtilsTests, operator_names) {
+  using namespace script;
+
+  ASSERT_EQ(Operator::getFullName(Operator::PostIncrementOperator), "operator++");
+  ASSERT_EQ(Operator::getFullName(Operator::PreIncrementOperator), "operator++");
+  ASSERT_EQ(Operator::getFullName(Operator::LogicalNotOperator), "operator!");
+  ASSERT_EQ(Operator::getFullName(Operator::BitwiseNot), "operator~");
+  ASSERT_EQ(Operator::getFullName(Operator::MultiplicationOperator), "operator*");
+  ASSERT_EQ(Operator::getFullName(Operator::DivisionOperator), "operator/");
+  ASSERT_EQ(Operator::getFullName(Operator::AdditionOperator), "operator+");
+  ASSERT_EQ(Operator::getFullName(Operator::SubstractionOperator), "operator-");
+  ASSERT_EQ(Operator::getFullName(Operator::LeftShiftOperator), "operator<<");
+  ASSERT_EQ(Operator::getFullName(Operator::RightShiftOperator), "operator>>");
+  ASSERT_EQ(Operator::getFullName(Operator::LessOperator), "operator<");
+  ASSERT_EQ(Operator::getFullName(Operator::LessEqualOperator), "operator<=");
+  ASSERT_EQ(Operator::getFullName(Operator::GreaterOperator), "operator>");
+  ASSERT_EQ(Operator::getFullName(Operator::GreaterEqualOperator), "operator>=");
+  ASSERT_EQ(Operator::getFullName(Operator::EqualOperator), "operator==");
+  ASSERT_EQ(Operator::getFullName(Operator::InequalOperator), "operator!=");
+  ASSERT_EQ(Operator::getFullName(Operator::AssignmentOperator), "operator=");
+  ASSERT_EQ(Operator::getFullName(Operator::MultiplicationAssignmentOperator), "operator*=");
+  ASSERT_EQ(Operator::getFullName(Operator::DivisionAssignmentOperator), "operator/=");
+  ASSERT_EQ(Operator::getFullName(Operator::AdditionAssignmentOperator), "operator+=");
+  ASSERT_EQ(Operator::getFullName(Operator::SubstractionAssignmentOperator), "operator-=");
+};
+
 
 

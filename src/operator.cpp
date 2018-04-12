@@ -196,6 +196,24 @@ const std::string & Operator::getSymbol(BuiltInOperator op)
   return names[static_cast<int>(op)];
 }
 
+const std::string & Operator::getFullName(BuiltInOperator op)
+{
+  if (op == Null)
+    throw std::runtime_error{ "Invalid operator" };
+
+  static const std::string names[] = {
+    "", "operator::", "operator++", "operator--", "operator()", "operator[]", "operator.",
+    "operator++","operator--","operator+","operator-", "operator!","operator~", "operator*",
+    "operator/","operator%", "operator+", "operator-", "operator<<", "operator>>", "operator<",
+    "operator>","operator<=","operator>=", "operator==",  "operator!=", "operator&", "operator^",
+    "operator|","operator&&", "operator||","operator?:", "operator=","operator*=","operator/=",
+    "operator%=","operator+=","operator-=","operator<<=","operator>>=", "operator&=",  "operator|=",
+    "operator^=", "operator,",
+  };
+
+  return names[static_cast<int>(op)];
+}
+
 Operator & Operator::operator=(const Operator & other)
 {
   d = other.d;

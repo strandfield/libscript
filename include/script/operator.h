@@ -109,6 +109,7 @@ public:
   inline Type operandId() const { return this->firstOperand(); }
 
   static const std::string & getSymbol(BuiltInOperator op);
+  static const std::string & getFullName(BuiltInOperator op);
 
   Operator & operator=(const Operator & other);
   bool operator==(const Operator & other) const;
