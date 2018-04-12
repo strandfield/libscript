@@ -604,7 +604,7 @@ TEST(ParserTests, class_decls_1) {
   {
     const ClassDecl & cd = actual->as<ClassDecl>();
     ASSERT_EQ(cd.content.size(), 2);
-    ASSERT_TRUE(cd.content.front()->is<AccessSpecifier>());
+    ASSERT_TRUE(cd.content.front()->is<ast::AccessSpecifier>());
     ASSERT_TRUE(cd.content.back()->is<VariableDecl>());
   }
 

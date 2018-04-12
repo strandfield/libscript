@@ -654,6 +654,7 @@ void NamespaceScope::import_namespace(const NamespaceScope & other)
 ClassScope::ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p)
   : ExtensibleScope(p)
   , mClass(c)
+  , mAccessibility(AccessSpecifier::Private)
 {
 
 }
@@ -661,6 +662,7 @@ ClassScope::ClassScope(const Class & c, std::shared_ptr<ScopeImpl> p)
 ClassScope::ClassScope(const ClassScope & other)
   : ExtensibleScope(other)
   , mClass(other.mClass)
+  , mAccessibility(other.mAccessibility)
 {
 
 }
@@ -673,6 +675,13 @@ Engine * ClassScope::engine() const
 int ClassScope::kind() const
 {
   return Scope::ClassScope;
+}
+
+std::shared_ptr<ClassScope> ClassScope::withAccessibility(AccessSpecifier aspec) const
+{
+  auto cln = clone();
+  cln->mAccessibility = aspec;
+  return std::shared_ptr<ClassScope>(cln);
 }
 
 ClassScope * ClassScope::clone() const

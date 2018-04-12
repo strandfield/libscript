@@ -116,6 +116,15 @@ std::string CompilerComponent::dstr(const Type & t) const
   return engine()->typeName(t); 
 }
 
+std::string CompilerComponent::dstr(const AccessSpecifier & as)
+{
+  if (as == AccessSpecifier::Protected)
+    return "protected";
+  else if (as == AccessSpecifier::Private)
+    return "private";
+  return "public";
+}
+
 std::string CompilerComponent::dstr(const std::shared_ptr<ast::Identifier> & id)
 {
   return id->getName();

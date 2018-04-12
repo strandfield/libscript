@@ -592,7 +592,8 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateCall(const std::s
 
   if (callee->is<ast::Identifier>()) // this may implicitly call a member
   {
-    NameLookup lookup = NameLookup::resolve(std::dynamic_pointer_cast<ast::Identifier>(callee), args, this);
+    const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
+    NameLookup lookup = NameLookup::resolve(callee_name, args, this);
 
     if (lookup.resultType() == NameLookup::FunctionName)
     {
@@ -607,6 +608,8 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateCall(const std::s
       Function selected = resol.selectedOverload();
       if (selected.isDeleted())
         throw CallToDeletedFunction{ dpos(call) };
+      else if (!Accessibility::check(caller(), selected))
+        throw InaccessibleMember{ dpos(call), dstr(callee_name), dstr(selected.accessibility()) };
 
       const auto & convs = resol.conversionSequence();
      if (selected.isMemberFunction() && !selected.isConstructor())

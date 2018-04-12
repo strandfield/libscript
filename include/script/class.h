@@ -6,6 +6,7 @@
 #define LIBSCRIPT_CLASS_H
 
 #include "libscriptdefs.h"
+#include "accessspecifier.h"
 #include "function.h"
 #include "operator.h"
 
@@ -114,6 +115,11 @@ public:
 
   void addStaticDataMember(const std::string & name, const Value & value);
   const std::map<std::string, StaticDataMember> & staticDataMembers() const;
+
+  void addFriend(const Function & f);
+  void addFriend(const Class & c);
+  const std::vector<Function> & friends(const Function &) const;
+  const std::vector<Class> & friends(const Class &) const;
 
   Engine * engine() const;
   ClassImpl * implementation() const;

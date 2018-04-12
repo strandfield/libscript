@@ -419,6 +419,26 @@ const std::map<std::string, Class::StaticDataMember> & Class::staticDataMembers(
   return d->staticMembers;
 }
 
+void Class::addFriend(const Function & f)
+{
+  d->friend_functions.push_back(f);
+}
+
+void Class::addFriend(const Class & c)
+{
+  return d->friend_classes.push_back(c);
+}
+
+const std::vector<Function> & Class::friends(const Function &) const
+{
+  return d->friend_functions;
+}
+
+const std::vector<Class> & Class::friends(const Class &) const
+{
+  return d->friend_classes;
+}
+
 Engine * Class::engine() const
 {
   return d->engine;

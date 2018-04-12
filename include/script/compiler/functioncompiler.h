@@ -122,6 +122,7 @@ public:
 
   Script script();
   script::Scope scope() const override;
+  Function caller() const override { return compiledFunction(); }
   Class classScope();
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;

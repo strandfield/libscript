@@ -201,6 +201,8 @@ DECLARE_COMPILER_ERROR(GlobalVariablesCannotBeAuto, "Global variables cannot be 
 DECLARE_COMPILER_ERROR(GlobalVariablesMustBeInitialized, "Global variables must have an initializer.");
 DECLARE_COMPILER_ERROR(GlobalVariablesMustBeAssigned, "Global variables must be initialized through assignment.");
 
+DECLARE_COMPILER_ERROR(InaccessibleMember, "%1 is %2 within this context", std::string, std::string);
+
 DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
 
 #undef DECLARE_COMPILER_ERROR

@@ -149,10 +149,13 @@ public:
   ~ClassScope() = default;
 
   Class mClass;
+  AccessSpecifier mAccessibility; // accessibility of added members
 
   Engine * engine() const override;
   int kind() const override;
   ClassScope * clone() const override;
+
+  std::shared_ptr<ClassScope> withAccessibility(AccessSpecifier aspec) const;
 
   const std::vector<Class> & classes() const override;
   const std::vector<Enum> & enums() const override;

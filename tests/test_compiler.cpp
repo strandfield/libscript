@@ -765,6 +765,7 @@ TEST(CompilerTests, member_function_and_cast) {
   const char *source =
     "  class A                                 "
     "  {                                       "
+    "  public:                                 "
     "    int a;                                "
     "    A() : a(0) { }                        "
     "    ~A() { }                              "
@@ -1330,5 +1331,31 @@ TEST(CompilerTests, namespace_decl_with_variable) {
   ASSERT_TRUE(it->second.isInitialized());
   ASSERT_EQ(it->second.type(), Type::Int);
   ASSERT_EQ(it->second.toInt(), 4);
+}
+
+TEST(CompilerTests, access_specifier_function_1) {
+  using namespace script;
+
+  const char *source =
+    "  class A                        "
+    "  {                              "
+    "  public:                        "
+    "    A() = default;               "
+    "    ~A() = default;              "
+    "                                 "
+    "  private:                       "
+    "    int bar() { return 57; }     "
+    "  };                             "
+    "                                 "
+    "  A a;                           "
+    "  int n = a.bar();               ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
 }
 

@@ -58,6 +58,10 @@ public:
   FunctionBuilder & setPrototype(const Prototype & proto);
   FunctionBuilder & setCallback(NativeFunctionSignature impl);
   FunctionBuilder & setData(const std::shared_ptr<UserData> & data);
+  FunctionBuilder & setAccessibility(AccessSpecifier aspec);
+  FunctionBuilder & setPublic();
+  FunctionBuilder & setProtected();
+  FunctionBuilder & setPrivate();
 
   FunctionBuilder & setReturnType(const Type & t);
   inline FunctionBuilder & returns(const Type & t) { return setReturnType(t); }

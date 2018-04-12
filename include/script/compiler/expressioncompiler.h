@@ -60,6 +60,7 @@ public:
   Value evalConstExpr(const std::shared_ptr<program::Expression> & expr);
 
   virtual Scope scope() const = 0;
+  virtual Function caller() const { return Function{}; }
 
 protected:
   friend class ConstructorCompiler;

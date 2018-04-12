@@ -533,5 +533,38 @@ TEST(CoreUtilsTests, operator_names) {
   ASSERT_EQ(Operator::getFullName(Operator::SubstractionAssignmentOperator), "operator-=");
 };
 
+TEST(CoreUtilsTests, access_specifiers) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Function foo = A.Method("foo").setProtected().create();
+  Function bar = A.Method("bar").setPrivate().create();
+  Function qux = A.Method("qux").create();
+
+  ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
+  ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
+  ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
+
+  Class B = e.rootNamespace().newClass(ClassBuilder::New("B").setParent(A));
+  Function slurm = B.Method("slurm").create();
+  Function bender = B.Method("bender").create();
+
+  ASSERT_TRUE(Accessibility::check(slurm, qux));
+  ASSERT_TRUE(Accessibility::check(slurm, foo));
+  ASSERT_FALSE(Accessibility::check(slurm, bar));
+  ASSERT_FALSE(Accessibility::check(bender, bar));
+
+  A.addFriend(slurm);
+  ASSERT_TRUE(Accessibility::check(slurm, bar));
+  ASSERT_FALSE(Accessibility::check(bender, bar));
+
+  A.addFriend(B);
+  ASSERT_TRUE(Accessibility::check(slurm, bar));
+  ASSERT_TRUE(Accessibility::check(bender, bar));
+};
+
 
 

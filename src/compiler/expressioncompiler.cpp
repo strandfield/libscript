@@ -568,7 +568,8 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
 
   if (callee->is<ast::Identifier>())
   {
-    NameLookup lookup = NameLookup::resolve(std::dynamic_pointer_cast<ast::Identifier>(callee), args, this);
+    const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
+    NameLookup lookup = NameLookup::resolve(callee_name, args, this);
 
     if (lookup.resultType() == NameLookup::FunctionName)
     {
@@ -579,6 +580,8 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
       Function selected = resol.selectedOverload();
       if (selected.isDeleted())
         throw CallToDeletedFunction{ dpos(call) };
+      else if (!Accessibility::check(caller(), selected))
+        throw InaccessibleMember{dpos(call), dstr(callee_name), dstr(selected.accessibility())};
 
       const auto & convs = resol.conversionSequence();
       prepareFunctionArguments(args, selected.prototype(), convs);
@@ -608,7 +611,8 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
 
     auto object = generateExpression(member_access->arg1);
 
-    NameLookup lookup = NameLookup::member(std::dynamic_pointer_cast<ast::Identifier>(member_access->arg2)->getName(), engine()->getClass(object->type()));
+    const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(member_access->arg2);
+    NameLookup lookup = NameLookup::member(callee_name->getName(), engine()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
       auto functor = generateMemberAccess(object, lookup.dataMemberIndex());
@@ -623,6 +627,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
         throw CouldNotFindValidOverload{ dpos(call) };
 
       Function selected = resol.selectedOverload();
+      
+      if (selected.isDeleted())
+        throw CallToDeletedFunction{ dpos(call) };
+      else if (!Accessibility::check(caller(), selected))
+        throw InaccessibleMember{ dpos(call), dstr(callee_name), dstr(selected.accessibility()) };
+
       const auto & convs = resol.conversionSequence();
       prepareFunctionArguments(args, selected.prototype(), convs);
       assert(!selected.isConstructor()); /// TODO : check that this is not possible
@@ -670,6 +680,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctor
     throw CouldNotFindValidCallOperator{ dpos(call) };
 
   Function selected = resol.selectedOverload();
+
+  if (selected.isDeleted())
+    throw CallToDeletedFunction{ dpos(call) };
+  else if (!Accessibility::check(caller(), selected))
+    throw InaccessibleMember{ dpos(call), "operator()", dstr(selected.accessibility()) };
+
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
   const auto & convs = resol.conversionSequence();
@@ -954,6 +970,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUnaryOp
     throw CouldNotFindValidOperator{ dpos(operation) };
 
   Operator selected = resol.selectedOverload().toOperator();
+
+  if (selected.isDeleted())
+    throw CallToDeletedFunction{ dpos(operation) };
+  else if (!Accessibility::check(caller(), selected))
+    throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), dstr(selected.accessibility()) };
+
   const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
   prepareFunctionArguments(args, selected.prototype(), convs);

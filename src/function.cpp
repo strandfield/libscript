@@ -246,6 +246,11 @@ Class Function::memberOf() const
   return d->engine->getClass(cla);
 }
 
+AccessSpecifier Function::accessibility() const
+{
+  return static_cast<AccessSpecifier>(3 & (d->flags >> 9));
+}
+
 bool Function::isOperator() const
 {
   return dynamic_cast<OperatorImpl*>(d.get()) != nullptr;

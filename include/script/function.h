@@ -11,6 +11,7 @@
 namespace script
 {
 
+enum class AccessSpecifier;
 class Cast;
 class Class;
 class Engine;
@@ -52,6 +53,8 @@ public:
     ConstExpr = 16,
     Default = 32,
     Delete = 64,
+    Protected = 128,
+    Private = 256,
   };
 
   enum ImplementationMethod {
@@ -86,6 +89,7 @@ public:
 
   bool isMemberFunction() const;
   Class memberOf() const;
+  AccessSpecifier accessibility() const;
 
   bool isOperator() const;
   Operator toOperator() const;

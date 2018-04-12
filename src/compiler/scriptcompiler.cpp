@@ -564,6 +564,15 @@ bool ScriptCompiler::isThirdOrderDeclaration(const std::shared_ptr<ast::Declarat
 }
 
 
+static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
+{
+  if (as->visibility == parser::Token::Private)
+    return AccessSpecifier::Private;
+  else if (as->visibility == parser::Token::Protected)
+    return AccessSpecifier::Protected;
+  return AccessSpecifier::Public;
+}
+
 void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl, const Scope & scp)
 {
   assert(class_decl != nullptr);
@@ -589,11 +598,14 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
   Scope class_scope = Scope{ cla, scp };
   for (size_t i(0); i < class_decl->content.size(); ++i)
   {
-    /// TODO : handle access specifier
     if (class_decl->content.at(i)->is<ast::Declaration>())
       processOrCollectDeclaration(std::dynamic_pointer_cast<ast::Declaration>(class_decl->content.at(i)), class_scope);
     else if (class_decl->content.at(i)->is<ast::AccessSpecifier>())
-      log(diagnostic::warning() << "Access specifiers are ignored (not implemented yet)");
+    {
+      log(diagnostic::warning() << "Access specifiers are ignored for data members");
+      AccessSpecifier aspec = get_access_specifier(std::dynamic_pointer_cast<ast::AccessSpecifier>(class_decl->content.at(i)));
+      class_scope = Scope{ std::static_pointer_cast<ClassScope>(class_scope.impl())->withAccessibility(aspec) };
+    }
   }
 }
 
@@ -651,6 +663,17 @@ void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<
   throw NotImplementedError{ dpos(decl), "Template declarations not supported yet" };
 }
 
+void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp)
+{
+  if (!scp.isClass())
+    return;
+
+  auto class_scope = std::static_pointer_cast<ClassScope>(scp.impl());
+  if (class_scope->mAccessibility == AccessSpecifier::Private)
+    builder.setPrivate();
+  else if (class_scope->mAccessibility == AccessSpecifier::Protected)
+    builder.setProtected();
+}
 
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
@@ -666,6 +689,7 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
     if (fundecl->virtualPure.isValid())
       builder.setPureVirtual();
   }
+  handleAccessSpecifier(builder, scp);
   Function function = build(builder);
 
   scp.impl()->add_function(function);
@@ -692,6 +716,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
     b.setDeleted();
   if (ctor_decl.defaultKeyword.isValid())
     b.setDefaulted();
+  handleAccessSpecifier(b, scp);
   Function ctor = build(b);
 
   /// TODO : be careful not to add the constructor twice
@@ -714,6 +739,8 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
     b.setDeleted();
   if (dtor_decl.defaultKeyword.isValid())
     b.setDefaulted();
+
+  handleAccessSpecifier(b, scp);
 
   if (!current_class.parent().isNull())
   {
@@ -787,6 +814,9 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   FunctionBuilder builder = FunctionBuilder::Operator(operation, proto);
   if (over_decl.deleteKeyword.isValid())
     builder.setDeleted();
+
+  handleAccessSpecifier(builder, scp);
+
   Operator function = build(builder).toOperator();
 
   scp.impl()->add_operator(function);
@@ -809,6 +839,8 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
     builder.setExplicit();
   if (cast_decl.deleteKeyword.isValid())
     builder.setDeleted();
+
+  handleAccessSpecifier(builder, scp);
 
   Cast cast = build(builder).toCast();
 

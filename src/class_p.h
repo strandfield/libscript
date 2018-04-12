@@ -45,6 +45,8 @@ public:
   std::vector<Class::DataMember> dataMembers;
   std::vector<Function> virtualMembers;
   std::shared_ptr<UserData> data;
+  std::vector<Function> friend_functions;
+  std::vector<Class> friend_classes;
 
   ClassImpl(int i, const std::string & n, Engine *e)
     : id(i)

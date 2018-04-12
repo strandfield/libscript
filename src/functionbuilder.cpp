@@ -230,6 +230,42 @@ FunctionBuilder & FunctionBuilder::setData(const std::shared_ptr<UserData> & dat
   return *(this);
 }
 
+FunctionBuilder & FunctionBuilder::setAccessibility(AccessSpecifier aspec)
+{
+  // erase old access specifier
+  this->flags = (this->flags & ~((Function::Private | Function::Protected) << 2));
+  int f;
+  switch (aspec)
+  {
+  case script::AccessSpecifier::Public:
+    break;
+  case script::AccessSpecifier::Protected:
+    f = Function::Protected;
+    break;
+  case script::AccessSpecifier::Private:
+    f = Function::Private;
+    break;
+  }
+
+  this->flags |= (f << 2);
+  return (*this);
+}
+
+FunctionBuilder & FunctionBuilder::setPublic()
+{
+  return setAccessibility(AccessSpecifier::Public);
+}
+
+FunctionBuilder & FunctionBuilder::setProtected()
+{
+  return setAccessibility(AccessSpecifier::Protected);
+}
+
+FunctionBuilder & FunctionBuilder::setPrivate()
+{
+  return setAccessibility(AccessSpecifier::Private);
+}
+
 FunctionBuilder & FunctionBuilder::setReturnType(const Type & t)
 {
   this->proto.setReturnType(t);
