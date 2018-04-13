@@ -263,7 +263,7 @@ std::shared_ptr<program::Expression> LambdaCompiler::generateVariableAccess(cons
   {
     auto lambda = program::StackValue::New(1, Type::ref(mLambda.id()));
     auto this_object = program::CaptureAccess::New(Type::ref(task().capturedObject.id()), lambda, 0);
-    return generateMemberAccess(this_object, lookup.dataMemberIndex());
+    return AbstractExpressionCompiler::generateMemberAccess(this_object, lookup.dataMemberIndex(), dpos(identifier));
   }
 
   return FunctionCompiler::generateVariableAccess(identifier, lookup);

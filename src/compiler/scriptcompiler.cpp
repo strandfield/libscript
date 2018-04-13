@@ -207,20 +207,17 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
       auto execexpr = mExprCompiler.compile(expr, scp);
       
       Value val = engine()->implementation()->interpreter->eval(execexpr);
-      current_class.addStaticDataMember(var_decl->name->getName(), val);
+      current_class.addStaticDataMember(var_decl->name->getName(), val, getAccessSpecifier(scp));
     }
     else
     {
-      Value staticMember = current_class.implementation()->add_static_data_member(var_decl->name->getName(), lookup.typeResult());
+      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), lookup.typeResult(), getAccessSpecifier(scp));
       mStaticVariables.push_back(StaticVariable{ staticMember, var_decl, scp });
     }
   }
   else
   {
-    Class::DataMember dataMember;
-    dataMember.name = var_decl->name->getName();
-    dataMember.type = lookup.typeResult();
-
+    Class::DataMember dataMember{ lookup.typeResult(), var_decl->name->getName(), getAccessSpecifier(scp) };
     current_class.implementation()->dataMembers.push_back(dataMember);
   }
 }
@@ -602,7 +599,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
       processOrCollectDeclaration(std::dynamic_pointer_cast<ast::Declaration>(class_decl->content.at(i)), class_scope);
     else if (class_decl->content.at(i)->is<ast::AccessSpecifier>())
     {
-      log(diagnostic::warning() << "Access specifiers are ignored for data members");
+      log(diagnostic::warning() << "Access specifiers are ignored for type members");
       AccessSpecifier aspec = get_access_specifier(std::dynamic_pointer_cast<ast::AccessSpecifier>(class_decl->content.at(i)));
       class_scope = Scope{ std::static_pointer_cast<ClassScope>(class_scope.impl())->withAccessibility(aspec) };
     }
@@ -663,16 +660,27 @@ void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<
   throw NotImplementedError{ dpos(decl), "Template declarations not supported yet" };
 }
 
-void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp)
+AccessSpecifier ScriptCompiler::getAccessSpecifier(const Scope & scp)
 {
   if (!scp.isClass())
-    return;
+    return AccessSpecifier::Public;
 
-  auto class_scope = std::static_pointer_cast<ClassScope>(scp.impl());
-  if (class_scope->mAccessibility == AccessSpecifier::Private)
-    builder.setPrivate();
-  else if (class_scope->mAccessibility == AccessSpecifier::Protected)
+  return std::static_pointer_cast<ClassScope>(scp.impl())->mAccessibility;
+}
+
+void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp)
+{
+  switch (getAccessSpecifier(scp))
+  {
+  case AccessSpecifier::Protected:
     builder.setProtected();
+    break;
+  case AccessSpecifier::Private:
+    builder.setPrivate();
+    break;
+  default:
+    break;
+  }
 }
 
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)

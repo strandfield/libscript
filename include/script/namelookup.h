@@ -61,6 +61,7 @@ public:
     TypeName,
     VariableName,
     DataMemberName, 
+    StaticDataMemberName,
     GlobalName, 
     LocalName,
     EnumValueName,
@@ -80,6 +81,8 @@ public:
   int localIndex() const;
   const EnumValue & enumValueResult() const;
   const Namespace & namespaceResult() const;
+  const Class::StaticDataMember & staticDataMemberResult() const;
+  const Class & memberOf() const;
 
   static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
   static NameLookup resolve(const std::string & name, const Scope & scope);

@@ -31,6 +31,8 @@ public:
     ManagedFlag          = 0x1000000,
     OptionalFlag         = 0x2000000, // used for optional function arguments
     UninitializedFlag    = OptionalFlag,
+    ProtectedFlag        = 0x4000000,
+    PrivateFlag          = 0x8000000,
   };
 
   enum BuiltInType {

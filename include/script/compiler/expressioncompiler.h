@@ -126,7 +126,8 @@ protected:
   std::shared_ptr<program::Expression> generateConditionalExpression(const std::shared_ptr<ast::ConditionalExpression> & ce);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
-  std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index);
+  std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup);
 };
 
 

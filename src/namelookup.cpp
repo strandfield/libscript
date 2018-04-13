@@ -85,6 +85,8 @@ NameLookup::ResultType NameLookup::resultType() const
     return FunctionName;
   else if (d->dataMemberIndex != -1)
     return DataMemberName;
+  else if (!d->staticDataMemberResult.isNull())
+    return StaticDataMemberName;
   else if (d->enumValueResult.isValid())
     return EnumValueName;
   else if (d->globalIndex != -1)
@@ -154,6 +156,16 @@ const EnumValue & NameLookup::enumValueResult() const
 const Namespace & NameLookup::namespaceResult() const
 {
   return d->namespaceResult;
+}
+
+const Class::StaticDataMember & NameLookup::staticDataMemberResult() const
+{
+  return d->staticDataMemberResult;
+}
+
+const Class & NameLookup::memberOf() const
+{
+  return d->memberOfResult;
 }
 
 NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scope)

@@ -9,6 +9,9 @@
       <Item Name="[closure]" ExcludeView="simple">bool(d &amp; 0x040000)</Item>
       <Item Name="[function]" ExcludeView="simple">bool(d &amp; 0x080000)</Item>
       <Item Name="[enum]" ExcludeView="simple">bool(d &amp; 0x010000)</Item>
+      <Item Name="[uninitialized]" ExcludeView="simple">bool(d &amp; 0x2000000)</Item>
+      <Item Name="[protected]" ExcludeView="simple">bool(d &amp; 0x4000000)</Item>
+      <Item Name="[private]" ExcludeView="simple">bool(d &amp; 0x8000000)</Item>
       <Item Name="[index]" ExcludeView="simple">d &amp; 0xFFFF</Item>
     </Expand>
   </Type>

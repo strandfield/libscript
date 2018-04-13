@@ -809,8 +809,10 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(co
     throw TypeNameInExpression{ dpos(identifier) };
   case NameLookup::VariableName:
     return program::Literal::New(lookup.variable()); /// TODO : perhaps a VariableAccess would be better
+  case NameLookup::StaticDataMemberName:
+    return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
-    return generateMemberAccess(lookup.dataMemberIndex());
+    return generateMemberAccess(lookup.dataMemberIndex(), dpos(identifier));
   case NameLookup::GlobalName:
     return generateGlobalAccess(lookup.globalIndex());
   case NameLookup::LocalName:
@@ -828,41 +830,15 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(co
 
 std::shared_ptr<program::Expression> FunctionCompiler::generateThisAccess()
 {
+  /// TODO : add correct const-qualification
   if(mFunction.isDestructor() || mFunction.isConstructor())
     return program::StackValue::New(0, Type::ref(mStack[0].type));
   return program::StackValue::New(1, Type::ref(mStack[1].type));
 }
 
-std::shared_ptr<program::Expression> FunctionCompiler::generateMemberAccess(const int index)
+std::shared_ptr<program::Expression> FunctionCompiler::generateMemberAccess(const int index, const diagnostic::pos_t dpos)
 {
-  /// TODO : this and its overload need some refactoring...
-  /// they also need correct const-ref qualification for ex. when the object is const
-
-  Class cla = classScope();
-  int relative_index = index;
-  while (relative_index - int(cla.dataMembers().size()) >= 0)
-  {
-    relative_index = relative_index - cla.dataMembers().size();
-    cla = cla.parent();
-  }
-
-  auto this_object = generateThisAccess();
-  const Type member_type = cla.dataMembers().at(index).type;
-  return program::MemberAccess::New(member_type, this_object, index);
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index)
-{
-  Class cla = engine()->getClass(object->type());
-  int relative_index = index;
-  while (relative_index - cla.dataMembers().size() >= 0)
-  {
-    relative_index = relative_index - cla.dataMembers().size();
-    cla = cla.parent();
-  }
-
-  const Type member_type = cla.dataMembers().at(index).type;
-  return program::MemberAccess::New(member_type, object, index);
+  return AbstractExpressionCompiler::generateMemberAccess(generateThisAccess(), index, dpos);
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generateGlobalAccess(int index)

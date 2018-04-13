@@ -838,6 +838,7 @@ TEST(CompilerTests, generated_default_ctor) {
   const char *source =
     "  class A             "
     "  {                   "
+    "  public:             "
     "    float x;          "
     "    A() = default;    "
     "  };                  "
@@ -1241,6 +1242,7 @@ TEST(CompilerTests, static_data_member) {
   const char *source =
     "  class A                "
     "  {                      "
+    "  public:                "
     "    static int n = 3;    "
     "    static int p = n+1;  "
     "  };                     ";
@@ -1358,4 +1360,104 @@ TEST(CompilerTests, access_specifier_function_1) {
   const auto & errors = s.messages();
   ASSERT_FALSE(success);
 }
+
+TEST(CompilerTests, access_specifier_data_member_1) {
+  using namespace script;
+
+  const char *source =
+    "  class A                        "
+    "  {                              "
+    "  public:                        "
+    "    A() = default;               "
+    "    ~A() = default;              "
+    "                                 "
+    "  private:                       "
+    "    double x;                    "
+    "    static int a = 0;            "
+    "  protected:                     "
+    "    double y;                    "
+    "    static int b = 0;            "
+    "  public:                        "
+    "    double z;                    "
+    "    static int c = 0;            "
+    "  };                             ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  Class A = s.classes().front();
+
+  ASSERT_EQ(A.dataMembers().size(), 3);
+
+  ASSERT_EQ(A.dataMembers().front().name, "x");
+  ASSERT_EQ(A.dataMembers().front().accessibility(), AccessSpecifier::Private);
+
+  ASSERT_EQ(A.dataMembers().at(1).name, "y");
+  ASSERT_EQ(A.dataMembers().at(1).accessibility(), AccessSpecifier::Protected);
+
+  ASSERT_EQ(A.dataMembers().back().name, "z");
+  ASSERT_EQ(A.dataMembers().back().accessibility(), AccessSpecifier::Public);
+
+  ASSERT_EQ(A.staticDataMembers().size(), 3);
+  ASSERT_EQ(A.staticDataMembers().at("a").accessibility(), AccessSpecifier::Private);
+  ASSERT_EQ(A.staticDataMembers().at("b").accessibility(), AccessSpecifier::Protected);
+  ASSERT_EQ(A.staticDataMembers().at("c").accessibility(), AccessSpecifier::Public);
+}
+
+TEST(CompilerTests, access_specifier_data_member_2) {
+  using namespace script;
+
+  const char *source =
+    "  class A                        "
+    "  {                              "
+    "  public:                        "
+    "    A() = default;               "
+    "    ~A() = default;              "
+    "                                 "
+    "  private:                       "
+    "    int n;                       "
+    "  };                             "
+    "                                 "
+    "  A a;                           "
+    "  int n = a.n;                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+}
+
+TEST(CompilerTests, access_specifier_data_member_3) {
+  using namespace script;
+
+  const char *source =
+    "  class A                        "
+    "  {                              "
+    "  public:                        "
+    "    A() = default;               "
+    "    ~A() = default;              "
+    "                                 "
+    "  private:                       "
+    "    static int a = 0;            "
+    "  };                             "
+    "                                 "
+    "  int n = A::a;                  ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+}
+
 

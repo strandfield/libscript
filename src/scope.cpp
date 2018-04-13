@@ -761,6 +761,7 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
       if (dm.at(i).name == name)
       {
         nl->dataMemberIndex = i + c.attributesOffset();
+        nl->memberOfResult = c;
         return true;
       }
     }
@@ -773,7 +774,8 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
     auto it = sdm.find(name);
     if (it != sdm.end())
     {
-      nl->valueResult = it->second.value;
+      nl->staticDataMemberResult = it->second;
+      nl->memberOfResult = mClass;
       return true;
     }
   }

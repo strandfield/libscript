@@ -615,7 +615,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
     NameLookup lookup = NameLookup::member(callee_name->getName(), engine()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
-      auto functor = generateMemberAccess(object, lookup.dataMemberIndex());
+      auto functor = generateMemberAccess(object, lookup.dataMemberIndex(), dpos(call));
       return generateFunctorCall(call, functor, std::move(args));
     }
     else if (lookup.resultType() == NameLookup::FunctionName)
@@ -917,16 +917,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberA
   if (attr_index == -1)
     throw NoSuchMember{ dpos(operation) };
 
-  int relative_index = attr_index;
-  while (relative_index - int(cla.dataMembers().size()) >= 0)
-  {
-    relative_index = relative_index - cla.dataMembers().size();
-    cla = cla.parent();
-  }
-
-  const Type member_type = cla.dataMembers().at(relative_index).type;
-
-  return program::MemberAccess::New(member_type, object, attr_index);
+  return generateMemberAccess(object, attr_index, dpos(operation));
 }
 
 
@@ -1007,7 +998,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctio
   return program::Literal::New(val); /// TODO : perhaps a program::VariableAccess would be better ?
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index)
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
 {
   Class cla = engine()->getClass(object->type());
   int relative_index = index;
@@ -1017,10 +1008,25 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberA
     cla = cla.parent();
   }
 
-  const Type member_type = cla.dataMembers().at(index).type;
-  return program::MemberAccess::New(member_type, object, index);
+  const auto & dm = cla.dataMembers().at(relative_index);
+
+  if (!Accessibility::check(caller(), cla, dm.accessibility()))
+    throw InaccessibleMember{ dpos, dm.name, dstr(dm.accessibility()) };
+
+  const Type access_type = object->type().isConst() ? Type::cref(dm.type) : Type::ref(dm.type);
+  return program::MemberAccess::New(access_type, object, index);
 }
 
+std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
+{
+  const Class c = lookup.memberOf();
+  const Class::StaticDataMember & sdm = lookup.staticDataMemberResult();
+
+  if (!Accessibility::check(caller(), c, sdm.accessibility()))
+    throw InaccessibleMember{ dpos(id), sdm.name, dstr(sdm.accessibility()) };
+
+  return program::Literal::New(sdm.value);
+}
 
 
 ExpressionCompiler::ExpressionCompiler(Compiler *c, CompileSession *s)
@@ -1085,6 +1091,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
     throw TypeNameInExpression{ dpos(identifier) };
   case NameLookup::VariableName:
     return program::Literal::New(lookup.variable()); // perhaps a VariableAccess would be better
+  case NameLookup::StaticDataMemberName:
+    return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
   case NameLookup::GlobalName:
   case NameLookup::LocalName:

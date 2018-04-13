@@ -44,11 +44,21 @@ public:
   bool isFinal() const;
 
 
-  /// TODO : add access specifier
-  struct DataMember
+  class DataMember
   {
+  public:
     Type type;
     std::string name;
+
+    DataMember() = default;
+    DataMember(const DataMember &) = default;
+    DataMember(const Type & t, const std::string & name, AccessSpecifier aspec = AccessSpecifier::Public);
+    ~DataMember() = default;
+
+    DataMember & operator=(const DataMember &) = default;
+
+    inline bool isNull() const { return name.empty(); }
+    AccessSpecifier accessibility() const;
   };
 
   const std::vector<DataMember> & dataMembers() const;
@@ -106,14 +116,24 @@ public:
   bool isAbstract() const;
   const std::vector<Function> & vtable() const;
 
-  /// TODO : add access specifier
-  struct StaticDataMember
+  class StaticDataMember
   {
+  public:
     std::string name;
     Value value;
+
+    StaticDataMember() = default;
+    StaticDataMember(const StaticDataMember &) = default;
+    StaticDataMember(const std::string &n, const Value & val, AccessSpecifier aspec = AccessSpecifier::Public);
+    ~StaticDataMember() = default;
+
+    StaticDataMember & operator=(const StaticDataMember &) = default;
+
+    inline bool isNull() const { return this->value.isNull(); }
+    AccessSpecifier accessibility() const;
   };
 
-  void addStaticDataMember(const std::string & name, const Value & value);
+  void addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec = AccessSpecifier::Public);
   const std::map<std::string, StaticDataMember> & staticDataMembers() const;
 
   void addFriend(const Function & f);

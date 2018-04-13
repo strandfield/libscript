@@ -58,7 +58,7 @@ public:
 
   }
 
-  Value add_static_data_member(const std::string & name, const Type & t);
+  Value add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec = AccessSpecifier::Public);
   void registerConstructor(const Function & f);
 
   void set_parent(const Class & p);

@@ -169,8 +169,7 @@ protected:
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
   std::shared_ptr<program::Expression> generateThisAccess();
-  std::shared_ptr<program::Expression> generateMemberAccess(const int index);
-  std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index);
+  std::shared_ptr<program::Expression> generateMemberAccess(const int index, const diagnostic::pos_t dpos);
   std::shared_ptr<program::Expression> generateGlobalAccess(int index);
   std::shared_ptr<program::Expression> generateLocalVariableAccess(int index);
   std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl);

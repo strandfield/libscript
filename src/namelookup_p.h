@@ -29,6 +29,8 @@ public:
   std::vector<Function> functions;
   Type typeResult;
   Value valueResult;
+  Class::StaticDataMember staticDataMemberResult;
+  Class memberOfResult;
   Template templateResult;
   Namespace namespaceResult;
   EnumValue enumValueResult;

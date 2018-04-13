@@ -566,5 +566,37 @@ TEST(CoreUtilsTests, access_specifiers) {
   ASSERT_TRUE(Accessibility::check(bender, bar));
 };
 
+TEST(CoreUtilsTests, access_specifiers_data_members) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  ClassBuilder builder = ClassBuilder::New("A")
+    .addMember(Class::DataMember{ Type::Double, "x" })
+    .addMember(Class::DataMember{ Type::Double, "y", AccessSpecifier::Protected })
+    .addMember(Class::DataMember{ Type::Double, "z", AccessSpecifier::Private });
+
+  Class A = e.rootNamespace().newClass(builder);
+
+  ASSERT_EQ(A.dataMembers().front().accessibility(), AccessSpecifier::Public);
+  ASSERT_EQ(A.dataMembers().at(1).accessibility(), AccessSpecifier::Protected);
+  ASSERT_EQ(A.dataMembers().back().accessibility(), AccessSpecifier::Private);
+
+  Value a = e.newInt(0);
+  Value b = e.newInt(1);
+  Value c = e.newInt(2);
+  A.addStaticDataMember("a", a);
+  A.addStaticDataMember("b", b, AccessSpecifier::Protected);
+  A.addStaticDataMember("c", c, AccessSpecifier::Private);
+
+  ASSERT_EQ(A.staticDataMembers().at("a").accessibility(), AccessSpecifier::Public);
+  ASSERT_EQ(A.staticDataMembers().at("b").accessibility(), AccessSpecifier::Protected);
+  ASSERT_EQ(A.staticDataMembers().at("c").accessibility(), AccessSpecifier::Private);
+
+  ASSERT_TRUE(A.staticDataMembers().at("b").value.type().testFlag(Type::ProtectedFlag));
+  ASSERT_TRUE(A.staticDataMembers().at("c").value.type().testFlag(Type::PrivateFlag));
+};
+
 
 

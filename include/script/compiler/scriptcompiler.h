@@ -112,6 +112,7 @@ protected:
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl, const Scope & scp);
   void processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl, const Scope &);
 
+  static AccessSpecifier getAccessSpecifier(const Scope & scp);
   void handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp);
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl, const Scope & scp);
   void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl, const Scope & scp);

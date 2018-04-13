@@ -11,14 +11,15 @@
 #include "engine_p.h"
 #include "script/object.h"
 #include "script/userdata.h"
+#include "value_p.h"
 
 namespace script
 {
 
-Value ClassImpl::add_static_data_member(const std::string & name, const Type & t)
+Value ClassImpl::add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)
 {
   Value ret = this->engine->uninitialized(t);
-  this->staticMembers[name] = Class::StaticDataMember{ name, ret };
+  this->staticMembers[name] = Class::StaticDataMember{ name, ret, aspec };
   return ret;
 }
 
@@ -69,6 +70,17 @@ int Class::inheritanceLevel(const Class & type) const
 bool Class::isFinal() const
 {
   return d->isFinal;
+}
+
+Class::DataMember::DataMember(const Type & t, const std::string & n, AccessSpecifier aspec)
+  :name(n)
+{
+  this->type = Type{ t.data() | (static_cast<int>(aspec) << 26) };
+}
+
+AccessSpecifier Class::DataMember::accessibility() const
+{
+  return static_cast<AccessSpecifier>((this->type.data() >> 26) & 3);
 }
 
 const std::vector<Class::DataMember> & Class::dataMembers() const
@@ -408,9 +420,23 @@ FunctionBuilder Class::Conversion(const Type & dest, NativeFunctionSignature fun
   return builder;
 }
 
-void Class::addStaticDataMember(const std::string & name, const Value & value)
+
+Class::StaticDataMember::StaticDataMember(const std::string &n, const Value & val, AccessSpecifier aspec)
+  : name(n)
+  , value(val)
 {
-  StaticDataMember sdm{ name, value };
+  val.impl()->type = Type{ val.type().data() | (static_cast<int>(aspec) << 26) };
+}
+
+AccessSpecifier Class::StaticDataMember::accessibility() const
+{
+  return static_cast<AccessSpecifier>((this->value.type().data() >> 26) & 3);
+}
+
+
+void Class::addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec)
+{
+  StaticDataMember sdm{ name, value, aspec };
   d->staticMembers[name] = sdm;
 }
 
