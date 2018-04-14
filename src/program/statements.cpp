@@ -178,16 +178,46 @@ std::shared_ptr<CompoundStatement> CompoundStatement::New(std::vector<std::share
 
 
 
+JumpStatement::JumpStatement(std::vector<std::shared_ptr<Statement>> && des)
+  : destruction(des)
+{
+
+}
+
+
+
+BreakStatement::BreakStatement(std::vector<std::shared_ptr<Statement>> && des)
+  : JumpStatement(std::move(des))
+{
+
+}
+
 std::shared_ptr<BreakStatement> BreakStatement::New()
 {
   return std::make_shared<BreakStatement>();
 }
 
+std::shared_ptr<BreakStatement> BreakStatement::New(std::vector<std::shared_ptr<Statement>> && des)
+{
+  return std::make_shared<BreakStatement>(std::move(des));
+}
 
+
+
+ContinueStatement::ContinueStatement(std::vector<std::shared_ptr<Statement>> && des)
+  : JumpStatement(std::move(des))
+{
+
+}
 
 std::shared_ptr<ContinueStatement> ContinueStatement::New()
 {
   return std::make_shared<ContinueStatement>();
+}
+
+std::shared_ptr<ContinueStatement> ContinueStatement::New(std::vector<std::shared_ptr<Statement>> && des)
+{
+  return std::make_shared<ContinueStatement>(std::move(des));
 }
 
 
@@ -199,8 +229,8 @@ ReturnStatement::ReturnStatement(const std::shared_ptr<Expression> & e)
 }
 
 ReturnStatement::ReturnStatement(const std::shared_ptr<Expression> & e, std::vector<std::shared_ptr<Statement>> && des)
-  : returnValue(e)
-  , destruction(std::move(des))
+  : JumpStatement(std::move(des))
+  , returnValue(e)
 {
 
 }

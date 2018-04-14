@@ -735,11 +735,12 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateJumpStatement(cons
   generateExitScope(scp, statements);
 
   if (js->is<ast::BreakStatement>())
-    statements.push_back(program::BreakStatement::New());
+    return program::BreakStatement::New(std::move(statements));
   else if (js->is<ast::ContinueStatement>())
-    statements.push_back(program::ContinueStatement::New());
+    return program::ContinueStatement::New(std::move(statements));
 
-  return program::CompoundStatement::New(std::move(statements));
+  assert(false);
+  throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
 }
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)

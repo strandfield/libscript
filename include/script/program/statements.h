@@ -111,8 +111,13 @@ public:
 class LIBSCRIPT_API JumpStatement : public Statement
 {
 public:
+  std::vector<std::shared_ptr<Statement>> destruction;
+
+public:
   JumpStatement() = default;
   ~JumpStatement() = default;
+
+  JumpStatement(std::vector<std::shared_ptr<Statement>> && des);
 };
 
 struct LIBSCRIPT_API BreakStatement : public JumpStatement
@@ -121,7 +126,10 @@ public:
   BreakStatement() = default;
   ~BreakStatement() = default;
 
+  BreakStatement(std::vector<std::shared_ptr<Statement>> && des);
+
   static std::shared_ptr<BreakStatement> New();
+  static std::shared_ptr<BreakStatement> New(std::vector<std::shared_ptr<Statement>> && des);
 
   void accept(StatementVisitor &) override;
 };
@@ -132,7 +140,10 @@ public:
   ContinueStatement() = default;
   ~ContinueStatement() = default;
 
+  ContinueStatement(std::vector<std::shared_ptr<Statement>> && des);
+
   static std::shared_ptr<ContinueStatement> New();
+  static std::shared_ptr<ContinueStatement> New(std::vector<std::shared_ptr<Statement>> && des);
 
   void accept(StatementVisitor &) override;
 };
@@ -140,7 +151,6 @@ public:
 struct LIBSCRIPT_API ReturnStatement : public JumpStatement
 {
   std::shared_ptr<Expression> returnValue;
-  std::vector<std::shared_ptr<Statement>> destruction;
 
 public:
   ReturnStatement(const std::shared_ptr<Expression> & e);

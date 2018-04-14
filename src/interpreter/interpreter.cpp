@@ -189,8 +189,11 @@ Value Interpreter::createObject(const Type & t)
   return mEngine->implementation()->buildValue(t.baseType());
 }
 
-void Interpreter::visit(const program::BreakStatement &) 
+void Interpreter::visit(const program::BreakStatement & bs) 
 {
+  for (const auto & s : bs.destruction)
+    exec(s);
+
   mExecutionContext->callstack.top()->setBreakFlag();
 }
 
@@ -208,6 +211,9 @@ void Interpreter::visit(const program::CompoundStatement & cs)
 
 void Interpreter::visit(const program::ContinueStatement & cs) 
 {
+  for (const auto & s : cs.destruction)
+    exec(s);
+
   mExecutionContext->callstack.top()->setContinueFlag();
 }
 
