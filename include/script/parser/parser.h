@@ -301,7 +301,8 @@ protected:
   std::shared_ptr<ast::WhileLoop> parseWhileLoop();
   std::shared_ptr<ast::ForLoop> parseForLoop();
   std::shared_ptr<ast::Typedef> parseTypedef();
-  std::shared_ptr<ast::NamespaceDeclaration> parseNamespace();
+  std::shared_ptr<ast::Declaration> parseNamespace();
+  std::shared_ptr<ast::Declaration> parseUsing();
 };
 
 class IdentifierParser : public ParserBase
@@ -512,6 +513,7 @@ public:
 protected:
   void parseAccessSpecifier(); // public, private, protected
   void parseFriend();
+  void parseUsing();
   std::shared_ptr<ast::Identifier> readClassName();
   void readOptionalParent();
   void readDecl();
@@ -531,7 +533,7 @@ public:
   NamespaceParser(AbstractFragment *fragment);
   ~NamespaceParser() = default;
 
-  std::shared_ptr<ast::NamespaceDeclaration> parse();
+  std::shared_ptr<ast::Declaration> parse();
 
 protected:
   std::shared_ptr<ast::Identifier> readNamespaceName();
@@ -547,6 +549,19 @@ public:
   ~FriendParser() = default;
 
   std::shared_ptr<ast::FriendDeclaration> parse();
+};
+
+class UsingParser : public ParserBase
+{
+public:
+  UsingParser(AbstractFragment *fragment);
+  ~UsingParser() = default;
+
+  std::shared_ptr<ast::Declaration> parse();
+
+protected:
+  std::shared_ptr<ast::Identifier> read_name();
+  void read_semicolon();
 };
 
 class Parser : public ProgramParser

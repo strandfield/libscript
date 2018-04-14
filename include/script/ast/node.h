@@ -67,6 +67,10 @@ enum class LIBSCRIPT_API NodeType {
   Typedef,
   NamespaceDecl,
   ClassFriendDecl,
+  UsingDeclaration,
+  UsingDirective,
+  NamespaceAliasDef,
+  TypeAliasDecl,
 };
 
 class LIBSCRIPT_API Node
@@ -1131,6 +1135,83 @@ public:
 
   static const NodeType type_code = NodeType::ClassFriendDecl;
   inline NodeType type() const override { return type_code; }
+};
+
+class LIBSCRIPT_API UsingDeclaration : public Declaration
+{
+public:
+  parser::Token using_keyword;
+  std::shared_ptr<ScopedIdentifier> used_name;
+
+public:
+  UsingDeclaration(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name);
+  ~UsingDeclaration() = default;
+
+  static std::shared_ptr<UsingDeclaration> New(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name);
+
+  static const NodeType type_code = NodeType::UsingDeclaration;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return used_name->pos(); }
+};
+
+class LIBSCRIPT_API UsingDirective : public Declaration
+{
+public:
+  parser::Token using_keyword;
+  parser::Token namespace_keyword;
+  std::shared_ptr<Identifier> namespace_name;
+
+public:
+  UsingDirective(const parser::Token & using_tok, const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & name);
+  ~UsingDirective() = default;
+
+  static std::shared_ptr<UsingDirective> New(const parser::Token & using_tok, const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & name);
+
+  static const NodeType type_code = NodeType::UsingDirective;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return namespace_name->pos(); }
+};
+
+class LIBSCRIPT_API NamespaceAliasDefinition : public Declaration
+{
+public:
+  parser::Token namespace_keyword;
+  std::shared_ptr<Identifier> alias_name;
+  parser::Token equal_token;
+  std::shared_ptr<Identifier> aliased_namespace;
+
+public:
+  NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  ~NamespaceAliasDefinition() = default;
+
+  static std::shared_ptr<NamespaceAliasDefinition> New(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+
+  static const NodeType type_code = NodeType::NamespaceAliasDef;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return alias_name->pos(); }
+};
+
+class LIBSCRIPT_API TypeAliasDeclaration : public Declaration
+{
+public:
+  parser::Token using_keyword;
+  std::shared_ptr<Identifier> alias_name;
+  parser::Token equal_token;
+  std::shared_ptr<Identifier> aliased_type;
+
+public:
+  TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  ~TypeAliasDeclaration() = default;
+
+  static std::shared_ptr<TypeAliasDeclaration> New(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+
+  static const NodeType type_code = NodeType::TypeAliasDecl;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return alias_name->pos(); }
 };
 
 } // namespace ast

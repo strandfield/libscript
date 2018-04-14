@@ -816,3 +816,63 @@ TEST(ParserTests, class_friend_decl) {
     }
   }
 }
+
+TEST(ParserTests, using_parser) {
+
+  const char *source =
+    " using namespace bar; "
+    " using bar::foo; "
+    " using alias = nested::name; ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+
+  ASSERT_EQ(actual->type(), ast::NodeType::UsingDirective);
+  {
+    const auto & ud = actual->as<ast::UsingDirective>();
+    ASSERT_EQ(ud.namespace_name->getName(), "bar");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::UsingDeclaration);
+  {
+    const auto & ud = actual->as<ast::UsingDeclaration>();
+    ASSERT_TRUE(ud.used_name->is<ast::ScopedIdentifier>());
+    const auto & scpid = ud.used_name->as<ast::ScopedIdentifier>();
+    ASSERT_EQ(scpid.lhs->getName(), "bar");
+    ASSERT_EQ(scpid.rhs->getName(), "foo");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TypeAliasDecl);
+  {
+    const auto & tad = actual->as<ast::TypeAliasDeclaration>();
+    ASSERT_EQ(tad.alias_name->getName(), "alias");
+    ASSERT_TRUE(tad.aliased_type->is<ast::ScopedIdentifier>());
+  }
+}
+
+TEST(ParserTests, namespace_alias) {
+
+  const char *source =
+    " namespace fs = std::experimental::filesystem; ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::NamespaceAliasDef);
+  {
+    const auto & ns_alias = actual->as<ast::NamespaceAliasDefinition>();
+    ASSERT_EQ(ns_alias.alias_name->getName(), "fs");
+
+    ASSERT_TRUE(ns_alias.aliased_namespace->is<ast::ScopedIdentifier>());
+    const auto & scpid = ns_alias.aliased_namespace->as<ast::ScopedIdentifier>();
+    ASSERT_TRUE(scpid.lhs->is<ast::ScopedIdentifier>());
+    ASSERT_EQ(scpid.rhs->getName(), "filesystem");
+  }
+}

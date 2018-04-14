@@ -728,6 +728,66 @@ std::shared_ptr<ClassFriendDeclaration> ClassFriendDeclaration::New(const parser
 }
 
 
+
+UsingDeclaration::UsingDeclaration(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name)
+  : using_keyword(using_tok)
+  , used_name(name)
+{
+
+}
+
+std::shared_ptr<UsingDeclaration> UsingDeclaration::New(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name)
+{
+  return std::make_shared<UsingDeclaration>(using_tok, name);
+}
+
+
+
+UsingDirective::UsingDirective(const parser::Token & using_tok, const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & name)
+  : using_keyword(using_tok)
+  , namespace_keyword(namespace_tok)
+  , namespace_name(name)
+{
+
+}
+
+std::shared_ptr<UsingDirective> UsingDirective::New(const parser::Token & using_tok, const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & name)
+{
+  return std::make_shared<UsingDirective>(using_tok, namespace_tok, name);
+}
+
+
+
+NamespaceAliasDefinition::NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+  : namespace_keyword(namespace_tok)
+  , alias_name(a)
+  , equal_token(equal_tok)
+  , aliased_namespace(b)
+{
+
+}
+
+std::shared_ptr<NamespaceAliasDefinition> NamespaceAliasDefinition::New(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+{
+  return std::make_shared<NamespaceAliasDefinition>(namespace_tok, a, equal_tok, b);
+}
+
+
+
+TypeAliasDeclaration::TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+  : using_keyword(using_tok)
+  , alias_name(a)
+  , equal_token(equal_tok)
+  , aliased_type(b)
+{
+
+}
+
+std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+{
+  return std::make_shared<TypeAliasDeclaration>(using_tok, a, equal_tok, b);
+}
+
 } // namespace ast
 
 } // namespace script

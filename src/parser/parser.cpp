@@ -1067,7 +1067,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
   case Token::Return:
     return parseReturnStatement();
   case Token::Using:
-    throw NotImplementedError{ "Using declarations are not implemented" };
+    return parseUsing();
   case Token::While:
     return parseWhileLoop();
   case Token::For:
@@ -1277,11 +1277,18 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
   return ast::Typedef::New(typedef_tok, qtype, name);
 }
 
-std::shared_ptr<ast::NamespaceDeclaration> ProgramParser::parseNamespace()
+std::shared_ptr<ast::Declaration> ProgramParser::parseNamespace()
 {
   NamespaceParser np{ fragment() };
   return np.parse();
 }
+
+std::shared_ptr<ast::Declaration> ProgramParser::parseUsing()
+{
+  UsingParser np{ fragment() };
+  return np.parse();
+}
+
 
 
 IdentifierParser::IdentifierParser(AbstractFragment *fragment, int opts)
@@ -2624,6 +2631,13 @@ void ClassParser::parseFriend()
   mClass->content.push_back(friend_decl);
 }
 
+void ClassParser::parseUsing()
+{
+  UsingParser np{ fragment() };
+  auto decl = np.parse();
+  mClass->content.push_back(decl);
+}
+
 std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 {
   auto opts = mTemplateSpecialization ? IdentifierParser::ParseTemplateId : 0;
@@ -2677,6 +2691,9 @@ void ClassParser::readNode()
   case Token::Friend:
     parseFriend();
     return;
+  case Token::Using:
+    parseUsing();
+    return;
   default:
     break;
   }
@@ -2713,13 +2730,28 @@ NamespaceParser::NamespaceParser(AbstractFragment *fragment)
 
 }
 
-std::shared_ptr<ast::NamespaceDeclaration> NamespaceParser::parse()
+std::shared_ptr<ast::Declaration> NamespaceParser::parse()
 {
   const Token ns_tok = unsafe_read();
 
   auto name = readNamespaceName();
 
-  if (peek() != Token::LeftBrace)
+  if (peek() == Token::Eq)
+  {
+    const Token eq_sign = unsafe_read();
+
+    IdentifierParser idp{ fragment() };
+    std::shared_ptr<ast::Identifier> aliased_name = idp.parse();
+
+    if (peek() != Token::Semicolon)
+      throw ExpectedSemicolon{};
+
+    unsafe_read();
+
+    return ast::NamespaceAliasDefinition::New(ns_tok, name, eq_sign, aliased_name);
+  }
+
+  if (unsafe_peek() != Token::LeftBrace)
     throw ExpectedLeftBrace{};
 
   const Token lb = unsafe_read();
@@ -2770,6 +2802,60 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
   const Token semicolon = unsafe_read();
 
   return ast::ClassFriendDeclaration::New(friend_tok, class_tok, class_name);
+}
+
+
+
+UsingParser::UsingParser(AbstractFragment *fragment)
+  : ParserBase(fragment)
+{
+
+}
+
+std::shared_ptr<ast::Declaration> UsingParser::parse()
+{
+  assert(peek() == Token::Using);
+
+  const Token using_tok = unsafe_read();
+
+  if (peek() == Token::Namespace)
+  {
+    const Token namespace_tok = unsafe_read();
+    std::shared_ptr<ast::Identifier> name = read_name();
+    read_semicolon();
+    return ast::UsingDirective::New(using_tok, namespace_tok, name);
+  }
+
+  std::shared_ptr<ast::Identifier> name = read_name();
+
+  if (name->is<ast::ScopedIdentifier>())
+  {
+    read_semicolon();
+    return ast::UsingDeclaration::New(using_tok, std::static_pointer_cast<ast::ScopedIdentifier>(name));
+  }
+
+  if (peek() != Token::Eq)
+    throw ExpectedEqualSign{};
+
+  const Token eq_sign = unsafe_read();
+
+  std::shared_ptr<ast::Identifier> aliased_type = read_name();
+  read_semicolon();
+  return ast::TypeAliasDeclaration::New(using_tok, name, eq_sign, aliased_type);
+}
+
+std::shared_ptr<ast::Identifier> UsingParser::read_name()
+{
+  IdentifierParser idp{ fragment() };
+  return idp.parse();
+}
+
+void UsingParser::read_semicolon()
+{
+  if (peek() != Token::Semicolon)
+    throw ExpectedSemicolon{};
+
+  unsafe_read();
 }
 
 
