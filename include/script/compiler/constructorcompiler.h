@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_CONSTRUCTOR_COMPILER_H
 #define LIBSCRIPT_CONSTRUCTOR_COMPILER_H
 
-#include "script/compiler/functioncompiler.h"
+#include "script/compiler/functioncompilerextension.h"
 
 namespace script
 {
@@ -15,10 +15,9 @@ class OverloadResolution;
 namespace compiler
 {
 
-class ConstructorCompiler
+class ConstructorCompiler : public FunctionCompilerExtension
 {
-private:
-  FunctionCompiler *compiler;
+
 public:
   explicit ConstructorCompiler(FunctionCompiler *c);
 

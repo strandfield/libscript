@@ -184,9 +184,7 @@ protected:
 
 protected:
   friend class FunctionScope;
-  friend class AssignmentCompiler;
-  friend class ConstructorCompiler;
-  friend class DestructorCompiler;
+  friend class FunctionCompilerExtension;
 
   Script mScript;
 

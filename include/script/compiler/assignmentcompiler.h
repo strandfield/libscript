@@ -5,20 +5,16 @@
 #ifndef LIBSCRIPT_ASSIGNMENT_COMPILER_H
 #define LIBSCRIPT_ASSIGNMENT_COMPILER_H
 
-#include "script/compiler/functioncompiler.h"
+#include "script/compiler/functioncompilerextension.h"
 
 namespace script
 {
 
-class OverloadResolution;
-
 namespace compiler
 {
 
-class AssignmentCompiler
+class AssignmentCompiler : public FunctionCompilerExtension
 {
-private:
-  FunctionCompiler *compiler;
 public:
   explicit AssignmentCompiler(FunctionCompiler *c);
 

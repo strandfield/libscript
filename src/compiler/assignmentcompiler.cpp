@@ -19,20 +19,22 @@ namespace compiler
 {
 
 AssignmentCompiler::AssignmentCompiler(FunctionCompiler *c)
-  : compiler(c)
+  : FunctionCompilerExtension(c)
 {
   assert(c != nullptr);
 }
 
 std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignmentOperator()
 {
-  auto this_object = compiler->generateThisAccess();
-  auto other_object = program::StackValue::New(1, compiler->mStack[1].type);
+  const Class current_class = currentClass();
+
+  auto this_object = generateThisAccess();
+  auto other_object = program::StackValue::New(1, stack()[1].type);
 
   std::shared_ptr<program::Statement> parent_assign_call;
-  if (!compiler->classScope().parent().isNull())
+  if (!current_class.parent().isNull())
   {
-    Operator parent_assign = findAssignmentOperator(compiler->classScope().parent().id());
+    Operator parent_assign = findAssignmentOperator(current_class.parent().id());
     if (parent_assign.isNull())
       throw ParentHasNoAssignmentOperator{};
     else if (parent_assign.isDeleted())
@@ -42,8 +44,8 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
   }
 
   // Assigns data members
-  const auto & data_members = compiler->classScope().dataMembers();
-  const int data_members_offset = compiler->classScope().attributesOffset();
+  const auto & data_members = current_class.dataMembers();
+  const int data_members_offset = current_class.attributesOffset();
   std::vector<std::shared_ptr<program::Statement>> members_assign{ data_members.size(), nullptr };
   for (size_t i(0); i < data_members.size(); ++i)
   {
@@ -93,7 +95,7 @@ Operator AssignmentCompiler::findAssignmentOperator(const Type & t)
 {
   if (t.isFundamentalType())
   {
-    const auto & ops = compiler->engine()->rootNamespace().operators();
+    const auto & ops = engine()->rootNamespace().operators();
     for (const auto & o : ops)
     {
       if (isAssignmentOperator(o, t))
@@ -103,11 +105,11 @@ Operator AssignmentCompiler::findAssignmentOperator(const Type & t)
   }
   else if (t.isEnumType())
   {
-    return compiler->engine()->getEnum(t).getAssignmentOperator();
+    return engine()->getEnum(t).getAssignmentOperator();
   }
   else if (t.isObjectType())
   {
-    const auto & ops = compiler->engine()->getClass(t).operators();
+    const auto & ops = engine()->getClass(t).operators();
     for (const auto & o : ops)
     {
       if (isAssignmentOperator(o, t))

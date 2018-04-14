@@ -19,25 +19,27 @@ namespace compiler
 {
 
 DestructorCompiler::DestructorCompiler(FunctionCompiler *c)
-  : compiler(c)
+  : FunctionCompilerExtension(c)
 {
   assert(c != nullptr);
 }
 
 std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateFooter()
 {
+  Class current_class = currentClass();
+
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const auto & data_members = compiler->classScope().dataMembers();
+  const auto & data_members = current_class.dataMembers();
   for (int i(data_members.size() - 1); i >= 0; --i)
     statements.push_back(program::PopDataMember::New(getDestructor(data_members.at(i).type)));
 
-  if (!compiler->classScope().parent().isNull())
+  if (!current_class.parent().isNull())
   {
     /// TODO : check if dtor exists and is not deleted
-    auto this_object = compiler->generateThisAccess();
+    auto this_object = generateThisAccess();
     std::vector<std::shared_ptr<program::Expression>> args{ this_object };
-    auto dtor_call = program::FunctionCall::New(compiler->classScope().parent().destructor(), std::move(args));
+    auto dtor_call = program::FunctionCall::New(current_class.parent().destructor(), std::move(args));
     statements.push_back(program::ExpressionStatement::New(dtor_call));
   }
 
@@ -53,7 +55,7 @@ std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateDestruct
 Function DestructorCompiler::getDestructor(const Type & t)
 {
   if (t.isObjectType())
-    return compiler->engine()->getClass(t).destructor();
+    return engine()->getClass(t).destructor();
   return Function{};
 }
 

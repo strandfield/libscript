@@ -5,20 +5,16 @@
 #ifndef LIBSCRIPT_DESTRUCTOR_COMPILER_H
 #define LIBSCRIPT_DESTRUCTOR_COMPILER_H
 
-#include "script/compiler/functioncompiler.h"
+#include "script/compiler/functioncompilerextension.h"
 
 namespace script
 {
 
-class OverloadResolution;
-
 namespace compiler
 {
 
-class DestructorCompiler
+class DestructorCompiler : public FunctionCompilerExtension
 {
-private:
-  FunctionCompiler *compiler;
 public:
   explicit DestructorCompiler(FunctionCompiler *c);
 
