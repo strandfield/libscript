@@ -782,3 +782,37 @@ TEST(ParserTests, namespace_decl) {
   ASSERT_EQ(ndecl.statements.at(1)->type(), ast::NodeType::FunctionDeclaration);
   ASSERT_EQ(ndecl.statements.back()->type(), ast::NodeType::NamespaceDecl);
 }
+
+TEST(ParserTests, illegal_class_friend_decl) {
+
+  const char *source =
+    " friend class A; ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+  ASSERT_THROW(parser.parseStatement(), parser::UnexpectedFriendKeyword);
+}
+
+TEST(ParserTests, class_friend_decl) {
+
+  const char *source =
+    " class A { friend class B; }; ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+
+  ASSERT_EQ(actual->type(), ast::NodeType::ClassDeclaration);
+  {
+    const auto & class_decl = actual->as<ast::ClassDecl>();
+    ASSERT_EQ(class_decl.content.size(), 1);
+    ASSERT_EQ(class_decl.content.front()->type(), ast::NodeType::ClassFriendDecl);
+    {
+      const auto & fdecl = class_decl.content.front()->as<ast::ClassFriendDeclaration>();
+      ASSERT_EQ(fdecl.class_name->getName(), "B");
+    }
+  }
+}

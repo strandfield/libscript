@@ -32,6 +32,7 @@ class Declaration;
 class DestructorDecl;
 class EnumDeclaration;
 class Expression;
+class FriendDeclaration;
 class FunctionDecl;
 class Identifier;
 class NamespaceDeclaration;
@@ -88,6 +89,7 @@ public:
 protected:
   std::string repr(const std::shared_ptr<ast::Identifier> & id);
   Type resolve(const ast::QualifiedType & qt, const Scope & scp);
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & id, const Scope & scp);
 
   Function registerRootFunction(const Scope & scp);
   bool processFirstOrderDeclarationsAndCollectHigherOrderDeclarations();
@@ -96,6 +98,7 @@ protected:
   void processSecondOrderDeclaration(const ScopedDeclaration & decl);
   void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
   void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
+  void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl, const Scope & scp);
   void processThirdOrderDeclarations();
   bool compileFunctions();
   static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);

@@ -112,6 +112,9 @@ DECLARE_PARSER_ERROR(CouldNotReadType, "Could not read type name");
 
 DECLARE_PARSER_ERROR(ExpectedDeclaration, "Expected a declaration");
 
+DECLARE_PARSER_ERROR(ExpectedClassKeywordAfterFriend, "Expected 'class' keyword after 'friend'");
+DECLARE_PARSER_ERROR(UnexpectedFriendKeyword, "Friend declarations cannot appear at this level.");
+
 DECLARE_PARSER_ERROR(NotImplementedError, "%1", std::string);
 
 #undef DECLARE_PARSER_ERROR

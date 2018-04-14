@@ -66,6 +66,7 @@ enum class LIBSCRIPT_API NodeType {
   AssignmentInitialization,
   Typedef,
   NamespaceDecl,
+  ClassFriendDecl,
 };
 
 class LIBSCRIPT_API Node
@@ -1101,6 +1102,35 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return namespace_name->pos(); }
+};
+
+
+class LIBSCRIPT_API FriendDeclaration : public Declaration
+{
+public:
+  parser::Token friend_token;
+
+public:
+  FriendDeclaration(const parser::Token & friend_token);
+  ~FriendDeclaration() = default;
+
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(friend_token); }
+};
+
+class LIBSCRIPT_API ClassFriendDeclaration : public FriendDeclaration
+{
+public:
+  parser::Token class_token;
+  std::shared_ptr<Identifier> class_name;
+
+public:
+  ClassFriendDeclaration(const parser::Token & friend_tok, const parser::Token & class_tok, const std::shared_ptr<Identifier> & cname);
+  ~ClassFriendDeclaration() = default;
+
+  static std::shared_ptr<ClassFriendDeclaration> New(const parser::Token & friend_tok, const parser::Token & class_tok, const std::shared_ptr<Identifier> & cname);
+
+  static const NodeType type_code = NodeType::ClassFriendDecl;
+  inline NodeType type() const override { return type_code; }
 };
 
 } // namespace ast

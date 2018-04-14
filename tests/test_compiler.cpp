@@ -1460,4 +1460,32 @@ TEST(CompilerTests, access_specifier_data_member_3) {
   ASSERT_FALSE(success);
 }
 
+TEST(CompilerTests, friend_class) {
+  using namespace script;
+
+  const char *source =
+    "  class A                        "
+    "  {                              "
+    "    friend class B;              "
+    "  };                             "
+    "                                 "
+    "  class B { };                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  const auto & classes = s.classes();
+  ASSERT_EQ(classes.size(), 2);
+
+  Class A = classes.front();
+  ASSERT_EQ(A.name(), "A");
+
+  ASSERT_EQ(A.friends(Class{}).size(), 1);
+  ASSERT_EQ(A.friends(Class{}).front().name(), "B");
+}
 

@@ -511,6 +511,7 @@ public:
 
 protected:
   void parseAccessSpecifier(); // public, private, protected
+  void parseFriend();
   std::shared_ptr<ast::Identifier> readClassName();
   void readOptionalParent();
   void readDecl();
@@ -537,6 +538,15 @@ protected:
 
 protected:
   std::shared_ptr<ast::NamespaceDeclaration> mNamespaceDecl;
+};
+
+class FriendParser : public ParserBase
+{
+public:
+  FriendParser(AbstractFragment *fragment);
+  ~FriendParser() = default;
+
+  std::shared_ptr<ast::FriendDeclaration> parse();
 };
 
 class Parser : public ProgramParser

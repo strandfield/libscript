@@ -705,6 +705,29 @@ std::shared_ptr<NamespaceDeclaration> NamespaceDeclaration::New(const parser::To
   return std::make_shared<NamespaceDeclaration>(ns_tok, n, lb, std::move(stats), rb);
 }
 
+
+
+FriendDeclaration::FriendDeclaration(const parser::Token & friend_tok)
+  : friend_token(friend_tok)
+{
+
+}
+
+
+ClassFriendDeclaration::ClassFriendDeclaration(const parser::Token & friend_tok, const parser::Token & class_tok, const std::shared_ptr<Identifier> & cname)
+  : FriendDeclaration(friend_tok)
+  , class_token(class_tok)
+  , class_name(cname)
+{
+
+}
+
+std::shared_ptr<ClassFriendDeclaration> ClassFriendDeclaration::New(const parser::Token & friend_tok, const parser::Token & class_tok, const std::shared_ptr<Identifier> & cname)
+{
+  return std::make_shared<ClassFriendDeclaration>(friend_tok, class_tok, cname);
+}
+
+
 } // namespace ast
 
 } // namespace script

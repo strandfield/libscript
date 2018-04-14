@@ -69,6 +69,12 @@ Type ScriptCompiler::resolve(const ast::QualifiedType & qt, const Scope & scp)
   return mExprCompiler.resolve(qt);
 }
 
+NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id, const Scope & scp)
+{
+  mExprCompiler.setScope(scp);
+  return mExprCompiler.resolve(id);
+}
+
 Function ScriptCompiler::registerRootFunction(const Scope & scp)
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
@@ -262,27 +268,52 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
   ns.implementation()->variables[decl->name->getName()] = val;
 }
 
+void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl, const Scope & scp)
+{
+  assert(decl->is<ast::ClassFriendDeclaration>());
+
+  const auto & pal = decl->as<ast::ClassFriendDeclaration>();
+
+  NameLookup lookup = resolve(pal.class_name, scp);
+  if (lookup.typeResult().isNull())
+    throw InvalidTypeName{ dpos(pal.class_name), dstr(pal.class_name) };
+
+  if (!lookup.typeResult().isObjectType())
+    throw FriendMustBeAClass{ dpos(pal.class_name) };
+
+  scp.asClass().addFriend(engine()->getClass(lookup.typeResult()));
+}
+
 void ScriptCompiler::processThirdOrderDeclarations()
 {
   for (size_t i(0); i < mThirdOrderDeclarations.size(); ++i)
   {
     const auto & decl = mThirdOrderDeclarations.at(i);
 
-    if (decl.scope.type() == Scope::ScriptScope)
+    if (decl.declaration->is<ast::FriendDeclaration>())
     {
-      // Global variables are processed by the function compiler
-      continue;
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(decl.declaration), decl.scope);
     }
-
-    std::shared_ptr<ast::VariableDecl> var_decl = std::dynamic_pointer_cast<ast::VariableDecl>(decl.declaration);
-    assert(var_decl != nullptr);
-
-    if (decl.scope.isClass())
-      processDataMemberDecl(var_decl, decl.scope);
-    else if (decl.scope.type() == Scope::NamespaceScope)
-      processNamespaceVariableDecl(var_decl, decl.scope);
     else
-      throw std::runtime_error{ "Not implemented" };
+    {
+      assert(decl.declaration->is<ast::VariableDecl>());
+
+      if (decl.scope.type() == Scope::ScriptScope)
+      {
+        // Global variables are processed by the function compiler
+        continue;
+      }
+
+      std::shared_ptr<ast::VariableDecl> var_decl = std::dynamic_pointer_cast<ast::VariableDecl>(decl.declaration);
+      assert(var_decl != nullptr);
+
+      if (decl.scope.isClass())
+        processDataMemberDecl(var_decl, decl.scope);
+      else if (decl.scope.type() == Scope::NamespaceScope)
+        processNamespaceVariableDecl(var_decl, decl.scope);
+      else
+        throw std::runtime_error{ "Not implemented" };
+    }
   }
 }
 
@@ -557,7 +588,7 @@ bool ScriptCompiler::isSecondOrderDeclaration(const std::shared_ptr<ast::Declara
 
 bool ScriptCompiler::isThirdOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const
 {
-  return decl->is<ast::VariableDecl>();
+  return decl->is<ast::VariableDecl>() || decl->is<ast::FriendDeclaration>();
 }
 
 

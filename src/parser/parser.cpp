@@ -1078,6 +1078,8 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     return parseTypedef();
   case Token::Namespace:
     return parseNamespace();
+  case Token::Friend:
+    throw UnexpectedFriendKeyword{};
   default:
     break;
   }
@@ -2615,6 +2617,12 @@ void ClassParser::parseAccessSpecifier()
   mClass->content.push_back(ast::AccessSpecifier::New(visibility, colon));
 }
 
+void ClassParser::parseFriend()
+{
+  FriendParser fdp{ fragment() };
+  auto friend_decl = fdp.parse();
+  mClass->content.push_back(friend_decl);
+}
 
 std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 {
@@ -2665,6 +2673,9 @@ void ClassParser::readNode()
   case Token::Protected:
   case Token::Private:
     parseAccessSpecifier();
+    return;
+  case Token::Friend:
+    parseFriend();
     return;
   default:
     break;
@@ -2728,6 +2739,37 @@ std::shared_ptr<ast::Identifier> NamespaceParser::readNamespaceName()
 {
   IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
   return idp.parse();
+}
+
+
+
+FriendParser::FriendParser(AbstractFragment *fragment)
+  : ParserBase(fragment)
+{
+
+}
+
+std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
+{
+  const Token friend_tok = unsafe_read();
+
+  if (peek() != Token::Class)
+    throw ExpectedClassKeywordAfterFriend{};
+
+  const Token class_tok = unsafe_read();
+
+  std::shared_ptr<ast::Identifier> class_name;
+  {
+    IdentifierParser idp{ fragment() };
+    class_name = idp.parse();
+  }
+
+  if (peek() != Token::Semicolon)
+    throw ExpectedSemicolon{};
+
+  const Token semicolon = unsafe_read();
+
+  return ast::ClassFriendDeclaration::New(friend_tok, class_tok, class_name);
 }
 
 
