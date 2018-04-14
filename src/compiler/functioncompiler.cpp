@@ -470,12 +470,6 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateStatement(const st
   throw std::runtime_error{ "FunctionCompiler::generateStatement() : not implemented" };
 }
 
-void FunctionCompiler::generateStatements(const std::vector<std::shared_ptr<ast::Statement>> & in, std::vector<std::shared_ptr<program::Statement>> & out)
-{
-  for (const auto& s : in)
-    out.push_back(generateStatement(s));
-}
-
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
 {
   if (!mFunction.isDefaulted())

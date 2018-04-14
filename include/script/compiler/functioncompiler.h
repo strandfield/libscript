@@ -142,7 +142,6 @@ protected:
   inline Scope continueScope() const { return breakScope(); }
 
   std::shared_ptr<program::Statement> generateStatement(const std::shared_ptr<ast::Statement> & statement);
-  void generateStatements(const std::vector<std::shared_ptr<ast::Statement>> & in, std::vector<std::shared_ptr<program::Statement>> & out);
 
   std::shared_ptr<program::CompoundStatement> generateBody();
 
