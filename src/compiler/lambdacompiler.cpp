@@ -161,7 +161,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   mFunction = function;
 
   /// TODO : where is the return value ?
-  enterScope(FunctionScope::FunctionArguments);
+  EnterScope guard{ this, FunctionScope::FunctionArguments };
   mStack.addVar(proto.argv(0), "lambda-object");
   for (int i(1); i < proto.argc(); ++i)
     std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), proto.argv(i));
@@ -181,7 +181,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   }
   body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
 
-  leaveScope(); // leaves the FunctionScope::FunctionArguments scope
+  guard.leave(); // leaves the FunctionScope::FunctionArguments scope
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 

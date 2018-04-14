@@ -302,6 +302,27 @@ void Stack::realloc(int s)
 }
 
 
+EnterScope::EnterScope(FunctionCompiler *c, FunctionScope::Category scp)
+  : compiler(c)
+{
+  assert(c != nullptr);
+  c->enter_scope(scp, FunctionCompiler::ScopeKey{});
+}
+
+EnterScope::~EnterScope()
+{
+  leave();
+}
+
+void EnterScope::leave()
+{
+  if (compiler == nullptr)
+    return;
+
+  compiler->leave_scope(FunctionCompiler::ScopeKey{});
+  compiler = nullptr;
+}
+
 
 FunctionCompiler::FunctionCompiler(Compiler *c, CompileSession *s)
   : AbstractExpressionCompiler(c, s)
@@ -325,7 +346,8 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
   if(!mFunction.isDestructor())
     mStack.addVar(proto.returnType(), "return-value");
 
-  enterScope(FunctionScope::FunctionArguments);
+  EnterScope guard{ this, FunctionScope::FunctionArguments };
+
   for (int i(0); i < proto.argc(); ++i)
     std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(argumentName(i), proto.argv(i));
 
@@ -344,8 +366,6 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
   }
   body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
   
-  leaveScope();
-
   mFunction.implementation()->set_impl(body);
 }
 
@@ -413,8 +433,7 @@ bool FunctionCompiler::canUseThis() const
   return mFunction.isMemberFunction() || mFunction.isConstructor() || mFunction.isDestructor();
 }
 
-
-void FunctionCompiler::enterScope(FunctionScope::Category scopeType)
+void FunctionCompiler::enter_scope(FunctionScope::Category scopeType, const ScopeKey &)
 {
   mCurrentScope = Scope{ std::make_shared<FunctionScope>(this, scopeType, mCurrentScope) };
   if (scopeType == FunctionScope::FunctionBody)
@@ -423,13 +442,10 @@ void FunctionCompiler::enterScope(FunctionScope::Category scopeType)
     mFunctionArgumentsScope = mCurrentScope;
 }
 
-void FunctionCompiler::leaveScope(int depth)
+void FunctionCompiler::leave_scope(const ScopeKey &)
 {
-  for (int i(0); i < depth; ++i)
-  {
-    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->destroy();
-    mCurrentScope = mCurrentScope.parent();
-  }
+  std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->destroy();
+  mCurrentScope = mCurrentScope.parent();
 }
 
 Scope FunctionCompiler::breakScope() const
@@ -478,23 +494,22 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
 
     if (mFunction.isConstructor())
     {
-      enterScope(FunctionScope::FunctionBody);
+      EnterScope guard{ this, FunctionScope::FunctionBody };
+
       auto constructor_header = generateConstructorHeader();
       body->statements.insert(body->statements.begin(), constructor_header->statements.begin(), constructor_header->statements.end());
-      leaveScope();
     }
     else if (mFunction.isDestructor())
     {
-      enterScope(FunctionScope::FunctionBody);
+      EnterScope guard{ this, FunctionScope::FunctionBody };
+
       auto destructor_footer = generateDestructorFooter();
       body->statements.insert(body->statements.end(), destructor_footer->statements.begin(), destructor_footer->statements.end());
-      leaveScope();
     }
     else if (isCompilingAnonymousFunction())
     {
-      enterScope(FunctionScope::FunctionBody);
+      EnterScope guard{ this, FunctionScope::FunctionBody };
       /// TODO : should we generate a dummy program::ReturnStatement ?
-      leaveScope();
     }
     
     return body;
@@ -637,8 +652,7 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundSt
 {
   auto ret = program::CompoundStatement::New();
 
-  ScopeGuard guard{ mCurrentScope };
-  enterScope(scopeType);
+  EnterScope guard{ this, scopeType };
 
   for (const auto & s : compoundStatement->statements)
   {
@@ -658,8 +672,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateExpressionStatemen
 
 std::shared_ptr<program::Statement> FunctionCompiler::generateForLoop(const std::shared_ptr<ast::ForLoop> & forLoop)
 {
-  ScopeGuard guard{ mCurrentScope };
-  enterScope(FunctionScope::ForInit);
+  EnterScope guard{ this, FunctionScope::ForInit };
 
   std::shared_ptr<program::Statement> for_init = nullptr;
   if (forLoop->initStatement != nullptr)

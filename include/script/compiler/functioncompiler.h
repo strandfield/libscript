@@ -99,6 +99,18 @@ public:
 };
 
 
+class EnterScope
+{
+public:
+  FunctionCompiler * compiler;
+  EnterScope(FunctionCompiler *c, FunctionScope::Category scp);
+  ~EnterScope();
+
+  void leave();
+
+  EnterScope(const EnterScope &) = delete;
+};
+
 
 struct CompileFunctionTask
 {
@@ -135,9 +147,16 @@ protected:
 
   bool canUseThis() const;
 
-  void enterScope(FunctionScope::Category scopeType);
-  void leaveScope(int depth = 1);
+public:
+  struct ScopeKey {
+  private:
+    friend class EnterScope;
+    ScopeKey() = default;
+  };
+  void enter_scope(FunctionScope::Category scopeType, const ScopeKey &);
+  void leave_scope(const ScopeKey &);
 
+protected:
   Scope breakScope() const;
   inline Scope continueScope() const { return breakScope(); }
 
