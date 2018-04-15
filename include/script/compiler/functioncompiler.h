@@ -140,6 +140,17 @@ public:
   const Function & compiledFunction() const;
 
 protected:
+  // ExpressionCompiler related functions
+  std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;
+  std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call) override;
+  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
+  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
+  std::shared_ptr<program::Expression> generateThisAccess();
+  std::shared_ptr<program::Expression> generateMemberAccess(const int index, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> generateGlobalAccess(int index);
+  std::shared_ptr<program::Expression> generateLocalVariableAccess(int index);
+
+protected:
   bool isCompilingAnonymousFunction() const;
   std::string argumentName(int index);
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();
@@ -160,8 +171,6 @@ protected:
   Scope breakScope() const;
   Scope continueScope() const;
 
-  std::shared_ptr<program::Statement> generateStatement(const std::shared_ptr<ast::Statement> & statement);
-
   std::shared_ptr<program::CompoundStatement> generateBody();
 
   std::shared_ptr<program::Expression> generateDefaultArgument(int index);
@@ -175,30 +184,50 @@ protected:
   std::shared_ptr<program::CompoundStatement> generateMoveConstructor();
   std::shared_ptr<program::CompoundStatement> generateDestructor();
 
-  std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;
-  std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call) override;
+protected:
+  // statements buffer related functions
+  typedef std::vector<std::shared_ptr<program::Statement>> buffer_type;
+  void write(const std::shared_ptr<program::Statement> & s);
+  size_t buffer_size();
+  std::vector<std::shared_ptr<program::Statement>> resize_buffer(size_t size);
+  std::vector<std::shared_ptr<program::Statement>> read(size_t count);
+  std::shared_ptr<program::Statement> read_one();
+
+  class BufferSwap
+  {
+  private:
+    buffer_type *first;
+    buffer_type *second;
+  public:
+    BufferSwap(buffer_type & a, buffer_type & b);
+    ~BufferSwap();
+    BufferSwap(const BufferSwap &) = delete;
+  };
+
+protected:
+  // main processing functions
+  std::shared_ptr<program::Statement> generate(const std::shared_ptr<ast::Statement> & s);
   std::shared_ptr<program::CompoundStatement> generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
-  std::shared_ptr<program::Statement> generateExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
-  std::shared_ptr<program::Statement> generateForLoop(const std::shared_ptr<ast::ForLoop> & forLoop);
-  std::shared_ptr<program::Statement> generateIfStatement(const std::shared_ptr<ast::IfStatement> & ifStatement);
-  std::shared_ptr<program::Statement> generateJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
-  virtual std::shared_ptr<program::Statement> generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);
+  void process(const std::shared_ptr<ast::Statement> & s);
+  void processExitScope(const Scope & scp);
   void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
-  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
-  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
-  std::shared_ptr<program::Expression> generateThisAccess();
-  std::shared_ptr<program::Expression> generateMemberAccess(const int index, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> generateGlobalAccess(int index);
-  std::shared_ptr<program::Expression> generateLocalVariableAccess(int index);
-  std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl);
-  std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, std::nullptr_t);
-  std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
-  std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init);
-  std::shared_ptr<program::Statement> generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::AssignmentInitialization> & init);
-  std::shared_ptr<program::Statement> generateFundamentalVariableCreation(const Type & type, const std::string & name);
-  std::shared_ptr<program::Statement> generateVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value);
-  std::shared_ptr<program::Statement> generateVariableDestruction(const Variable & var);
-  std::shared_ptr<program::Statement> generateWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);
+
+private:
+  void processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
+  void processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
+  void processForLoop(const std::shared_ptr<ast::ForLoop> & fl);
+  void processIfStatement(const std::shared_ptr<ast::IfStatement> & is);
+  void processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
+  virtual void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);
+  void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl);
+  void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, std::nullptr_t);
+  void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
+  void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init);
+  void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::AssignmentInitialization> & init);
+  void processFundamentalVariableCreation(const Type & type, const std::string & name);
+  void processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value);
+  void processVariableDestruction(const Variable & var);
+  void processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);
 
 protected:
   friend class FunctionScope;
@@ -213,6 +242,8 @@ protected:
   Scope mFunctionBodyScope;
   script::Scope mCurrentScope;
   std::shared_ptr<ast::Declaration> mDeclaration;
+
+  std::vector<std::shared_ptr<program::Statement>> mBuffer;
 };
 
 } // namespace compiler

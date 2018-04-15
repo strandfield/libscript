@@ -77,7 +77,7 @@ protected:
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
 
   void deduceReturnType(const std::shared_ptr<ast::ReturnStatement> & rs, const std::shared_ptr<program::Expression> & val);
-  std::shared_ptr<program::Statement> generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs) override;
+  void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs) override;
 
 
 protected:

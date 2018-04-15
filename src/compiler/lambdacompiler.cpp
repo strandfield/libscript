@@ -286,7 +286,7 @@ void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement
   mFunction.implementation()->prototype.setReturnType(val->type().baseType());
 }
 
-std::shared_ptr<program::Statement> LambdaCompiler::generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
+void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
 
@@ -300,7 +300,7 @@ std::shared_ptr<program::Statement> LambdaCompiler::generateReturnStatement(cons
     if (mFunction.prototype().returnType() != Type::Void)
       throw ReturnStatementWithoutValue{};
 
-    return program::ReturnStatement::New(nullptr, std::move(statements));
+    return write(program::ReturnStatement::New(nullptr, std::move(statements)));
   }
   else
   {
@@ -313,7 +313,7 @@ std::shared_ptr<program::Statement> LambdaCompiler::generateReturnStatement(cons
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
   retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
 
-  return program::ReturnStatement::New(retval, std::move(statements));
+  write(program::ReturnStatement::New(retval, std::move(statements)));
 }
 
 Prototype LambdaCompiler::computePrototype()

@@ -469,36 +469,6 @@ Scope FunctionCompiler::continueScope() const
   return s;
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateStatement(const std::shared_ptr<ast::Statement> & statement)
-{
-  switch (statement->type())
-  {
-  case ast::NodeType::NullStatement:
-    return nullptr; /// TODO : should we create a program::Statement for this
-  case ast::NodeType::IfStatement:
-    return generateIfStatement(std::dynamic_pointer_cast<ast::IfStatement>(statement));
-  case ast::NodeType::WhileLoop:
-    return generateWhileLoop(std::dynamic_pointer_cast<ast::WhileLoop>(statement));
-  case ast::NodeType::ForLoop:
-    return generateForLoop(std::dynamic_pointer_cast<ast::ForLoop>(statement));
-  case ast::NodeType::CompoundStatement:
-    return generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(statement), FunctionScope::CompoundStatement);
-  case ast::NodeType::VariableDeclaration:
-    return generateVariableDeclaration(std::dynamic_pointer_cast<ast::VariableDecl>(statement));
-  case ast::NodeType::BreakStatement:
-  case ast::NodeType::ContinueStatement:
-  case ast::NodeType::ReturnStatement:
-    return generateJumpStatement(std::dynamic_pointer_cast<ast::JumpStatement>(statement));
-  case ast::NodeType::ExpressionStatement:
-    return generateExpressionStatement(std::dynamic_pointer_cast<ast::ExpressionStatement>(statement));
-  default:
-    break;
-  }
-
-  assert(false);
-  throw std::runtime_error{ "FunctionCompiler::generateStatement() : not implemented" };
-}
-
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
 {
   if (!mFunction.isDefaulted())
@@ -661,163 +631,6 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateCall(const std::s
     return AbstractExpressionCompiler::generateCall(call);
 }
 
-std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType)
-{
-  auto ret = program::CompoundStatement::New();
-
-  EnterScope guard{ this, scopeType };
-
-  for (const auto & s : compoundStatement->statements)
-  {
-    ret->statements.push_back(generateStatement(s));
-  }
-
-  generateExitScope(mCurrentScope, ret->statements);
-
-  return ret;
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es)
-{
-  auto expr = generateExpression(es->expression);
-  return program::ExpressionStatement::New(expr);
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateForLoop(const std::shared_ptr<ast::ForLoop> & forLoop)
-{
-  EnterScope guard{ this, FunctionScope::ForInit };
-
-  std::shared_ptr<program::Statement> for_init = nullptr;
-  if (forLoop->initStatement != nullptr)
-    for_init = generateStatement(forLoop->initStatement);
-
-  std::shared_ptr<program::Expression> for_cond = nullptr;
-  if (forLoop->condition == nullptr)
-    for_cond = program::Literal::New(engine()->newBool(true));
-  else
-    for_cond = generateExpression(forLoop->condition);
-
-  if (for_cond->type().baseType() != Type::Boolean)
-  {
-    /// TODO : simply perform an implicit conversion
-    throw NotImplementedError{ "Implicit conversion to bool not implemented yet in for-condition" };
-  }
-
-  std::shared_ptr<program::Expression> for_loop_incr = nullptr;
-  if (forLoop->loopIncrement == nullptr)
-    for_loop_incr = program::Literal::New(engine()->newBool(true)); /// TODO : what should we do ? (perhaps use a statement instead, an use the null statement)
-  else
-    for_loop_incr = generateExpression(forLoop->loopIncrement);
-
-  std::shared_ptr<program::Statement> body = nullptr;
-  if (forLoop->body->is<ast::CompoundStatement>())
-  {
-    body = this->generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(forLoop->body), FunctionScope::ForBody);
-  }
-  else
-  {
-    body = generateStatement(forLoop->body);
-  }
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-  generateExitScope(mCurrentScope, statements);
-
-  return program::ForLoop::New(for_init, for_cond, for_loop_incr, body, program::CompoundStatement::New(std::move(statements)));
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateIfStatement(const std::shared_ptr<ast::IfStatement> & is)
-{
-  auto cond = generateExpression(is->condition);
-  std::shared_ptr<program::Statement> body;
-  if (is->body->is<ast::CompoundStatement>())
-    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(is->body), FunctionScope::IfBody);
-  else
-    body = generateStatement(is->body);
-
-  auto result = program::IfStatement::New(cond, body);
-
-  if (is->elseClause != nullptr)
-  {
-    result->elseClause = generateStatement(is->elseClause);
-  }
-
-  return result;
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateJumpStatement(const std::shared_ptr<ast::JumpStatement> & js)
-{
-  if (js->is<ast::ReturnStatement>())
-    return generateReturnStatement(std::dynamic_pointer_cast<ast::ReturnStatement>(js));
-
-  std::vector<std::shared_ptr<program::Statement>> statements;
-
-  if (js->is<ast::BreakStatement>())
-  {
-    const Scope scp = breakScope();
-    generateExitScope(scp, statements);
-    return program::BreakStatement::New(std::move(statements));
-  }
-  else if (js->is<ast::ContinueStatement>())
-  {
-    const Scope scp = continueScope();
-    generateExitScope(scp, statements);
-    return program::ContinueStatement::New(std::move(statements));
-  }
-
-  assert(false);
-  throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
-}
-
-std::shared_ptr<program::Statement> FunctionCompiler::generateReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
-{
-  std::vector<std::shared_ptr<program::Statement>> statements;
-
-  generateExitScope(mFunctionBodyScope, statements);
-
-  if (rs->expression == nullptr)
-  {
-    if (mFunction.prototype().returnType() != Type::Void)
-      throw ReturnStatementWithoutValue{};
-
-    return program::ReturnStatement::New(nullptr, std::move(statements));
-  }
-  else
-  {
-    if (mFunction.prototype().returnType() == Type::Void)
-      throw ReturnStatementWithValue{};
-  }
-
-  auto retval = generateExpression(rs->expression);
-
-  const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
-
-  /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
-
-  return program::ReturnStatement::New(retval, std::move(statements));
-}
-
-void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)
-{
-  const int sp = std::dynamic_pointer_cast<FunctionScope>(scp.impl())->sp();
-  Stack & stack = mStack;
-
-  for (int i(stack.size - 1); i >= sp; --i)
-    statements.push_back(generateVariableDestruction(stack.at(i)));
-
-  // destroying default arguments
-  if (std::dynamic_pointer_cast<FunctionScope>(scp.impl())->category() == FunctionScope::FunctionBody)
-  {
-    const int default_count = mFunction.prototype().defaultArgCount();
-    for (int i(mFunction.prototype().argc() - 1); i >= mFunction.prototype().argc() - default_count; --i)
-    {
-      const Type & arg_type = mFunction.prototype().argv(i);
-      const bool destroy = !(arg_type.isReference() || arg_type.isRefRef());
-      statements.push_back(program::PopDefaultArgument::New(i, destroy));
-    }
-  }
-}
-
 std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier)
 {
   return generateVariableAccess(identifier, resolve(identifier));
@@ -882,31 +695,298 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateLocalVariableAcce
   return program::StackValue::New(index, t);
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)
+
+FunctionCompiler::BufferSwap::BufferSwap(buffer_type & a, buffer_type & b)
+{
+  first = &a;
+  second = &b;
+  std::swap(a, b);
+}
+
+FunctionCompiler::BufferSwap::~BufferSwap()
+{
+  std::swap(*first, *second);
+}
+
+void FunctionCompiler::write(const std::shared_ptr<program::Statement> & s)
+{
+  mBuffer.push_back(s);
+}
+
+size_t FunctionCompiler::buffer_size()
+{
+  return mBuffer.size();
+}
+
+std::vector<std::shared_ptr<program::Statement>> FunctionCompiler::resize_buffer(size_t size)
+{
+  std::vector<std::shared_ptr<program::Statement>> result{ mBuffer.begin() + size, mBuffer.end() };
+  mBuffer.resize(size);
+  return result;
+}
+
+std::vector<std::shared_ptr<program::Statement>> FunctionCompiler::read(size_t count)
+{
+  std::vector<std::shared_ptr<program::Statement>> result{ mBuffer.end() - count, mBuffer.end() };
+  mBuffer.resize(mBuffer.size() - count);
+  return result;
+}
+
+std::shared_ptr<program::Statement> FunctionCompiler::read_one()
+{
+  auto ret = mBuffer.back();
+  mBuffer.pop_back();
+  return ret;
+}
+
+std::shared_ptr<program::Statement> FunctionCompiler::generate(const std::shared_ptr<ast::Statement> & s)
+{
+  const auto size = buffer_size();
+
+  process(s);
+
+  if (buffer_size() == size)
+    return program::CompoundStatement::New(); // simulates a null statement
+  else if (buffer_size() == size + 1)
+    return read_one();
+
+  return program::CompoundStatement::New(resize_buffer(size));
+}
+
+std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
+{
+  EnterScope guard{ this, scopeType };
+
+  const auto size = buffer_size();
+
+  for (const auto & s : cs->statements)
+    process(s);
+
+  processExitScope(mCurrentScope);
+
+  return program::CompoundStatement::New(resize_buffer(size));
+}
+
+void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
+{
+  switch (s->type())
+  {
+  case ast::NodeType::NullStatement:
+    return;
+  case ast::NodeType::IfStatement:
+    processIfStatement(std::dynamic_pointer_cast<ast::IfStatement>(s));
+    return;
+  case ast::NodeType::WhileLoop:
+    processWhileLoop(std::dynamic_pointer_cast<ast::WhileLoop>(s));
+    return;
+  case ast::NodeType::ForLoop:
+    processForLoop(std::dynamic_pointer_cast<ast::ForLoop>(s));
+    return;
+  case ast::NodeType::CompoundStatement:
+    processCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(s), FunctionScope::CompoundStatement);
+    return;
+  case ast::NodeType::VariableDeclaration:
+    processVariableDeclaration(std::dynamic_pointer_cast<ast::VariableDecl>(s));
+    return;
+  case ast::NodeType::BreakStatement:
+  case ast::NodeType::ContinueStatement:
+  case ast::NodeType::ReturnStatement:
+    processJumpStatement(std::dynamic_pointer_cast<ast::JumpStatement>(s));
+    return;
+  case ast::NodeType::ExpressionStatement:
+    processExpressionStatement(std::dynamic_pointer_cast<ast::ExpressionStatement>(s));
+    return;
+  default:
+    break;
+  }
+
+  assert(false);
+  throw std::runtime_error{ "FunctionCompiler::process() : not implemented" };
+}
+
+void FunctionCompiler::processExitScope(const Scope & scp)
+{
+  assert(dynamic_cast<const FunctionScope *>(scp.impl().get()) != nullptr);
+
+  const FunctionScope *fscp = dynamic_cast<const FunctionScope *>(scp.impl().get());
+
+  const int sp = fscp->sp();
+  Stack & stack = mStack;
+
+  for (int i(stack.size - 1); i >= sp; --i)
+    processVariableDestruction(stack.at(i));
+
+  // destroying default arguments
+  if (fscp->category() == FunctionScope::FunctionBody)
+  {
+    const int default_count = mFunction.prototype().defaultArgCount();
+    for (int i(mFunction.prototype().argc() - 1); i >= mFunction.prototype().argc() - default_count; --i)
+    {
+      const Type & arg_type = mFunction.prototype().argv(i);
+      const bool destroy = !(arg_type.isReference() || arg_type.isRefRef());
+      write(program::PopDefaultArgument::New(i, destroy));
+    }
+  }
+}
+
+void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)
+{
+  BufferSwap swap{ mBuffer, statements };
+  processExitScope(scp);
+}
+
+void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
+{
+  EnterScope guard{ this, scopeType };
+
+  for (const auto & s : cs->statements)
+    process(s);
+
+  processExitScope(mCurrentScope);
+}
+
+void FunctionCompiler::processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es)
+{
+  auto expr = generateExpression(es->expression);
+  write(program::ExpressionStatement::New(expr));
+}
+
+void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
+{
+  EnterScope guard{ this, FunctionScope::ForInit };
+
+  std::shared_ptr<program::Statement> for_init = nullptr;
+  if (fl->initStatement != nullptr)
+    for_init = generate(fl->initStatement);
+
+  std::shared_ptr<program::Expression> for_cond = nullptr;
+  if (fl->condition == nullptr)
+    for_cond = program::Literal::New(engine()->newBool(true));
+  else
+    for_cond = generateExpression(fl->condition);
+
+  if (for_cond->type().baseType() != Type::Boolean)
+  {
+    /// TODO : simply perform an implicit conversion
+    throw NotImplementedError{ "Implicit conversion to bool not implemented yet in for-condition" };
+  }
+
+  std::shared_ptr<program::Expression> for_loop_incr = nullptr;
+  if (fl->loopIncrement == nullptr)
+    for_loop_incr = program::Literal::New(engine()->newBool(true)); /// TODO : what should we do ? (perhaps use a statement instead, an use the null statement)
+  else
+    for_loop_incr = generateExpression(fl->loopIncrement);
+
+  std::shared_ptr<program::Statement> body = nullptr;
+  if (fl->body->is<ast::CompoundStatement>())
+    body = this->generateCompoundStatement(std::static_pointer_cast<ast::CompoundStatement>(fl->body), FunctionScope::ForBody);
+  else
+    body = generate(fl->body);
+
+
+  std::vector<std::shared_ptr<program::Statement>> statements;
+  generateExitScope(mCurrentScope, statements);
+
+  write(program::ForLoop::New(for_init, for_cond, for_loop_incr, body, program::CompoundStatement::New(std::move(statements))));
+}
+
+void FunctionCompiler::processIfStatement(const std::shared_ptr<ast::IfStatement> & is)
+{
+  auto cond = generateExpression(is->condition);
+  std::shared_ptr<program::Statement> body;
+  if (is->body->is<ast::CompoundStatement>())
+    body = generateCompoundStatement(std::static_pointer_cast<ast::CompoundStatement>(is->body), FunctionScope::IfBody);
+  else
+    body = generate(is->body);
+
+  auto result = program::IfStatement::New(cond, body);
+
+  if (is->elseClause != nullptr)
+    result->elseClause = generate(is->elseClause);
+
+  write(result);
+}
+
+void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js)
+{
+  if (js->is<ast::ReturnStatement>())
+    return processReturnStatement(std::dynamic_pointer_cast<ast::ReturnStatement>(js));
+
+  std::vector<std::shared_ptr<program::Statement>> statements;
+
+  if (js->is<ast::BreakStatement>())
+  {
+    const Scope scp = breakScope();
+    generateExitScope(scp, statements);
+    write(program::BreakStatement::New(std::move(statements)));
+    return;
+  }
+  else if (js->is<ast::ContinueStatement>())
+  {
+    const Scope scp = continueScope();
+    generateExitScope(scp, statements);
+    write(program::ContinueStatement::New(std::move(statements)));
+    return;
+  }
+
+  assert(false);
+  throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
+}
+
+void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
+{
+  std::vector<std::shared_ptr<program::Statement>> statements;
+
+  generateExitScope(mFunctionBodyScope, statements);
+
+  if (rs->expression == nullptr)
+  {
+    if (mFunction.prototype().returnType() != Type::Void)
+      throw ReturnStatementWithoutValue{};
+
+    return write(program::ReturnStatement::New(nullptr, std::move(statements)));
+  }
+  else
+  {
+    if (mFunction.prototype().returnType() == Type::Void)
+      throw ReturnStatementWithValue{};
+  }
+
+  auto retval = generateExpression(rs->expression);
+
+  const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
+
+  /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
+  retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
+
+  write(program::ReturnStatement::New(retval, std::move(statements)));
+}
+
+void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)
 {
   const Type var_type = resolve(var_decl->variable_type);
 
   if (var_decl->init == nullptr)
-    return generateVariableDeclaration(var_decl, var_type, nullptr);
-  
+    return processVariableDeclaration(var_decl, var_type, nullptr);
+
   assert(var_decl->init != nullptr);
 
   if (var_decl->init->is<ast::AssignmentInitialization>())
-    return generateVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::AssignmentInitialization>(var_decl->init));
+    return processVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::AssignmentInitialization>(var_decl->init));
   else if (var_decl->init->is<ast::ConstructorInitialization>())
-    return generateVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(var_decl->init));
+    return processVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(var_decl->init));
   else
-    return generateVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::BraceInitialization>(var_decl->init));
+    return processVariableDeclaration(var_decl, var_type, std::dynamic_pointer_cast<ast::BraceInitialization>(var_decl->init));
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, std::nullptr_t)
+void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, std::nullptr_t)
 {
   if (var_type.baseType() == Type::Auto)
     throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
-  
+
   try
   {
-    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, nullptr, dpos(var_decl)));
+    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, nullptr, dpos(var_decl)));
   }
   catch (const EnumerationsCannotBeDefaultConstructed & e)
   {
@@ -914,14 +994,14 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   }
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init)
+void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init)
 {
   if (var_type.baseType() == Type::Auto)
     throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
 
   try
   {
-    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
+    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
   }
   catch (const TooManyArgumentInInitialization & e)
   {
@@ -929,14 +1009,14 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   }
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init)
+void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init)
 {
   if (var_type.baseType() == Type::Auto)
     throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
 
   try
   {
-    return generateVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
+    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
   }
   catch (const TooManyArgumentInInitialization & e)
   {
@@ -944,7 +1024,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   }
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & input_var_type, const std::shared_ptr<ast::AssignmentInitialization> & init)
+void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & input_var_type, const std::shared_ptr<ast::AssignmentInitialization> & init)
 {
   auto value = generateExpression(init->value);
 
@@ -961,60 +1041,55 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDeclaratio
   ConversionSequence seq = ConversionSequence::compute(value, var_type, engine());
   if (seq == ConversionSequence::NotConvertible())
     throw CouldNotConvert{ dpos(init), dstr(value->type()), dstr(var_type) };
-  
+
   /// TODO : this is not optimal I believe
   // we could add copy elision
   value = prepareFunctionArgument(value, var_type, seq);
-  return generateVariableCreation(var_type, var_decl->name->getName(), value);
+  processVariableCreation(var_type, var_decl->name->getName(), value);
 }
 
 
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateFundamentalVariableCreation(const Type & type, const std::string & name)
+void FunctionCompiler::processFundamentalVariableCreation(const Type & type, const std::string & name)
 {
-  return generateVariableCreation(type, name, constructFundamentalValue(type, true));
+  processVariableCreation(type, name, constructFundamentalValue(type, true));
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
+void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
 {
   const int stack_index = std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(name, type);
 
-  auto var_decl = program::PushValue::New(type, name, value, stack_index);
+  write(program::PushValue::New(type, name, value, stack_index));
 
   if (std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->category() == FunctionScope::FunctionBody && isCompilingAnonymousFunction())
   {
     mStack[stack_index].global = true;
-    std::vector<std::shared_ptr<program::Statement>> statements;
-    statements.push_back(var_decl);
-    statements.push_back(program::PushGlobal::New(stack_index));
-    
+
     auto simpl = mScript.implementation();
     simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
 
-    return program::CompoundStatement::New(std::move(statements));
+    write(program::PushGlobal::New(stack_index));
   }
-
-  return var_decl;
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateVariableDestruction(const Variable & var)
+void FunctionCompiler::processVariableDestruction(const Variable & var)
 {
-  if(var.global)
-    return program::PopValue::New(false, Function{}, var.index);
+  if (var.global)
+    return write(program::PopValue::New(false, Function{}, var.index));
 
   if (var.type.isObjectType())
   {
     Function dtor = engine()->getClass(var.type).destructor();
     if (dtor.isNull())
       throw ObjectHasNoDestructor{};
-  
-    return program::PopValue::New(true, dtor, var.index);
+
+    return write(program::PopValue::New(true, dtor, var.index));
   }
 
-  return program::PopValue::New(true, Function{}, var.index);
+  write(program::PopValue::New(true, Function{}, var.index));
 }
 
-std::shared_ptr<program::Statement> FunctionCompiler::generateWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)
+void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)
 {
   auto cond = generateExpression(whileLoop->condition);
 
@@ -1026,9 +1101,9 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateWhileLoop(const st
   if (whileLoop->body->is<ast::CompoundStatement>())
     body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(body), FunctionScope::WhileBody);
   else
-    body = generateStatement(whileLoop->body);
+    body = generate(whileLoop->body);
 
-  return program::WhileLoop::New(cond, body);
+  write(program::WhileLoop::New(cond, body));
 }
 
 } // namespace compiler
