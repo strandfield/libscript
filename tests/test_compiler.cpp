@@ -1577,3 +1577,129 @@ TEST(CompilerTests, for_loop_break) {
   ASSERT_EQ(x.type(), Type::Int);
   ASSERT_EQ(x.toInt(), 10);
 }
+
+TEST(CompilerTests, type_alias_1) {
+  using namespace script;
+
+  const char *source =
+    "  using Distance = double;  "
+    "  Distance d = 3.14;        ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value d = s.globals().front();
+  ASSERT_EQ(d.type(), Type::Double);
+  ASSERT_EQ(d.toDouble(), 3.14);
+}
+
+TEST(CompilerTests, using_declaration_1) {
+  using namespace script;
+
+  const char *source =
+    "  namespace foo {             "
+    "    int get() { return 4; }   "
+    "  }                           "
+    "                              "
+    "  int bar()                   "
+    "  {                           "
+    "    using foo::get;           "
+    "    return get();             "
+    "  }                           "
+    "                              "
+    "  int n = bar();              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 4);
+}
+
+TEST(CompilerTests, using_declaration_2) {
+  using namespace script;
+
+  const char *source =
+    "  namespace foo {             "
+    "    int get() { return 4; }   "
+    "  }                           "
+    "                              "
+    "  using foo::get;             "
+    "                              "
+    "  int bar()                   "
+    "  {                           "
+    "    return get();             "
+    "  }                           "
+    "                              "
+    "  int n = bar();              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+
+  // This one fails because at the time of the using decl, foo::get has not been fully processed 
+  // but just recorded into a list of functions to process.
+  // Moving the using decl inside the body of bar() solves the problem because when bar() 
+  // is being compiled, foo::get() has been processed.
+  // We should modify the way ScriptCompiler works to lay the example working...
+  ASSERT_FALSE(success);
+}
+
+TEST(CompilerTests, namespace_alias_1) {
+  using namespace script;
+
+  const char *source =
+    "  namespace foo {             "
+    "    int get() { return 4; }   "
+    "  }                           "
+    "                              "
+    "  namespace qux = foo;        "
+    "                              "
+    "  int bar()                   "
+    "  {                           "
+    "    return qux::get();        "
+    "  }                           "
+    "                              "
+    "  int n = bar();              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 4);
+}

@@ -44,7 +44,11 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
 {
   mScript = task.script;
   mAst = task.ast;
-  mCurrentScope = Scope{ mScript, Scope{engine()->rootNamespace()} };
+  // mCurrentScope = Scope{ mScript, Scope{engine()->rootNamespace()} };
+  // workaround to allow multi-namespace, perhaps we should create a ScriptNamespace that would inherit NamespaceImpl
+  mCurrentScope = Scope{ mScript.rootNamespace() };
+  mCurrentScope.merge(engine()->rootNamespace());
+  mCurrentScope = Scope{ mScript, mCurrentScope };
 
   assert(mAst != nullptr);
 
@@ -110,7 +114,7 @@ Function ScriptCompiler::registerRootFunction(const Scope & scp)
 bool ScriptCompiler::processFirstOrderDeclarationsAndCollectHigherOrderDeclarations()
 {
   for (const auto & decl : mAst->declarations())
-    processOrCollectDeclaration(decl, mCurrentScope);
+    processOrCollectDeclaration(decl);
 
   return true;
 }
@@ -144,6 +148,18 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
       //case ast::NodeType::TemplateDeclaration:
       //  processFirstOrderTemplateDeclaration();
       //  break;
+    case ast::NodeType::UsingDirective:
+      processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(declaration));
+      break;
+    case ast::NodeType::UsingDeclaration:
+      processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(declaration));
+      break;
+    case ast::NodeType::NamespaceAliasDef:
+      processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(declaration));
+      break;
+    case ast::NodeType::TypeAliasDecl:
+      processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(declaration));
+      break;
     default:
       throw NotImplementedError{"This kind of declaration is not implemented yet"};
     }
@@ -565,6 +581,17 @@ bool ScriptCompiler::isFirstOrderDeclaration(const std::shared_ptr<ast::Declarat
   }
   */
 
+  switch (decl->type())
+  {
+  case ast::NodeType::UsingDirective:
+  case ast::NodeType::UsingDeclaration:
+  case ast::NodeType::NamespaceAliasDef:
+  case ast::NodeType::TypeAliasDecl:
+    return true;
+  default:
+    break;
+  }
+
   return false;
 }
 
@@ -691,6 +718,51 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
 void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
   throw NotImplementedError{ dpos(decl), "Template declarations not supported yet" };
+}
+
+void ScriptCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
+{
+  throw NotImplementedError{ dpos(decl), "Using directive not implemented yet" };
+}
+
+void ScriptCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)
+{
+  NameLookup lookup = resolve(decl->used_name);
+  /// TODO : throw exception if nothing found
+  mCurrentScope.inject(lookup.impl().get());
+}
+
+void ScriptCompiler::processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl)
+{
+  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
+  const std::string & name = decl->alias_name->getName();
+
+  std::vector<std::string> nested;
+  auto target = decl->aliased_namespace;
+  while (target->is<ast::ScopedIdentifier>())
+  {
+    const auto & scpid = target->as<ast::ScopedIdentifier>();
+    nested.push_back(scpid.rhs->getName()); /// TODO : check that all names are simple ids
+    target = scpid.lhs;
+  }
+  nested.push_back(target->getName());
+
+  std::reverse(nested.begin(), nested.end());
+  NamespaceAlias alias{ name, std::move(nested) };
+
+  mCurrentScope.inject(alias); /// TODO : this may throw and we should handle that
+}
+
+void ScriptCompiler::processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl)
+{
+  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
+  const std::string & name = decl->alias_name->getName();
+
+  NameLookup lookup = resolve(decl->aliased_type);
+  if (lookup.typeResult().isNull())
+    throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
+
+  mCurrentScope.inject(name, lookup.typeResult());
 }
 
 AccessSpecifier ScriptCompiler::getAccessSpecifier(const Scope & scp)

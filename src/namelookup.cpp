@@ -614,6 +614,9 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
 {
   assert(!name->is<ast::ScopedIdentifier>());
 
+  if (s.isNull())
+    return;
+
   ScopeParentGuard guard{ s };
   s.impl()->parent = nullptr; // temporarily setting parent to nullptr
 

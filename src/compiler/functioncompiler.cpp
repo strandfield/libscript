@@ -47,6 +47,8 @@ FunctionScope::FunctionScope(const FunctionScope & other)
   : ExtensibleScope(other)
   , mCompiler(other.mCompiler)
   , mCategory(other.mCategory)
+  , mSize(other.mSize)
+  , mSp(other.mSp)
 {
 
 }
@@ -129,7 +131,7 @@ bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
     }
   }
 
-  return false;
+  return ExtensibleScope::lookup(name, nl);
 }
 
 int FunctionScope::add_var(const std::string & name, const Type & t, bool global)
@@ -796,6 +798,18 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
   case ast::NodeType::ExpressionStatement:
     processExpressionStatement(std::dynamic_pointer_cast<ast::ExpressionStatement>(s));
     return;
+  case ast::NodeType::NamespaceAliasDef:
+    processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(s));
+    return;
+  case ast::NodeType::TypeAliasDecl:
+    processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(s));
+    return;
+  case ast::NodeType::UsingDeclaration:
+    processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(s));
+    return;
+  case ast::NodeType::UsingDirective:
+    processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(s));
+    return;
   default:
     break;
   }
@@ -933,6 +947,29 @@ void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpState
   throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
 }
 
+void FunctionCompiler::processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
+  const std::string & name = decl->alias_name->getName();
+
+  std::vector<std::string> nested;
+  auto target = decl->aliased_namespace;
+  while (target->is<ast::ScopedIdentifier>())
+  {
+    const auto & scpid = target->as<ast::ScopedIdentifier>();
+    nested.push_back(scpid.rhs->getName()); /// TODO : check that all names are simple ids
+    target = scpid.lhs;
+  }
+  nested.push_back(target->getName());
+
+  std::reverse(nested.begin(), nested.end());
+  NamespaceAlias alias{ name, std::move(nested) };
+
+  mCurrentScope.inject(alias); /// TODO : this may throw and we should handle that
+}
+
 void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
@@ -960,6 +997,35 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
   retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
+}
+
+void FunctionCompiler::processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
+  const std::string & name = decl->alias_name->getName();
+
+  NameLookup lookup = resolve(decl->aliased_type);
+  if (lookup.typeResult().isNull())
+    throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
+
+  mCurrentScope.inject(name, lookup.typeResult());
+}
+
+void FunctionCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  NameLookup lookup = resolve(decl->used_name);
+  /// TODO : throw exception if nothing found
+  mCurrentScope.inject(lookup.impl().get());
+}
+
+void FunctionCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+  throw NotImplementedError{ dpos(decl), "Using directive not implemented yet" };
 }
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)

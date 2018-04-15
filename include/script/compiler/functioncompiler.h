@@ -31,9 +31,13 @@ class FunctionDecl;
 class Identifier;
 class IfStatement;
 class JumpStatement;
+class NamespaceAliasDefinition;
 class QualifiedType;
 class ReturnStatement;
 class Statement;
+class TypeAliasDeclaration;
+class UsingDeclaration;
+class UsingDirective;
 class VariableDecl;
 class WhileLoop;
 }
@@ -218,7 +222,11 @@ private:
   void processForLoop(const std::shared_ptr<ast::ForLoop> & fl);
   void processIfStatement(const std::shared_ptr<ast::IfStatement> & is);
   void processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
+  void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
   virtual void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);
+  void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
+  void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
+  void processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, std::nullptr_t);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);

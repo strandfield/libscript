@@ -35,11 +35,15 @@ class Expression;
 class FriendDeclaration;
 class FunctionDecl;
 class Identifier;
+class NamespaceAliasDefinition;
 class NamespaceDeclaration;
 class OperatorOverloadDecl;
 class VariableDecl;
 class QualifiedType;
+class TypeAliasDeclaration;
 class Typedef;
+class UsingDeclaration;
+class UsingDirective;
 } // namespace ast
 
 namespace compiler
@@ -116,6 +120,10 @@ protected:
   void processTypedef(const std::shared_ptr<ast::Typedef> & decl);
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl);
   void processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl);
+  void processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl);
+  void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
+  void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
+  void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
 
   static AccessSpecifier getAccessSpecifier(const Scope & scp);
   void handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp);
