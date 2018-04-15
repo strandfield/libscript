@@ -63,15 +63,15 @@ std::string ScriptCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
   return mExprCompiler.repr(id);
 }
 
-Type ScriptCompiler::resolve(const ast::QualifiedType & qt, const Scope & scp)
+Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
-  mExprCompiler.setScope(scp);
+  mExprCompiler.setScope(mCurrentScope);
   return mExprCompiler.resolve(qt);
 }
 
-NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id, const Scope & scp)
+NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
 {
-  mExprCompiler.setScope(scp);
+  mExprCompiler.setScope(mCurrentScope);
   return mExprCompiler.resolve(id);
 }
 
@@ -115,23 +115,31 @@ bool ScriptCompiler::processFirstOrderDeclarationsAndCollectHigherOrderDeclarati
   return true;
 }
 
-void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scope)
+void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scp)
+{
+  ScopeGuard guard{ mCurrentScope };
+  mCurrentScope = scp;
+
+  processOrCollectDeclaration(declaration);
+}
+
+void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration)
 {
   if (isFirstOrderDeclaration(declaration))
   {
     switch (declaration->type())
     {
     case ast::NodeType::ClassDeclaration:
-      processClassDeclaration(std::static_pointer_cast<ast::ClassDecl>(declaration), scope);
+      processClassDeclaration(std::static_pointer_cast<ast::ClassDecl>(declaration));
       break;
     case ast::NodeType::EnumDeclaration:
-      processEnumDeclaration(std::static_pointer_cast<ast::EnumDeclaration>(declaration), scope);
+      processEnumDeclaration(std::static_pointer_cast<ast::EnumDeclaration>(declaration));
       break;
     case ast::NodeType::Typedef:
-      processTypedef(std::static_pointer_cast<ast::Typedef>(declaration), scope);
+      processTypedef(std::static_pointer_cast<ast::Typedef>(declaration));
       break;
     case ast::NodeType::NamespaceDecl:
-      processNamespaceDecl(std::static_pointer_cast<ast::NamespaceDeclaration>(declaration), scope);
+      processNamespaceDecl(std::static_pointer_cast<ast::NamespaceDeclaration>(declaration));
       break;
       //case ast::NodeType::TemplateDeclaration:
       //  processFirstOrderTemplateDeclaration();
@@ -141,14 +149,11 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
     }
   }
   else if (isSecondOrderDeclaration(declaration))
-    mSecondOrderDeclarations.push_back(ScopedDeclaration{ scope, declaration });
+    mSecondOrderDeclarations.push_back(ScopedDeclaration{ currentScope(), declaration });
   else if (isThirdOrderDeclaration(declaration))
-    mThirdOrderDeclarations.push_back(ScopedDeclaration{ scope, declaration });
+    mThirdOrderDeclarations.push_back(ScopedDeclaration{ currentScope(), declaration });
   else
     throw NotImplementedError{ "This kind of declaration is not implemented yet" };
-
-  // the lock will restore the previous state 
-  // thanks RAII !
 }
 
 
@@ -161,18 +166,21 @@ void ScriptCompiler::processSecondOrderDeclarations()
 
 void ScriptCompiler::processSecondOrderDeclaration(const compiler::ScopedDeclaration & decl)
 {
+  ScopeGuard guard{ mCurrentScope };
+  mCurrentScope = decl.scope;
+
   switch (decl.declaration->type())
   {
   case ast::NodeType::FunctionDeclaration:
-    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(decl.declaration), decl.scope);
+    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(decl.declaration));
   case ast::NodeType::ConstructorDeclaration:
-    return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(decl.declaration), decl.scope);
+    return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(decl.declaration));
   case ast::NodeType::DestructorDeclaration:
-    return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(decl.declaration), decl.scope);
+    return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(decl.declaration));
   case ast::NodeType::OperatorOverloadDeclaration:
-    return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(decl.declaration), decl.scope);
+    return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(decl.declaration));
   case ast::NodeType::CastDeclaration:
-    return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(decl.declaration), decl.scope);
+    return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(decl.declaration));
     //case ast::NodeType::TemplateDeclaration:
     //  return processSecondOrderTemplateDeclaration();
   default:
@@ -182,22 +190,16 @@ void ScriptCompiler::processSecondOrderDeclaration(const compiler::ScopedDeclara
   throw NotImplementedError{"ScriptCompiler::processSecondOrderDeclaration() : implementation error"};
 }
 
-void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & var_decl, const Scope & scp)
+void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & var_decl)
 {
+  const Scope & scp = currentScope();
   Class current_class = scp.asClass();
   assert(!current_class.isNull());
 
   if (var_decl->variable_type.type->name == parser::Token::Auto)
     throw DataMemberCannotBeAuto{ dpos(var_decl) };
 
-  /// TODO : consider variable which are functions
-  if (var_decl->variable_type.functionType != nullptr)
-    throw NotImplementedError{ "Static variables of function-type are not implemented yet" };
-
-  /// TODO : consider const-ref qualifications 
-  NameLookup lookup = NameLookup::resolve(var_decl->variable_type.type, scp);
-  if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(var_decl), repr(var_decl->variable_type.type) };
+  Type var_type = resolve(var_decl->variable_type);
 
   if (var_decl->staticSpecifier.isValid())
   {
@@ -208,7 +210,7 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
       throw InvalidStaticInitialization{ dpos(var_decl) };
 
     auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
-    if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
+    if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
     {
       auto execexpr = mExprCompiler.compile(expr, scp);
       
@@ -217,33 +219,27 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
     }
     else
     {
-      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), lookup.typeResult(), getAccessSpecifier(scp));
+      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, getAccessSpecifier(scp));
       mStaticVariables.push_back(StaticVariable{ staticMember, var_decl, scp });
     }
   }
   else
   {
-    Class::DataMember dataMember{ lookup.typeResult(), var_decl->name->getName(), getAccessSpecifier(scp) };
+    Class::DataMember dataMember{ var_type, var_decl->name->getName(), getAccessSpecifier(scp) };
     current_class.implementation()->dataMembers.push_back(dataMember);
   }
 }
 
-void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp)
+void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl)
 {
+  const Scope & scp = currentScope();
   Namespace ns = scp.asNamespace();
   assert(!ns.isNull());
 
   if (decl->variable_type.type->name == parser::Token::Auto)
     throw GlobalVariablesCannotBeAuto{ dpos(decl) };
 
-  /// TODO : consider variable which are functions
-  if (decl->variable_type.functionType != nullptr)
-    throw NotImplementedError{ "Static variables of function-type are not implemented yet" };
-
-  /// TODO : consider const-ref qualifications 
-  NameLookup lookup = NameLookup::resolve(decl->variable_type.type, scp);
-  if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(decl), repr(decl->variable_type.type) };
+  Type var_type = resolve(decl->variable_type);
 
   if (decl->init == nullptr)
     throw GlobalVariablesMustBeInitialized{ dpos(decl) };
@@ -253,14 +249,14 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
 
   auto expr = decl->init->as<ast::AssignmentInitialization>().value;
   Value val;
-  if (lookup.typeResult().isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
+  if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
   {
     auto execexpr = mExprCompiler.compile(expr, scp);
     val = engine()->implementation()->interpreter->eval(execexpr);
   }
   else
   {
-    val = engine()->uninitialized(lookup.typeResult());
+    val = engine()->uninitialized(var_type);
     mStaticVariables.push_back(StaticVariable{ val, decl, scp });
   }
 
@@ -268,20 +264,20 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
   ns.implementation()->variables[decl->name->getName()] = val;
 }
 
-void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl, const Scope & scp)
+void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl)
 {
   assert(decl->is<ast::ClassFriendDeclaration>());
 
   const auto & pal = decl->as<ast::ClassFriendDeclaration>();
 
-  NameLookup lookup = resolve(pal.class_name, scp);
+  NameLookup lookup = resolve(pal.class_name);
   if (lookup.typeResult().isNull())
     throw InvalidTypeName{ dpos(pal.class_name), dstr(pal.class_name) };
 
   if (!lookup.typeResult().isObjectType())
     throw FriendMustBeAClass{ dpos(pal.class_name) };
 
-  scp.asClass().addFriend(engine()->getClass(lookup.typeResult()));
+  currentScope().asClass().addFriend(engine()->getClass(lookup.typeResult()));
 }
 
 void ScriptCompiler::processThirdOrderDeclarations()
@@ -290,9 +286,12 @@ void ScriptCompiler::processThirdOrderDeclarations()
   {
     const auto & decl = mThirdOrderDeclarations.at(i);
 
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = decl.scope;
+
     if (decl.declaration->is<ast::FriendDeclaration>())
     {
-      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(decl.declaration), decl.scope);
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(decl.declaration));
     }
     else
     {
@@ -308,9 +307,9 @@ void ScriptCompiler::processThirdOrderDeclarations()
       assert(var_decl != nullptr);
 
       if (decl.scope.isClass())
-        processDataMemberDecl(var_decl, decl.scope);
+        processDataMemberDecl(var_decl);
       else if (decl.scope.type() == Scope::NamespaceScope)
-        processNamespaceVariableDecl(var_decl, decl.scope);
+        processNamespaceVariableDecl(var_decl);
       else
         throw std::runtime_error{ "Not implemented" };
     }
@@ -601,10 +600,11 @@ static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::Ac
   return AccessSpecifier::Public;
 }
 
-void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl, const Scope & scp)
+void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)
 {
   assert(class_decl != nullptr);
 
+  const Scope scp = currentScope();
   const std::string & class_name = class_decl->name->getName();
 
   Class parent_class;
@@ -637,8 +637,9 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
   }
 }
 
-void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl, const Scope & scp)
+void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl)
 {
+  const Scope scp = currentScope();
   const ast::EnumDeclaration & enum_decl = *decl;
 
   Enum e = build(Enum{}, enum_decl.name->getName());
@@ -654,18 +655,19 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
   }
 }
 
-void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl, const Scope & scp)
+void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
 {
   const ast::Typedef & tdef = *decl;
 
-  const Type t = resolve(tdef.qualified_type, scp);
+  const Type t = resolve(tdef.qualified_type);
   const std::string & name = tdef.name->getName();
 
-  scp.impl()->add_typedef(Typedef{ name, t });
+  currentScope().impl()->add_typedef(Typedef{ name, t });
 }
 
-void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl, const Scope & scp)
+void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl)
 {
+  const Scope scp = currentScope();
   const ast::NamespaceDeclaration & ndecl = *decl;
 
   if (scp.type() != Scope::NamespaceScope && scp.type() != Scope::ScriptScope)
@@ -686,7 +688,7 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   }
 }
 
-void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl, const Scope &)
+void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
   throw NotImplementedError{ dpos(decl), "Template declarations not supported yet" };
 }
@@ -714,9 +716,10 @@ void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope
   }
 }
 
-void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
+void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
-  FunctionBuilder builder = FunctionBuilder::Function(fundecl->name->getName(), functionPrototype(fundecl, scp));
+  const Scope scp = currentScope();
+  FunctionBuilder builder = FunctionBuilder::Function(fundecl->name->getName(), functionPrototype(fundecl));
   if (fundecl->deleteKeyword.isValid())
     builder.setDeleted();
   if (fundecl->virtualKeyword.isValid())
@@ -741,12 +744,13 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
     schedule(CompileFunctionTask{ function, fundecl, scp });
 }
 
-void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl, const Scope & scp)
+void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl)
 {
+  const Scope scp = currentScope();
   const auto & ctor_decl = *decl;
   Class current_class = scp.asClass();
 
-  Prototype proto = functionPrototype(decl, scp);
+  Prototype proto = functionPrototype(decl);
 
   FunctionBuilder b = FunctionBuilder::Constructor(current_class, proto);
   if (ctor_decl.explicitKeyword.isValid())
@@ -766,8 +770,9 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
     schedule(CompileFunctionTask{ ctor, decl, scp });
 }
 
-void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl, const Scope & scp)
+void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
 {
+  const Scope scp = currentScope();
   const auto & dtor_decl = *decl;
   Class current_class = scp.asClass();
 
@@ -797,13 +802,14 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
     schedule(CompileFunctionTask{ dtor, decl, scp });
 }
 
-void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl, const Scope & scp)
+void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
 {
+  const Scope scp = currentScope();
   const ast::OperatorOverloadDecl & over_decl = *decl;
 
   /// TODO : check that we are at namespace level !
 
-  Prototype proto = functionPrototype(decl, scp);
+  Prototype proto = functionPrototype(decl);
 
   std::string suffix_name = over_decl.name->as<ast::LiteralOperatorName>().suffix_string();
 
@@ -815,16 +821,17 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
     schedule(CompileFunctionTask{ function, decl, scp });
 }
 
-void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl, const Scope & scp)
+void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
 {
+  const Scope scp = currentScope();
   const ast::OperatorOverloadDecl & over_decl = *decl;
 
   if (over_decl.name->is<ast::LiteralOperatorName>())
-    return processLiteralOperatorDecl(decl, scp);
+    return processLiteralOperatorDecl(decl);
 
-  Prototype proto = functionPrototype(decl, scp);
+  Prototype proto = functionPrototype(decl);
   
-  const bool is_member = scp.type() == script::Scope::ClassScope;
+  const bool is_member = currentScope().type() == script::Scope::ClassScope;
   
   auto arity = proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
   Operator::BuiltInOperator operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
@@ -864,11 +871,12 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     schedule(CompileFunctionTask{ function, decl, scp });
 }
 
-void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl, const Scope & scp)
+void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl)
 {
+  const Scope scp = currentScope();
   const ast::CastDecl & cast_decl = *decl;
 
-  Prototype proto = functionPrototype(decl, scp);
+  Prototype proto = functionPrototype(decl);
 
   const bool is_member = scp.type() == script::Scope::ClassScope;
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
@@ -889,7 +897,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
     schedule(CompileFunctionTask{ cast, decl, scp });
 }
 
-void ScriptCompiler::processSecondOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl, const Scope &)
+void ScriptCompiler::processSecondOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
   throw NotImplementedError{ dpos(decl), "Function templates not supported yet" };
 }
@@ -901,8 +909,10 @@ TemplateArgument ScriptCompiler::processTemplateArg(const std::shared_ptr<ast::E
 }
 
 
-Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
+Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
+  const Scope scp = currentScope();
+
   Prototype result;
 
   if (fundecl->is<ast::ConstructorDecl>())
@@ -910,7 +920,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   else if (fundecl->is<ast::DestructorDecl>())
     result.setReturnType(Type::Void);
   else
-    result.setReturnType(resolve(fundecl->returnType, scp));
+    result.setReturnType(resolve(fundecl->returnType));
 
   if (scp.type() == script::Scope::ClassScope && fundecl->staticKeyword == parser::Token::Invalid
      && fundecl->is<ast::ConstructorDecl>() == false)
@@ -925,7 +935,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   bool mustbe_defaulted = false;
   for (size_t i(0); i < fundecl->params.size(); ++i)
   {
-    Type argtype = resolve(fundecl->params.at(i).type, scp);
+    Type argtype = resolve(fundecl->params.at(i).type);
     if (fundecl->params.at(i).defaultValue != nullptr)
       argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)
