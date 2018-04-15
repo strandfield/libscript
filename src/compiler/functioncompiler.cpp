@@ -163,6 +163,11 @@ bool FunctionScope::catch_break() const
   return mCategory == ForInit || mCategory == WhileBody;
 }
 
+bool FunctionScope::catch_continue() const
+{
+  return mCategory == ForBody || mCategory == WhileBody;
+}
+
 
 Variable::Variable()
   : index(-1)
@@ -456,6 +461,14 @@ Scope FunctionCompiler::breakScope() const
   return s;
 }
 
+Scope FunctionCompiler::continueScope() const
+{
+  Scope s = mCurrentScope;
+  while (!std::dynamic_pointer_cast<FunctionScope>(s.impl())->catch_continue())
+    s = s.parent();
+  return s;
+}
+
 std::shared_ptr<program::Statement> FunctionCompiler::generateStatement(const std::shared_ptr<ast::Statement> & statement)
 {
   switch (statement->type())
@@ -738,13 +751,18 @@ std::shared_ptr<program::Statement> FunctionCompiler::generateJumpStatement(cons
 
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const Scope scp = breakScope();
-  generateExitScope(scp, statements);
-
   if (js->is<ast::BreakStatement>())
+  {
+    const Scope scp = breakScope();
+    generateExitScope(scp, statements);
     return program::BreakStatement::New(std::move(statements));
+  }
   else if (js->is<ast::ContinueStatement>())
+  {
+    const Scope scp = continueScope();
+    generateExitScope(scp, statements);
     return program::ContinueStatement::New(std::move(statements));
+  }
 
   assert(false);
   throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };

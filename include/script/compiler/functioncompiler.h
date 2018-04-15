@@ -158,7 +158,7 @@ public:
 
 protected:
   Scope breakScope() const;
-  inline Scope continueScope() const { return breakScope(); }
+  Scope continueScope() const;
 
   std::shared_ptr<program::Statement> generateStatement(const std::shared_ptr<ast::Statement> & statement);
 

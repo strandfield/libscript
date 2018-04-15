@@ -1489,3 +1489,91 @@ TEST(CompilerTests, friend_class) {
   ASSERT_EQ(A.friends(Class{}).front().name(), "B");
 }
 
+TEST(CompilerTests, for_loop_1) {
+  using namespace script;
+
+  const char *source =
+    "  int n = 0;                   "
+    "  for(int i(0); i < 10; ++i)   "
+    "    n = n + i;                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value x = s.globals().front();
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 45);
+}
+
+TEST(CompilerTests, for_loop_continue) {
+  using namespace script;
+
+  const char *source =
+    "  int n = 0;                  "
+    "  for(int i(0); i < 10; ++i)  "
+    "  {                           "
+    "    if(i == 5)                "
+    "      continue;               "
+    "    n = n + i;                "
+    "  }                           ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value x = s.globals().front();
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 40);
+}
+
+TEST(CompilerTests, for_loop_break) {
+  using namespace script;
+
+  const char *source =
+    "  int n = 0;                  "
+    "  for(int i(0); i < 10; ++i)  "
+    "  {                           "
+    "    if(i == 5)                "
+    "      break;                  "
+    "    n = n + i;                "
+    "  }                           ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value x = s.globals().front();
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 10);
+}

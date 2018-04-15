@@ -52,6 +52,7 @@ public:
 
   Category category() const;
   bool catch_break() const;
+  bool catch_continue() const;
   inline int sp() const { return mSp; }
 
 public:

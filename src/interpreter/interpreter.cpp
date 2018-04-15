@@ -244,15 +244,18 @@ void Interpreter::visit(const program::ForLoop & fl)
   while (eval(fl.cond).toBool())
   {
     exec(fl.body);
-    eval(fl.loop);
 
     auto flags = mExecutionContext->flags();
     if (flags == FunctionCall::ReturnFlag)
       return;
     mExecutionContext->clearFlags();
     if (flags == FunctionCall::BreakFlag)
-      break;
+      return; // the break statement should have destroyed the variable in the init-scope.
+
+    eval(fl.loop);
   }
+
+  exec(fl.destroy);
 }
 
 void Interpreter::visit(const program::IfStatement & is) 
