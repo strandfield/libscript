@@ -36,6 +36,7 @@ namespace compiler
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
   , mExprCompiler(c, s)
+  , mResolvedUnknownType(false)
 {
 
 }
@@ -53,9 +54,9 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   assert(mAst != nullptr);
 
   Function program = registerRootFunction(mCurrentScope);
-  processFirstOrderDeclarationsAndCollectHigherOrderDeclarations();
-  processSecondOrderDeclarations();
-  processThirdOrderDeclarations();
+  processOrCollectScriptDeclarations();
+  resolveIncompleteTypes();
+  processPendingDeclarations();
   compileFunctions();
   initializeStaticVariables();
 
@@ -111,7 +112,7 @@ Function ScriptCompiler::registerRootFunction(const Scope & scp)
   return scriptfunc;
 }
 
-bool ScriptCompiler::processFirstOrderDeclarationsAndCollectHigherOrderDeclarations()
+bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
   for (const auto & decl : mAst->declarations())
     processOrCollectDeclaration(decl);
@@ -129,81 +130,61 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
 
 void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration)
 {
-  if (isFirstOrderDeclaration(declaration))
+  switch (declaration->type())
   {
-    switch (declaration->type())
-    {
-    case ast::NodeType::ClassDeclaration:
-      processClassDeclaration(std::static_pointer_cast<ast::ClassDecl>(declaration));
-      break;
-    case ast::NodeType::EnumDeclaration:
-      processEnumDeclaration(std::static_pointer_cast<ast::EnumDeclaration>(declaration));
-      break;
-    case ast::NodeType::Typedef:
-      processTypedef(std::static_pointer_cast<ast::Typedef>(declaration));
-      break;
-    case ast::NodeType::NamespaceDecl:
-      processNamespaceDecl(std::static_pointer_cast<ast::NamespaceDeclaration>(declaration));
-      break;
-      //case ast::NodeType::TemplateDeclaration:
-      //  processFirstOrderTemplateDeclaration();
-      //  break;
-    case ast::NodeType::UsingDirective:
-      processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(declaration));
-      break;
-    case ast::NodeType::UsingDeclaration:
-      processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(declaration));
-      break;
-    case ast::NodeType::NamespaceAliasDef:
-      processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(declaration));
-      break;
-    case ast::NodeType::TypeAliasDecl:
-      processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(declaration));
-      break;
-    default:
-      throw NotImplementedError{"This kind of declaration is not implemented yet"};
-    }
-  }
-  else if (isSecondOrderDeclaration(declaration))
-    mSecondOrderDeclarations.push_back(ScopedDeclaration{ currentScope(), declaration });
-  else if (isThirdOrderDeclaration(declaration))
-    mThirdOrderDeclarations.push_back(ScopedDeclaration{ currentScope(), declaration });
-  else
-    throw NotImplementedError{ "This kind of declaration is not implemented yet" };
-}
-
-
-void ScriptCompiler::processSecondOrderDeclarations()
-{
-  for (const auto & decl : mSecondOrderDeclarations)
-    processSecondOrderDeclaration(decl);
-}
-
-
-void ScriptCompiler::processSecondOrderDeclaration(const compiler::ScopedDeclaration & decl)
-{
-  ScopeGuard guard{ mCurrentScope };
-  mCurrentScope = decl.scope;
-
-  switch (decl.declaration->type())
-  {
-  case ast::NodeType::FunctionDeclaration:
-    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(decl.declaration));
-  case ast::NodeType::ConstructorDeclaration:
-    return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(decl.declaration));
-  case ast::NodeType::DestructorDeclaration:
-    return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(decl.declaration));
-  case ast::NodeType::OperatorOverloadDeclaration:
-    return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(decl.declaration));
-  case ast::NodeType::CastDeclaration:
-    return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(decl.declaration));
-    //case ast::NodeType::TemplateDeclaration:
-    //  return processSecondOrderTemplateDeclaration();
-  default:
+  case ast::NodeType::ClassDeclaration:
+    processClassDeclaration(std::static_pointer_cast<ast::ClassDecl>(declaration));
     break;
+  case ast::NodeType::EnumDeclaration:
+    processEnumDeclaration(std::static_pointer_cast<ast::EnumDeclaration>(declaration));
+    break;
+  case ast::NodeType::Typedef:
+    processTypedef(std::static_pointer_cast<ast::Typedef>(declaration));
+    break;
+  case ast::NodeType::NamespaceDecl:
+    processNamespaceDecl(std::static_pointer_cast<ast::NamespaceDeclaration>(declaration));
+    break;
+  case ast::NodeType::UsingDirective:
+    processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(declaration));
+    break;
+  case ast::NodeType::UsingDeclaration:
+    processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(declaration));
+    break;
+  case ast::NodeType::NamespaceAliasDef:
+    processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(declaration));
+    break;
+  case ast::NodeType::TypeAliasDecl:
+    processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(declaration));
+    break;
+  case ast::NodeType::FunctionDeclaration:
+    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(declaration));
+  case ast::NodeType::ConstructorDeclaration:
+    return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(declaration));
+  case ast::NodeType::DestructorDeclaration:
+    return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(declaration));
+  case ast::NodeType::OperatorOverloadDeclaration:
+    return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(declaration));
+  case ast::NodeType::CastDeclaration:
+    return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(declaration));
+  case ast::NodeType::VariableDeclaration:
+  case ast::NodeType::ClassFriendDecl:
+    return collectDeclaration(declaration);
+  default:
+    throw NotImplementedError{ "This kind of declaration is not implemented yet" };
   }
+}
 
-  throw NotImplementedError{"ScriptCompiler::processSecondOrderDeclaration() : implementation error"};
+void ScriptCompiler::collectDeclaration(const std::shared_ptr<ast::Declaration> & decl)
+{
+  mProcessingQueue.push_back(ScopedDeclaration{ currentScope(), decl });
+}
+
+void ScriptCompiler::resolveIncompleteTypes()
+{
+  for (const auto & f : mIncompleteFunctions)
+    reprocess(f);
+
+  mIncompleteFunctions.clear();
 }
 
 void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & var_decl)
@@ -296,11 +277,11 @@ void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclarat
   currentScope().asClass().addFriend(engine()->getClass(lookup.typeResult()));
 }
 
-void ScriptCompiler::processThirdOrderDeclarations()
+void ScriptCompiler::processPendingDeclarations()
 {
-  for (size_t i(0); i < mThirdOrderDeclarations.size(); ++i)
+  for (size_t i(0); i < mProcessingQueue.size(); ++i)
   {
-    const auto & decl = mThirdOrderDeclarations.at(i);
+    const auto & decl = mProcessingQueue.at(i);
 
     ScopeGuard guard{ mCurrentScope };
     mCurrentScope = decl.scope;
@@ -330,6 +311,8 @@ void ScriptCompiler::processThirdOrderDeclarations()
         throw std::runtime_error{ "Not implemented" };
     }
   }
+
+  mProcessingQueue.clear();
 }
 
 
@@ -563,61 +546,6 @@ bool ScriptCompiler::initializeStaticVariables()
   return true;
 }
 
-
-bool ScriptCompiler::isFirstOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const
-{
-  if (decl->is<ast::ClassDecl>() || decl->is<ast::EnumDeclaration>() || decl->is<ast::Typedef>() || decl->is<ast::NamespaceDeclaration>())
-    return true;
-
-  /*
-  if (decl->is<ast::TemplateDeclaration>())
-  {
-    const ast::TemplateDeclaration & t_decl = decl->as<ast::TemplateDeclaration>();
-    if (t_decl->params.size() > 0)
-      return true;
-
-    if (t_decl->params.size() == 0)
-      return t_decl->body->is<ast::ClassDecl>();
-  }
-  */
-
-  switch (decl->type())
-  {
-  case ast::NodeType::UsingDirective:
-  case ast::NodeType::UsingDeclaration:
-  case ast::NodeType::NamespaceAliasDef:
-  case ast::NodeType::TypeAliasDecl:
-    return true;
-  default:
-    break;
-  }
-
-  return false;
-}
-
-bool ScriptCompiler::isSecondOrderDeclaration(const std::shared_ptr<ast::Declaration>& decl) const
-{
-  switch (decl->type())
-  {
-  case ast::NodeType::FunctionDeclaration:
-  case ast::NodeType::ConstructorDeclaration:
-  case ast::NodeType::DestructorDeclaration:
-  case ast::NodeType::OperatorOverloadDeclaration:
-  case ast::NodeType::CastDeclaration:
-    return true;
-  default:
-    break;
-  }
-
-  return false;
-}
-
-bool ScriptCompiler::isThirdOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const
-{
-  return decl->is<ast::VariableDecl>() || decl->is<ast::FriendDeclaration>();
-}
-
-
 static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
 {
   if (as->visibility == parser::Token::Private)
@@ -715,11 +643,6 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   }
 }
 
-void ScriptCompiler::processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl)
-{
-  throw NotImplementedError{ dpos(decl), "Template declarations not supported yet" };
-}
-
 void ScriptCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
 {
   throw NotImplementedError{ dpos(decl), "Using directive not implemented yet" };
@@ -814,6 +737,8 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 
   if (!function.isDeleted() && !function.isPureVirtual())
     schedule(CompileFunctionTask{ function, fundecl, scp });
+
+  schedule_for_reprocessing(fundecl, function);
 }
 
 void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl)
@@ -840,6 +765,8 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   if (!ctor.isDeleted())
     schedule(CompileFunctionTask{ ctor, decl, scp });
+
+  schedule_for_reprocessing(decl, ctor);
 }
 
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
@@ -872,6 +799,8 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   /// TODO : not sure why would anyone want to delete a destructor ?
   if(!dtor.isDeleted())
     schedule(CompileFunctionTask{ dtor, decl, scp });
+
+  schedule_for_reprocessing(decl, dtor);
 }
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -891,6 +820,8 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   if (!function.isDeleted())
     schedule(CompileFunctionTask{ function, decl, scp });
+
+  schedule_for_reprocessing(decl, function);
 }
 
 void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -941,6 +872,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   
   if(!function.isDeleted())
     schedule(CompileFunctionTask{ function, decl, scp });
+
+  schedule_for_reprocessing(decl, function);
 }
 
 void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl)
@@ -967,19 +900,54 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   
   if (!cast.isDeleted())
     schedule(CompileFunctionTask{ cast, decl, scp });
+
+  schedule_for_reprocessing(decl, cast);
 }
 
-void ScriptCompiler::processSecondOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl)
+Type ScriptCompiler::optional_resolve(const ast::QualifiedType & qt)
 {
-  throw NotImplementedError{ dpos(decl), "Function templates not supported yet" };
+  if (qt.functionType != nullptr)
+  {
+    Prototype proto;
+    proto.setReturnType(optional_resolve(qt.functionType->returnType));
+
+    for (const auto & p : qt.functionType->params)
+      proto.addArgument(optional_resolve(p));
+
+    if(mResolvedUnknownType)
+      return Type{ 1 | Type::UnknownFlag };
+
+    auto ft = engine()->getFunctionType(proto);
+    Type t = ft.type();
+    if (qt.constQualifier.isValid())
+      t = t.withFlag(Type::ConstFlag);
+    if (qt.reference == parser::Token::Ref)
+      t = t.withFlag(Type::ReferenceFlag);
+    else if (qt.reference == parser::Token::RefRef)
+      t = t.withFlag(Type::ForwardReferenceFlag);
+    return t;
+  }
+
+  NameLookup lookup = resolve(qt.type);
+  const auto result_type = lookup.resultType();
+  if (result_type == NameLookup::UnknownName)
+  {
+    mResolvedUnknownType = true;
+    return Type{ 1 | Type::UnknownFlag };
+  }
+  else if(result_type != NameLookup::TypeName)
+    throw InvalidTypeName{ dpos(qt.type), repr(qt.type) };
+
+  Type t = lookup.typeResult();
+  if (qt.constQualifier.isValid())
+    t.setFlag(Type::ConstFlag);
+  if (qt.isRef())
+    t.setFlag(Type::ReferenceFlag);
+  else if (qt.isRefRef())
+    t.setFlag(Type::ForwardReferenceFlag);
+
+  return t;
 }
-
-
-TemplateArgument ScriptCompiler::processTemplateArg(const std::shared_ptr<ast::Expression> & arg)
-{
-  throw NotImplementedError{ dpos(arg), "Template argument evaluation not implemented yet" };
-}
-
 
 Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
@@ -992,7 +960,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   else if (fundecl->is<ast::DestructorDecl>())
     result.setReturnType(Type::Void);
   else
-    result.setReturnType(resolve(fundecl->returnType));
+    result.setReturnType(optional_resolve(fundecl->returnType));
 
   if (scp.type() == script::Scope::ClassScope && fundecl->staticKeyword == parser::Token::Invalid
      && fundecl->is<ast::ConstructorDecl>() == false)
@@ -1007,7 +975,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   bool mustbe_defaulted = false;
   for (size_t i(0); i < fundecl->params.size(); ++i)
   {
-    Type argtype = resolve(fundecl->params.at(i).type);
+    Type argtype = optional_resolve(fundecl->params.at(i).type);
     if (fundecl->params.at(i).defaultValue != nullptr)
       argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)
@@ -1016,6 +984,34 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   }
 
   return result;
+}
+
+void ScriptCompiler::schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f)
+{
+  if (this->mResolvedUnknownType)
+    mIncompleteFunctions.push_back(IncompleteFunction{ currentScope(), decl, f });
+
+  this->mResolvedUnknownType = false;
+}
+
+void ScriptCompiler::reprocess(const IncompleteFunction & func)
+{
+  const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
+  auto impl = func.function.implementation();
+  Prototype & proto = impl->prototype;
+  if (proto.returnType().testFlag(Type::UnknownFlag))
+    proto.setReturnType(resolve(decl->returnType));
+
+  const int offset = proto.argc() > 0 && proto.argv(0).testFlag(Type::ThisFlag) ? 1 : 0;
+
+  for (int i(0); i < proto.argc(); ++i)
+  {
+    if (proto.argv(i).testFlag(Type::UnknownFlag))
+      proto.setParameter(i, resolve(decl->params.at(i-offset).type));
+
+    bool optional = decl->params.at(i - offset).defaultValue != nullptr;
+    proto.setParameter(i, proto.argv(i).withFlag(Type::OptionalFlag));
+  }
 }
 
 void ScriptCompiler::schedule(const CompileFunctionTask & task)

@@ -1662,13 +1662,15 @@ TEST(CompilerTests, using_declaration_2) {
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
   const auto & errors = s.messages();
+  ASSERT_TRUE(success);
 
-  // This one fails because at the time of the using decl, foo::get has not been fully processed 
-  // but just recorded into a list of functions to process.
-  // Moving the using decl inside the body of bar() solves the problem because when bar() 
-  // is being compiled, foo::get() has been processed.
-  // We should modify the way ScriptCompiler works to lay the example working...
-  ASSERT_FALSE(success);
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 4);
 }
 
 TEST(CompilerTests, namespace_alias_1) {
@@ -1702,4 +1704,35 @@ TEST(CompilerTests, namespace_alias_1) {
   Value n = s.globals().front();
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 4);
+}
+
+TEST(CompilerTests, unknown_type) {
+  using namespace script;
+
+  const char *source =
+    "  size_t get_size() { return 42; } "
+    "  typedef int size_t;              "
+    "  size_t n = get_size();           ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+
+  // When processing get_size() the first time, size_t is not defined 
+  // and get_size() is added to a list of function that needs a second pass.
+  // The second pass correctly resolved size_t.
+  // The old system worked with only a single pass by recording all functions 
+  // and processing them later, but it could not handle using declarations and 
+  // other constructs correctly. 
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 42);
 }

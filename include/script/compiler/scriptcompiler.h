@@ -72,6 +72,12 @@ struct ScopedDeclaration
   std::shared_ptr<ast::Declaration> declaration;
 };
 
+struct IncompleteFunction : public ScopedDeclaration
+{
+  Function function;
+  IncompleteFunction(const Scope & scp, const std::shared_ptr<ast::Declaration> & decl, const Function & func) 
+    : ScopedDeclaration(scp, decl), function(func) { }
+};
 
 struct CompileFunctionTask;
 
@@ -97,29 +103,24 @@ protected:
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & id);
 
   Function registerRootFunction(const Scope & scp);
-  bool processFirstOrderDeclarationsAndCollectHigherOrderDeclarations();
+  bool processOrCollectScriptDeclarations();
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scp);
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration);
-  void processSecondOrderDeclarations();
-  void processSecondOrderDeclaration(const ScopedDeclaration & decl);
+  void collectDeclaration(const std::shared_ptr<ast::Declaration> & decl);
+  void resolveIncompleteTypes();
   void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl);
   void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl);
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
-  void processThirdOrderDeclarations();
+  void processPendingDeclarations();
   bool compileFunctions();
   static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
   bool initializeStaticVariable(const StaticVariable & svar);
   bool initializeStaticVariables();
 
-  bool isFirstOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const;
-  bool isSecondOrderDeclaration(const std::shared_ptr<ast::Declaration>& decl) const;
-  bool isThirdOrderDeclaration(const std::shared_ptr<ast::Declaration> & decl) const;
-
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl);
   void processTypedef(const std::shared_ptr<ast::Typedef> & decl);
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl);
-  void processFirstOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl);
   void processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl);
   void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
   void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
@@ -133,14 +134,12 @@ protected:
   void processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
-  void processSecondOrderTemplateDeclaration(const std::shared_ptr<ast::Declaration> & decl);
-
-  // template-related functions
-  TemplateArgument processTemplateArg(const std::shared_ptr<ast::Expression> & arg);
-
 
   // function-related functions
+  Type optional_resolve(const ast::QualifiedType & qt);
   Prototype functionPrototype(const std::shared_ptr<ast::FunctionDecl> & decl);
+  void schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f);
+  void reprocess(const IncompleteFunction & func);
 
 protected:
   void schedule(const CompileFunctionTask & task);
@@ -154,8 +153,7 @@ protected:
   Script mScript;
   std::shared_ptr<ast::AST> mAst;
 
-  std::vector<ScopedDeclaration> mSecondOrderDeclarations; // functions, operators, casts
-  std::vector<ScopedDeclaration> mThirdOrderDeclarations; // data members (including static data members)
+  std::vector<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
 
   Scope mCurrentScope;
 
@@ -163,6 +161,9 @@ protected:
   std::vector<CompileFunctionTask> mCompilationTasks;
 
   ExpressionCompiler mExprCompiler;
+
+  std::vector<IncompleteFunction> mIncompleteFunctions;
+  bool mResolvedUnknownType;
 };
 
 } // namespace compiler
