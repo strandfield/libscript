@@ -497,7 +497,7 @@ TEST(CoreUtilsTests, value_placement) {
   ASSERT_EQ(v.type(), Type::Int);
   ASSERT_FALSE(v.isInitialized());
 
-  Value init = e.newFloat(3.14);
+  Value init = e.newFloat(3.14f);
   e.placement(v, { init });
   e.destroy(init);
 
