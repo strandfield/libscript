@@ -184,6 +184,8 @@ void ScriptCompiler::collectDeclaration(const std::shared_ptr<ast::Declaration> 
 
 void ScriptCompiler::resolveIncompleteTypes()
 {
+  ScopeGuard guard{ mCurrentScope };
+
   for (const auto & f : mIncompleteFunctions)
     reprocess(f);
 
@@ -1025,6 +1027,8 @@ void ScriptCompiler::schedule_for_reprocessing(const std::shared_ptr<ast::Functi
 void ScriptCompiler::reprocess(const IncompleteFunction & func)
 {
   const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
+  mCurrentScope = func.scope;
+
   auto impl = func.function.implementation();
   Prototype & proto = impl->prototype;
   if (proto.returnType().testFlag(Type::UnknownFlag))
