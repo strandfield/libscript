@@ -1080,6 +1080,9 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     return parseNamespace();
   case Token::Friend:
     throw UnexpectedFriendKeyword{};
+  case Token::Export:
+  case Token::Import:
+    return parseImport();
   default:
     break;
   }
@@ -1289,6 +1292,11 @@ std::shared_ptr<ast::Declaration> ProgramParser::parseUsing()
   return np.parse();
 }
 
+std::shared_ptr<ast::ImportDirective> ProgramParser::parseImport()
+{
+  ImportParser ip{ fragment() };
+  return ip.parse();
+}
 
 
 IdentifierParser::IdentifierParser(AbstractFragment *fragment, int opts)
@@ -2856,6 +2864,45 @@ void UsingParser::read_semicolon()
     throw ExpectedSemicolon{};
 
   unsafe_read();
+}
+
+
+
+ImportParser::ImportParser(AbstractFragment *fragment)
+  : ParserBase(fragment) { }
+
+std::shared_ptr<ast::ImportDirective> ImportParser::parse()
+{
+  const Token exprt = unsafe_peek() == Token::Export ? unsafe_read() : Token{};
+
+  if (peek() != Token::Import)
+    throw ExpectedImportKeyword{};
+
+  const Token imprt = unsafe_read();
+
+  std::vector<Token> names;
+
+  Token tok = read();
+  if (!tok.isIdentifier())
+    throw ExpectedIdentifier{};
+  names.push_back(tok);
+
+  while (peek() == Token::Dot)
+  {
+    unsafe_read();
+
+    tok = read();
+    if (!tok.isIdentifier())
+      throw ExpectedIdentifier{};
+    names.push_back(tok);
+  }
+
+  if (peek() != Token::Semicolon)
+    throw ExpectedSemicolon{};
+
+  unsafe_read();
+
+  return ast::ImportDirective::New(exprt, imprt, std::move(names), ast());
 }
 
 

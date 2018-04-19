@@ -71,6 +71,7 @@ enum class LIBSCRIPT_API NodeType {
   UsingDirective,
   NamespaceAliasDef,
   TypeAliasDecl,
+  ImportDirective,
 };
 
 class LIBSCRIPT_API Node
@@ -1212,6 +1213,29 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return alias_name->pos(); }
+};
+
+class LIBSCRIPT_API ImportDirective : public Declaration
+{
+public:
+  parser::Token export_keyword;
+  parser::Token import_keyword;
+  std::vector<parser::Token> names;
+  std::weak_ptr<AST> ast;
+
+public:
+  ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree);
+  ~ImportDirective() = default;
+
+  inline size_t size() const { return names.size(); }
+  std::string at(size_t i) const;
+
+  static std::shared_ptr<ImportDirective> New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree);
+
+  static const NodeType type_code = NodeType::ImportDirective;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(names.front()); }
 };
 
 } // namespace ast

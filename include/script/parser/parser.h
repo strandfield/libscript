@@ -303,6 +303,7 @@ protected:
   std::shared_ptr<ast::Typedef> parseTypedef();
   std::shared_ptr<ast::Declaration> parseNamespace();
   std::shared_ptr<ast::Declaration> parseUsing();
+  std::shared_ptr<ast::ImportDirective> parseImport();
 };
 
 class IdentifierParser : public ParserBase
@@ -562,6 +563,15 @@ public:
 protected:
   std::shared_ptr<ast::Identifier> read_name();
   void read_semicolon();
+};
+
+class ImportParser : public ParserBase
+{
+public:
+  ImportParser(AbstractFragment *fragment);
+  ~ImportParser() = default;
+
+  std::shared_ptr<ast::ImportDirective> parse();
 };
 
 class Parser : public ProgramParser

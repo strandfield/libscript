@@ -30,6 +30,7 @@ class FunctionCall;
 class FunctionDecl;
 class Identifier;
 class IfStatement;
+class ImportDirective;
 class JumpStatement;
 class NamespaceAliasDefinition;
 class QualifiedType;
@@ -221,6 +222,7 @@ private:
   void processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
   void processForLoop(const std::shared_ptr<ast::ForLoop> & fl);
   void processIfStatement(const std::shared_ptr<ast::IfStatement> & is);
+  void processImportDirective(const std::shared_ptr<ast::ImportDirective> & id);
   void processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
   void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
   virtual void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);

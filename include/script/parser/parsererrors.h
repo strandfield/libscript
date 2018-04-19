@@ -115,6 +115,9 @@ DECLARE_PARSER_ERROR(ExpectedDeclaration, "Expected a declaration");
 DECLARE_PARSER_ERROR(ExpectedClassKeywordAfterFriend, "Expected 'class' keyword after 'friend'");
 DECLARE_PARSER_ERROR(UnexpectedFriendKeyword, "Friend declarations cannot appear at this level.");
 
+DECLARE_PARSER_ERROR(ExpectedImportKeyword, "Expected 'import' keyword after 'export'");
+DECLARE_PARSER_ERROR(ExpectedIdentifier, "Expected an identifier");
+
 DECLARE_PARSER_ERROR(NotImplementedError, "%1", std::string);
 
 #undef DECLARE_PARSER_ERROR

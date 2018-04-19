@@ -205,6 +205,9 @@ DECLARE_COMPILER_ERROR(InaccessibleMember, "%1 is %2 within this context", std::
 
 DECLARE_COMPILER_ERROR(FriendMustBeAClass, "Friend must be a class");
 
+DECLARE_COMPILER_ERROR(UnknownModuleName, "Unknown module '%1'", std::string);
+DECLARE_COMPILER_ERROR(UnknownSubModuleName, "'%1' is not a submodule of '%2'", std::string, std::string);
+
 DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
 
 #undef DECLARE_COMPILER_ERROR

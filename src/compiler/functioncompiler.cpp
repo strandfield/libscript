@@ -810,6 +810,9 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
   case ast::NodeType::UsingDirective:
     processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(s));
     return;
+  case ast::NodeType::ImportDirective:
+    processImportDirective(std::static_pointer_cast<ast::ImportDirective>(s));
+    return;
   default:
     break;
   }
@@ -919,6 +922,31 @@ void FunctionCompiler::processIfStatement(const std::shared_ptr<ast::IfStatement
     result->elseClause = generate(is->elseClause);
 
   write(result);
+}
+
+void FunctionCompiler::processImportDirective(const std::shared_ptr<ast::ImportDirective> & id)
+{
+  if (id->export_keyword.isValid())
+  {
+    log(diagnostic::error() << dpos(id->export_keyword) << "'export' are only allowed at script level");
+  }
+
+  Module m = engine()->getModule(id->at(0));
+  if (m.isNull())
+    throw UnknownModuleName{ dpos(id), id->at(0) };
+
+  for (size_t i(1); i < id->size(); ++i)
+  {
+    Module child = m.getSubModule(id->at(i));
+    if (child.isNull())
+      throw UnknownSubModuleName{ dpos(id), id->at(i), m.name() };
+
+    m = child;
+  }
+
+  m.load();
+
+  mCurrentScope.merge(m.scope());
 }
 
 void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js)

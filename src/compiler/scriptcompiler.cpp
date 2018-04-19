@@ -156,6 +156,9 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
   case ast::NodeType::TypeAliasDecl:
     processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(declaration));
     break;
+  case ast::NodeType::ImportDirective:
+    processImportDirective(std::static_pointer_cast<ast::ImportDirective>(declaration));
+    break;
   case ast::NodeType::FunctionDeclaration:
     return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(declaration));
   case ast::NodeType::ConstructorDeclaration:
@@ -686,6 +689,31 @@ void ScriptCompiler::processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclar
     throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
 
   mCurrentScope.inject(name, lookup.typeResult());
+}
+
+void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl)
+{
+  if (decl->export_keyword.isValid())
+  {
+    log(diagnostic::info() << dpos(decl->export_keyword) << "'export' is ignored for now");
+  }
+
+  Module m = engine()->getModule(decl->at(0));
+  if (m.isNull())
+    throw UnknownModuleName{ dpos(decl), decl->at(0) };
+
+  for (size_t i(1); i < decl->size(); ++i)
+  {
+    Module child = m.getSubModule(decl->at(i));
+    if(child.isNull())
+      throw UnknownSubModuleName{ dpos(decl), decl->at(i), m.name() };
+
+    m = child;
+  }
+
+  m.load();
+
+  mCurrentScope.merge(m.scope());
 }
 
 AccessSpecifier ScriptCompiler::getAccessSpecifier(const Scope & scp)

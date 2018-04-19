@@ -40,6 +40,8 @@
 
 #include "script/compiler/compiler.h"
 
+#include "script/private/module_p.h"
+
 namespace script
 {
 
@@ -264,6 +266,11 @@ Engine::Engine()
 Engine::~Engine()
 {
   d->rootNamespace = Namespace{};
+
+  for (auto m : d->modules)
+    m.destroy();
+  d->modules.clear();
+
   garbageCollect();
 }
 
@@ -839,6 +846,39 @@ bool Engine::compile(Script s)
   compiler::Compiler c{ this };
   return c.compile(s);
 }
+
+Module Engine::newModule(const std::string & name)
+{
+  Namespace ns{ std::make_shared<NamespaceImpl>("", this) };
+  Module m{ std::make_shared<ModuleImpl>(name, ns) };
+  d->modules.push_back(m);
+  return m;
+}
+
+Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
+{
+  Namespace ns{ std::make_shared<NamespaceImpl>("", this) };
+  Module m{ std::make_shared<ModuleImpl>(name, ns, load, cleanup) };
+  d->modules.push_back(m);
+  return m;
+}
+
+const std::vector<Module> & Engine::modules() const
+{
+  return d->modules;
+}
+
+Module Engine::getModule(const std::string & name)
+{
+  for (const auto & child : d->modules)
+  {
+    if (child.name() == name)
+      return child;
+  }
+
+  return Module{};
+}
+
 
 Scope Engine::scope(const Class & cla)
 {

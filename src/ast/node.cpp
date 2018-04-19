@@ -788,6 +788,27 @@ std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::To
   return std::make_shared<TypeAliasDeclaration>(using_tok, a, equal_tok, b);
 }
 
+
+
+ImportDirective::ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree)
+  : export_keyword(exprt)
+  , import_keyword(imprt)
+  , names(std::move(nms))
+  , ast(syntaxtree)
+{
+
+}
+
+std::shared_ptr<ImportDirective> ImportDirective::New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree)
+{
+  return std::make_shared<ImportDirective>(exprt, imprt, std::move(nms), syntaxtree);
+}
+
+std::string ImportDirective::at(size_t i) const 
+{ 
+  return ast.lock()->text(names.at(i)); 
+}
+
 } // namespace ast
 
 } // namespace script

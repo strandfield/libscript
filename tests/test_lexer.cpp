@@ -24,7 +24,8 @@ TEST(LexerTests, keywords) {
   using namespace parser;
   
   const char *source =
-    "bool char int float double for while if else class struct auto using typedef namespace public protected private friend ";
+    "bool char int float double for while if else class struct auto using typedef "
+    " namespace public protected private friend import export";
 
   Lexer lex{ SourceFile::fromString(source) };
   ASSERT_EQ(lex.read(), Token::Bool);
@@ -46,6 +47,8 @@ TEST(LexerTests, keywords) {
   ASSERT_EQ(lex.read(), Token::Protected);
   ASSERT_EQ(lex.read(), Token::Private);
   ASSERT_EQ(lex.read(), Token::Friend);
+  ASSERT_EQ(lex.read(), Token::Import);
+  ASSERT_EQ(lex.read(), Token::Export);
 
   ASSERT_TRUE(lex.atEnd());
 }

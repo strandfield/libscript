@@ -688,7 +688,9 @@ const Keyword l5k[] = {
 const Keyword l6k[] = {
   { "delete", Token::Delete },
   { "double", Token::Double },
+  { "export", Token::Export },
   { "friend", Token::Friend },
+  { "import", Token::Import },
   { "public", Token::Public },
   { "return", Token::Return },
   { "static", Token::Static },

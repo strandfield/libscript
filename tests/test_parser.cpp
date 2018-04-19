@@ -876,3 +876,35 @@ TEST(ParserTests, namespace_alias) {
     ASSERT_EQ(scpid.rhs->getName(), "filesystem");
   }
 }
+
+TEST(ParserTests, import_directives) {
+
+  const char *source =
+    " import foo.bar;    "
+    " export import qux; ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::ImportDirective);
+  {
+    const auto & ipd = actual->as<ast::ImportDirective>();
+    ASSERT_FALSE(ipd.export_keyword.isValid());
+    ASSERT_TRUE(ipd.import_keyword.isValid());
+    ASSERT_EQ(ipd.size(), 2);
+    ASSERT_EQ(ipd.at(0), "foo");
+    ASSERT_EQ(ipd.at(1), "bar");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::ImportDirective);
+  {
+    const auto & ipd = actual->as<ast::ImportDirective>();
+    ASSERT_TRUE(ipd.export_keyword.isValid());
+    ASSERT_TRUE(ipd.import_keyword.isValid());
+    ASSERT_EQ(ipd.size(), 1);
+    ASSERT_EQ(ipd.at(0), "qux");
+  }
+}

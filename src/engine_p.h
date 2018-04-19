@@ -10,6 +10,7 @@
 #include "script/enum.h"
 #include "script/class.h"
 #include "script/context.h"
+#include "script/module.h"
 #include "script/namespace.h"
 #include "script/template.h"
 #include "script/value.h"
@@ -46,6 +47,7 @@ public:
   std::vector<Enum> enums;
   std::vector<Lambda> lambdas;
   std::vector<Script> scripts;
+  std::vector<Module> modules;
 
   struct
   {

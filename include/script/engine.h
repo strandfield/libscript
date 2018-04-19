@@ -9,6 +9,7 @@
 
 #include "script/conversions.h"
 #include "script/lambda.h"
+#include "script/module.h"
 #include "script/scope.h"
 #include "script/script.h"
 #include "script/string.h"
@@ -99,6 +100,11 @@ public:
 
   Script newScript(const SourceFile & source);
   bool compile(Script s);
+
+  Module newModule(const std::string & name);
+  Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
+  const std::vector<Module> & modules() const;
+  Module getModule(const std::string & name);
 
   // Returns the scope in which the class is declared
   Scope scope(const Class & cla);

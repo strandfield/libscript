@@ -35,6 +35,7 @@ class Expression;
 class FriendDeclaration;
 class FunctionDecl;
 class Identifier;
+class ImportDirective;
 class NamespaceAliasDefinition;
 class NamespaceDeclaration;
 class OperatorOverloadDecl;
@@ -125,6 +126,7 @@ protected:
   void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
   void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
   void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
+  void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
   static AccessSpecifier getAccessSpecifier(const Scope & scp);
   void handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp);
