@@ -95,7 +95,7 @@ public:
 
   void compile(const CompileScriptTask & task);
 
-  inline Script script() const { return mScript; }
+  inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
 
 protected:
@@ -103,7 +103,8 @@ protected:
   Type resolve(const ast::QualifiedType & qt);
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & id);
 
-  Function registerRootFunction(const Scope & scp);
+  Function registerRootFunction();
+  void processOrCollectScriptDeclarations(const CompileScriptTask & task);
   bool processOrCollectScriptDeclarations();
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scp);
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration);
@@ -143,6 +144,12 @@ protected:
   void schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f);
   void reprocess(const IncompleteFunction & func);
 
+  // modules-related functions
+  void load_script_module(const std::shared_ptr<ast::ImportDirective> & decl);
+  void load_script_module(const support::filesystem::path & p);
+  void load_script_module_recursively(const support::filesystem::path & p);
+  bool is_loaded(const support::filesystem::path & p, Script & result);
+
 protected:
   void schedule(const CompileFunctionTask & task);
 
@@ -152,8 +159,24 @@ protected:
   Enum build(const Enum &, const std::string & name);
 
 protected:
-  Script mScript;
-  std::shared_ptr<ast::AST> mAst;
+  class StateGuard
+  {
+  private:
+    ScriptCompiler *compiler;
+    Script script;
+    std::shared_ptr<ast::AST> ast;
+    Scope scope;
+  public:
+    StateGuard(ScriptCompiler *c);
+    StateGuard(const StateGuard &) = delete;
+    ~StateGuard();
+  };
+
+  friend class StateGuard;
+
+protected:
+  Script mCurrentScript;
+  std::shared_ptr<ast::AST> mCurrentAst;
 
   std::vector<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
 
@@ -166,6 +189,8 @@ protected:
 
   std::vector<IncompleteFunction> mIncompleteFunctions;
   bool mResolvedUnknownType;
+
+  std::vector<CompileScriptTask> mTasks; // we need to store the tasks to maintain the ASTs alive.
 };
 
 } // namespace compiler

@@ -12,6 +12,8 @@
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
 
+#include "script/parser/parser.h"
+
 #include "script/program/expression.h"
 
 #include "script/functionbuilder.h"
@@ -33,6 +35,22 @@ namespace script
 namespace compiler
 {
 
+ScriptCompiler::StateGuard::StateGuard(ScriptCompiler *c)
+  : compiler(c)
+  , script(c->mCurrentScript)
+  , scope(c->mCurrentScope)
+  , ast(c->mCurrentAst)
+{
+
+}
+
+ScriptCompiler::StateGuard::~StateGuard()
+{
+  compiler->mCurrentAst = ast;
+  compiler->mCurrentScope = scope;
+  compiler->mCurrentScript = script;
+}
+
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
   , mExprCompiler(c, s)
@@ -43,24 +61,20 @@ ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
 
 void ScriptCompiler::compile(const CompileScriptTask & task)
 {
-  mScript = task.script;
-  mAst = task.ast;
-  // mCurrentScope = Scope{ mScript, Scope{engine()->rootNamespace()} };
-  // workaround to allow multi-namespace, perhaps we should create a ScriptNamespace that would inherit NamespaceImpl
-  mCurrentScope = Scope{ mScript.rootNamespace() };
-  mCurrentScope.merge(engine()->rootNamespace());
-  mCurrentScope = Scope{ mScript, mCurrentScope };
+  mTasks.clear();
+  mTasks.push_back(task);
 
-  assert(mAst != nullptr);
+  processOrCollectScriptDeclarations(task);
 
-  Function program = registerRootFunction(mCurrentScope);
-  processOrCollectScriptDeclarations();
   resolveIncompleteTypes();
   processPendingDeclarations();
   compileFunctions();
   initializeStaticVariables();
 
-  mScript.implementation()->program = program;
+  for (size_t i(1); i < mTasks.size(); ++i)
+  {
+    mTasks.at(i).script.run();
+  }
 }
 
 std::string ScriptCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
@@ -80,14 +94,14 @@ NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
   return mExprCompiler.resolve(id);
 }
 
-Function ScriptCompiler::registerRootFunction(const Scope & scp)
+Function ScriptCompiler::registerRootFunction()
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
-  scriptfunc->script = mScript.weakref();
+  scriptfunc->script = mCurrentScript.weakref();
   
   auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
   fakedecl->body = ast::CompoundStatement::New(parser::Token{ parser::Token::LeftBrace, 0, 0, 0, 0 }, parser::Token{ parser::Token::RightBrace, 0, 0, 0, 0 });
-  const auto & stmts = mAst->statements();
+  const auto & stmts = mCurrentAst->statements();
   for (const auto & s : stmts)
   {
     switch (s->type())
@@ -107,14 +121,30 @@ Function ScriptCompiler::registerRootFunction(const Scope & scp)
     }
   }
 
-  schedule(CompileFunctionTask{ Function{scriptfunc}, fakedecl, scp });
+  schedule(CompileFunctionTask{ Function{scriptfunc}, fakedecl, mCurrentScope });
 
   return scriptfunc;
 }
 
+void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask & task)
+{
+  StateGuard guard{ this };
+
+  mCurrentAst = task.ast;
+  mCurrentScript = task.script;
+
+  mCurrentScope = Scope{ mCurrentScript.rootNamespace() };
+  mCurrentScope.merge(engine()->rootNamespace());
+  mCurrentScope = Scope{ mCurrentScript, mCurrentScope };
+
+  Function program = registerRootFunction();
+  mCurrentScript.implementation()->program = program;
+  processOrCollectScriptDeclarations();
+}
+
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
-  for (const auto & decl : mAst->declarations())
+  for (const auto & decl : mCurrentAst->declarations())
     processOrCollectDeclaration(decl);
 
   return true;
@@ -702,7 +732,10 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
 
   Module m = engine()->getModule(decl->at(0));
   if (m.isNull())
-    throw UnknownModuleName{ dpos(decl), decl->at(0) };
+  {
+    load_script_module(decl);
+    return; 
+  }
 
   for (size_t i(1); i < decl->size(); ++i)
   {
@@ -1046,6 +1079,88 @@ void ScriptCompiler::reprocess(const IncompleteFunction & func)
   }
 }
 
+void ScriptCompiler::load_script_module(const std::shared_ptr<ast::ImportDirective> & decl)
+{
+  auto path = engine()->searchDirectory();
+
+  for (size_t i(0); i < decl->size(); ++i)
+    path /= decl->at(i);
+
+  if (support::filesystem::is_directory(path))
+  {
+    load_script_module_recursively(path);
+  }
+  else
+  {
+    path += engine()->scriptExtension();
+
+    if (!support::filesystem::exists(path))
+      throw UnknownModuleName{ dpos(decl), decl->full_name() };
+
+    load_script_module(path);
+  }
+}
+
+void ScriptCompiler::load_script_module(const support::filesystem::path & p)
+{
+  if (p.extension() != engine()->scriptExtension())
+    return;
+
+  Script s;
+  if (is_loaded(p, s))
+  {
+    mCurrentScope.merge(Scope{s.rootNamespace()});
+    return;
+  }
+
+  s = engine()->newScript(SourceFile{ p.string() });
+
+  parser::Parser parser{ s.source() };
+  auto ast = parser.parse(s.source());
+
+  assert(ast != nullptr);
+
+  if (ast->hasErrors())
+  {
+    log(diagnostic::info() << "While loading script module:");
+    for (const auto & m : ast->messages())
+      log(m);
+    
+    /// TODO : destroy scripts
+    return;
+  }
+
+  mTasks.push_back(CompileScriptTask{s, ast});
+  processOrCollectScriptDeclarations(mTasks.back());
+
+  mCurrentScope.merge(Scope{ s.rootNamespace() });
+}
+
+void ScriptCompiler::load_script_module_recursively(const support::filesystem::path & dir)
+{
+  for (auto& p : support::filesystem::directory_iterator(dir))
+  {
+    if (support::filesystem::is_directory(p))
+      load_script_module_recursively(p);
+    else
+      load_script_module(p);
+  }
+}
+
+bool ScriptCompiler::is_loaded(const support::filesystem::path & p, Script & result)
+{
+  for (const auto & s : engine()->scripts())
+  {
+    if (s.path() == p)
+    {
+      result = s;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void ScriptCompiler::schedule(const CompileFunctionTask & task)
 {
   mCompilationTasks.push_back(task);
@@ -1054,21 +1169,21 @@ void ScriptCompiler::schedule(const CompileFunctionTask & task)
 Class ScriptCompiler::build(const ClassBuilder & builder)
 {
   Class cla = CompilerComponent::build(builder);
-  cla.implementation()->script = mScript.weakref();
+  cla.implementation()->script = mCurrentScript.weakref();
   return cla;
 }
 
 Function ScriptCompiler::build(const FunctionBuilder & builder)
 {
   Function f = CompilerComponent::build(builder);
-  f.implementation()->script = mScript.weakref();
+  f.implementation()->script = mCurrentScript.weakref();
   return f;
 }
 
 Enum ScriptCompiler::build(const Enum &, const std::string & name)
 {
   Enum e = CompilerComponent::build(Enum{}, name);
-  e.implementation()->script = mScript.weakref();
+  e.implementation()->script = mCurrentScript.weakref();
   return e;
 }
 

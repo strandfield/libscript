@@ -239,6 +239,13 @@ private:
   void processVariableDestruction(const Variable & var);
   void processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);
 
+private:
+  // modules-related functions
+  void load_script_module(const std::shared_ptr<ast::ImportDirective> & decl);
+  void load_script_module(const support::filesystem::path & p);
+  void load_script_module_recursively(const support::filesystem::path & p);
+  bool is_loaded(const support::filesystem::path & p, Script & result);
+
 protected:
   friend class FunctionScope;
   friend class FunctionCompilerExtension;

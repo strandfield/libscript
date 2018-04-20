@@ -809,6 +809,17 @@ std::string ImportDirective::at(size_t i) const
   return ast.lock()->text(names.at(i)); 
 }
 
+std::string ImportDirective::full_name() const
+{
+  std::string ret = at(0);
+  for (size_t i(1); i < names.size(); ++i)
+  {
+    ret += ".";
+    ret += at(i);
+  }
+  return ret;
+}
+
 } // namespace ast
 
 } // namespace script

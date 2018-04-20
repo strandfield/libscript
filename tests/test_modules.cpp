@@ -213,3 +213,50 @@ TEST(ModuleTests, unknown_submodule) {
   //std::cout << errors.front().message() << std::endl;
   ASSERT_EQ(errors.front().content(), compiler::UnknownSubModuleName("trig", "math").what());
 }
+
+
+TEST(ModuleTests, script_module) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  engine.setScriptExtension(".m");
+
+  Script s = engine.newScript(SourceFile{"bar.m"});
+  bool success = s.compile();
+  const auto & errors = s.messages();
+
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 4);
+}
+
+TEST(ModuleTests, script_module_import_inside_function_body) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  engine.setScriptExtension(".m");
+
+  Script s = engine.newScript(SourceFile{ "qux.m" });
+  bool success = s.compile();
+  const auto & errors = s.messages();
+
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 6);
+}

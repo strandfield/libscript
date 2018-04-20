@@ -15,6 +15,8 @@
 #include "script/string.h"
 #include "script/value.h"
 
+#include "script/support/filesystem.h"
+
 namespace script
 {
 
@@ -105,6 +107,11 @@ public:
   Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
   const std::vector<Module> & modules() const;
   Module getModule(const std::string & name);
+
+  const std::string & scriptExtension() const;
+  void setScriptExtension(const std::string & ex);
+  const support::filesystem::path & searchDirectory() const;
+  void setSearchDirectory(const support::filesystem::path & dir);
 
   // Returns the scope in which the class is declared
   Scope scope(const Class & cla);

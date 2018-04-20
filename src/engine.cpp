@@ -149,7 +149,7 @@ EngineImpl::EngineImpl(Engine *e)
   : engine(e)
   , garbage_collector_running(false)
 {
-
+  this->search_dir = support::filesystem::current_path();
 }
 
 Object EngineImpl::createObject(Type t)
@@ -879,6 +879,25 @@ Module Engine::getModule(const std::string & name)
   return Module{};
 }
 
+const std::string & Engine::scriptExtension() const
+{
+  return d->script_extension;
+}
+
+void Engine::setScriptExtension(const std::string & ex)
+{
+  d->script_extension = ex;
+}
+
+const support::filesystem::path & Engine::searchDirectory() const
+{
+  return d->search_dir;
+}
+
+void Engine::setSearchDirectory(const support::filesystem::path & dir)
+{
+  d->search_dir = dir;
+}
 
 Scope Engine::scope(const Class & cla)
 {

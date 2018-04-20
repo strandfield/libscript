@@ -19,8 +19,9 @@ git clone http://github.com/RugessNome/libscript.git
 
 You can then use CMake to generate project files for your favorite build system.
 
-The library is written in C\++14 (although a C++11 compiler might be enough 
-to build the library). 
+The library requires a C\++14 compiler with support for the **filesystem TS** 
+(this requirement may be removed in the future but will require the use of 
+platform-dependent code).
 
 The library is distributed under the MIT license and can therefore be used 
 freely. 

@@ -10,5 +10,7 @@ target_include_directories(libscript_tests PRIVATE "${GTEST_DIR}")
 target_include_directories(libscript_tests PUBLIC "../include")
 target_link_libraries(libscript_tests libscript)
 
+file(GLOB MODULES_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.m")
+file(COPY ${MODULES_TEST_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 add_test(Testlibscript libscript_tests)

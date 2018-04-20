@@ -933,7 +933,10 @@ void FunctionCompiler::processImportDirective(const std::shared_ptr<ast::ImportD
 
   Module m = engine()->getModule(id->at(0));
   if (m.isNull())
-    throw UnknownModuleName{ dpos(id), id->at(0) };
+  {
+    load_script_module(id);
+    return;
+  }
 
   for (size_t i(1); i < id->size(); ++i)
   {
@@ -1198,6 +1201,87 @@ void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & 
     body = generate(whileLoop->body);
 
   write(program::WhileLoop::New(cond, body));
+}
+
+
+void FunctionCompiler::load_script_module(const std::shared_ptr<ast::ImportDirective> & decl)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  auto path = engine()->searchDirectory();
+
+  for (size_t i(0); i < decl->size(); ++i)
+    path /= decl->at(i);
+
+  if (support::filesystem::is_directory(path))
+  {
+    load_script_module_recursively(path);
+  }
+  else
+  {
+    path += engine()->scriptExtension();
+
+    if (!support::filesystem::exists(path))
+      throw UnknownModuleName{ dpos(decl), decl->full_name() };
+
+    load_script_module(path);
+  }
+}
+
+void FunctionCompiler::load_script_module(const support::filesystem::path & p)
+{
+  if (p.extension() != engine()->scriptExtension())
+    return;
+
+  Script s;
+  if (is_loaded(p, s))
+  {
+    mCurrentScope.merge(Scope{ s.rootNamespace() });
+    return;
+  }
+
+  s = engine()->newScript(SourceFile{ p.string() });
+  bool success = engine()->compile(s);
+  if (!success)
+  {
+    std::string mssg;
+    for (const auto & m : s.messages())
+      mssg += m.to_string() + "\n";
+    throw ModuleImportationError{ p.string(), mssg };
+  }
+
+  s.run();
+
+  mCurrentScope.merge(Scope{ s.rootNamespace() });
+}
+
+void FunctionCompiler::load_script_module_recursively(const support::filesystem::path & dir)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  for (auto& p : support::filesystem::directory_iterator(dir))
+  {
+    if (support::filesystem::is_directory(p))
+      load_script_module_recursively(p);
+    else
+      load_script_module(p);
+  }
+}
+
+bool FunctionCompiler::is_loaded(const support::filesystem::path & p, Script & result)
+{
+  /// TODO : merge this duplicate of ScriptCompiler
+
+  for (const auto & s : engine()->scripts())
+  {
+    if (s.path() == p)
+    {
+      result = s;
+      return true;
+    }
+  }
+
+  return false;
 }
 
 } // namespace compiler

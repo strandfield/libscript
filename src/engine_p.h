@@ -17,6 +17,8 @@
 
 #include "script/interpreter/interpreter.h"
 
+#include "script/support/filesystem.h"
+
 namespace script
 {
 
@@ -48,6 +50,9 @@ public:
   std::vector<Lambda> lambdas;
   std::vector<Script> scripts;
   std::vector<Module> modules;
+  
+  std::string script_extension;
+  support::filesystem::path search_dir;
 
   struct
   {
