@@ -12,6 +12,8 @@
 #include "script/types.h"
 #include "script/engine.h"
 
+#include "script/ast/forwards.h"
+
 #include <vector>
 
 namespace script
@@ -20,32 +22,6 @@ namespace script
 class NameLookup;
 class Template;
 struct TemplateArgument;
-
-namespace ast
-{
-class AST;
-class CastDecl;
-class ClassDecl;
-class CompoundStatement;
-class ConstructorDecl;
-class Declaration;
-class DestructorDecl;
-class EnumDeclaration;
-class Expression;
-class FriendDeclaration;
-class FunctionDecl;
-class Identifier;
-class ImportDirective;
-class NamespaceAliasDefinition;
-class NamespaceDeclaration;
-class OperatorOverloadDecl;
-class VariableDecl;
-class QualifiedType;
-class TypeAliasDeclaration;
-class Typedef;
-class UsingDeclaration;
-class UsingDirective;
-} // namespace ast
 
 namespace compiler
 {

@@ -10,33 +10,14 @@
 #include "script/context.h"
 #include "script/conversions.h"
 
+#include "script/ast/forwards.h"
+
 namespace script
 {
 
 class NameLookup;
 class Template;
 struct TemplateArgument;
-
-namespace ast
-{
-class Expression;
-class ArrayExpression;
-class ArraySubscript;
-class BraceConstruction;
-class BraceInitialization;
-class ConditionalExpression;
-class ConstructorInitialization;
-class FunctionCall;
-class Identifier;
-class IntegerLiteral;
-class LambdaExpression;
-class Literal;
-class ListExpression;
-class Node;
-class Operation;
-class UserDefinedLiteral;
-class QualifiedType;
-} // namespace ast
 
 namespace program
 {

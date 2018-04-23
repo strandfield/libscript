@@ -16,33 +16,6 @@
 namespace script
 {
 
-namespace ast
-{
-class AssignmentInitialization;
-class AST;
-class BraceInitialization;
-class CompoundStatement;
-class ConstructorInitialization;
-class ExpressionStatement;
-class Declaration;
-class ForLoop;
-class FunctionCall;
-class FunctionDecl;
-class Identifier;
-class IfStatement;
-class ImportDirective;
-class JumpStatement;
-class NamespaceAliasDefinition;
-class QualifiedType;
-class ReturnStatement;
-class Statement;
-class TypeAliasDeclaration;
-class UsingDeclaration;
-class UsingDirective;
-class VariableDecl;
-class WhileLoop;
-}
-
 namespace program
 {
 class Expression;
