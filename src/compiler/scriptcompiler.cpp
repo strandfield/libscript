@@ -53,10 +53,10 @@ ScriptCompiler::StateGuard::~StateGuard()
 
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
-  , mExprCompiler(c, s)
-  , mResolvedUnknownType(false)
 {
-
+  name_resolver.compiler = this;
+  type_resolver.name_resolver() = name_resolver;
+  lenient_resolver.name_resolver() = name_resolver;
 }
 
 void ScriptCompiler::compile(const CompileScriptTask & task)
@@ -79,19 +79,17 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
 
 std::string ScriptCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
 {
-  return mExprCompiler.repr(id);
+  return id->getName();
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
-  mExprCompiler.setScope(mCurrentScope);
-  return mExprCompiler.resolve(qt);
+  return type_resolver.resolve(qt, mCurrentScope);
 }
 
 NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
 {
-  mExprCompiler.setScope(mCurrentScope);
-  return mExprCompiler.resolve(id);
+  return name_resolver.resolve(id, mCurrentScope);
 }
 
 Function ScriptCompiler::registerRootFunction()
@@ -244,7 +242,7 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
     auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
     if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
     {
-      auto execexpr = mExprCompiler.compile(expr, scp);
+      auto execexpr = generateExpression(expr);
       
       Value val = engine()->implementation()->interpreter->eval(execexpr);
       current_class.addStaticDataMember(var_decl->name->getName(), val, getAccessSpecifier(scp));
@@ -283,7 +281,7 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
   Value val;
   if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
   {
-    auto execexpr = mExprCompiler.compile(expr, scp);
+    auto execexpr = generateExpression(expr);
     val = engine()->implementation()->interpreter->eval(execexpr);
   }
   else
@@ -510,9 +508,15 @@ bool ScriptCompiler::checkStaticInitialization(const std::shared_ptr<program::Ex
   return check_static_init(*expr);
 }
 
+std::shared_ptr<program::Expression> ScriptCompiler::generateExpression(const std::shared_ptr<ast::Expression> & e)
+{
+  expr_.setScope(mCurrentScope);
+  return expr_.generateExpression(e);
+}
+
 bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
 {
-  mExprCompiler.setScope(svar.scope);
+  expr_.setScope(svar.scope);
 
   const auto & init = svar.declaration->init;
   auto parsed_initexpr = init->as<ast::AssignmentInitialization>().value;
@@ -530,7 +534,7 @@ bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
   }
   else
   {
-    std::shared_ptr<program::Expression> initexpr = mExprCompiler.compile(parsed_initexpr, svar.scope);
+    std::shared_ptr<program::Expression> initexpr = expr_.generateExpression(parsed_initexpr);
 
     if (!checkStaticInitialization(initexpr))
       throw InvalidStaticInitialization{};
@@ -967,53 +971,10 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   schedule_for_reprocessing(decl, cast);
 }
 
-Type ScriptCompiler::optional_resolve(const ast::QualifiedType & qt)
-{
-  if (qt.functionType != nullptr)
-  {
-    Prototype proto;
-    proto.setReturnType(optional_resolve(qt.functionType->returnType));
-
-    for (const auto & p : qt.functionType->params)
-      proto.addArgument(optional_resolve(p));
-
-    if(mResolvedUnknownType)
-      return Type{ 1 | Type::UnknownFlag };
-
-    auto ft = engine()->getFunctionType(proto);
-    Type t = ft.type();
-    if (qt.constQualifier.isValid())
-      t = t.withFlag(Type::ConstFlag);
-    if (qt.reference == parser::Token::Ref)
-      t = t.withFlag(Type::ReferenceFlag);
-    else if (qt.reference == parser::Token::RefRef)
-      t = t.withFlag(Type::ForwardReferenceFlag);
-    return t;
-  }
-
-  NameLookup lookup = resolve(qt.type);
-  const auto result_type = lookup.resultType();
-  if (result_type == NameLookup::UnknownName)
-  {
-    mResolvedUnknownType = true;
-    return Type{ 1 | Type::UnknownFlag };
-  }
-  else if(result_type != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(qt.type), repr(qt.type) };
-
-  Type t = lookup.typeResult();
-  if (qt.constQualifier.isValid())
-    t.setFlag(Type::ConstFlag);
-  if (qt.isRef())
-    t.setFlag(Type::ReferenceFlag);
-  else if (qt.isRefRef())
-    t.setFlag(Type::ForwardReferenceFlag);
-
-  return t;
-}
-
 Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
+  lenient_resolver.relax = false;
+
   const Scope scp = currentScope();
 
   Prototype result;
@@ -1023,7 +984,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   else if (fundecl->is<ast::DestructorDecl>())
     result.setReturnType(Type::Void);
   else
-    result.setReturnType(optional_resolve(fundecl->returnType));
+    result.setReturnType(lenient_resolver.resolve(fundecl->returnType));
 
   if (scp.type() == script::Scope::ClassScope && fundecl->staticKeyword == parser::Token::Invalid
      && fundecl->is<ast::ConstructorDecl>() == false)
@@ -1038,7 +999,7 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
   bool mustbe_defaulted = false;
   for (size_t i(0); i < fundecl->params.size(); ++i)
   {
-    Type argtype = optional_resolve(fundecl->params.at(i).type);
+    Type argtype = lenient_resolver.resolve(fundecl->params.at(i).type);
     if (fundecl->params.at(i).defaultValue != nullptr)
       argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)
@@ -1051,10 +1012,10 @@ Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionD
 
 void ScriptCompiler::schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f)
 {
-  if (this->mResolvedUnknownType)
+  if (lenient_resolver.relax)
     mIncompleteFunctions.push_back(IncompleteFunction{ currentScope(), decl, f });
 
-  this->mResolvedUnknownType = false;
+  lenient_resolver.relax = false;
 }
 
 void ScriptCompiler::reprocess(const IncompleteFunction & func)

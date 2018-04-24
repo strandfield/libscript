@@ -8,6 +8,7 @@
 #include "script/compiler/compiler.h"
 
 #include "script/compiler/expressioncompiler.h"
+#include "script/compiler/typeresolver.h"
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -64,6 +65,26 @@ struct CompileScriptTask
   std::shared_ptr<ast::AST> ast;
 };
 
+class ScriptCompiler;
+
+class ScriptCompilerNameResolver
+{
+public:
+  ScriptCompiler* compiler;
+public:
+  ScriptCompilerNameResolver() = default;
+  ScriptCompilerNameResolver(const ScriptCompilerNameResolver &) = default;
+
+  inline Engine* engine() const;
+
+  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
+
+  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
+  {
+    return NameLookup::resolve(name, scp);
+  }
+};
+
 class ScriptCompiler : public CompilerComponent
 {
 public:
@@ -92,6 +113,7 @@ protected:
   void processPendingDeclarations();
   bool compileFunctions();
   static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
+  std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & e);
   bool initializeStaticVariable(const StaticVariable & svar);
   bool initializeStaticVariables();
 
@@ -115,7 +137,6 @@ protected:
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
 
   // function-related functions
-  Type optional_resolve(const ast::QualifiedType & qt);
   Prototype functionPrototype(const std::shared_ptr<ast::FunctionDecl> & decl);
   void schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f);
   void reprocess(const IncompleteFunction & func);
@@ -161,13 +182,26 @@ protected:
   std::vector<StaticVariable> mStaticVariables;
   std::vector<CompileFunctionTask> mCompilationTasks;
 
-  ExpressionCompiler mExprCompiler;
+  ExpressionCompiler expr_;
 
   std::vector<IncompleteFunction> mIncompleteFunctions;
-  bool mResolvedUnknownType;
 
   std::vector<CompileScriptTask> mTasks; // we need to store the tasks to maintain the ASTs alive.
+
+  ScriptCompilerNameResolver name_resolver;
+  TypeResolver<ScriptCompilerNameResolver> type_resolver;
+  LenientTypeResolver<ScriptCompilerNameResolver> lenient_resolver;
 };
+
+inline Engine* ScriptCompilerNameResolver::engine() const
+{
+  return compiler->engine();
+}
+
+inline NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name)
+{
+  return NameLookup::resolve(name, compiler->currentScope());
+}
 
 } // namespace compiler
 

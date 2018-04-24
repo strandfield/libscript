@@ -8,6 +8,8 @@
 #include "script/function.h"
 #include "script/template.h"
 
+#include "script/compiler/templatenameprocessor.h"
+
 namespace script
 {
 
@@ -20,10 +22,9 @@ public:
   Scope scope;
   std::shared_ptr<ast::Identifier> identifier;
   std::vector<std::shared_ptr<program::Expression>> const * arguments;
-  compiler::AbstractExpressionCompiler *compiler;
-  // 
-  std::unique_ptr<compiler::Compiler> default_compiler_compiler;
-  std::unique_ptr<compiler::AbstractExpressionCompiler> default_compiler; // used if none is provided
+  // template-related stuff
+  compiler::TemplateNameProcessor default_template_;
+  compiler::TemplateNameProcessor *template_;
 
   // storing results
   std::vector<Function> functions;

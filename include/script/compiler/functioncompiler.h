@@ -7,6 +7,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "../src/compiler/functionscope_p.h" /// TODO : ugly ! try to remove this
+#include "script/compiler/stack.h"
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -33,50 +34,6 @@ namespace compiler
 class Compiler;
 class FunctionCompiler;
 
-struct Variable
-{
-  Type type;
-  std::string name;
-  int index;
-  bool global;
-
-  Variable();
-  Variable(const Type & t, const std::string & n, int i, bool g = false);
-};
-
-class Stack
-{
-public:
-  Stack() : size(0), capacity(0), data(0) { }
-  Stack(const Stack &) = delete;
-  Stack(int s);
-  ~Stack();
-
-  void clear();
-
-  int addVar(const Type & t, const std::string & name);
-  int addGlobal(const Type & t, const std::string & name);
-  bool exists(const std::string & var) const;
-  int indexOf(const std::string & var) const;
-  int lastIndexOf(const std::string & var) const;
-  void destroy(int n);
-
-  Stack & operator=(const Stack &) = delete;
-
-  const Variable & at(int i) const;
-  Variable & operator[](int index);
-
-protected:
-  void realloc(int s);
-
-public:
-  int size;
-  int capacity;
-  int max_size;
-  Variable *data;
-};
-
-
 class EnterScope
 {
 public:
@@ -89,7 +46,6 @@ public:
   EnterScope(const EnterScope &) = delete;
 };
 
-
 struct CompileFunctionTask
 {
   CompileFunctionTask() { }
@@ -101,9 +57,41 @@ struct CompileFunctionTask
   script::Scope scope;
 };
 
+class StackVariableAccessor : public VariableAccessor
+{
+protected:
+  Stack * stack_;
+  Script script_;
+  FunctionCompiler* fcomp_;
+public:
+  StackVariableAccessor(Stack & s, FunctionCompiler* fc);
+  ~StackVariableAccessor() = default;
+
+  inline const Stack & stack() const { return *stack_; }
+  inline Script & script() { return script_; }
+
+  std::shared_ptr<program::Expression> global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+};
+
+class FunctionCompilerLambdaProcessor : public LambdaProcessor
+{
+protected:
+  Stack * stack_;
+  Script script_;
+  FunctionCompiler* fcomp_;
+public:
+  FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc);
+  ~FunctionCompilerLambdaProcessor() = default;
+
+  inline const Stack & stack() const { return *stack_; }
+  inline Script & script() { return script_; }
+
+  std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
+};
 
 
-class FunctionCompiler : public AbstractExpressionCompiler
+class FunctionCompiler : public CompilerComponent
 {
 public:
   FunctionCompiler(Compiler *c, CompileSession *s);
@@ -111,22 +99,13 @@ public:
   void compile(const CompileFunctionTask & task);
 
   Script script();
-  script::Scope scope() const override;
-  Function caller() const override { return compiledFunction(); }
+
   Class classScope();
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;
 
-protected:
-  // ExpressionCompiler related functions
-  std::shared_ptr<program::LambdaExpression> generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr) override;
-  std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call) override;
-  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
-  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
-  std::shared_ptr<program::Expression> generateThisAccess();
-  std::shared_ptr<program::Expression> generateMemberAccess(const int index, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> generateGlobalAccess(int index);
-  std::shared_ptr<program::Expression> generateLocalVariableAccess(int index);
+  /// TODO (hopefully) temporarily public (used by ExtendedExpressionCompiler)
+  bool canUseThis() const;
 
 protected:
   bool isCompilingAnonymousFunction() const;
@@ -134,7 +113,7 @@ protected:
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();
   std::shared_ptr<ast::Expression> defaultArgumentValue(int index);
 
-  bool canUseThis() const;
+  std::shared_ptr<program::Expression> generate(const std::shared_ptr<ast::Expression> & e);
 
 public:
   struct ScopeKey {
@@ -146,6 +125,8 @@ public:
   void leave_scope(const ScopeKey &);
 
 protected:
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
+  
   Scope breakScope() const;
   Scope continueScope() const;
 
@@ -234,6 +215,11 @@ protected:
   std::shared_ptr<ast::Declaration> mDeclaration;
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
+
+  TypeResolver<BasicNameResolver> type_;
+  ExpressionCompiler expr_;
+  StackVariableAccessor variable_;
+  FunctionCompilerLambdaProcessor lambda_;
 };
 
 } // namespace compiler

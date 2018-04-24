@@ -53,12 +53,29 @@ struct LambdaCompilationResult
   Lambda closure_type;
 };
 
+class LambdaCompiler;
+
+class LambdaCompilerVariableAccessor : public StackVariableAccessor
+{
+public:
+  // Will be used to update the capture offset after removing unused captures
+  std::vector<std::shared_ptr<program::CaptureAccess>> generated_access_;
+public:
+  LambdaCompilerVariableAccessor(Stack & s, LambdaCompiler* fc);
+  ~LambdaCompilerVariableAccessor() = default;
+
+  std::shared_ptr<program::Expression> capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+};
+
+
 class LambdaCompiler : public FunctionCompiler
 {
+  friend class LambdaCompilerVariableAccessor;
 public:
   LambdaCompiler(Compiler *c, CompileSession *s);
 
-  static void preprocess(CompileLambdaTask & task, AbstractExpressionCompiler *c, const Stack & stack, int first_capture_offset);
+  static void preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset);
 
   LambdaCompilationResult compile(const CompileLambdaTask & task);
   const CompileLambdaTask & task() const;
@@ -74,11 +91,9 @@ protected:
 
 protected:
   using FunctionCompiler::resolve;
-  std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup) override;
 
   void deduceReturnType(const std::shared_ptr<ast::ReturnStatement> & rs, const std::shared_ptr<program::Expression> & val);
   void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs) override;
-
 
 protected:
   Prototype computePrototype();
@@ -88,9 +103,8 @@ protected:
 
 private:
   std::vector<Capture> mCaptures;
-  // Will be used to update the capture offset after removing unused captures
-  std::vector<std::shared_ptr<program::CaptureAccess>> mCaptureAccess;
   Lambda mLambda;
+  LambdaCompilerVariableAccessor variable_;
 };
 
 

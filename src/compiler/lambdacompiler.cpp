@@ -5,6 +5,7 @@
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/conversionprocessor.h"
 
 #include "script/ast/node.h"
 
@@ -34,14 +35,38 @@ Capture::Capture(const std::string & n, const std::shared_ptr<program::Expressio
 }
 
 
+LambdaCompilerVariableAccessor::LambdaCompilerVariableAccessor(Stack & s, LambdaCompiler* fc)
+  : StackVariableAccessor(s, fc) { }
+
+std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
+  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
+  const auto & capture = lc->task().captures[offset];
+  auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
+  generated_access_.push_back(capaccess);
+  return capaccess;
+}
+
+std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
+  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
+  auto this_object = program::CaptureAccess::New(Type::ref(lc->task().capturedObject.id()), lambda, 0);
+  return member_access(ec, this_object, offset, dpos);
+}
+
+
+
 LambdaCompiler::LambdaCompiler(Compiler *c, CompileSession *s)
   : FunctionCompiler(c, s)
   , mCurrentTask(nullptr)
+  , variable_(mStack, this)
 {
-
+  expr_.setVariableAccessor(this->variable_);
 }
 
-void LambdaCompiler::preprocess(CompileLambdaTask & task, AbstractExpressionCompiler *c, const Stack & stack, int first_capture_offset)
+void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset)
 {
   auto can_use_this = [&stack, first_capture_offset]() -> bool {
     return stack.size > first_capture_offset && stack.at(first_capture_offset).name == "this";
@@ -98,7 +123,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, AbstractExpressionComp
         StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
         if (conv == StandardConversion::NotConvertible())
           throw CannotCaptureNonCopyable{ dpos(cap.name) };
-        value = c->applyStandardConversion(value, value->type().baseType(), conv);
+        value = ConversionProcessor::sconvert(c->engine(), value, value->type().baseType(), conv);
       }
 
       capture_flags[offset] = true;
@@ -119,7 +144,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, AbstractExpressionComp
       StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
       if (conv == StandardConversion::NotConvertible())
         throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
-      value = c->applyStandardConversion(value, value->type().baseType(), conv);
+      value = ConversionProcessor::sconvert(c->engine(), value, value->type().baseType(), conv);
       captures.push_back(Capture{ stack.at(i).name, value });
     }
   }
@@ -249,26 +274,6 @@ void LambdaCompiler::removeUnusedCaptures()
   /// TODO : remove unused captures
 }
 
-std::shared_ptr<program::Expression> LambdaCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
-{
-  if (lookup.resultType() == NameLookup::CaptureName)
-  {
-    auto lambda = program::StackValue::New(1, Type::ref(mLambda.id()));
-    const auto & capture = task().captures[lookup.captureIndex()];
-    auto capaccess = program::CaptureAccess::New(capture.type, lambda, lookup.captureIndex());
-    mCaptureAccess.push_back(capaccess);
-    return capaccess;
-  }
-  else if (lookup.resultType() == NameLookup::DataMemberName)
-  {
-    auto lambda = program::StackValue::New(1, Type::ref(mLambda.id()));
-    auto this_object = program::CaptureAccess::New(Type::ref(task().capturedObject.id()), lambda, 0);
-    return AbstractExpressionCompiler::generateMemberAccess(this_object, lookup.dataMemberIndex(), dpos(identifier));
-  }
-
-  return FunctionCompiler::generateVariableAccess(identifier, lookup);
-}
-
 void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement> & rs, const std::shared_ptr<program::Expression> & val)
 {
   if (mFunction.returnType() != Type::Null)
@@ -292,7 +297,7 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
 
   generateExitScope(mFunctionBodyScope, statements);
 
-  std::shared_ptr<program::Expression> retval = rs->expression != nullptr ? generateExpression(rs->expression) : nullptr;
+  std::shared_ptr<program::Expression> retval = rs->expression != nullptr ? generate(rs->expression) : nullptr;
   deduceReturnType(rs, retval);
 
   if (rs->expression == nullptr)
@@ -311,7 +316,7 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
   const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
+  retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }
@@ -331,7 +336,7 @@ Prototype LambdaCompiler::computePrototype()
   bool mustbe_defaulted = false;
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
-    Type paramtype = resolve(lexpr->params.at(i).type);
+    Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
     if (lexpr->params.at(i).defaultValue != nullptr)
       paramtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
     else if (mustbe_defaulted)

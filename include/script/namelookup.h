@@ -28,7 +28,8 @@ class Expression;
 namespace compiler
 {
 class Compiler;
-class AbstractExpressionCompiler;
+class ExpressionCompiler;
+class TemplateNameProcessor;
 } // namespace compiler
 
 class NameLookupImpl;
@@ -53,6 +54,8 @@ public:
 
   bool hasArguments() const;
   const std::vector<std::shared_ptr<program::Expression>> & arguments() const;
+
+  compiler::TemplateNameProcessor & template_processor();
 
   enum ResultType {
     UnknownName,
@@ -88,8 +91,8 @@ public:
   static NameLookup resolve(const std::string & name, const Scope & scope);
   static NameLookup resolve(Operator::BuiltInOperator op, const Scope & scope);
 
-  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, compiler::AbstractExpressionCompiler *compiler);
-  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const std::vector<std::shared_ptr<program::Expression>> & args, compiler::AbstractExpressionCompiler *compiler);
+  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, compiler::TemplateNameProcessor & tnp);
+  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const std::vector<std::shared_ptr<program::Expression>> & args, compiler::ExpressionCompiler *compiler);
   
   static NameLookup member(const std::string & name, const Class & cla);
 
@@ -101,12 +104,13 @@ public:
   inline std::shared_ptr<NameLookupImpl> impl() const { return d; }
 
 protected:
-  compiler::AbstractExpressionCompiler * getCompiler();
-
   bool checkBuiltinName();
   void process();
   void qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
+  Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
+  Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
   void instantiate_function_template(const std::shared_ptr<ast::Identifier> & name);
+  Class instantiate_class_template(const std::shared_ptr<ast::Identifier> & name);
 
 protected:
   std::shared_ptr<NameLookupImpl> d;

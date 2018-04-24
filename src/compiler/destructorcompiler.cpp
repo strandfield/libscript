@@ -37,7 +37,7 @@ std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateFooter()
   if (!current_class.parent().isNull())
   {
     /// TODO : check if dtor exists and is not deleted
-    auto this_object = generateThisAccess();
+    auto this_object = ec().implicit_object();
     std::vector<std::shared_ptr<program::Expression>> args{ this_object };
     auto dtor_call = program::FunctionCall::New(current_class.parent().destructor(), std::move(args));
     statements.push_back(program::ExpressionStatement::New(dtor_call));

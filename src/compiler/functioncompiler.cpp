@@ -11,6 +11,8 @@
 #include "script/compiler/constructorcompiler.h"
 #include "script/compiler/destructorcompiler.h"
 #include "script/compiler/lambdacompiler.h"
+#include "script/compiler/conversionprocessor.h"
+#include "script/compiler/valueconstructor.h"
 
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
@@ -285,6 +287,11 @@ Variable & Stack::operator[](int i)
   return this->data[i];
 }
 
+const Variable & Stack::operator[](int i) const
+{
+  return this->data[i];
+}
+
 void Stack::realloc(int s)
 {
   const int former_size = (this->size > s ? s : this->size);
@@ -330,17 +337,68 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-
-FunctionCompiler::FunctionCompiler(Compiler *c, CompileSession *s)
-  : AbstractExpressionCompiler(c, s)
+StackVariableAccessor::StackVariableAccessor(Stack & s, FunctionCompiler* fc)
+  : stack_(&s)
+  , fcomp_(fc)
 {
 
+}
+
+std::shared_ptr<program::Expression> StackVariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  Script s = script_;
+  auto simpl = s.implementation();
+  const Type & gtype = simpl->global_types[offset];
+
+  return program::FetchGlobal::New(gtype, offset);
+}
+
+std::shared_ptr<program::Expression> StackVariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  const Type t = stack()[offset].type;
+  return program::StackValue::New(offset, t);
+}
+
+FunctionCompilerLambdaProcessor::FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc)
+  : stack_(&s)
+  , fcomp_(fc)
+{
+
+}
+
+std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le)
+{
+  CompileLambdaTask task;
+  task.lexpr = le;
+  task.scope = ec.scope();
+
+  const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
+  LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
+
+  LambdaCompiler compiler{ fcomp_->compiler(), fcomp_->session() };
+  LambdaCompilationResult result = compiler.compile(task);
+
+  return result.expression;
+}
+
+
+FunctionCompiler::FunctionCompiler(Compiler *c, CompileSession *s)
+  : CompilerComponent(c, s)
+  , variable_(mStack, this)
+  , lambda_(mStack, this)
+{
+  expr_.setVariableAccessor(variable_);
+  expr_.setLambdaProcessor(lambda_);
 }
 
 
 void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
   mScript = task.function.script();
+
+  variable_.script() = mScript;
+  lambda_.script() = mScript;
+  expr_.setCaller(task.function);
   
   mFunction = task.function;
   mDeclaration = task.declaration;
@@ -380,11 +438,6 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 Script FunctionCompiler::script()
 {
   return mScript;
-}
-
-script::Scope FunctionCompiler::scope() const
-{
-  return mCurrentScope;
 }
 
 Class FunctionCompiler::classScope()
@@ -440,6 +493,12 @@ bool FunctionCompiler::canUseThis() const
   return mFunction.isMemberFunction() || mFunction.isConstructor() || mFunction.isDestructor();
 }
 
+std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
+{
+  expr_.setScope(mCurrentScope);
+  return expr_.generateExpression(e);
+}
+
 void FunctionCompiler::enter_scope(FunctionScope::Category scopeType, const ScopeKey &)
 {
   mCurrentScope = Scope{ std::make_shared<FunctionScope>(this, scopeType, mCurrentScope) };
@@ -447,12 +506,19 @@ void FunctionCompiler::enter_scope(FunctionScope::Category scopeType, const Scop
     mFunctionBodyScope = mCurrentScope;
   else if (scopeType == FunctionScope::FunctionArguments)
     mFunctionArgumentsScope = mCurrentScope;
+
+  expr_.setScope(mCurrentScope);
 }
 
 void FunctionCompiler::leave_scope(const ScopeKey &)
 {
   std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->destroy();
   mCurrentScope = mCurrentScope.parent();
+}
+
+NameLookup FunctionCompiler::resolve(const std::shared_ptr<ast::Identifier> & name)
+{
+  return NameLookup::resolve(name, mCurrentScope);
 }
 
 Scope FunctionCompiler::breakScope() const
@@ -525,13 +591,13 @@ std::shared_ptr<program::Expression> FunctionCompiler::generateDefaultArgument(i
 {
   auto fdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(mDeclaration);
   const int param_offset = mFunction.isMemberFunction() ? 1 : 0;
-  auto expr = generateExpression(fdecl->params.at(index - param_offset).defaultValue);
+  auto expr = generate(fdecl->params.at(index - param_offset).defaultValue);
 
   ConversionSequence conv = ConversionSequence::compute(expr, mFunction.prototype().argv(index), engine());
   if (conv == ConversionSequence::NotConvertible())
     throw NotImplementedError{ "FunctionCompiler::generateDefaultArgument() : failed to convert default value" };
 
-  return prepareFunctionArgument(expr, mFunction.prototype().argv(index), conv);
+  return ConversionProcessor::convert(engine(), expr, mFunction.prototype().argv(index), conv);
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructorHeader()
@@ -562,139 +628,6 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateMoveConstr
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDestructor()
 {
   return generateDestructorFooter();
-}
-
-std::shared_ptr<program::LambdaExpression> FunctionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)
-{
-  CompileLambdaTask task;
-  task.lexpr = lambda_expr;
-  task.scope = scope();
-
-  const int first_capturable = mFunction.isDestructor() || mFunction.isConstructor() ? 0 : 1;
-  LambdaCompiler::preprocess(task, this, mStack, first_capturable);
-
-  std::shared_ptr<LambdaCompiler> compiler{ getComponent<LambdaCompiler>() };
-  LambdaCompilationResult result = compiler->compile(task);
-
-  return result.expression;
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call)
-{
-  const auto & callee = call->callee;
-  std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(call->arguments);
-
-  if (callee->is<ast::Identifier>()) // this may implicitly call a member
-  {
-    const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
-    NameLookup lookup = NameLookup::resolve(callee_name, args, this);
-
-    if (lookup.resultType() == NameLookup::FunctionName)
-    {
-      std::shared_ptr<program::Expression> object = nullptr;
-      if (canUseThis())
-        object = program::StackValue::New(1, Type::ref(mStack[1].type));
-
-      OverloadResolution resol = OverloadResolution::New(engine());
-      if (!resol.process(lookup.functions(), args, object))
-        throw CouldNotFindValidMemberFunction{ dpos(call) };
-
-      Function selected = resol.selectedOverload();
-      if (selected.isDeleted())
-        throw CallToDeletedFunction{ dpos(call) };
-      else if (!Accessibility::check(caller(), selected))
-        throw InaccessibleMember{ dpos(call), dstr(callee_name), dstr(selected.accessibility()) };
-
-      const auto & convs = resol.conversionSequence();
-     if (selected.isMemberFunction() && !selected.isConstructor())
-        args.insert(args.begin(), object);
-      prepareFunctionArguments(args, selected.prototype(), convs);
-      if (selected.isConstructor()) /// TODO : can this happen ?
-        return program::ConstructorCall::New(selected, std::move(args));
-      else if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
-        return generateVirtualCall(call, selected, std::move(args));
-      return program::FunctionCall::New(selected, std::move(args));
-    }
-    else if (lookup.resultType() == NameLookup::VariableName || lookup.resultType() == NameLookup::GlobalName
-      || lookup.resultType() == NameLookup::DataMemberName || lookup.resultType() == NameLookup::LocalName)
-    {
-      auto functor = generateVariableAccess(std::dynamic_pointer_cast<ast::Identifier>(callee), lookup);
-      return generateFunctorCall(call, functor, std::move(args));
-    }
-    else if (lookup.resultType() == NameLookup::TypeName)
-    {
-      return generateConstructorCall(call, lookup.typeResult(), std::move(args));
-    }
-    
-    /// TODO : add error when name does not refer to anything
-    throw NotImplementedError{"FunctionCompiler::generateCall() : callee not handled yet"};
-  }
-  else
-    return AbstractExpressionCompiler::generateCall(call);
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier)
-{
-  return generateVariableAccess(identifier, resolve(identifier));
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
-{
-  switch (lookup.resultType())
-  {
-  case NameLookup::FunctionName:
-    return generateFunctionAccess(identifier, lookup);
-  case NameLookup::TemplateName:
-    throw TemplateNamesAreNotExpressions{ dpos(identifier) };
-  case NameLookup::TypeName:
-    throw TypeNameInExpression{ dpos(identifier) };
-  case NameLookup::VariableName:
-    return program::Literal::New(lookup.variable()); /// TODO : perhaps a VariableAccess would be better
-  case NameLookup::StaticDataMemberName:
-    return generateStaticDataMemberAccess(identifier, lookup);
-  case NameLookup::DataMemberName:
-    return generateMemberAccess(lookup.dataMemberIndex(), dpos(identifier));
-  case NameLookup::GlobalName:
-    return generateGlobalAccess(lookup.globalIndex());
-  case NameLookup::LocalName:
-    return generateLocalVariableAccess(lookup.localIndex());
-  case NameLookup::EnumValueName:
-    return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
-  case NameLookup::NamespaceName:
-    throw NamespaceNameInExpression{ dpos(identifier) };
-  default:
-    break;
-  }
-
-  throw NotImplementedError{ "FunctionCompiler::generateVariableAccess() : kind of name not supported yet" };
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateThisAccess()
-{
-  /// TODO : add correct const-qualification
-  if(mFunction.isDestructor() || mFunction.isConstructor())
-    return program::StackValue::New(0, Type::ref(mStack[0].type));
-  return program::StackValue::New(1, Type::ref(mStack[1].type));
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateMemberAccess(const int index, const diagnostic::pos_t dpos)
-{
-  return AbstractExpressionCompiler::generateMemberAccess(generateThisAccess(), index, dpos);
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateGlobalAccess(int index)
-{
-  Script s = mScript;
-  auto simpl = s.implementation();
-  const Type & gtype = simpl->global_types[index];
-
-  return program::FetchGlobal::New(gtype, index);
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateLocalVariableAccess(int index)
-{
-  const Type t = mStack[index].type;
-  return program::StackValue::New(index, t);
 }
 
 
@@ -864,7 +797,7 @@ void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::Compo
 
 void FunctionCompiler::processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es)
 {
-  auto expr = generateExpression(es->expression);
+  auto expr = generate(es->expression);
   write(program::ExpressionStatement::New(expr));
 }
 
@@ -880,7 +813,7 @@ void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
   if (fl->condition == nullptr)
     for_cond = program::Literal::New(engine()->newBool(true));
   else
-    for_cond = generateExpression(fl->condition);
+    for_cond = generate(fl->condition);
 
   if (for_cond->type().baseType() != Type::Boolean)
   {
@@ -892,7 +825,7 @@ void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
   if (fl->loopIncrement == nullptr)
     for_loop_incr = program::Literal::New(engine()->newBool(true)); /// TODO : what should we do ? (perhaps use a statement instead, an use the null statement)
   else
-    for_loop_incr = generateExpression(fl->loopIncrement);
+    for_loop_incr = generate(fl->loopIncrement);
 
   std::shared_ptr<program::Statement> body = nullptr;
   if (fl->body->is<ast::CompoundStatement>())
@@ -909,7 +842,7 @@ void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
 
 void FunctionCompiler::processIfStatement(const std::shared_ptr<ast::IfStatement> & is)
 {
-  auto cond = generateExpression(is->condition);
+  auto cond = generate(is->condition);
   std::shared_ptr<program::Statement> body;
   if (is->body->is<ast::CompoundStatement>())
     body = generateCompoundStatement(std::static_pointer_cast<ast::CompoundStatement>(is->body), FunctionScope::IfBody);
@@ -1020,12 +953,12 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
       throw ReturnStatementWithValue{};
   }
 
-  auto retval = generateExpression(rs->expression);
+  auto retval = generate(rs->expression);
 
   const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = prepareFunctionArgument(retval, mFunction.prototype().returnType(), conv);
+  retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }
@@ -1061,7 +994,7 @@ void FunctionCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDir
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)
 {
-  const Type var_type = resolve(var_decl->variable_type);
+  const Type var_type = type_.resolve(var_decl->variable_type, mCurrentScope);
 
   if (var_decl->init == nullptr)
     return processVariableDeclaration(var_decl, var_type, nullptr);
@@ -1083,7 +1016,8 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   try
   {
-    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, nullptr, dpos(var_decl)));
+    expr_.setScope(mCurrentScope);
+    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(engine(), var_type, nullptr, dpos(var_decl)));
   }
   catch (const EnumerationsCannotBeDefaultConstructed & e)
   {
@@ -1098,7 +1032,8 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   try
   {
-    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
+    expr_.setScope(mCurrentScope);
+    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
   }
   catch (const TooManyArgumentInInitialization & e)
   {
@@ -1113,7 +1048,8 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   try
   {
-    processVariableCreation(var_type, var_decl->name->getName(), constructValue(var_type, init));
+    expr_.setScope(mCurrentScope);
+    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
   }
   catch (const TooManyArgumentInInitialization & e)
   {
@@ -1123,7 +1059,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & input_var_type, const std::shared_ptr<ast::AssignmentInitialization> & init)
 {
-  auto value = generateExpression(init->value);
+  auto value = generate(init->value);
 
   Type var_type = input_var_type;
   if (input_var_type.baseType() == Type::Auto)
@@ -1141,7 +1077,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   /// TODO : this is not optimal I believe
   // we could add copy elision
-  value = prepareFunctionArgument(value, var_type, seq);
+  value = ConversionProcessor::convert(engine(), value, var_type, seq);
   processVariableCreation(var_type, var_decl->name->getName(), value);
 }
 
@@ -1149,7 +1085,8 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
 void FunctionCompiler::processFundamentalVariableCreation(const Type & type, const std::string & name)
 {
-  processVariableCreation(type, name, constructFundamentalValue(type, true));
+  expr_.setScope(mCurrentScope);
+  processVariableCreation(type, name, ValueConstructor::fundamental(engine(), type, true));
 }
 
 void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
@@ -1188,7 +1125,7 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
 
 void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)
 {
-  auto cond = generateExpression(whileLoop->condition);
+  auto cond = generate(whileLoop->condition);
 
   /// TODO : convert to bool if not bool
   if (cond->type().baseType() != Type::Boolean)

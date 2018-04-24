@@ -4,6 +4,8 @@
 
 #include "script/compiler/constructorcompiler.h"
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/conversionprocessor.h"
+#include "script/compiler/valueconstructor.h"
 
 #include "script/ast/node.h"
 
@@ -31,7 +33,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
 
   auto ctor_decl = std::static_pointer_cast<ast::ConstructorDecl>(declaration());
 
-  auto this_object = generateThisAccess();
+  auto this_object = ec().implicit_object();
 
   std::vector<ast::MemberInitialization> initializers = ctor_decl->memberInitializationList;
 
@@ -47,12 +49,12 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
 
       if (minit.init->is<ast::ConstructorInitialization>())
       {
-        std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
+        std::vector<std::shared_ptr<program::Expression>> args = ec().generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
         return program::CompoundStatement::New({ generateDelegateConstructorCall(std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init), args) });
       }
       else
       {
-        std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(minit.init->as<ast::BraceInitialization>().args);
+        std::vector<std::shared_ptr<program::Expression>> args = ec().generateExpressions(minit.init->as<ast::BraceInitialization>().args);
         return program::CompoundStatement::New({ generateDelegateConstructorCall(std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init), args) });
       }
     }
@@ -60,12 +62,12 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
     {
       if (minit.init->is<ast::ConstructorInitialization>())
       {
-        std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
+        std::vector<std::shared_ptr<program::Expression>> args = ec().generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
         parent_ctor_call = generateParentConstructorCall(std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init), args);
       }
       else
       {
-        std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(minit.init->as<ast::BraceInitialization>().args);
+        std::vector<std::shared_ptr<program::Expression>> args = ec().generateExpressions(minit.init->as<ast::BraceInitialization>().args);
         parent_ctor_call = generateParentConstructorCall(std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init), args);
       }
 
@@ -105,9 +107,9 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
 
     std::shared_ptr<program::Expression> member_value;
     if (minit.init->is<ast::ConstructorInitialization>())
-      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init));
+      member_value = ValueConstructor::construct(ec(), dm.type, std::dynamic_pointer_cast<ast::ConstructorInitialization>(minit.init));
     else
-      member_value = constructValue(dm.type, std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init));
+      member_value = ValueConstructor::construct(ec(), dm.type, std::dynamic_pointer_cast<ast::BraceInitialization>(minit.init));
 
     members_initialization[index] = program::PushDataMember::New(member_value);
   }
@@ -120,7 +122,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
     const auto & dm = data_members.at(i);
 
     //std::shared_ptr<program::Expression> default_constructed_value = defaultConstructMember(dm.type, dm.name, dpos(ctor_decl));
-    std::shared_ptr<program::Expression> default_constructed_value = constructValue(dm.type, nullptr, dpos(ctor_decl));
+    std::shared_ptr<program::Expression> default_constructed_value = ValueConstructor::construct(engine(), dm.type, nullptr, dpos(ctor_decl));
     members_initialization[i] = program::PushDataMember::New(default_constructed_value);
   }
 
@@ -142,7 +144,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
 {
   const Class current_class = currentClass();
 
-  auto this_object = generateThisAccess();
+  auto this_object = ec().implicit_object();
   auto other_object = program::StackValue::New(1, stack()[1].type);
 
   std::shared_ptr<program::Statement> parent_ctor_call;
@@ -171,7 +173,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
     if (conv == ConversionSequence::NotConvertible())
       throw DataMemberIsNotCopyable{};
 
-    members_initialization[i] = program::PushDataMember::New(prepareFunctionArgument(member_access, dm.type, conv));
+    members_initialization[i] = program::PushDataMember::New(ConversionProcessor::convert(engine(), member_access, dm.type, conv));
   }
 
   std::vector<std::shared_ptr<program::Statement>> statements;
@@ -187,7 +189,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
 {
   const Class obj_type = currentClass();
 
-  auto this_object = generateThisAccess();
+  auto this_object = ec().implicit_object();
   auto other_object = program::StackValue::New(1, stack()[1].type);
 
   std::shared_ptr<program::Statement> parent_ctor_call;
@@ -249,7 +251,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
         if (conv == ConversionSequence::NotConvertible())
           throw DataMemberIsNotCopyable{};
 
-        member_value = prepareFunctionArgument(member_access, dm.type, conv);
+        member_value = ConversionProcessor::convert(engine(), member_access, dm.type, conv);
       }
     }
 
@@ -289,7 +291,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructor
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
   const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, ctor.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
@@ -320,7 +322,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCa
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
   const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, ctor.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 

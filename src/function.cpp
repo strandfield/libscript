@@ -238,6 +238,11 @@ bool Function::isMemberFunction() const
 
 Class Function::memberOf() const
 {
+  if (isConstructor())
+    return static_cast<const ConstructorImpl*>(d.get())->mClass;
+  else if(isDestructor())
+    return static_cast<const DestructorImpl*>(d.get())->mClass;
+
   if (d->prototype.argc() == 0)
     return Class{};
   if (!d->prototype.argv(0).testFlag(Type::ThisFlag))

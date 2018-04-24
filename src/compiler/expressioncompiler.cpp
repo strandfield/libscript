@@ -5,7 +5,11 @@
 #include "script/compiler/expressioncompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/conversionprocessor.h"
+#include "script/compiler/diagnostichelper.h"
 #include "script/compiler/lambdacompiler.h"
+#include "script/compiler/literalprocessor.h"
+#include "script/compiler/valueconstructor.h"
 
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
@@ -28,13 +32,95 @@ namespace script
 namespace compiler
 {
 
-AbstractExpressionCompiler::AbstractExpressionCompiler(Compiler *c, CompileSession *s)
-  : CompilerComponent(c, s)
+std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le)
 {
-
+  throw NotImplementedError{ "Default LambdaProcessor cannot generate lambda expression" };
 }
 
-TemplateArgument AbstractExpressionCompiler::generateTemplateArgument(const std::shared_ptr<ast::Node> & arg)
+std::shared_ptr<program::Expression> VariableAccessor::data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  return member_access(ec, implicit_object(ec), offset, dpos);
+}
+
+std::shared_ptr<program::Expression> VariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  throw NotImplementedError{ "Default VariableAccessor does not support access to globals" };
+}
+
+std::shared_ptr<program::Expression> VariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  throw NotImplementedError{ "Default VariableAccessor does not support access to locals" };
+}
+
+std::shared_ptr<program::Expression> VariableAccessor::capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  throw NotImplementedError{ "Default VariableAccessor does not support access to captures" };
+}
+
+std::shared_ptr<program::Expression> VariableAccessor::member_access(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
+{
+  return ec.generateMemberAccess(object, index, dpos);
+}
+
+std::shared_ptr<program::Expression> VariableAccessor::implicit_object(ExpressionCompiler & ec) const
+{
+  return ec.implicit_object();
+}
+
+
+
+ExpressionCompiler::ExpressionCompiler()
+{
+  lambda_ = &default_lambda_;
+  variable_ = &default_variable_;
+}
+
+ExpressionCompiler::ExpressionCompiler(const Scope & scp)
+  : scope_(scp)
+{
+  lambda_ = &default_lambda_;
+  variable_ = &default_variable_;
+}
+
+
+diagnostic::pos_t ExpressionCompiler::dpos(const std::shared_ptr<ast::Node> & node)
+{
+  const auto & p = node->pos();
+  return diagnostic::pos_t{ p.line, p.col };
+}
+
+diagnostic::pos_t ExpressionCompiler::dpos(const ast::Node & node)
+{
+  const auto & p = node.pos();
+  return diagnostic::pos_t{ p.line, p.col };
+}
+
+diagnostic::pos_t ExpressionCompiler::dpos(const parser::Token & tok)
+{
+  return diagnostic::pos_t{ tok.line, tok.column };
+}
+
+std::string ExpressionCompiler::dstr(const Type & t) const
+{
+  return engine()->typeName(t);
+}
+
+std::string ExpressionCompiler::dstr(const AccessSpecifier & as)
+{
+  if (as == AccessSpecifier::Protected)
+    return "protected";
+  else if (as == AccessSpecifier::Private)
+    return "private";
+  return "public";
+}
+
+std::string ExpressionCompiler::dstr(const std::shared_ptr<ast::Identifier> & id)
+{
+  return id->getName();
+}
+
+
+TemplateArgument ExpressionCompiler::generateTemplateArgument(const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())
   {
@@ -54,7 +140,7 @@ TemplateArgument AbstractExpressionCompiler::generateTemplateArgument(const std:
     if (l.is<ast::BoolLiteral>())
       return TemplateArgument::make(l.token == parser::Token::True);
     else if (l.is<ast::IntegerLiteral>())
-      return TemplateArgument::make(generateIntegerLiteral(std::dynamic_pointer_cast<ast::IntegerLiteral>(arg)));
+      return TemplateArgument::make(LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)));
     else
       throw InvalidLiteralTemplateArgument{ dpos(arg) };
   }
@@ -72,7 +158,7 @@ TemplateArgument AbstractExpressionCompiler::generateTemplateArgument(const std:
   throw InvalidTemplateArgument{ dpos(arg) };
 }
 
-TemplateArgument AbstractExpressionCompiler::generateTemplateArgument(const std::shared_ptr<program::Expression> & e, const std::shared_ptr<ast::Node> & src)
+TemplateArgument ExpressionCompiler::generateTemplateArgument(const std::shared_ptr<program::Expression> & e, const std::shared_ptr<ast::Node> & src)
 {
   if (!isConstExpr(e))
     throw NonConstExprTemplateArgument{ dpos(src) };
@@ -89,7 +175,7 @@ TemplateArgument AbstractExpressionCompiler::generateTemplateArgument(const std:
   throw InvalidTemplateArgumentType{ dpos(src) };
 }
 
-std::vector<TemplateArgument> AbstractExpressionCompiler::generateTemplateArguments(const std::vector<std::shared_ptr<ast::Node>> & args)
+std::vector<TemplateArgument> ExpressionCompiler::generateTemplateArguments(const std::vector<std::shared_ptr<ast::Node>> & args)
 {
   std::vector<TemplateArgument> ret;
   for (const auto & a : args)
@@ -97,7 +183,7 @@ std::vector<TemplateArgument> AbstractExpressionCompiler::generateTemplateArgume
   return ret;
 }
 
-bool AbstractExpressionCompiler::isConstExpr(const std::shared_ptr<program::Expression> & e)
+bool ExpressionCompiler::isConstExpr(const std::shared_ptr<program::Expression> & e)
 {
   if (e->is<program::Literal>())
     return true;
@@ -121,63 +207,29 @@ bool AbstractExpressionCompiler::isConstExpr(const std::shared_ptr<program::Expr
   return false;
 }
 
-Value AbstractExpressionCompiler::evalConstExpr(const std::shared_ptr<program::Expression> & expr)
+Value ExpressionCompiler::evalConstExpr(const std::shared_ptr<program::Expression> & expr)
 {
   /// TODO : check this implementation !!
   // this might be a little too simple...
   return engine()->implementation()->interpreter->eval(expr);
 }
 
-Type AbstractExpressionCompiler::resolveFunctionType(const ast::QualifiedType & qt)
+Type ExpressionCompiler::resolve(const ast::QualifiedType & qt)
 {
-  Prototype proto;
-  proto.setReturnType(resolve(qt.functionType->returnType));
-
-  for (const auto & p : qt.functionType->params)
-    proto.addArgument(resolve(p));
-
-  auto ft = engine()->getFunctionType(proto);
-  Type t = ft.type();
-  if (qt.constQualifier.isValid())
-    t = t.withFlag(Type::ConstFlag);
-  if (qt.reference == parser::Token::Ref)
-    t = t.withFlag(Type::ReferenceFlag);
-  else if (qt.reference == parser::Token::RefRef)
-    t = t.withFlag(Type::ForwardReferenceFlag);
-  return t;
+  return type_resolver.resolve(qt, scope());
 }
 
-Type AbstractExpressionCompiler::resolve(const ast::QualifiedType & qt)
-{
-  if (qt.functionType != nullptr)
-    return resolveFunctionType(qt);
-
-  NameLookup lookup = resolve(qt.type);
-  if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(qt.type), repr(qt.type) };
-
-  Type t = lookup.typeResult();
-  if (qt.constQualifier.isValid())
-    t.setFlag(Type::ConstFlag);
-  if (qt.isRef())
-    t.setFlag(Type::ReferenceFlag);
-  else if (qt.isRefRef())
-    t.setFlag(Type::ForwardReferenceFlag);
-
-  return t;
-}
-
-std::vector<Function> AbstractExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
+std::vector<Function> ExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
 {
   return NameLookup::resolve(op, a, b, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }
 
-std::vector<Function> AbstractExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
+std::vector<Function> ExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
 {
   return NameLookup::resolve(op, a, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }
 
-std::vector<Function> AbstractExpressionCompiler::getLiteralOperators(const std::string & suffix)
+std::vector<Function> ExpressionCompiler::getLiteralOperators(const std::string & suffix)
 {
   /// TODO : improve this impl
   std::vector<Function> ret;
@@ -199,7 +251,7 @@ std::vector<Function> AbstractExpressionCompiler::getLiteralOperators(const std:
   return ret;
 }
 
-std::vector<Function> AbstractExpressionCompiler::getCallOperator(const Type & functor_type)
+std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_type)
 {
   std::vector<Function> result;
 
@@ -228,253 +280,38 @@ std::vector<Function> AbstractExpressionCompiler::getCallOperator(const Type & f
   return result;
 }
 
+std::shared_ptr<program::Expression> ExpressionCompiler::implicit_object() const
+{
+  /// TODO : is this correct in the body of a Lambda ?
+  /// TODO : add correct const-qualification
+  if (caller().isNull())
+    return nullptr;
+  if (caller().isDestructor() || caller().isConstructor())
+    return program::StackValue::New(0, Type::ref(caller().memberOf().id()));
+  else if(caller().isMemberFunction())
+    return program::StackValue::New(1, Type::ref(caller().memberOf().id()));
+  return nullptr;
+}
 
-std::vector<std::shared_ptr<program::Expression>> AbstractExpressionCompiler::generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions)
+std::vector<std::shared_ptr<program::Expression>> ExpressionCompiler::generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions)
 {
   std::vector<std::shared_ptr<program::Expression>> ret;
   generateExpressions(expressions, ret);
   return ret;
 }
 
-void AbstractExpressionCompiler::generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & in, std::vector<std::shared_ptr<program::Expression>> & out)
+void ExpressionCompiler::generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & in, std::vector<std::shared_ptr<program::Expression>> & out)
 {
   for (const auto & e : in)
     out.push_back(generateExpression(e));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::applyStandardConversion(const std::shared_ptr<program::Expression> & arg, const Type & type, const StandardConversion & conv)
-{
-  if (!conv.isCopyInitialization())
-    return arg;
-
-  assert(conv.isCopyInitialization());
-
-  if (conv.isDerivedToBaseConversion() || type.isObjectType())
-  {
-    Class dest_class = engine()->getClass(type);
-    return program::ConstructorCall::New(dest_class.copyConstructor(), { arg });
-  }
-
-  if (arg->type().baseType() == type.baseType())
-    return program::Copy::New(type, arg);
-
-  return program::FundamentalConversion::New(type, arg);
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::performListInitialization(const std::shared_ptr<program::Expression> & arg, const Type & type, const std::shared_ptr<ListInitializationSequence> & linit)
-{
-  throw std::runtime_error{ "Not implemented" };
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::prepareFunctionArgument(const std::shared_ptr<program::Expression> & arg, const Type & type, const ConversionSequence & conv)
-{
-  if (conv.isListInitialization())
-    return performListInitialization(arg, type, conv.listInitialization);
-  else if (!conv.isUserDefinedConversion())
-    return applyStandardConversion(arg, type, conv.conv1);
-
-  std::shared_ptr<program::Expression> ret = nullptr;
-
-  if (conv.function.isCast())
-  {
-    auto cast = conv.function.toCast();
-    ret = applyStandardConversion(arg, cast.sourceType(), conv.conv1);
-    ret = program::FunctionCall::New(cast, { ret });
-  }
-  else
-  {
-    assert(conv.function.isConstructor());
-
-    auto ctor = conv.function;
-    ret = applyStandardConversion(arg, ctor.prototype().argv(0), conv.conv1);
-    ret = program::ConstructorCall::New(ctor, { ret });
-  }
-
-  return applyStandardConversion(ret, type, conv.conv3);
-}
-
-void AbstractExpressionCompiler::prepareFunctionArguments(std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<ConversionSequence> & conversions)
-{
-  for (size_t i(0); i < args.size(); ++i)
-  {
-    args[i] = prepareFunctionArgument(args.at(i), proto.argv(i), conversions.at(i));
-  }
-}
-
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructFundamentalValue(const Type & t, bool copy)
-{
-  assert(t.isFundamentalType());
-
-  Value val;
-  switch (t.baseType().data())
-  {
-  case Type::Null:
-  case Type::Void:
-    throw NotImplementedError{ "Could not construct value of type void" };
-  case Type::Boolean:
-    val = engine()->newBool(false);
-    break;
-  case Type::Char:
-    val = engine()->newChar('\0');
-    break;
-  case Type::Int:
-    val = engine()->newInt(0);
-    break;
-  case Type::Float:
-    val = engine()->newFloat(0.f);
-    break;
-  case Type::Double:
-    val = engine()->newDouble(0.);
-    break;
-  default:
-    throw NotImplementedError{ "Could not construct value of given fundamental type" };
-  }
-
-  engine()->manage(val);
-
-  auto lit = program::Literal::New(val);
-  if (copy)
-    return program::Copy::New(t, lit);
-  return lit;
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::braceConstructValue(const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
-{
-  if (args.size() == 0)
-    return constructValue(type, nullptr, dp);
-
-  if (!type.isObjectType() && args.size() != 1)
-    throw TooManyArgumentInInitialization{ dp };
-
-  if ((type.isReference() || type.isRefRef()) && args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dp };
-
-  if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
-  {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dp, dstr(args.front()->type()), dstr(type) };
-
-    if (seq.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dp, dstr(args.front()->type()), dstr(type) };
-
-    return prepareFunctionArgument(args.front(), type, seq);
-  }
-  else if (type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    for (std::size_t i(0); i < conversions.size(); ++i)
-    {
-      const auto & conv = conversions.at(i);
-      if (conv.isNarrowing())
-        throw NarrowingConversionInBraceInitialization{ dp, dstr(args.at(i)->type()), dstr(ctor.parameter(i)) };
-    }
-
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-    return program::ConstructorCall::New(ctor, std::move(args));
-  }
-  else
-    throw std::runtime_error{ "Not implemented" };
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & type, std::nullptr_t, diagnostic::pos_t dp)
-{
-  if (type.isReference() || type.isRefRef())
-    throw ReferencesMustBeInitialized{ dp };
-
-  if (type.isFundamentalType())
-    return constructFundamentalValue(type, true);
-  else if (type.isEnumType())
-    throw EnumerationsCannotBeDefaultConstructed{ dp };
-  else if (type.isFunctionType())
-    throw FunctionVariablesMustBeInitialized{ dp };
-  else if (type.isObjectType())
-  {
-    Function default_ctor = engine()->getClass(type).defaultConstructor();
-    if (default_ctor.isNull())
-      throw VariableCannotBeDefaultConstructed{ dp, dstr(type) };
-    else if (default_ctor.isDeleted())
-      throw ClassHasDeletedDefaultCtor{ dp, dstr(type) };
-
-    return program::ConstructorCall::New(default_ctor, {});
-  }
-
-  throw NotImplementedError{ dp, "AbstractExpressionCompiler::constructValue() : cannot default construct value" };
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
-{
-  if (args.size() == 0)
-    return constructValue(type, nullptr, dp);
-
-  if (!type.isObjectType() && args.size() != 1)
-    throw TooManyArgumentInInitialization{ dp };
-
-  if ((type.isReference() || type.isRefRef()) && args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dp };
-
-  if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
-  {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, engine());
-    if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dp, dstr(args.front()->type()), dstr(type) };
-
-    return prepareFunctionArgument(args.front(), type, seq);
-  }
-  else if (type.isObjectType())
-  {
-    const std::vector<Function> & ctors = engine()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(engine());
-    if (!resol.process(ctors, args))
-      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
-
-    const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    prepareFunctionArguments(args, ctor.prototype(), conversions);
-    return program::ConstructorCall::New(ctor, std::move(args));
-  }
-  else
-    throw NotImplementedError{ dp, "AbstractExpressionCompiler::constructValue() : type not implemented" };
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init)
-{
-  auto args = generateExpressions(init->args);
-  return constructValue(t, std::move(args), dpos(init));
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::constructValue(const Type & t, const std::shared_ptr<ast::BraceInitialization> & init)
-{
-  auto args = generateExpressions(init->args);
-  return braceConstructValue(t, std::move(args), dpos(init));
-}
-
-
-int AbstractExpressionCompiler::generateIntegerLiteral(const std::shared_ptr<ast::IntegerLiteral> & l)
-{
-  std::string i = l->toString();
-  if (i.find("0x") == 0)
-    return std::stoi(i.substr(2), nullptr, 16);
-  else if(i.find("0b") == 0)
-    return std::stoi(i.substr(2), nullptr, 2);
-  else if (i.find("0") == 0)
-    return std::stoi(i, nullptr, 8);
-  return std::stoi(i, nullptr, 10);
-}
-
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateArrayConstruction(const std::shared_ptr<ast::ArrayExpression> & array_expr)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstruction(const std::shared_ptr<ast::ArrayExpression> & array_expr)
 {
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(array_expr->elements);
 
   if (args.size() == 0)
-    throw NotImplementedError{ "AbstractExpressionCompiler::generateArrayConstruction() : array of size 0" };
+    throw NotImplementedError{ "ExpressionCompiler::generateArrayConstruction() : array of size 0" };
 
   const Type element_type = args.front()->type().baseType();
   if (element_type == Type::InitializerList)
@@ -495,12 +332,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateArrayCo
   Class array_class = array_template.getInstance({ TemplateArgument::make(element_type) });
 
   for (size_t i(0); i < args.size(); ++i)
-    args[i] = prepareFunctionArgument(args.at(i), element_type, conversions.at(i));
+    args[i] = ConversionProcessor::convert(engine(), args.at(i), element_type, conversions.at(i));
 
   return program::ArrayExpression::New(array_class.id(), std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBraceConstruction(const std::shared_ptr<ast::BraceConstruction> & bc)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateBraceConstruction(const std::shared_ptr<ast::BraceConstruction> & bc)
 {
   NameLookup lookup = resolve(bc->temporary_type);
   if (lookup.typeResult().isNull())
@@ -514,22 +351,22 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBraceCo
 
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(bc->arguments);
 
-  return braceConstructValue(type, std::move(args), dpos(bc));
+  return ValueConstructor::brace_construct(engine(), type, std::move(args), dpos(bc));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateConstructorCall(const std::shared_ptr<ast::FunctionCall> & fc, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateConstructorCall(const std::shared_ptr<ast::FunctionCall> & fc, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
 {
-  return constructValue(type, std::move(args), dpos(fc));
+  return ValueConstructor::construct(engine(), type, std::move(args), dpos(fc));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateListExpression(const std::shared_ptr<ast::ListExpression> & list_expr)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateListExpression(const std::shared_ptr<ast::ListExpression> & list_expr)
 {
   auto elements = generateExpressions(list_expr->elements);
   return program::InitializerList::New(std::move(elements));
 }
 
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateArraySubscript(const std::shared_ptr<ast::ArraySubscript> & as)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(const std::shared_ptr<ast::ArraySubscript> & as)
 {
   std::shared_ptr<program::Expression> obj = generateExpression(as->array);
   std::shared_ptr<program::Expression> index = generateExpression(as->index);
@@ -556,12 +393,12 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateArraySu
 
   const auto & conversions = resol.conversionSequence();
 
-  prepareFunctionArguments(args, selected.prototype(), conversions);
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), conversions);
 
   return program::FunctionCall::New(selected, std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call)
 {
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(call->arguments);
   const auto & callee = call->callee;
@@ -573,8 +410,10 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
 
     if (lookup.resultType() == NameLookup::FunctionName)
     {
+      std::shared_ptr<program::Expression> object = implicit_object();
+
       OverloadResolution resol = OverloadResolution::New(engine());
-      if (!resol.process(lookup.functions(), args))
+      if (!resol.process(lookup.functions(), args, object))
         throw CouldNotFindValidMemberFunction{ dpos(call) };
 
       Function selected = resol.selectedOverload();
@@ -583,12 +422,16 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
       else if (!Accessibility::check(caller(), selected))
         throw InaccessibleMember{dpos(call), dstr(callee_name), dstr(selected.accessibility())};
 
+      if (selected.isMemberFunction() && !selected.isConstructor() && object != nullptr)
+        args.insert(args.begin(), object);
+
       const auto & convs = resol.conversionSequence();
-      prepareFunctionArguments(args, selected.prototype(), convs);
-      if (selected.isConstructor())
+      ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+      if (selected.isConstructor()) /// TODO : can this happen, shouldn't the lookup returns TypeName in this case ?
         return program::ConstructorCall::New(selected, std::move(args));
-      else
-        return program::FunctionCall::New(selected, std::move(args));
+      else if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
+        return generateVirtualCall(call, selected, std::move(args));
+      return program::FunctionCall::New(selected, std::move(args));
     }
     else if (lookup.resultType() == NameLookup::VariableName || lookup.resultType() == NameLookup::GlobalName
       || lookup.resultType() == NameLookup::DataMemberName || lookup.resultType() == NameLookup::LocalName)
@@ -601,7 +444,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
       return generateConstructorCall(call, lookup.typeResult(), std::move(args));
     }
 
-    throw std::runtime_error{ "Not implemented" };
+    throw NotImplementedError{ dpos(callee), "ExpressionCompiler : call not implemented" };
 
   }
   else if (callee->is<ast::Operation>() && callee->as<ast::Operation>().operatorToken == parser::Token::Dot)
@@ -634,7 +477,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
         throw InaccessibleMember{ dpos(call), dstr(callee_name), dstr(selected.accessibility()) };
 
       const auto & convs = resol.conversionSequence();
-      prepareFunctionArguments(args, selected.prototype(), convs);
+      ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
       assert(!selected.isConstructor()); /// TODO : check that this is not possible
       if (selected.isVirtual() && member_access->arg2->type() == ast::NodeType::SimpleIdentifier)
         return generateVirtualCall(call, selected, std::move(args));
@@ -654,7 +497,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateCall(co
   throw std::runtime_error{ "Not implemented" };
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateVirtualCall(const std::shared_ptr<ast::FunctionCall> & call, const Function & f, std::vector<std::shared_ptr<program::Expression>> && args)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateVirtualCall(const std::shared_ptr<ast::FunctionCall> & call, const Function & f, std::vector<std::shared_ptr<program::Expression>> && args)
 {
   assert(f.isVirtual());
 
@@ -669,7 +512,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateVirtual
   return program::VirtualCall::New(object, std::distance(vtable.begin(), it), f.returnType(), std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctorCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
 {
   if (functor->type().isFunctionType())
     return generateFunctionVariableCall(call, functor, std::move(args));
@@ -689,11 +532,11 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctor
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
   const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, selected.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctionVariableCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariableCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
 {
   auto function_type = engine()->getFunctionType(functor->type());
   const Prototype & proto = function_type.prototype();
@@ -708,11 +551,11 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctio
     conversions.push_back(conv);
   }
 
-  prepareFunctionArguments(args, proto, conversions);
+  ConversionProcessor::prepare(engine(), args, proto, conversions);
   return program::FunctionVariableCall::New(functor, proto.returnType(), std::move(args));
 }
 
-std::string AbstractExpressionCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
+std::string ExpressionCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
 {
   if (id->type() == ast::NodeType::SimpleIdentifier)
     return id->getName();
@@ -722,7 +565,7 @@ std::string AbstractExpressionCompiler::repr(const std::shared_ptr<ast::Identifi
   return id->getName();
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateExpression(const std::shared_ptr<ast::Expression> & expr)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateExpression(const std::shared_ptr<ast::Expression> & expr)
 {
   switch (expr->type())
   {
@@ -760,32 +603,13 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateExpress
   throw std::runtime_error{ "Not impelmented" };
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUserDefinedLiteral(const std::shared_ptr<ast::UserDefinedLiteral> & udl)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLiteral(const std::shared_ptr<ast::UserDefinedLiteral> & udl)
 {
   std::string str = udl->toString();
 
   // suffix extraction
-  auto it = str.end() - 1;
-  while (parser::Lexer::isLetter(*it) || *it == '_')
-    --it;
-  ++it;
-  std::string suffix = std::string(it, str.end());
-  str.erase(it, str.end());
-
-  Value val;
-  if (str.front() == '\'' || str.front() == '"')
-    val = generateStringLiteral(udl, std::move(str));
-  else if (str.find('.') != str.npos || str.find('e') != str.npos)
-  {
-    double dval = std::stod(str);
-    val = engine()->newDouble(dval);
-  }
-  else
-  {
-    int ival = std::stoi(str);
-    val = engine()->newInt(ival);
-  }
-
+  std::string suffix = LiteralProcessor::take_suffix(str);
+  Value val = LiteralProcessor::generate(engine(), str);
   engine()->manage(val);
   auto lit = program::Literal::New(val);
   std::vector<std::shared_ptr<program::Expression>> args{ lit };
@@ -797,101 +621,36 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUserDef
 
   Function selected = resol.selectedOverload();
   const auto & convs = resol.conversionSequence();
-  prepareFunctionArguments(args, selected.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
 
   return program::FunctionCall::New(selected, std::move(args));
 }
 
-Value AbstractExpressionCompiler::generateStringLiteral(const std::shared_ptr<ast::Literal> & l, std::string && str)
+std::shared_ptr<program::LambdaExpression> ExpressionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)
 {
-  auto it = str.find("\\n");
-  while (it != str.npos)
-  {
-    str.replace(it, it + 2, "\n");
-    it = str.find("\\n");
-  }
-  it = str.find("\\t");
-  while (it != str.npos)
-  {
-    str.replace(it, it + 2, "\t");
-    it = str.find("\\t");
-  }
-  it = str.find("\\r");
-  while (it != str.npos)
-  {
-    str.replace(it, it + 2, "\r");
-    it = str.find("\\r");
-  }
-  it = str.find("\\0");
-  while (it != str.npos)
-  {
-    str.replace(it, it + 2, "\0");
-    it = str.find("\\0");
-  }
-
-  if (str.front() == '"')
-    return engine()->newString(std::string(str.begin() + 1, str.end() - 1));
-
-  if (str.size() != 3)
-    throw InvalidCharacterLiteral{ dpos(l) };
-  return engine()->newChar(str.at(1));
+  return lambda_->generate(*this, lambda_expr);
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateLiteral(const std::shared_ptr<ast::Literal> & literalExpr)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const std::shared_ptr<ast::Literal> & literalExpr)
 {
-  if (literalExpr->is<ast::BoolLiteral>())
-  {
-    auto val = engine()->newBool(literalExpr->token == parser::Token::True);
-    engine()->manage(val);
-    return program::Literal::New(val);
-  }
-  else if (literalExpr->is<ast::IntegerLiteral>())
-  {
-    const int value = generateIntegerLiteral(std::dynamic_pointer_cast<ast::IntegerLiteral>(literalExpr));
-    auto val = engine()->newInt(value);
-    engine()->manage(val);
-    return program::Literal::New(val);
-  }
-  else if (literalExpr->is<ast::FloatingPointLiteral>())
-  {
-    std::string str = literalExpr->toString();
-    Value val;
-    if (str.back() == 'f')
-    {
-      str.pop_back();
-      float fval = std::stof(str);
-      val = engine()->newFloat(fval);
-    }
-    else
-    {
-      double dval = std::stod(str);
-      val = engine()->newDouble(dval);
-    }
-    engine()->manage(val);
-    return program::Literal::New(val);
-  }
-  else if (literalExpr->is<ast::StringLiteral>())
-  {
-    std::string str = literalExpr->toString();
-    Value val = generateStringLiteral(literalExpr, std::move(str));
-    engine()->manage(val);
-    return program::Literal::New(val);
-  }
-  else if (literalExpr->is<ast::UserDefinedLiteral>())
-  {
-    return generateUserDefinedLiteral(std::dynamic_pointer_cast<ast::UserDefinedLiteral>(literalExpr));
-  }
+  if (literalExpr->is<ast::UserDefinedLiteral>())
+    return generateUserDefinedLiteral(std::static_pointer_cast<ast::UserDefinedLiteral>(literalExpr));
 
-  throw NotImplementedError{ "AbstractExpressionCompiler::generateLiteral()" };
+  Value val = LiteralProcessor::generate(engine(), literalExpr);
+  engine()->manage(val);
+  return program::Literal::New(val);
 }
 
 
-NameLookup AbstractExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
+
+
+NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
 {
-  return NameLookup::resolve(identifier, this);
+  /// TODO : pass a true TemplateNameProcessor !!
+  return NameLookup::resolve(identifier, scope());
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)
 {
   auto operation = std::dynamic_pointer_cast<ast::Operation>(in_op);
 
@@ -903,7 +662,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateOperati
   return generateBinaryOperation(operation);
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberAccess(const std::shared_ptr<ast::Operation> & operation)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<ast::Operation> & operation)
 {
   assert(operation->operatorToken == parser::Token::Dot);
 
@@ -921,7 +680,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberA
 }
 
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBinaryOperation(const std::shared_ptr<ast::Operation> & operation)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation(const std::shared_ptr<ast::Operation> & operation)
 {
   assert(operation->arg2 != nullptr);
   assert(operation->operatorToken != parser::Token::Dot);
@@ -940,11 +699,11 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateBinaryO
   Operator selected = resol.selectedOverload().toOperator();
   const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ lhs, rhs };
-  prepareFunctionArguments(args, selected.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUnaryOperation(const std::shared_ptr<ast::Operation> & operation)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(const std::shared_ptr<ast::Operation> & operation)
 {
   assert(operation->arg2 == nullptr);
 
@@ -969,11 +728,11 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateUnaryOp
 
   const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
-  prepareFunctionArguments(args, selected.prototype(), convs);
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateConditionalExpression(const std::shared_ptr<ast::ConditionalExpression> & ce)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpression(const std::shared_ptr<ast::ConditionalExpression> & ce)
 {
   auto tru = generateExpression(ce->onTrue);
   auto fal = generateExpression(ce->onFalse);
@@ -981,12 +740,45 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateConditi
   return program::ConditionalExpression::New(con, tru, fal);
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier)
 {
   return generateVariableAccess(identifier, resolve(identifier));
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
+{
+  switch (lookup.resultType())
+  {
+  case NameLookup::FunctionName:
+    return generateFunctionAccess(identifier, lookup);
+  case NameLookup::TemplateName:
+    throw TemplateNamesAreNotExpressions{ dpos(identifier) };
+  case NameLookup::TypeName:
+    throw TypeNameInExpression{ dpos(identifier) };
+  case NameLookup::VariableName:
+    return program::Literal::New(lookup.variable()); // perhaps a VariableAccess would be better
+  case NameLookup::StaticDataMemberName:
+    return generateStaticDataMemberAccess(identifier, lookup);
+  case NameLookup::DataMemberName:
+    return variable_->data_member(*this, lookup.dataMemberIndex(), dpos(identifier));
+  case NameLookup::GlobalName:
+    return variable_->global_name(*this, lookup.globalIndex(), dpos(identifier));
+  case NameLookup::LocalName:
+    return variable_->local_name(*this, lookup.localIndex(), dpos(identifier));
+  case NameLookup::CaptureName:
+    return variable_->capture_name(*this, lookup.captureIndex(), dpos(identifier));
+  case NameLookup::EnumValueName:
+    return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
+  case NameLookup::NamespaceName:
+    throw NamespaceNameInExpression{ dpos(identifier) };
+  default:
+    break;
+  }
+
+  throw NotImplementedError{ dpos(identifier), "ExpressionCompiler::generateVariableAccess() : kind of variable not implemented" };
+}
+
+std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
 {
   if (lookup.functions().size() != 1)
     throw AmbiguousFunctionName{ dpos(identifier) };
@@ -998,7 +790,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateFunctio
   return program::Literal::New(val); /// TODO : perhaps a program::VariableAccess would be better ?
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
 {
   Class cla = engine()->getClass(object->type());
   int relative_index = index;
@@ -1017,7 +809,7 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateMemberA
   return program::MemberAccess::New(access_type, object, index);
 }
 
-std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
+std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
 {
   const Class c = lookup.memberOf();
   const Class::StaticDataMember & sdm = lookup.staticDataMemberResult();
@@ -1026,104 +818,6 @@ std::shared_ptr<program::Expression> AbstractExpressionCompiler::generateStaticD
     throw InaccessibleMember{ dpos(id), sdm.name, dstr(sdm.accessibility()) };
 
   return program::Literal::New(sdm.value);
-}
-
-
-ExpressionCompiler::ExpressionCompiler(Compiler *c, CompileSession *s)
-  : AbstractExpressionCompiler(c, s)
-{
-  mScope = engine()->rootNamespace();
-}
-
-void ExpressionCompiler::setScope(const Scope & s)
-{
-  mScope = s;
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)
-{
-  mContext = context;
-  mScope = Scope{ std::make_shared<ContextScope>(mContext, mScope.impl()) };
-  return generateExpression(expr);
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp)
-{
-  mContext = Context{};
-  mScope = scp;
-  return generateExpression(expr);
-}
-
-Scope ExpressionCompiler::scope() const
-{
-  return mScope;
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & op)
-{
-  if (mContext.isNull())
-    return AbstractExpressionCompiler::generateOperation(op);
-
-  const ast::Operation & oper = op->as<ast::Operation>();
-  if (oper.operatorToken == parser::Token::Eq)
-  {
-    if (oper.arg1->type() == ast::NodeType::SimpleIdentifier)
-    {
-      std::string name = oper.arg1->as<ast::Identifier>().getName();
-
-      auto value = generateExpression(oper.arg2);
-      return program::BindExpression::New(std::move(name), mContext, value);
-    }
-  }
-
-  return AbstractExpressionCompiler::generateOperation(op);
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
-{
-  switch (lookup.resultType())
-  {
-  case NameLookup::FunctionName:
-    return generateFunctionAccess(identifier, lookup);
-  case NameLookup::TemplateName:
-    throw TemplateNamesAreNotExpressions{ dpos(identifier) };
-  case NameLookup::TypeName:
-    throw TypeNameInExpression{ dpos(identifier) };
-  case NameLookup::VariableName:
-    return program::Literal::New(lookup.variable()); // perhaps a VariableAccess would be better
-  case NameLookup::StaticDataMemberName:
-    return generateStaticDataMemberAccess(identifier, lookup);
-  case NameLookup::DataMemberName:
-  case NameLookup::GlobalName:
-  case NameLookup::LocalName:
-    assert(false);
-    throw std::runtime_error{ "ExpressionCompiler::generateVariableAccess() : Implementation error" };
-  case NameLookup::EnumValueName:
-    return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
-  case NameLookup::NamespaceName:
-    throw NamespaceNameInExpression{ dpos(identifier) };
-  default: 
-    break;
-  }
-
-  throw std::runtime_error{ "Not implemented" };
-}
-
-
-
-std::shared_ptr<program::LambdaExpression> ExpressionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)
-{
-  if (lambda_expr->captures.size() > 0)
-    throw LambdaMustBeCaptureless{ dpos(lambda_expr) };
-
-  CompileLambdaTask task;
-  task.lexpr = lambda_expr;
-  task.scope = script::Scope{engine()->rootNamespace()};
-
-  std::shared_ptr<LambdaCompiler> compiler{ getComponent<LambdaCompiler>() };
-  LambdaCompilationResult result = compiler->compile(task);
-
-  return result.expression;
 }
 
 } // namespace compiler

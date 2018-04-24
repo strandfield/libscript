@@ -9,8 +9,8 @@
 
 #include "script/parser/parser.h"
 
+#include "script/compiler/commandcompiler.h"
 #include "script/compiler/compilererrors.h"
-#include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/scriptcompiler.h"
 
@@ -186,7 +186,7 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & expr,
   if (ast->hasErrors())
     return nullptr;
 
-  compiler::ExpressionCompiler c{ this, mSession.get() };
+  compiler::CommandCompiler c{ this, mSession.get() };
   if (!script.isNull())
     c.setScope(Scope{ script });
   
