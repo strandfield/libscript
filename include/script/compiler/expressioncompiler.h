@@ -87,12 +87,6 @@ public:
   ExpressionCompiler();
   ExpressionCompiler(const Scope & scp);
 
-  TemplateArgument generateTemplateArgument(const std::shared_ptr<ast::Node> & arg);
-  TemplateArgument generateTemplateArgument(const std::shared_ptr<program::Expression> & e, const std::shared_ptr<ast::Node> &);
-  std::vector<TemplateArgument> generateTemplateArguments(const std::vector<std::shared_ptr<ast::Node>> & args);
-  bool isConstExpr(const std::shared_ptr<program::Expression> & expr);
-  Value evalConstExpr(const std::shared_ptr<program::Expression> & expr);
-
   inline const Scope & scope() const { return scope_; }
   inline void setScope(const Scope & scp) { scope_ = scp; }
 
