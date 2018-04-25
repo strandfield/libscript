@@ -925,6 +925,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   FunctionBuilder builder = FunctionBuilder::Operator(operation, proto);
   if (over_decl.deleteKeyword.isValid())
     builder.setDeleted();
+  else if (over_decl.defaultKeyword.isValid())
+    builder.setDefaulted();
 
   handleAccessSpecifier(builder, scp);
 

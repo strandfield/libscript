@@ -894,6 +894,45 @@ TEST(CompilerTests, generated_dtor) {
   ASSERT_TRUE(!dtor.isNull() && dtor.isDefaulted());
 }
 
+TEST(CompilerTests, generated_assignment) {
+  using namespace script;
+
+  const char *source =
+    "  class A {                                      "
+    "  public:                                        "
+    "    int val;                                     "
+    "    A(int n) : val(n) { }                        "
+    "    ~A() { }                                     "
+    "                                                 "
+    "    A & operator=(const A & other) = default;    "
+    "  };                                             "
+    "                                                 "
+    "  A a(1);                                        "
+    "  A b(2);                                        "
+    "  a = b;                                         "
+    "  int n = a.val;                                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  Class A = s.classes().front();
+  ASSERT_EQ(A.operators().size(), 1);
+  Operator op = A.operators().front();
+  ASSERT_EQ(op.operatorId(), Operator::AssignmentOperator);
+  ASSERT_TRUE(!op.isNull() && op.isDefaulted());
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 3);
+  Value n = s.globals().back();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 2);
+}
 
 TEST(CompilerTests, default_argument) {
   using namespace script;
@@ -1576,6 +1615,32 @@ TEST(CompilerTests, for_loop_break) {
   Value x = s.globals().front();
   ASSERT_EQ(x.type(), Type::Int);
   ASSERT_EQ(x.toInt(), 10);
+}
+
+TEST(CompilerTests, while_loop_1) {
+  using namespace script;
+
+  const char *source =
+    "  int n = 0;             "
+    "  while (n < 10) ++n;    ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.globalNames().size(), 1);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 10);
 }
 
 TEST(CompilerTests, type_alias_1) {

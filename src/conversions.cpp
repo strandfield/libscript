@@ -389,6 +389,12 @@ bool StandardConversion::operator<(const StandardConversion & other) const
   else if (!this->isCopyInitialization() && other.isCopyInitialization())
     return true;
 
+  if (this->isReferenceInitialization() && other.isReferenceInitialization())
+  {
+    if (other.hasQualificationConversion() && !this->hasQualificationConversion())
+      return true;
+  }
+
   return false;
 }
 

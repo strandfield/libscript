@@ -29,7 +29,7 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
   const Class current_class = currentClass();
 
   auto this_object = ec().implicit_object();
-  auto other_object = program::StackValue::New(1, stack()[1].type);
+  auto other_object = program::StackValue::New(2, stack()[2].type);
 
   std::shared_ptr<program::Statement> parent_assign_call;
   if (!current_class.parent().isNull())
