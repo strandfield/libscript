@@ -19,12 +19,6 @@ namespace script
 namespace compiler
 {
 
-inline static diagnostic::pos_t dpos(const std::shared_ptr<ast::Node> & node)
-{
-  const auto & p = node->pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
 TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())

@@ -109,12 +109,7 @@ public:
 
 protected:
   // diagnostics related (hopefully this is temporary)
-  static diagnostic::pos_t dpos(const std::shared_ptr<ast::Node> & node);
-  static diagnostic::pos_t dpos(const ast::Node & node);
-  static diagnostic::pos_t dpos(const parser::Token & tok);
   std::string dstr(const Type & t) const;
-  static std::string dstr(const AccessSpecifier & as);
-  static std::string dstr(const std::shared_ptr<ast::Identifier> & id);
 
 protected:
 

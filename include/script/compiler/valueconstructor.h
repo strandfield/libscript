@@ -36,7 +36,6 @@ public:
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init);
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::BraceInitialization> & init);
 
-  static diagnostic::pos_t dpos(const std::shared_ptr<ast::Node> & n);
   static std::string dstr(Engine *e, const Type & t);
 };
 

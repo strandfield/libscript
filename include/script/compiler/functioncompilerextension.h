@@ -36,7 +36,6 @@ public:
 
   inline ExpressionCompiler & ec() { return mCompiler->expr_; }
 
-  inline diagnostic::pos_t dpos(const std::shared_ptr<ast::Node> & node) const { return mCompiler->dpos(node); }
   inline std::string dstr(const Type & t) const { return mCompiler->dstr(t); }
   inline static std::string dstr(const std::shared_ptr<ast::Identifier> & id) { return id->getName(); }
 

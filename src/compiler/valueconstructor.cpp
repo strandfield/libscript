@@ -169,12 +169,6 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(ExpressionCompi
   return brace_construct(ec.engine(), t, std::move(args), dpos(init));
 }
 
-diagnostic::pos_t ValueConstructor::dpos(const std::shared_ptr<ast::Node> & n)
-{
-  const auto & p = n->pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
 std::string ValueConstructor::dstr(Engine *e, const Type & t)
 {
   return e->typeName(t);

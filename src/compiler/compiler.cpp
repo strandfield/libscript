@@ -94,23 +94,6 @@ void CompilerComponent::log(const CompilerException & exception)
   log(mssg.build());
 }
 
-diagnostic::pos_t CompilerComponent::dpos(const std::shared_ptr<ast::Node> & node)
-{
-  const auto & p = node->pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
-diagnostic::pos_t CompilerComponent::dpos(const ast::Node & node)
-{
-  const auto & p = node.pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
-diagnostic::pos_t CompilerComponent::dpos(const parser::Token & tok)
-{
-  return diagnostic::pos_t{ tok.line, tok.column };
-}
-
 std::string CompilerComponent::dstr(const Type & t) const
 { 
   return engine()->typeName(t); 

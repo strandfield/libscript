@@ -82,41 +82,9 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   variable_ = &default_variable_;
 }
 
-
-diagnostic::pos_t ExpressionCompiler::dpos(const std::shared_ptr<ast::Node> & node)
-{
-  const auto & p = node->pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
-diagnostic::pos_t ExpressionCompiler::dpos(const ast::Node & node)
-{
-  const auto & p = node.pos();
-  return diagnostic::pos_t{ p.line, p.col };
-}
-
-diagnostic::pos_t ExpressionCompiler::dpos(const parser::Token & tok)
-{
-  return diagnostic::pos_t{ tok.line, tok.column };
-}
-
 std::string ExpressionCompiler::dstr(const Type & t) const
 {
   return engine()->typeName(t);
-}
-
-std::string ExpressionCompiler::dstr(const AccessSpecifier & as)
-{
-  if (as == AccessSpecifier::Protected)
-    return "protected";
-  else if (as == AccessSpecifier::Private)
-    return "private";
-  return "public";
-}
-
-std::string ExpressionCompiler::dstr(const std::shared_ptr<ast::Identifier> & id)
-{
-  return id->getName();
 }
 
 Type ExpressionCompiler::resolve(const ast::QualifiedType & qt)
@@ -244,6 +212,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateBraceConstruction(const std::shared_ptr<ast::BraceConstruction> & bc)
 {
+  using diagnostic::dstr;
+
   NameLookup lookup = resolve(bc->temporary_type);
   if (lookup.typeResult().isNull())
     throw UnknownTypeInBraceInitialization{ dpos(bc), dstr(bc->temporary_type) };
@@ -305,6 +275,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call)
 {
+  using diagnostic::dstr;
+
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(call->arguments);
   const auto & callee = call->callee;
 
@@ -419,6 +391,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVirtualCall(con
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
 {
+  using diagnostic::dstr;
+
   if (functor->type().isFunctionType())
     return generateFunctionVariableCall(call, functor, std::move(args));
   
@@ -600,6 +574,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(const std::shared_ptr<ast::Operation> & operation)
 {
+  using diagnostic::dstr;
+
   assert(operation->arg2 == nullptr);
 
   auto operand = generateExpression(operation->arg1);
@@ -687,6 +663,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
 {
+  using diagnostic::dstr;
+
   Class cla = engine()->getClass(object->type());
   int relative_index = index;
   while (relative_index - int(cla.dataMembers().size()) >= 0)
@@ -706,6 +684,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
 {
+  using diagnostic::dstr;
+
   const Class c = lookup.memberOf();
   const Class::StaticDataMember & sdm = lookup.staticDataMemberResult();
 
