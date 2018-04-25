@@ -1178,6 +1178,14 @@ const std::vector<Template> & Scope::templates() const
   return d->templates();
 }
 
+AccessSpecifier Scope::accessibility() const
+{
+  if (!isClass())
+    return AccessSpecifier::Public;
+
+  return std::static_pointer_cast<script::ClassScope>(impl())->mAccessibility;
+}
+
 std::vector<Function> Scope::operators(Operator::BuiltInOperator op) const
 {
   const std::vector<Operator> & candidates = operators();

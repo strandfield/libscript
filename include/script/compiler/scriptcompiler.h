@@ -9,6 +9,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/typeresolver.h"
+#include "script/compiler/variableprocessor.h"
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -111,10 +112,7 @@ protected:
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
   bool compileFunctions();
-  static bool checkStaticInitialization(const std::shared_ptr<program::Expression> & expr);
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & e);
-  bool initializeStaticVariable(const StaticVariable & svar);
-  bool initializeStaticVariables();
 
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl);
@@ -126,7 +124,6 @@ protected:
   void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
-  static AccessSpecifier getAccessSpecifier(const Scope & scp);
   void handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp);
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
   void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl);
@@ -181,6 +178,7 @@ protected:
   std::vector<StaticVariable> mStaticVariables;
   std::vector<CompileFunctionTask> mCompilationTasks;
 
+  VariableProcessor variable_;
   ExpressionCompiler expr_;
 
   std::vector<IncompleteFunction> mIncompleteFunctions;

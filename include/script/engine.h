@@ -68,7 +68,9 @@ public:
   Value construct(Type t, const std::vector<Value> & args);
 
   Value uninitialized(const Type & t);
-  void placement(Value & val, const std::vector<Value> & args);
+  void initialize(Value & memory);
+  void uninitialized_copy(const Value & value, Value & memory);
+  void emplace(Value & memory, Function ctor, const std::vector<Value> & args);
 
   void destroy(Value val);
 

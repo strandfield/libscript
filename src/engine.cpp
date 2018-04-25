@@ -434,79 +434,103 @@ Value Engine::uninitialized(const Type & t)
   return buildValue(t.withFlag(Type::UninitializedFlag));
 }
 
-void Engine::placement(Value & val, const std::vector<Value> & args)
+void Engine::initialize(Value & memory)
 {
-  const Type t = val.type();
-  if (t.isObjectType())
+  const Type & t = memory.type();
+  if (t.isFundamentalType())
   {
-    Class cla = getClass(t);
-    const auto & ctors = cla.constructors();
-    OverloadResolution resol = OverloadResolution::New(this);
-    if(!resol.process(ctors, OverloadResolution::Arguments(&args)))
-      throw std::runtime_error{ "No valid constructor could be found" };
-    Function selected = resol.selectedOverload();
-    if (selected.isDeleted())
-      throw std::runtime_error{ "The selected constructor is deleted" };
-
-    /// TODO : this is suboptimal
-    const auto convs = resol.conversionSequence();
-    auto args_copy = args;
-    for (size_t i(0); i < args_copy.size(); ++i)
-    {
-      args_copy[i] = apply_conversion(args_copy.at(i), selected.parameter(i), convs.at(i), this);
-      manage(args_copy[i]);
-    }
-    d->interpreter->placement(selected, val, args_copy.begin(), args_copy.end());
-
-
-  }
-  else if (t.isFundamentalType())
-  {
-    if (args.size() != 1)
-      throw std::runtime_error{ "Engine::placement() :  Incorrect argument count" };
-
-    ConversionSequence conv = ConversionSequence::compute(args.front().type(), Type::cref(t), this);
-    if(conv == ConversionSequence::NotConvertible())
-      throw std::runtime_error{ "Engine::placement() :  Could not convert" };
-
-    Value v = apply_conversion(args.front(), t, conv, this);
-    manage(v);
-
     switch (t.baseType().data())
     {
     case Type::Boolean:
-      val.impl()->setBool(v.toBool());
+      memory.impl()->setBool(false);
       break;
     case Type::Char:
-      val.impl()->setChar(v.toChar());
+      memory.impl()->setChar('\0');
       break;
     case Type::Int:
-      val.impl()->setInt(v.toInt());
+      memory.impl()->setInt(0);
       break;
     case Type::Float:
-      val.impl()->setFloat(v.toFloat());
+      memory.impl()->setFloat(0.f);
       break;
     case Type::Double:
-      val.impl()->setDouble(v.toDouble());
+      memory.impl()->setDouble(0.);
       break;
     default:
-      throw std::runtime_error{ "Engine::placement() : fundamental type not implemented" };
+      throw std::runtime_error{ "Engine::initialize() : fundamental type not implemented" };
+    }
+  }
+  else if(t.isObjectType())
+  {
+    Class cla = getClass(t);
+    Function ctor = cla.defaultConstructor();
+    if (ctor.isNull())
+      throw std::runtime_error{ "Class has no default constructor" };
+    else if (ctor.isDeleted())
+      throw std::runtime_error{ "Class has a deleted default constructor" };
+
+    d->interpreter->placement(ctor, memory, &memory, &memory);
+  }
+  else
+    throw std::runtime_error{ "Engine::initialize() : type not supported" };
+
+  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
+}
+
+void Engine::uninitialized_copy(const Value & value, Value & memory)
+{
+  if (value.type() != memory.type())
+    throw std::runtime_error{ "Engine::uninitialized_copy() : types don't match" };
+
+  const Type t = memory.type();
+  if (t.isObjectType())
+  {
+    Class cla = getClass(t);
+    Function copy_ctor = cla.copyConstructor();
+    if(copy_ctor.isNull())
+      throw std::runtime_error{ "Class has no copy constructor" };
+    else if(copy_ctor.isDeleted())
+      throw std::runtime_error{ "Class has a deleted copy constructor" };
+
+    d->interpreter->placement(copy_ctor, memory, &value, (&value)+1);
+  }
+  else if (t.isFundamentalType())
+  {
+    switch (t.baseType().data())
+    {
+    case Type::Boolean:
+      memory.impl()->setBool(value.toBool());
+      break;
+    case Type::Char:
+      memory.impl()->setChar(value.toChar());
+      break;
+    case Type::Int:
+      memory.impl()->setInt(value.toInt());
+      break;
+    case Type::Float:
+      memory.impl()->setFloat(value.toFloat());
+      break;
+    case Type::Double:
+      memory.impl()->setDouble(value.toDouble());
+      break;
+    default:
+      throw std::runtime_error{ "Engine::uninitialized_copy() : fundamental type not implemented" };
     }
   }
   else if (t.isEnumType())
   {
-    if (args.size() != 1)
-      throw std::runtime_error{ "Engine::placement() : Incorrect argument count" };
-
-    Value arg = args.front();
-    if (arg.type().baseType() != t.baseType())
-      throw std::runtime_error{ "Could not construct enumeration from a different enumeration-type" };
-    val.impl()->setEnumValue(arg.toEnumValue());
+    memory.impl()->setEnumValue(value.toEnumValue());
   }
   else
-    throw std::runtime_error{ "Engine::placement() : case not implemented" };
+    throw std::runtime_error{ "Engine::uninitialized_copy() : case not implemented" };
 
-  val.impl()->type = val.type().withoutFlag(Type::UninitializedFlag);
+  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
+}
+
+void Engine::emplace(Value & memory, Function ctor, const std::vector<Value> & args)
+{
+  d->interpreter->placement(ctor, memory, args.begin(), args.end());
+  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
 }
 
 void Engine::destroy(Value val)

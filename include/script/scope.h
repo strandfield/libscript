@@ -14,6 +14,7 @@ namespace script
 
 class ScopeImpl;
 
+enum class AccessSpecifier;
 class Enum;
 class Namespace;
 class NamespaceAlias;
@@ -69,6 +70,8 @@ public:
   std::vector<Function> operators(Operator::BuiltInOperator op) const;
   const std::vector<LiteralOperator> & literalOperators() const;
   const std::vector<Template> & templates() const;
+
+  AccessSpecifier accessibility() const;
  
   Scope child(const std::string & name) const;
   Scope child(const std::vector<std::string> & name) const;

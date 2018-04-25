@@ -53,6 +53,7 @@ ScriptCompiler::StateGuard::~StateGuard()
 
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
+  , variable_(c->engine())
 {
   name_resolver.compiler = this;
   type_resolver.name_resolver() = name_resolver;
@@ -69,7 +70,8 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   resolveIncompleteTypes();
   processPendingDeclarations();
   compileFunctions();
-  initializeStaticVariables();
+  //initializeStaticVariables();
+  variable_.initializeVariables();
 
   for (size_t i(1); i < mTasks.size(); ++i)
   {
@@ -240,17 +242,17 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
       auto execexpr = generateExpression(expr);
       
       Value val = engine()->implementation()->interpreter->eval(execexpr);
-      current_class.addStaticDataMember(var_decl->name->getName(), val, getAccessSpecifier(scp));
+      current_class.addStaticDataMember(var_decl->name->getName(), val, scp.accessibility());
     }
     else
     {
-      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, getAccessSpecifier(scp));
+      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, scp.accessibility());
       mStaticVariables.push_back(StaticVariable{ staticMember, var_decl, scp });
     }
   }
   else
   {
-    Class::DataMember dataMember{ var_type, var_decl->name->getName(), getAccessSpecifier(scp) };
+    Class::DataMember dataMember{ var_type, var_decl->name->getName(), scp.accessibility() };
     current_class.implementation()->dataMembers.push_back(dataMember);
   }
 }
@@ -320,23 +322,7 @@ void ScriptCompiler::processPendingDeclarations()
     }
     else
     {
-      assert(decl.declaration->is<ast::VariableDecl>());
-
-      if (decl.scope.type() == Scope::ScriptScope)
-      {
-        // Global variables are processed by the function compiler
-        continue;
-      }
-
-      std::shared_ptr<ast::VariableDecl> var_decl = std::dynamic_pointer_cast<ast::VariableDecl>(decl.declaration);
-      assert(var_decl != nullptr);
-
-      if (decl.scope.isClass())
-        processDataMemberDecl(var_decl);
-      else if (decl.scope.type() == Scope::NamespaceScope)
-        processNamespaceVariableDecl(var_decl);
-      else
-        throw std::runtime_error{ "Not implemented" };
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(decl.declaration), decl.scope);
     }
   }
 
@@ -358,226 +344,11 @@ bool ScriptCompiler::compileFunctions()
   return true;
 }
 
-static bool check_static_init(program::Expression &);
-
-static bool check_static_init(const std::vector<std::shared_ptr<program::Expression>> & exprs)
-{
-  for (const auto & e : exprs)
-  {
-    if (!check_static_init(*e))
-      return false;
-  }
-
-  return true;
-}
-
-class StaticInitializationChecker : public program::ExpressionVisitor
-{
-public:
-  bool result;
-public:
-  StaticInitializationChecker() : result(true) { }
-  ~StaticInitializationChecker() = default;
-
-  Value visit(const program::ArrayExpression & ae)
-  {
-    result = check_static_init(ae.elements);
-    return Value{};
-  }
-
-  Value visit(const program::BindExpression &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::CaptureAccess &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::CommaExpression &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::ConditionalExpression & ce)
-  {
-    result = check_static_init(*ce.cond) && check_static_init(*ce.onTrue) && check_static_init(*ce.onFalse);
-    return Value{};
-  }
-
-
-  Value visit(const program::ConstructorCall & cc)
-  {
-    result = check_static_init(cc.arguments);
-    return Value{};
-  }
-
-  Value visit(const program::Copy &)
-  {
-    result = true;
-    return Value{};
-  }
-
-  Value visit(const program::FetchGlobal &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::FunctionCall & fc)
-  {
-    result = check_static_init(fc.args);
-    return Value{};
-  }
-
-  Value visit(const program::FunctionVariableCall & fvc)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::FundamentalConversion &)
-  {
-    result = true;
-    return Value{};
-  }
-
-  Value visit(const program::LambdaExpression &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::Literal &)
-  {
-    result = true;
-    return Value{};
-  }
-
-  Value visit(const program::LogicalAnd &)
-  {
-    result = true;
-    return Value{};
-  }
-
-  Value visit(const program::LogicalOr &)
-  {
-    result = true;
-    return Value{};
-  }
-
-  Value visit(const program::MemberAccess & ma)
-  {
-    result = check_static_init(*ma.object);
-    return Value{};
-  }
-
-  Value visit(const program::StackValue &)
-  {
-    result = false;
-    return Value{};
-  }
-
-  Value visit(const program::VirtualCall &)
-  {
-    result = false;
-    return Value{};
-  }
-
-};
-
-bool check_static_init(program::Expression & expr)
-{
-  StaticInitializationChecker checker;
-  expr.accept(checker);
-  return checker.result;
-}
-
-
-bool ScriptCompiler::checkStaticInitialization(const std::shared_ptr<program::Expression> & expr)
-{
-  return check_static_init(*expr);
-}
 
 std::shared_ptr<program::Expression> ScriptCompiler::generateExpression(const std::shared_ptr<ast::Expression> & e)
 {
   expr_.setScope(mCurrentScope);
   return expr_.generateExpression(e);
-}
-
-bool ScriptCompiler::initializeStaticVariable(const StaticVariable & svar)
-{
-  expr_.setScope(svar.scope);
-
-  const auto & init = svar.declaration->init;
-  auto parsed_initexpr = init->as<ast::AssignmentInitialization>().value;
-  if (parsed_initexpr == nullptr)
-  {
-    try
-    {
-      Value val = svar.variable;
-      engine()->placement(val, {});
-    }
-    catch (...)
-    {
-      throw FailedToInitializeStaticVariable{};
-    }
-  }
-  else
-  {
-    std::shared_ptr<program::Expression> initexpr = expr_.generateExpression(parsed_initexpr);
-
-    if (!checkStaticInitialization(initexpr))
-      throw InvalidStaticInitialization{};
-
-    if (initexpr->is<program::ConstructorCall>())
-    {
-      auto ctorcall = std::dynamic_pointer_cast<program::ConstructorCall>(initexpr);
-      try
-      {
-        std::vector<Value> args;
-        for (const auto & a : ctorcall->arguments)
-        {
-          args.push_back(engine()->implementation()->interpreter->eval(a));
-        }
-        Value val = svar.variable;
-        engine()->placement(val, args);
-      }
-      catch (...)
-      {
-        throw FailedToInitializeStaticVariable{};
-      }
-    }
-    else
-    {
-      try
-      {
-        Value val = svar.variable;
-        Value arg = engine()->implementation()->interpreter->eval(initexpr);
-        engine()->placement(val, { arg });
-      }
-      catch (...)
-      {
-        throw FailedToInitializeStaticVariable{};
-      }
-    }
-  }
-
-  return true;
-}
-
-bool ScriptCompiler::initializeStaticVariables()
-{
-  for (size_t i(0); i < mStaticVariables.size(); ++i)
-  {
-    initializeStaticVariable(mStaticVariables.at(i));
-  }
-
-  return true;
 }
 
 static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
@@ -750,17 +521,9 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(m.scope());
 }
 
-AccessSpecifier ScriptCompiler::getAccessSpecifier(const Scope & scp)
-{
-  if (!scp.isClass())
-    return AccessSpecifier::Public;
-
-  return std::static_pointer_cast<ClassScope>(scp.impl())->mAccessibility;
-}
-
 void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp)
 {
-  switch (getAccessSpecifier(scp))
+  switch (scp.accessibility())
   {
   case AccessSpecifier::Protected:
     builder.setProtected();
