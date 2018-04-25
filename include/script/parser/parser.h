@@ -226,7 +226,6 @@ public:
 protected:
   std::shared_ptr<ast::Expression> readOperand();
   Token readBinaryOperator();
-  bool tryReadBinaryOperator(Token & result);
   std::shared_ptr<ast::Expression> buildExpression(const std::vector<std::shared_ptr<ast::Expression>> & operands, const std::vector<Token> & operators);
   std::shared_ptr<ast::Expression> buildExpression(std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprBegin,
     std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprEnd,

@@ -715,23 +715,6 @@ Token ExpressionParser::readBinaryOperator()
   return read();
 }
 
-bool ExpressionParser::tryReadBinaryOperator(Token & result)
-{
-  const Token t = peek();
-
-  if (t == Token::QuestionMark || t == Token::Colon)
-  {
-    result = read();
-    return true;
-  }
-
-  if (!t.isOperator() || !isInfixOperator(t))
-    return false;
-
-  result = read();
-  return true;
-}
-
 std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(const std::vector<std::shared_ptr<ast::Expression>> & operands, const std::vector<Token> & operators)
 {
   if (operands.size() == 1)
