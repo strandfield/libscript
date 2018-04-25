@@ -96,7 +96,6 @@ public:
   inline const Scope & currentScope() const { return mCurrentScope; }
 
 protected:
-  std::string repr(const std::shared_ptr<ast::Identifier> & id);
   Type resolve(const ast::QualifiedType & qt);
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & id);
 

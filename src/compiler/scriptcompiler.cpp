@@ -77,11 +77,6 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   }
 }
 
-std::string ScriptCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
-{
-  return id->getName();
-}
-
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
   return type_resolver.resolve(qt, mCurrentScope);

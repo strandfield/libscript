@@ -124,9 +124,6 @@ protected:
   virtual std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op);
   virtual std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call);
 
-
-  virtual std::string repr(const std::shared_ptr<ast::Identifier> & id);
-
 protected:
   Type resolve(const ast::QualifiedType & qt);
 

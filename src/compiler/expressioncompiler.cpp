@@ -460,16 +460,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
   return program::FunctionVariableCall::New(functor, proto.returnType(), std::move(args));
 }
 
-std::string ExpressionCompiler::repr(const std::shared_ptr<ast::Identifier> & id)
-{
-  if (id->type() == ast::NodeType::SimpleIdentifier)
-    return id->getName();
-  
-  /// TODO : implemented other identifier types
-
-  return id->getName();
-}
-
 std::shared_ptr<program::Expression> ExpressionCompiler::generateExpression(const std::shared_ptr<ast::Expression> & expr)
 {
   switch (expr->type())
