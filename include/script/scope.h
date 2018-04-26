@@ -94,9 +94,6 @@ public:
   bool lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const;
   bool lookup(const std::string & name, NameLookupImpl *nl) const;
 
-  static Scope find(const Class & c);
-  static Scope find(const Enum & entity);
-
   const std::shared_ptr<ScopeImpl> & impl() const;
 
 private:

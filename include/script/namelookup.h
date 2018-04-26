@@ -83,7 +83,7 @@ public:
   int globalIndex() const;
   int localIndex() const;
   const EnumValue & enumValueResult() const;
-  const Namespace & namespaceResult() const;
+  const Scope & scopeResult() const;
   const Class::StaticDataMember & staticDataMemberResult() const;
   const Class & memberOf() const;
 

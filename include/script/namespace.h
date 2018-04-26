@@ -56,6 +56,8 @@ public:
   const std::vector<Template> & templates() const;
   const std::vector<Typedef> & typedefs() const;
 
+  Namespace enclosingNamespace() const;
+
   Class findClass(const std::string & name) const;
   Namespace findNamespace(const std::string & name) const;
   std::vector<Function> findFunctions(const std::string & name) const;

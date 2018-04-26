@@ -229,7 +229,14 @@ Lambda EngineImpl::newLambda()
 
 void EngineImpl::destroyClass(Class c)
 {
-  Scope decl = engine->scope(c);
+  /// TODO : we need to redesign script destruction 
+  // and more generally destruction of entities
+  Scope decl;
+  if (!c.memberOf().isNull())
+    decl = Scope{ c.memberOf() };
+  else if (!c.enclosingNamespace().isNull())
+    decl = Scope{ c.enclosingNamespace() };
+
   if (decl.isNull())
     return;
   decl.impl()->remove_class(c);
@@ -244,7 +251,12 @@ void EngineImpl::destroyClass(Class c)
 
 void EngineImpl::destroyEnum(Enum e)
 {
-  Scope decl = engine->scope(e);
+  Scope decl;
+  if (!e.memberOf().isNull())
+    decl = Scope{ e.memberOf() };
+  else if (!e.enclosingNamespace().isNull())
+    decl = Scope{ e.enclosingNamespace() };
+
   if (decl.isNull())
     return;
   decl.impl()->remove_enum(e);
@@ -286,6 +298,7 @@ void Engine::setup()
   Class string = buildClass(ClassBuilder::New(get_string_typename()), Type::String);
   register_string_type(string);
   d->rootNamespace.implementation()->classes.push_back(string);
+  string.implementation()->enclosing_namespace = d->rootNamespace.weakref();
 
   d->templates.array = ArrayImpl::register_array_template(this);
 
@@ -923,26 +936,16 @@ void Engine::setSearchDirectory(const support::filesystem::path & dir)
   d->search_dir = dir;
 }
 
-Scope Engine::scope(const Class & cla)
+Namespace Engine::enclosingNamespace(Type t) const
 {
-  return Scope::find(cla);
-}
+  if (t.isFundamentalType() || t.isClosureType() || t.isFunctionType())
+    return this->rootNamespace();
+  else if (t.isObjectType())
+    return getClass(t).enclosingNamespace();
+  else if (t.isEnumType())
+    return getEnum(t).enclosingNamespace();
 
-Scope Engine::scope(const Enum & e)
-{
-  return Scope::find(e);
-}
-
-Scope Engine::scope(Type type)
-{
-  if (type.isObjectType())
-    return scope(getClass(type));
-  else if (type.isEnumType())
-    return scope(getEnum(type));
-  else if (type.isFundamentalType())
-    return Scope{ this->rootNamespace() };
-
-  throw std::runtime_error{ "Engine::scope() : scope of closure type and function type not implemented" };
+  throw std::runtime_error{ "Engine::enclosingNamespace() : type not supported" };
 }
 
 Type Engine::typeId(const std::string & typeName, const Scope & scope) const

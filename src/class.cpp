@@ -9,6 +9,7 @@
 #include "function_p.h"
 #include "script/engine.h"
 #include "engine_p.h"
+#include "enum_p.h"
 #include "script/object.h"
 #include "script/userdata.h"
 #include "value_p.h"
@@ -138,7 +139,10 @@ Class Class::newClass(const ClassBuilder & opts)
   Engine *e = d->engine;
   Class c = e->newClass(opts);
   if (!c.isNull())
+  {
     d->classes.push_back(c);
+    c.implementation()->enclosing_class = d;
+  }
   return c;
 }
 
@@ -152,7 +156,10 @@ Enum Class::newEnum(const std::string & src)
   Engine *e = d->engine;
   Enum enm = e->newEnum(src);
   if (!enm.isNull())
+  {
     d->enums.push_back(enm);
+    enm.implementation()->enclosing_class = d;
+  }
   return enm;
 }
 
@@ -463,6 +470,19 @@ const std::vector<Function> & Class::friends(const Function &) const
 const std::vector<Class> & Class::friends(const Class &) const
 {
   return d->friend_classes;
+}
+
+Class Class::memberOf() const
+{
+  return Class{ d->enclosing_class.lock() };
+}
+
+Namespace Class::enclosingNamespace() const
+{
+  Class c = memberOf();
+  if (c.isNull())
+    return Namespace{ d->enclosing_namespace.lock() };
+  return c.enclosingNamespace();
 }
 
 Engine * Class::engine() const

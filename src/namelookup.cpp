@@ -98,7 +98,7 @@ NameLookup::ResultType NameLookup::resultType() const
     return LocalName;
   else if (d->captureIndex != -1)
     return CaptureName;
-  else if (!d->namespaceResult.isNull())
+  else if (!d->scopeResult.isNull())
     return NamespaceName;
   else if (!d->templateResult.isNull())
     return TemplateName;
@@ -156,9 +156,9 @@ const EnumValue & NameLookup::enumValueResult() const
   return d->enumValueResult;
 }
 
-const Namespace & NameLookup::namespaceResult() const
+const Scope & NameLookup::scopeResult() const
 {
-  return d->namespaceResult;
+  return d->scopeResult;
 }
 
 const Class::StaticDataMember & NameLookup::staticDataMemberResult() const
@@ -423,6 +423,43 @@ static void get_scope_operators(std::vector<Function> & list, Operator::BuiltInO
     return remove_duplicated_operators(list);
 }
 
+static void get_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const Namespace & ns)
+{
+  if (ns.isNull())
+    return;
+
+  const auto & candidates = ns.operators();
+  for (const auto & c : candidates)
+  {
+    if (c.operatorId() != op)
+      continue;
+    list.push_back(c);
+  }
+}
+
+
+static void get_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const Class & c)
+{
+  const auto & candidates = c.operators();
+  for (const auto & c : candidates)
+  {
+    if (c.operatorId() != op)
+      continue;
+    list.push_back(c);
+  }
+}
+
+static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOperator op, const Class & type)
+{
+  get_operators(result, op, type);
+
+  /// TODO : optimize for operators that cannot be non-member
+  Namespace type_namespace = type.enclosingNamespace();
+  get_operators(result, op, type_namespace);
+
+  if (!type.parent().isNull())
+    resolve_operators(result, op, type.parent());
+}
 
 static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOperator op, const Type & type, const Scope & scp, int opts)
 {
@@ -445,28 +482,23 @@ static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOp
     return;
   }
 
-  script::Scope type_decl_scope = engine->scope(type);
-  if (type.isObjectType())
-  {
-    script::Scope class_scope = script::Scope{ engine->getClass(type), type_decl_scope };
-    get_scope_operators(result, op, class_scope, OperatorLookup::FetchParentOperators);
-
-    Class parent = class_scope.asClass().parent();
-    if (!parent.isNull())
-      resolve_operators(result, op, parent.id(), scp, OperatorLookup::FetchParentOperators);
-  }
-  else
-  {
-    get_scope_operators(result, op, type_decl_scope, OperatorLookup::FetchParentOperators);
-  }
-
   if (type.isEnumType() && op == Operator::AssignmentOperator)
+  {
     result.push_back(engine->getEnum(type).getAssignmentOperator());
+    return;
+  }
+
+  if (type.isObjectType())
+    resolve_operators(result, op, engine->getClass(type));
+  else 
+  {
+    Namespace type_namespace = engine->enclosingNamespace(type);
+    get_operators(result, op, type_namespace);
+  }
 
   if (opts & OperatorLookup::ConsiderCurrentScope)
   {
     /// TODO : check if type_decl_scope == scp to avoid unesseccary operation
-
     get_scope_operators(result, op, scp, OperatorLookup::FetchParentOperators);
   }
 

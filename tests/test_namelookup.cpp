@@ -114,7 +114,20 @@ TEST(NameLookup, nested) {
   ASSERT_EQ(lookup.variable().toInt(), 4);
 }
 
+TEST(NameLookup, scope_lookup) {
+  using namespace script;
 
+  Engine e;
+  e.setup();
+
+  Namespace nested = e.rootNamespace().newNamespace("nested");
+
+  NameLookup lookup = NameLookup::resolve("nested", Scope{ e.rootNamespace() });
+  ASSERT_EQ(lookup.resultType(), NameLookup::NamespaceName);
+  Scope scp = lookup.scopeResult();
+  ASSERT_EQ(scp.type(), Scope::NamespaceScope);
+  ASSERT_EQ(scp.asNamespace(), nested);
+}
 
 TEST(NameLookup, array_template) {
   using namespace script;

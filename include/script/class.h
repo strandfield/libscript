@@ -21,6 +21,7 @@ class Script;
 class UserData;
 class ClassBuilder;
 class FunctionBuilder;
+class Namespace;
 class Template;
 class Typedef;
 
@@ -140,6 +141,9 @@ public:
   void addFriend(const Class & c);
   const std::vector<Function> & friends(const Function &) const;
   const std::vector<Class> & friends(const Class &) const;
+
+  Class memberOf() const;
+  Namespace enclosingNamespace() const;
 
   Engine * engine() const;
   ClassImpl * implementation() const;

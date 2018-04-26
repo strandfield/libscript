@@ -16,6 +16,7 @@
 namespace script
 {
 
+class NamespaceImpl;
 class ScriptImpl;
 class UserData;
 
@@ -47,6 +48,8 @@ public:
   std::shared_ptr<UserData> data;
   std::vector<Function> friend_functions;
   std::vector<Class> friend_classes;
+  std::weak_ptr<ClassImpl> enclosing_class;
+  std::weak_ptr<NamespaceImpl> enclosing_namespace;
 
   ClassImpl(int i, const std::string & n, Engine *e)
     : id(i)

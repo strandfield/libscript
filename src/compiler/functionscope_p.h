@@ -37,14 +37,6 @@ public:
   int kind() const override;
   FunctionScope * clone() const override;
 
-  const std::vector<Class> & classes() const override;
-  const std::vector<Enum> & enums() const override;
-  const std::vector<Function> & functions() const override;
-  const std::vector<LiteralOperator> & literal_operators() const override;
-  const std::vector<Namespace> & namespaces() const override;
-  const std::vector<Operator> & operators() const override;
-  const std::vector<Template> & templates() const override;
-
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
   int add_var(const std::string & name, const Type & t, bool global = false);

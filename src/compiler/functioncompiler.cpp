@@ -70,49 +70,6 @@ FunctionScope * FunctionScope::clone() const
   return new FunctionScope(*this);
 }
 
-
-const std::vector<Class> & FunctionScope::classes() const
-{
-  static const std::vector<Class> dummy = std::vector<Class>{};
-  return dummy;
-}
-
-const std::vector<Enum> & FunctionScope::enums() const
-{
-  static const std::vector<Enum> dummy = std::vector<Enum>{};
-  return dummy;
-}
-
-const std::vector<Function> & FunctionScope::functions() const
-{
-  static const std::vector<Function> dummy = std::vector<Function>{};
-  return dummy;
-}
-
-const std::vector<LiteralOperator> & FunctionScope::literal_operators() const
-{
-  static const std::vector<LiteralOperator> dummy = std::vector<LiteralOperator>{};
-  return dummy;
-}
-
-const std::vector<Namespace> & FunctionScope::namespaces() const
-{
-  static const std::vector<Namespace> dummy = std::vector<Namespace>{};
-  return dummy;
-}
-
-const std::vector<Operator> & FunctionScope::operators() const
-{
-  static const std::vector<Operator> dummy = std::vector<Operator>{};
-  return dummy;
-}
-
-const std::vector<Template> & FunctionScope::templates() const
-{
-  static const std::vector<Template> dummy = std::vector<Template>{};
-  return dummy;
-}
-
 bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
   if (name == "this")

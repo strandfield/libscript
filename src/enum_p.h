@@ -22,6 +22,8 @@ public:
   bool enumClass;
   std::map<std::string, int> values;
   Operator assignment;
+  std::weak_ptr<ClassImpl> enclosing_class;
+  std::weak_ptr<NamespaceImpl> enclosing_namespace;
 
   EnumImpl(int i, const std::string & n, Engine *e);
 };

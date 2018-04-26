@@ -7,6 +7,7 @@
 
 #include "script/engine.h"
 #include "class_p.h"
+#include "enum_p.h"
 #include "script/enumvalue.h"
 #include "namespace_p.h"
 #include "script/operator.h"
@@ -17,55 +18,6 @@
 
 namespace script
 {
-
-
-static Scope find_class_decl_routine(const Class & cla, const Scope & scp)
-{
-  const std::vector<Class> & classes = scp.classes();
-  if (std::find(classes.begin(), classes.end(), cla) != classes.end())
-    return scp;
-
-  for (const Class & c : classes)
-  {
-    Scope ret = find_class_decl_routine(cla, Scope{ c, scp });
-    if (!ret.isNull())
-      return ret;
-  }
-
-  for (const Namespace & n : scp.namespaces())
-  {
-    Scope ret = find_class_decl_routine(cla, Scope{ n, scp });
-    if (!ret.isNull())
-      return ret;
-  }
-
-  return Scope{};
-}
-
-static Scope find_enum_decl_routine(const Enum & entity, const Scope & scp)
-{
-  const std::vector<Enum> & enumerations = scp.enums();
-  if (std::find(enumerations.begin(), enumerations.end(), entity) != enumerations.end())
-    return scp;
-
-  const auto & classes = scp.classes();
-  for (const Class & c : classes)
-  {
-    Scope ret = find_enum_decl_routine(entity, Scope{ c, scp });
-    if (!ret.isNull())
-      return ret;
-  }
-
-  for (const Namespace & n : scp.namespaces())
-  {
-    Scope ret = find_enum_decl_routine(entity, Scope{ n, scp });
-    if (!ret.isNull())
-      return ret;
-  }
-
-  return Scope{};
-}
-
 
 ScopeImpl::ScopeImpl(std::shared_ptr<ScopeImpl> p)
   : parent(p)
@@ -260,15 +212,6 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
     }
   }
 
-  for (const auto & n : namespaces())
-  {
-    if (n.name() == name)
-    {
-      nl->namespaceResult = n;
-      return true;
-    }
-  }
-
   for (const auto & t : templates())
   {
     if (t.name() == name)
@@ -410,12 +353,21 @@ NamespaceScope * NamespaceScope::clone() const
 
 std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::shared_ptr<NamespaceScope> & that, const std::string & name)
 {
+  auto result = that->child_scope(name);
+  if (result == nullptr)
+    return result;
+  result->parent = that;
+  return result;
+}
+
+std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::string & name) const
+{
   Namespace base;
   std::vector<Namespace> imported;
 
-  if (!that->mNamespace.isNull())
+  if (!mNamespace.isNull())
   {
-    for (const auto & ns : that->mNamespace.namespaces())
+    for (const auto & ns : mNamespace.namespaces())
     {
       if (ns.name() == name)
       {
@@ -425,7 +377,7 @@ std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::shared_pt
     }
   }
 
-  for (const auto & ins : that->mImportedNamespaces)
+  for (const auto & ins : mImportedNamespaces)
   {
     for (const auto & ns : ins.namespaces())
     {
@@ -440,26 +392,26 @@ std::shared_ptr<NamespaceScope> NamespaceScope::child_scope(const std::shared_pt
   if (base.isNull() && imported.empty())
     return nullptr;
 
-  auto ret = std::make_shared<script::NamespaceScope>(base, that);
+  auto ret = std::make_shared<script::NamespaceScope>(base);
   ret->mImportedNamespaces = std::move(imported);
   return ret;
 }
 
-bool NamespaceScope::has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name)
+bool NamespaceScope::has_child(const std::string & name) const
 {
   Namespace base;
   std::vector<Namespace> imported;
 
-  if (!that->mNamespace.isNull())
+  if (!mNamespace.isNull())
   {
-    for (const auto & ns : that->mNamespace.namespaces())
+    for (const auto & ns : mNamespace.namespaces())
     {
       if (ns.name() == name)
         return true;
     }
   }
 
-  for (const auto & ins : that->mImportedNamespaces)
+  for (const auto & ins : mImportedNamespaces)
   {
     for (const auto & ns : ins.namespaces())
     {
@@ -604,6 +556,7 @@ const std::map<std::string, Value> & NamespaceScope::values() const
 void NamespaceScope::add_class(const Class & c)
 {
   mNamespace.implementation()->classes.push_back(c);
+  c.implementation()->enclosing_namespace = mNamespace.weakref();
 }
 
 void NamespaceScope::add_function(const Function & f)
@@ -624,12 +577,28 @@ void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
 void NamespaceScope::add_enum(const Enum & e)
 {
   mNamespace.implementation()->enums.push_back(e);
+  e.implementation()->enclosing_namespace = mNamespace.weakref();
 }
 
 void NamespaceScope::add_typedef(const Typedef & td)
 {
   mNamespace.implementation()->typedefs.push_back(td);
 }
+
+void NamespaceScope::remove_class(const Class & c)
+{
+  auto & container = mNamespace.implementation()->classes;
+  auto it = std::find(container.begin(), container.end(), c);
+  container.erase(it);
+}
+
+void NamespaceScope::remove_enum(const Enum & e)
+{
+  auto & container = mNamespace.implementation()->enums;
+  auto it = std::find(container.begin(), container.end(), e);
+  container.erase(it);
+}
+
 
 void NamespaceScope::import_namespace(const NamespaceScope & other)
 {
@@ -647,6 +616,17 @@ void NamespaceScope::import_namespace(const NamespaceScope & other)
   mTemplates.clear();
   mValues.clear();
   mTypedefs.clear();
+}
+
+bool NamespaceScope::lookup(const std::string & name, NameLookupImpl *nl) const
+{
+  if (has_child(name))
+  {
+    nl->scopeResult = Scope{ child_scope(name) };
+    return true;
+  }
+
+  return ExtensibleScope::lookup(name, nl);
 }
 
 
@@ -722,6 +702,7 @@ const std::vector<Typedef> & ClassScope::typedefs() const
 void ClassScope::add_class(const Class & c)
 {
   mClass.implementation()->classes.push_back(c);
+  c.implementation()->enclosing_class = mClass.weakref();
 }
 
 void ClassScope::add_function(const Function & f)
@@ -742,6 +723,7 @@ void ClassScope::add_cast(const Cast & c)
 void ClassScope::add_enum(const Enum & e)
 {
   mClass.implementation()->enums.push_back(e);
+  e.implementation()->enclosing_class = mClass.weakref();
 }
 
 void ClassScope::add_typedef(const Typedef & td)
@@ -965,6 +947,7 @@ const std::vector<Typedef> & ScriptScope::typedefs() const
 void ScriptScope::add_class(const Class & c)
 {
   mScript.rootNamespace().implementation()->classes.push_back(c);
+  c.implementation()->enclosing_namespace = mScript.rootNamespace().weakref();
 }
 
 void ScriptScope::add_function(const Function & f)
@@ -985,6 +968,7 @@ void ScriptScope::add_literal_operator(const LiteralOperator & lo)
 void ScriptScope::add_enum(const Enum & e)
 {
   mScript.rootNamespace().implementation()->enums.push_back(e);
+  e.implementation()->enclosing_namespace = mScript.rootNamespace().weakref();
 }
 
 void ScriptScope::add_typedef(const Typedef & td)
@@ -1460,48 +1444,6 @@ bool Scope::lookup(const std::string & name, NameLookupImpl *nl) const
     return false;
 
   return Scope{ d->parent }.lookup(name, nl);
-}
-
-Scope Scope::find(const Class & c)
-{
-  if (c.isNull())
-    throw std::runtime_error{ "Invalid class" };
-
-  Engine *e = c.engine();
-
-  Scope scp = find_class_decl_routine(c, Scope{ e->rootNamespace() });
-  if (!scp.isNull())
-    return scp;
-
-  for (const Script & s : e->scripts())
-  {
-    scp = find_class_decl_routine(c, Scope{ s });
-    if (!scp.isNull())
-      return scp;
-  }
-
-  return Scope{};
-}
-
-Scope Scope::find(const Enum & entity)
-{
-  if (entity.isNull())
-    throw std::runtime_error{ "Invalid enum" };
-
-  Engine *e = entity.engine();
-
-  Scope scp = find_enum_decl_routine(entity, Scope{ e->rootNamespace() });
-  if (!scp.isNull())
-    return scp;
-
-  for (const Script & s : e->scripts())
-  {
-    scp = find_enum_decl_routine(entity, Scope{ s });
-    if (!scp.isNull())
-      return scp;
-  }
-
-  return Scope{};
 }
 
 const std::shared_ptr<ScopeImpl> & Scope::impl() const

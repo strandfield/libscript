@@ -5,7 +5,9 @@
 #include "script/namespace.h"
 #include "namespace_p.h"
 
+#include "class_p.h"
 #include "script/engine.h"
+#include "enum_p.h"
 #include "script/functionbuilder.h"
 
 namespace script
@@ -51,6 +53,7 @@ Enum Namespace::newEnum(const std::string & name)
 {
   Enum e = engine()->newEnum(name);
   d->enums.push_back(e);
+  e.implementation()->enclosing_namespace = d;
   return e;
 }
 
@@ -71,12 +74,14 @@ Class Namespace::newClass(const ClassBuilder & opts)
 {
   Class cla = engine()->newClass(opts);
   d->classes.push_back(cla);
+  cla.implementation()->enclosing_namespace = d;
   return cla;
 }
 
 Namespace Namespace::newNamespace(const std::string & name)
 {
   auto impl = std::make_shared<NamespaceImpl>(name, engine());
+  impl->parent = d;
   Namespace ret{ impl };
   d->namespaces.push_back(ret);
   return ret;
@@ -150,6 +155,11 @@ const std::vector<Template> & Namespace::templates() const
 const std::vector<Typedef> & Namespace::typedefs() const
 {
   return d->typedefs;
+}
+
+Namespace Namespace::enclosingNamespace() const
+{
+  return Namespace{ d->parent.lock() };
 }
 
 Class Namespace::findClass(const std::string & name) const

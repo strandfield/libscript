@@ -89,7 +89,7 @@ public:
   std::map<std::string, Value> injected_values;
   std::vector<Typedef> injected_typedefs;
 
-  virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
 class NamespaceScope : public ExtensibleScope
@@ -110,7 +110,13 @@ public:
   inline const std::string & name() const { return mNamespace.name(); }
 
   static std::shared_ptr<NamespaceScope> child_scope(const std::shared_ptr<NamespaceScope> & that, const std::string & name);
-  static bool has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name);
+ 
+  std::shared_ptr<NamespaceScope> child_scope(const std::string & name) const;
+
+  bool has_child(const std::string & name) const;
+
+  [[deprecated("has_child() : use member function instead")]]
+  inline static bool has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name) { return that->has_child(name); }
 
   mutable std::vector<Class> mClasses;
   mutable std::vector<Enum> mEnums;
@@ -138,7 +144,12 @@ public:
   void add_enum(const Enum & e) override;
   void add_typedef(const Typedef & td) override;
 
+  void remove_class(const Class & c) override;
+  void remove_enum(const Enum & e) override;
+
   void import_namespace(const NamespaceScope & other);
+
+  bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
 class ClassScope : public ExtensibleScope

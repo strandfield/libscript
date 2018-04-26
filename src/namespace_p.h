@@ -35,6 +35,7 @@ public:
   std::vector<Template> templates;
   std::vector<Typedef> typedefs;
   std::weak_ptr<ScriptImpl> script;
+  std::weak_ptr<NamespaceImpl> parent;
 
 public:
   NamespaceImpl(const std::string & n, Engine *e)

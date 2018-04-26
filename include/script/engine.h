@@ -115,10 +115,8 @@ public:
   const support::filesystem::path & searchDirectory() const;
   void setSearchDirectory(const support::filesystem::path & dir);
 
-  // Returns the scope in which the class is declared
-  Scope scope(const Class & cla);
-  Scope scope(const Enum & e);
-  Scope scope(Type type);
+  // Returns the enclosing namespace of the type
+  Namespace enclosingNamespace(Type t) const;
 
   Type typeId(const std::string & typeName, const Scope & scope = Scope()) const;
   std::string typeName(Type t) const;

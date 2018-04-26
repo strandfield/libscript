@@ -33,7 +33,7 @@ public:
   Class::StaticDataMember staticDataMemberResult;
   Class memberOfResult;
   Template templateResult;
-  Namespace namespaceResult;
+  Scope scopeResult;
   EnumValue enumValueResult;
   int dataMemberIndex;
   int globalIndex;

@@ -114,6 +114,20 @@ Operator Enum::getAssignmentOperator() const
   return d->assignment;
 }
 
+
+Class Enum::memberOf() const
+{
+  return Class{ d->enclosing_class.lock() };
+}
+
+Namespace Enum::enclosingNamespace() const
+{
+  Class c = memberOf();
+  if (c.isNull())
+    return Namespace{ d->enclosing_namespace.lock() };
+  return c.enclosingNamespace();
+}
+
 bool Enum::operator==(const Enum & other) const
 {
   return d == other.d;

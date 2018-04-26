@@ -14,7 +14,9 @@ namespace script
 
 class EnumImpl;
 
+class Class;
 class Engine;
+class Namespace;
 class Operator;
 class Script;
 
@@ -41,6 +43,9 @@ public:
   int addValue(const std::string & key, int value = -1);
 
   Operator getAssignmentOperator() const;
+
+  Class memberOf() const;
+  Namespace enclosingNamespace() const;
 
   Enum & operator=(const Enum & other) = default;
   bool operator==(const Enum & other) const;
