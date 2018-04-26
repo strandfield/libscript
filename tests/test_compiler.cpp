@@ -1771,6 +1771,39 @@ TEST(CompilerTests, namespace_alias_1) {
   ASSERT_EQ(n.toInt(), 4);
 }
 
+TEST(CompilerTests, using_directive) {
+  using namespace script;
+
+  const char *source =
+    "  namespace foo {             "
+    "    int get() { return 4; }   "
+    "  }                           "
+    "                              "
+    "  using namespace foo;        "
+    "                              "
+    "  int bar()                   "
+    "  {                           "
+    "    return get();             "
+    "  }                           "
+    "                              "
+    "  int n = bar();              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 4);
+}
+
 TEST(CompilerTests, unknown_type) {
   using namespace script;
 

@@ -450,7 +450,11 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
 
 void ScriptCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
 {
-  throw NotImplementedError{ dpos(decl), "Using directive not implemented yet" };
+  NameLookup lookup = resolve(decl->namespace_name);
+  if (lookup.resultType() != NameLookup::NamespaceName)
+    throw InvalidNameInUsingDirective{ dpos(decl), dstr(decl->namespace_name) };
+
+  mCurrentScope.inject(lookup.scopeResult());
 }
 
 void ScriptCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)

@@ -946,7 +946,11 @@ void FunctionCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingD
 void FunctionCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
 {
   /// TODO : merge this duplicate of ScriptCompiler
-  throw NotImplementedError{ dpos(decl), "Using directive not implemented yet" };
+  NameLookup lookup = resolve(decl->namespace_name);
+  if (lookup.resultType() != NameLookup::NamespaceName)
+    throw InvalidNameInUsingDirective{ dpos(decl), dstr(decl->namespace_name) };
+
+  mCurrentScope.inject(lookup.scopeResult());
 }
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)

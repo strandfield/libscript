@@ -209,6 +209,8 @@ DECLARE_COMPILER_ERROR(UnknownModuleName, "Unknown module '%1'", std::string);
 DECLARE_COMPILER_ERROR(UnknownSubModuleName, "'%1' is not a submodule of '%2'", std::string, std::string);
 DECLARE_COMPILER_ERROR(ModuleImportationError, "Failed to import module '%1'\n%2", std::string, std::string);
 
+DECLARE_COMPILER_ERROR(InvalidNameInUsingDirective, "%1 does not name a namespace", std::string);
+
 DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
 
 #undef DECLARE_COMPILER_ERROR
