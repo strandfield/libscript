@@ -820,6 +820,49 @@ std::string ImportDirective::full_name() const
   return ret;
 }
 
+
+
+TemplateDeclaration::TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree)
+  : template_keyword(tmplt_k)
+  , left_angle_bracket(left_angle_b)
+  , parameters(std::move(params))
+  , right_angle_bracket(right_angle_b)
+  , declaration(decl)
+  , ast(syntaxtree)
+{
+
+}
+
+std::string TemplateDeclaration::parameter_name(size_t i) const
+{
+  auto ast_ = ast.lock();
+  return ast_->text(parameters.at(i).name);
+}
+
+const TemplateParameter & TemplateDeclaration::at(size_t i) const
+{
+  return parameters.at(i);
+}
+
+bool TemplateDeclaration::is_full_specialization() const
+{
+  return parameters.empty();
+}
+
+bool TemplateDeclaration::is_partial_specialization() const
+{
+  if (!declaration->is<ast::ClassDecl>())
+    return false;
+
+  const ast::ClassDecl & class_decl = declaration->as<ast::ClassDecl>();
+  return class_decl.name->is<ast::TemplateIdentifier>() && !is_full_specialization();
+}
+
+std::shared_ptr<TemplateDeclaration> TemplateDeclaration::New(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree)
+{
+  return std::make_shared<TemplateDeclaration>(tmplt_k, left_angle_b, std::move(params), right_angle_b, decl, syntaxtree);
+}
+
 } // namespace ast
 
 } // namespace script

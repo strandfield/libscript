@@ -72,6 +72,7 @@ enum class LIBSCRIPT_API NodeType {
   NamespaceAliasDef,
   TypeAliasDecl,
   ImportDirective,
+  TemplateDecl,
 };
 
 class LIBSCRIPT_API Node
@@ -1237,6 +1238,44 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return parser::Lexer::position(names.front()); }
+};
+
+class LIBSCRIPT_API TemplateParameter
+{
+public:
+  parser::Token kind;
+  parser::Token name;
+  parser::Token eq;
+  std::shared_ptr<Node> default_value;
+};
+
+class LIBSCRIPT_API TemplateDeclaration : public Declaration
+{
+public:
+  parser::Token template_keyword;
+  parser::Token left_angle_bracket;
+  std::vector<TemplateParameter> parameters;
+  parser::Token right_angle_bracket;
+  std::shared_ptr<Declaration> declaration;
+  std::weak_ptr<AST> ast;
+
+public:
+  TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree);
+  ~TemplateDeclaration() = default;
+
+  inline size_t size() const { return parameters.size(); }
+  std::string parameter_name(size_t i) const;
+  const TemplateParameter & at(size_t i) const;
+
+  bool is_full_specialization() const;
+  bool is_partial_specialization() const;
+
+  static std::shared_ptr<TemplateDeclaration> New(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree);
+
+  static const NodeType type_code = NodeType::TemplateDecl;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(template_keyword); }
 };
 
 } // namespace ast

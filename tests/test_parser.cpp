@@ -908,3 +908,127 @@ TEST(ParserTests, import_directives) {
     ASSERT_EQ(ipd.at(0), "qux");
   }
 }
+
+TEST(ParserTests, function_template) {
+
+  const char *source =
+    "  template<typename T>       "
+    "  void swap(T & a, T & b)    "
+    "  {                          "
+    "    T temp = b;              "
+    "    b = a;                   "
+    "    a = temp;                "
+    "  }                          "
+    "                             "
+    "  template<int I = 1>        "
+    "  int incr(int n)            "
+    "  {                          "
+    "    return n +  I;           "
+    "  }                          "
+    "                             "
+    "  template<bool B>           "
+    "  bool logical_or(bool a)    "
+    "  {                          "
+    "    return a || B;           "
+    "  }                          ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_EQ(td.size(), 1);
+    ASSERT_EQ(td.at(0).kind, parser::Token::Typename);
+    ASSERT_EQ(td.parameter_name(0), "T");
+    ASSERT_EQ(td.declaration->type(), ast::NodeType::FunctionDeclaration);
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_EQ(td.size(), 1);
+    ASSERT_EQ(td.at(0).kind, parser::Token::Int);
+    ASSERT_EQ(td.parameter_name(0), "I");
+    ASSERT_EQ(td.declaration->type(), ast::NodeType::FunctionDeclaration);
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_EQ(td.size(), 1);
+    ASSERT_EQ(td.at(0).kind, parser::Token::Bool);
+    ASSERT_EQ(td.parameter_name(0), "B");
+    ASSERT_EQ(td.declaration->type(), ast::NodeType::FunctionDeclaration);
+  }
+}
+
+TEST(ParserTests, class_template) {
+
+  const char *source =
+    "  template<typename T, typename Allocator = std::allocator<T>>  "
+    "  class vector { };                                              ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_EQ(td.size(), 2);
+    ASSERT_EQ(td.at(0).kind, parser::Token::Typename);
+    ASSERT_EQ(td.parameter_name(0), "T");
+    ASSERT_EQ(td.at(1).kind, parser::Token::Typename);
+    ASSERT_EQ(td.parameter_name(1), "Allocator");
+    ASSERT_TRUE(td.at(1).default_value != nullptr);
+    ASSERT_EQ(td.at(1).default_value->type(), ast::NodeType::QualifiedType);
+    ASSERT_EQ(td.declaration->type(), ast::NodeType::ClassDeclaration);
+  }
+}
+
+TEST(ParserTests, template_specialization) {
+
+  const char *source =
+    "  template<>                              "
+    "  int incr<1>(int a) { return a + 1; }    "
+
+    "  template<>                              "
+    "  class vector<bool> { };                 "
+
+    "  template<typename T>                    "
+    "  class pair<T, T> { };                   ";
+
+  using namespace script;
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_TRUE(td.is_full_specialization());
+    ASSERT_FALSE(td.is_partial_specialization());
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_TRUE(td.is_full_specialization());
+    ASSERT_FALSE(td.is_partial_specialization());
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
+  {
+    const auto & td = actual->as<ast::TemplateDeclaration>();
+    ASSERT_FALSE(td.is_full_specialization());
+    ASSERT_TRUE(td.is_partial_specialization());
+  }
+}

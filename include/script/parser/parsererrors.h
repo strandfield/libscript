@@ -81,6 +81,8 @@ DECLARE_PARSER_ERROR(ExpectedRightBrace, "Expected right brace");
 DECLARE_PARSER_ERROR(ExpectedLeftPar, "Expected left parenthesis");
 DECLARE_PARSER_ERROR(ExpectedRightPar, "Expected right parenthesis");
 DECLARE_PARSER_ERROR(ExpectedRightBracket, "Expected right bracket");
+DECLARE_PARSER_ERROR(ExpectedLeftAngle, "Expected left angle");
+DECLARE_PARSER_ERROR(ExpectedRightAngle, "Expected right angle");
 DECLARE_PARSER_ERROR(ExpectedSemicolon, "Expected semicolon");
 DECLARE_PARSER_ERROR(ExpectedComma, "Expected comma");
 DECLARE_PARSER_ERROR(ExpectedZero, "Expected zero");

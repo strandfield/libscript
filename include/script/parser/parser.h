@@ -303,6 +303,7 @@ protected:
   std::shared_ptr<ast::Declaration> parseNamespace();
   std::shared_ptr<ast::Declaration> parseUsing();
   std::shared_ptr<ast::ImportDirective> parseImport();
+  std::shared_ptr<ast::TemplateDeclaration> parseTemplate();
 };
 
 class IdentifierParser : public ParserBase
@@ -394,6 +395,9 @@ public:
   DeclParser(AbstractFragment *fragment, std::shared_ptr<ast::Identifier> className = nullptr);
   ~DeclParser();
 
+  int declaratorOptions() const { return mDeclaratorOptions; }
+  void setDeclaratorOptions(int opts) { mDeclaratorOptions = opts; }
+
   // detects if input is a declaration, 
   // if not, it is probably an expression
   bool detectDecl();
@@ -477,6 +481,7 @@ protected:
   std::shared_ptr<ast::VariableDecl> mVarDecl;
   Decision mDecision;
   bool mParamsAlreadyRead;
+  int mDeclaratorOptions;
 };
 
 class EnumValueParser : public ParserBase
@@ -571,6 +576,27 @@ public:
   ~ImportParser() = default;
 
   std::shared_ptr<ast::ImportDirective> parse();
+};
+
+class TemplateParser : public ParserBase
+{
+public:
+  TemplateParser(AbstractFragment *fragment);
+  ~TemplateParser() = default;
+
+  std::shared_ptr<ast::TemplateDeclaration> parse();
+
+protected:
+  std::shared_ptr<ast::Declaration> parse_decl();
+};
+
+class TemplateParameterParser : public ParserBase
+{
+public:
+  TemplateParameterParser(AbstractFragment *fragment);
+  ~TemplateParameterParser() = default;
+
+  ast::TemplateParameter parse();
 };
 
 class Parser : public ProgramParser

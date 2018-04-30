@@ -1057,6 +1057,8 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     return parseForLoop();
   case Token::LeftBrace:
     return parseCompoundStatement();
+  case Token::Template:
+    return parseTemplate();
   case Token::Typedef:
     return parseTypedef();
   case Token::Namespace:
@@ -1280,6 +1282,13 @@ std::shared_ptr<ast::ImportDirective> ProgramParser::parseImport()
   ImportParser ip{ fragment() };
   return ip.parse();
 }
+
+std::shared_ptr<ast::TemplateDeclaration> ProgramParser::parseTemplate()
+{
+  TemplateParser tp{ fragment() };
+  return tp.parse();
+}
+
 
 
 IdentifierParser::IdentifierParser(AbstractFragment *fragment, int opts)
@@ -1663,6 +1672,7 @@ DeclParser::DeclParser(AbstractFragment *fragment, std::shared_ptr<ast::Identifi
   , mDecision(Undecided)
   , mClassName(cn)
   , mParamsAlreadyRead(false)
+  , mDeclaratorOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName)
 {
 
 }
@@ -1758,7 +1768,7 @@ bool DeclParser::detectBeforeReadingDeclarator()
 bool DeclParser::readDeclarator()
 {
   IdentifierParser ip{ fragment() };
-  ip.setOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName);
+  ip.setOptions(mDeclaratorOptions);
 
   try
   {
@@ -2064,6 +2074,14 @@ void DeclParser::setDecision(Decision d)
   else if (isParsingFunction())
   {
     mVarDecl = nullptr;
+
+    if (mFuncDecl == nullptr)
+    {
+      mFuncDecl = ast::FunctionDecl::New(mName);
+      mFuncDecl->returnType = mType;
+      mFuncDecl->staticKeyword = mStaticKw;
+      mFuncDecl->virtualKeyword = mVirtualKw;
+    }
   }
 }
 
@@ -2886,6 +2904,101 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
   unsafe_read();
 
   return ast::ImportDirective::New(exprt, imprt, std::move(names), ast());
+}
+
+
+
+TemplateParser::TemplateParser(AbstractFragment *fragment)
+  : ParserBase(fragment)
+{
+
+}
+
+std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
+{
+  const Token tmplt_k = unsafe_read();
+
+  if (peek() != Token::LeftAngle)
+    throw ExpectedLeftAngle{};
+
+  const Token left_angle = unsafe_read();
+
+  std::vector<ast::TemplateParameter> params;
+  //SentinelFragment sentinel{ Token::RightAngle, fragment() };
+  TemplateArgumentListFragment sentinel{ fragment() };
+  while(!sentinel.atEnd())
+  {
+    TemplateArgumentFragment frag{ &sentinel }; /// TODO :maybe rename to ListFragment
+    TemplateParameterParser param_parser{ &frag };
+    params.push_back(param_parser.parse());
+
+    frag.consumeComma();
+  }
+
+  //const Token right_angle = sentinel.consumeSentinel();
+  sentinel.consumeEnd();
+  const Token right_angle = sentinel.right_angle;
+
+  const auto decl = parse_decl();
+
+  return ast::TemplateDeclaration::New(tmplt_k, left_angle, std::move(params), right_angle, decl, ast());
+}
+
+std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
+{
+  if (peek() == Token::Class)
+  {
+    ClassParser parser{ fragment() };
+    parser.setTemplateSpecialization(true);
+    return parser.parse();
+  }
+
+  DeclParser funcparser{ fragment() };
+  funcparser.setDeclaratorOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName | IdentifierParser::ParseTemplateId);
+  if (!funcparser.detectDecl())
+    throw ExpectedDeclaration{};
+  funcparser.setDecision(DeclParser::ParsingFunction);
+  return funcparser.parse();
+}
+
+
+
+TemplateParameterParser::TemplateParameterParser(AbstractFragment *fragment)
+  : ParserBase(fragment)
+{
+
+}
+
+ast::TemplateParameter TemplateParameterParser::parse()
+{
+  ast::TemplateParameter result;
+
+  if (peek() == Token::Typename)
+    result.kind = unsafe_read();
+  else if (unsafe_peek() == Token::Int)
+    result.kind = unsafe_read();
+  else if (unsafe_peek() == Token::Bool)
+    result.kind = unsafe_read();
+  else
+    throw UnexpectedToken{};
+
+  if (!peek().isIdentifier())
+    throw ExpectedIdentifier{};
+
+  result.name = unsafe_read();
+
+  if (atEnd())
+    return result;
+
+  if (peek() != Token::Eq)
+    throw ExpectedEqualSign{};
+
+  result.eq = unsafe_read();
+
+  TemplateArgParser argp{ fragment() };
+  result.default_value = argp.parse();
+
+  return result;
 }
 
 
