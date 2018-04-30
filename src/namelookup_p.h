@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_P_H
 #define LIBSCRIPT_NAMELOOKUP_P_H
 
+#include "script/enumvalue.h"
 #include "script/function.h"
 #include "script/template.h"
 
@@ -21,7 +22,6 @@ public:
   // user inputs
   Scope scope;
   std::shared_ptr<ast::Identifier> identifier;
-  std::vector<std::shared_ptr<program::Expression>> const * arguments;
   // template-related stuff
   compiler::TemplateNameProcessor default_template_;
   compiler::TemplateNameProcessor *template_;

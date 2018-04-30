@@ -52,9 +52,6 @@ public:
   const Scope & scope() const;
   const std::shared_ptr<ast::Identifier> & identifier() const;
 
-  bool hasArguments() const;
-  const std::vector<std::shared_ptr<program::Expression>> & arguments() const;
-
   compiler::TemplateNameProcessor & template_processor();
 
   enum ResultType {
@@ -108,7 +105,6 @@ protected:
   void qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
   Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
   Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
-  void instantiate_function_template(const std::shared_ptr<ast::Identifier> & name);
   Class instantiate_class_template(const std::shared_ptr<ast::Identifier> & name);
 
 protected:

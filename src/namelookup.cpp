@@ -40,14 +40,12 @@ NameLookupImpl::NameLookupImpl()
   , globalIndex(-1)
   , localIndex(-1)
   , captureIndex(-1)
-  , arguments(nullptr)
 {
   template_ = &default_template_;
 }
 
 NameLookupImpl::~NameLookupImpl()
 {
-  this->arguments = nullptr;
 }
 
 
@@ -65,16 +63,6 @@ const Scope & NameLookup::scope() const
 const std::shared_ptr<ast::Identifier> & NameLookup::identifier() const
 {
   return d->identifier;
-}
-
-bool NameLookup::hasArguments() const
-{
-  return d->arguments != nullptr;
-}
-
-const std::vector<std::shared_ptr<program::Expression>> & NameLookup::arguments() const
-{
-  return *(d->arguments);
 }
 
 compiler::TemplateNameProcessor & NameLookup::template_processor()
