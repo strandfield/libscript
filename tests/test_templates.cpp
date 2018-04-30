@@ -74,27 +74,40 @@ bool max_function_template_deduce(std::vector<script::TemplateArgument> & result
   return true;
 }
 
-script::Function max_function_template_instantiation(script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
+script::Function max_function_template_substitution(script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
 {
-  script::Engine *e = t.engine();
+  using namespace script;
 
-  auto function = script::FunctionBuilder::Function("max", script::Prototype{}, max_function)
+  Engine *e = t.engine();
+
+  auto function = FunctionBuilder::Function("max", Prototype{}, max_function)
     .setReturnType(args.front().type);
 
   for (const auto & a : args)
-    function.addParam(script::Type::cref(a.type));
+    function.addParam(Type::cref(a.type));
 
-  script::NameLookup lookup = script::NameLookup::resolve(script::Operator::LessOperator, e->rootNamespace());
-  script::OverloadResolution resol = script::OverloadResolution::New(e);
-  const script::Type param_type = function.proto.argv(0);
+  return t.build(function, args);
+}
+
+script::Function max_function_template_instantiation(script::FunctionTemplate t, script::Function f)
+{
+  using namespace script;
+
+  Engine *e = t.engine();
+
+  const std::vector<TemplateArgument> & targs = f.arguments();
+
+  NameLookup lookup = NameLookup::resolve(Operator::LessOperator, e->rootNamespace());
+  OverloadResolution resol = OverloadResolution::New(e);
+  const Type param_type = f.parameter(0);
   if (!resol.process(lookup.functions(), { param_type , param_type }))
     throw std::runtime_error{ "Cannot instantiate max function template (no operator< was found)" };
 
-  script::Function less = resol.selectedOverload();
+  Function less = resol.selectedOverload();
 
-  function.setData(std::make_shared<MaxData>(less, resol.conversionSequence()));
+  FunctionTemplate::setInstanceData(f, std::make_shared<MaxData>(less, resol.conversionSequence()));
 
-  return e->newFunction(function);
+  return f;
 }
 
 TEST(TemplateTests, template1) {
@@ -103,7 +116,7 @@ TEST(TemplateTests, template1) {
   Engine engine;
   engine.setup();
 
-  auto tmplt = engine.newFunctionTemplate("max", max_function_template_deduce, max_function_template_instantiation);
+  auto tmplt = engine.newFunctionTemplate("max", max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation);
   
   std::vector<TemplateArgument> targs;
   std::vector<Type> types{ Type::Int, Type::Int };
@@ -148,7 +161,7 @@ TEST(TemplateTests, compilation1) {
   Engine engine;
   engine.setup();
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", max_function_template_deduce, max_function_template_instantiation));
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();

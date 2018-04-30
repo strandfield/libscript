@@ -137,7 +137,7 @@ TEST(NameLookup, array_template) {
 
   NameLookup lookup = NameLookup::resolve("Array", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::TemplateName);
-  ASSERT_EQ(lookup.templateResult(), e.getTemplate(Engine::ArrayTemplate));
+  ASSERT_EQ(lookup.classTemplateResult(), e.getTemplate(Engine::ArrayTemplate));
 }
 
 TEST(NameLookup, operators) {

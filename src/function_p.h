@@ -7,6 +7,7 @@
 
 #include "script/engine.h"
 #include "script/prototype.h"
+#include "script/template.h"
 
 namespace script
 {
@@ -96,6 +97,16 @@ public:
 };
 
 
+class FunctionTemplateInstance : public RegularFunctionImpl
+{
+public:
+  FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  ~FunctionTemplateInstance() = default;
+
+  FunctionTemplate mTemplate;
+  std::vector<TemplateArgument> mArgs;
+
+};
 
 } // namespace script
 

@@ -283,7 +283,10 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (callee->is<ast::Identifier>())
   {
     const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
-    NameLookup lookup = NameLookup::resolve(callee_name, args, this);
+    NameLookup lookup = NameLookup::resolve(callee_name, scope());
+    
+    /// TODO : complete with provided template arguments if any !
+    FunctionTemplate::complete(lookup, std::vector<TemplateArgument>{}, args);
 
     if (lookup.resultType() == NameLookup::FunctionName)
     {
@@ -298,6 +301,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
         throw CallToDeletedFunction{ dpos(call) };
       else if (!Accessibility::check(caller(), selected))
         throw InaccessibleMember{dpos(call), dstr(callee_name), dstr(selected.accessibility())};
+
+      if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
+      {
+        FunctionTemplate ft = selected.instanceOf();
+        ft.instantiate(selected);
+      }
 
       if (selected.isMemberFunction() && !selected.isConstructor() && object != nullptr)
         args.insert(args.begin(), object);

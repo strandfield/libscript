@@ -100,7 +100,7 @@ NameLookup::ResultType NameLookup::resultType() const
     return CaptureName;
   else if (!d->scopeResult.isNull())
     return NamespaceName;
-  else if (!d->templateResult.isNull())
+  else if (!d->classTemplateResult.isNull())
     return TemplateName;
   else if (!d->typeResult.isNull())
     return TypeName;
@@ -126,9 +126,9 @@ const Value & NameLookup::variable() const
   return d->valueResult;
 }
 
-const Template & NameLookup::templateResult() const
+const Template & NameLookup::classTemplateResult() const
 {
-  return d->templateResult;
+  return d->classTemplateResult;
 }
 
 int NameLookup::captureIndex() const
@@ -350,20 +350,6 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   return l;
 }
 
-
-NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const std::vector<std::shared_ptr<program::Expression>> & args, compiler::ExpressionCompiler *compiler)
-{
-  auto result = std::make_shared<NameLookupImpl>();
-  result->identifier = name;
-  result->arguments = &args;
-  result->scope = compiler->scope();
-
-  NameLookup l{ result };
-  l.process();
-  return l;
-}
-
-
 NameLookup NameLookup::member(const std::string & name, const Class & cla)
 {
   std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
@@ -568,7 +554,6 @@ void NameLookup::process()
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     scope.lookup(name->getName(), d.get());
-    instantiate_function_template(name);
   }
   else if (name->is<ast::OperatorName>())
   {
@@ -590,7 +575,7 @@ void NameLookup::process()
     if (tlookup.resultType() != NameLookup::TemplateName)
       throw std::runtime_error{ "Not a template name" };
 
-    Template t = tlookup.templateResult();
+    Template t = tlookup.classTemplateResult();
     Class cla = instantiate_class_template(tempid);
     d->typeResult = cla.id();
   }
@@ -609,7 +594,6 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
     s.lookup(name->getName(), d.get());
-    instantiate_function_template(name);
   }
   else if (name->is<ast::OperatorName>())
   {
@@ -622,53 +606,18 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
     const auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
     auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
     qualified_lookup(fake_template_name, s);
-    if (d->templateResult.isNull())
+    if (d->classTemplateResult.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    if (d->templateResult.isClassTemplate())
-    {
-      Class cla = instantiate_class_template(tempid);
-      d->templateResult = Template{};
-      d->typeResult = cla.id();
-    }
-    else if (d->templateResult.isFunctionTemplate())
-    {
-      instantiate_function_template(tempid);
-    }
-  }
-}
-
-void NameLookup::instantiate_function_template(const std::shared_ptr<ast::Identifier> & name)
-{
-  if (!hasArguments())
-    return;
-
-  if (d->templateResult.isNull() || !d->templateResult.isFunctionTemplate())
-    return;
-
-  std::vector<Type> input_types;
-  for (const auto & a : arguments())
-    input_types.push_back(a->type());
-
-  std::vector<TemplateArgument> template_args;
-  if (name->is<ast::TemplateIdentifier>())
-    template_args = d->template_->arguments(*this, name->as<ast::TemplateIdentifier>().arguments);
-
-  FunctionTemplate ft = d->templateResult.asFunctionTemplate();
-  bool success = ft.deduce(template_args, input_types);
-  if (!success)
-    return;
-  Function f = ft.getInstance(template_args);
-  if (!f.isNull())
-  {
-    d->templateResult = Template{};
-    d->functions.push_back(f);
+    Class cla = instantiate_class_template(tempid);
+    d->classTemplateResult = ClassTemplate{};
+    d->typeResult = cla.id();
   }
 }
 
 Class NameLookup::instantiate_class_template(const std::shared_ptr<ast::Identifier> & name)
 {
-  ClassTemplate ct = d->templateResult.asClassTemplate();
+  ClassTemplate ct = d->classTemplateResult;
   std::vector<TemplateArgument> targs = d->template_->arguments(*this, name->as<ast::TemplateIdentifier>().arguments);
   Class instantiated = ct.getInstance(targs);
   return instantiated;

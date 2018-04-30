@@ -32,7 +32,8 @@ public:
   Value valueResult;
   Class::StaticDataMember staticDataMemberResult;
   Class memberOfResult;
-  Template templateResult;
+  ClassTemplate classTemplateResult;
+  std::vector<FunctionTemplate> functionTemplateResult;
   Scope scopeResult;
   EnumValue enumValueResult;
   int dataMemberIndex;

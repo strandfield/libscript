@@ -77,7 +77,7 @@ public:
   const std::vector<Function> & functions() const;
   const Type & typeResult() const;
   const Value & variable() const;
-  const Template & templateResult() const;
+  const Template & classTemplateResult() const;
   int captureIndex() const;
   int dataMemberIndex() const;
   int globalIndex() const;
@@ -92,7 +92,6 @@ public:
   static NameLookup resolve(Operator::BuiltInOperator op, const Scope & scope);
 
   static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, compiler::TemplateNameProcessor & tnp);
-  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const std::vector<std::shared_ptr<program::Expression>> & args, compiler::ExpressionCompiler *compiler);
   
   static NameLookup member(const std::string & name, const Class & cla);
 

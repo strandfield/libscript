@@ -27,4 +27,4 @@ public:
 
 } // namespace script
 
-#endif // LIBSCRIPT_SUPPORT_FILESYSTEM_H
+#endif // LIBSCRIPT_MODULE_P_H

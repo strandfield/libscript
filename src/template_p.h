@@ -27,13 +27,14 @@ public:
 class FunctionTemplateImpl : public TemplateImpl
 {
 public:
-  FunctionTemplateImpl(const std::string & n, NativeTemplateDeductionFunction deduc,
-    NativeFunctionTemplateInstantiationFunction inst,
+  FunctionTemplateImpl(const std::string & n, NativeTemplateDeductionFunction deduc, 
+    NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback callback,
     Engine *e, std::shared_ptr<ScriptImpl> s);
   ~FunctionTemplateImpl();
 
   std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> instances;
-  NativeFunctionTemplateInstantiationFunction instantiate;
+  NativeFunctionTemplateSubstitutionCallback substitute;
+  NativeFunctionTemplateInstantiationCallback instantiate;
 };
 
 class ClassTemplateImpl : public TemplateImpl

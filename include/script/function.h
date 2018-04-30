@@ -19,9 +19,11 @@ namespace interpreter { class FunctionCall; }
 typedef interpreter::FunctionCall FunctionCall;
 namespace program { class Statement; }
 class FunctionImpl;
+class FunctionTemplate;
 class LiteralOperator;
 class Operator;
 class Script;
+struct TemplateArgument;
 class UserData;
 
 typedef Value (*NativeFunctionSignature) (FunctionCall *);
@@ -99,6 +101,10 @@ public:
 
   bool isCast() const;
   Cast toCast() const;
+
+  bool isTemplateInstance() const;
+  FunctionTemplate instanceOf() const;
+  const std::vector<TemplateArgument> & arguments() const;
 
   NativeFunctionSignature native_callback() const;
   std::shared_ptr<program::Statement> program() const;

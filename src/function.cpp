@@ -95,6 +95,15 @@ DestructorImpl::DestructorImpl(const Class & name, const Prototype &p, Engine *e
 
 }
 
+FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+  : RegularFunctionImpl(name, p, e, f)
+  , mTemplate(ft)
+  , mArgs(targs)
+{
+
+}
+
+
 Function::Function(const std::shared_ptr<FunctionImpl> & impl)
   : d(impl)
 {
@@ -286,6 +295,21 @@ bool Function::isCast() const
 Cast Function::toCast() const
 {
   return Cast{ std::dynamic_pointer_cast<CastImpl>(d) };
+}
+
+bool Function::isTemplateInstance() const
+{
+  return dynamic_cast<const FunctionTemplateInstance *>(d.get()) != nullptr;
+}
+
+FunctionTemplate Function::instanceOf() const
+{
+  return dynamic_cast<const FunctionTemplateInstance *>(d.get())->mTemplate;
+}
+
+const std::vector<TemplateArgument> & Function::arguments() const
+{
+  return dynamic_cast<const FunctionTemplateInstance *>(d.get())->mArgs;
 }
 
 NativeFunctionSignature Function::native_callback() const

@@ -216,10 +216,21 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
   {
     if (t.name() == name)
     {
-      nl->templateResult = t;
-      return true;
+      if (t.isClassTemplate())
+      {
+        nl->classTemplateResult = t.asClassTemplate();
+        return true;
+      }
+      else
+      {
+        nl->functionTemplateResult.push_back(t.asFunctionTemplate());
+        found_something = true;
+      }
     }
   }
+
+  if (found_something)
+    return true;
 
   const auto & vars = values();
   auto it = vars.find(name);
