@@ -26,7 +26,7 @@
 #include "script/literals.h"
 #include "../literals_p.h"
 #include "../namespace_p.h"
-#include "../scope_p.h"
+#include "script/private/scope_p.h"
 #include "../script_p.h"
 
 namespace script

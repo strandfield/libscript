@@ -6,7 +6,7 @@
 #include "namelookup_p.h"
 
 #include "script/engine.h"
-#include "scope_p.h"
+#include "script/private/scope_p.h"
 #include "script/functiontype.h"
 
 #include "script/parser/parser.h"

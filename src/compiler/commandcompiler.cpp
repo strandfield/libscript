@@ -9,7 +9,7 @@
 
 #include "script/program/expression.h"
 
-#include "../scope_p.h"
+#include "script/private/scope_p.h"
 
 namespace script
 {

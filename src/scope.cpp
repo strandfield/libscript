@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/scope.h"
-#include "scope_p.h"
+#include "script/private/scope_p.h"
 
 #include "script/engine.h"
 #include "class_p.h"

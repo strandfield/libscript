@@ -6,7 +6,7 @@
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
 #include "script/compiler/expressioncompiler.h"
-#include "../src/compiler/functionscope_p.h" /// TODO : ugly ! try to remove this
+#include "script/private/functionscope_p.h" 
 #include "script/compiler/stack.h"
 
 #include "script/types.h"

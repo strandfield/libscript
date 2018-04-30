@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_FUNCTION_SCOPE_P_H
 #define LIBSCRIPT_FUNCTION_SCOPE_P_H
 
-#include "../scope_p.h"
+#include "script/private/scope_p.h"
 
 namespace script
 {

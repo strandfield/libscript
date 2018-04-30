@@ -32,7 +32,7 @@
 #include "operator_p.h"
 #include "script/overloadresolution.h"
 #include "script/scope.h"
-#include "scope_p.h"
+#include "script/private/scope_p.h"
 #include "string_p.h"
 #include "template_p.h"
 #include "script/value.h"

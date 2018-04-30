@@ -15,7 +15,7 @@
 #include "script/compiler/scriptcompiler.h"
 
 #include "../class_p.h"
-#include "../scope_p.h"
+#include "script/private/scope_p.h"
 #include "../script_p.h"
 
 namespace script
