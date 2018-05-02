@@ -23,7 +23,7 @@ class FunctionTemplate;
 class LiteralOperator;
 class Operator;
 class Script;
-struct TemplateArgument;
+class TemplateArgument;
 class UserData;
 
 typedef Value (*NativeFunctionSignature) (FunctionCall *);

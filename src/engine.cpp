@@ -227,6 +227,23 @@ Lambda EngineImpl::newLambda()
   return l;
 }
 
+void EngineImpl::register_class(Class & c)
+{
+  auto impl = c.implementation();
+  if (impl->id != -1)
+    throw std::runtime_error{ "Class already registered" };
+
+  int id = static_cast<int>(this->classes.size()) | Type::ObjectFlag;
+  impl->id = id;
+  impl->engine = this->engine;
+
+  int index = id & 0xFFFF;
+  if (static_cast<int>(this->classes.size()) <= index)
+    this->classes.resize(index + 1);
+
+  this->classes[index] = c;
+}
+
 void EngineImpl::destroyClass(Class c)
 {
   /// TODO : we need to redesign script destruction 
@@ -359,7 +376,7 @@ Array Engine::newArray(ArrayType array_type)
 Array Engine::newArray(ElementType element_type)
 {
   ClassTemplate array = d->templates.array.asClassTemplate();
-  Class array_class = array.getInstance({ TemplateArgument::make(element_type.type.baseType()) });
+  Class array_class = array.getInstance({ TemplateArgument{element_type.type.baseType()} });
   auto data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
   auto impl = std::make_shared<ArrayImpl>(data->data, this);
   return Array{ impl };
@@ -371,7 +388,7 @@ Array Engine::newArray(ElementType element_type, fail_if_not_instantiated_t)
 {
   ClassTemplate array = d->templates.array.asClassTemplate();
   Class arrayClass;
-  if (!array.hasInstance({ TemplateArgument::make(element_type.type.baseType()) }, &arrayClass))
+  if (!array.hasInstance({ TemplateArgument{element_type.type.baseType()} }, &arrayClass))
     throw std::runtime_error{ "No array of that type" };
 
   auto data = std::dynamic_pointer_cast<SharedArrayData>(arrayClass.data());
@@ -1044,15 +1061,15 @@ Value Engine::invoke(const Function & f, const std::vector<Value> & args)
   return d->interpreter->invoke(f, args.begin(), args.end());
 }
 
-FunctionTemplate Engine::newFunctionTemplate(const std::string & name, NativeTemplateDeductionFunction deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst)
+FunctionTemplate Engine::newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst)
 {
-  return FunctionTemplate{ std::make_shared<FunctionTemplateImpl>(name, deduc, substitute, inst, this, nullptr) };
+  return FunctionTemplate{ std::make_shared<FunctionTemplateImpl>(name, std::move(params), deduc, substitute, inst, this, nullptr) };
 }
 
 
-ClassTemplate Engine::newClassTemplate(const std::string & name, NativeClassTemplateInstantiationFunction callback)
+ClassTemplate Engine::newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeClassTemplateInstantiationFunction callback)
 {
-  return ClassTemplate{ std::make_shared<ClassTemplateImpl>(name, callback, this, nullptr) };
+  return ClassTemplate{ std::make_shared<ClassTemplateImpl>(name, std::move(params), callback, this, nullptr) };
 }
 
 const Engine::array_template_t Engine::ArrayTemplate = Engine::array_template_t{};

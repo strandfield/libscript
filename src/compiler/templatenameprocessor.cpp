@@ -26,7 +26,7 @@ TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shar
     auto name = std::static_pointer_cast<ast::Identifier>(arg);
     NameLookup lookup = NameLookup::resolve(name, nl.scope());
     if (lookup.resultType() == NameLookup::TypeName)
-      return TemplateArgument::make(lookup.typeResult());
+      return TemplateArgument{ lookup.typeResult() };
     else
       throw InvalidTemplateArgument{ dpos(arg) };
   }
@@ -34,9 +34,9 @@ TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shar
   {
     const ast::Literal & l = arg->as<ast::Literal>();
     if (l.is<ast::BoolLiteral>())
-      return TemplateArgument::make(l.token == parser::Token::True);
+      return TemplateArgument{ l.token == parser::Token::True };
     else if (l.is<ast::IntegerLiteral>())
-      return TemplateArgument::make(LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)));
+      return TemplateArgument{ LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)) };
     else
       throw InvalidLiteralTemplateArgument{ dpos(arg) };
   }
@@ -44,7 +44,7 @@ TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shar
   {
     auto type = std::static_pointer_cast<ast::TypeNode>(arg);
     TypeResolver<BasicNameResolver> r;
-    return TemplateArgument::make(r.resolve(type->value, nl.scope()));
+    return TemplateArgument{ r.resolve(type->value, nl.scope()) };
   }
 
   throw InvalidTemplateArgument{ dpos(arg) };

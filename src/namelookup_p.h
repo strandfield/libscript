@@ -5,9 +5,10 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_P_H
 #define LIBSCRIPT_NAMELOOKUP_P_H
 
+#include "script/classtemplate.h"
 #include "script/enumvalue.h"
 #include "script/function.h"
-#include "script/template.h"
+#include "script/functiontemplate.h"
 
 #include "script/compiler/templatenameprocessor.h"
 
@@ -40,6 +41,7 @@ public:
   int globalIndex;
   int localIndex;
   int captureIndex;
+  int templateParameterIndex;
 
 public:
   NameLookupImpl();

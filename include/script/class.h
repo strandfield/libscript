@@ -20,9 +20,11 @@ class Enum;
 class Script;
 class UserData;
 class ClassBuilder;
+class ClassTemplate;
 class FunctionBuilder;
 class Namespace;
 class Template;
+class TemplateArgument;
 class Typedef;
 
 class LIBSCRIPT_API Class
@@ -144,6 +146,10 @@ public:
 
   Class memberOf() const;
   Namespace enclosingNamespace() const;
+
+  bool isTemplateInstance() const;
+  ClassTemplate instanceOf() const;
+  const std::vector<TemplateArgument> & arguments() const;
 
   Engine * engine() const;
   ClassImpl * implementation() const;

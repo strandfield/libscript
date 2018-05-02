@@ -196,7 +196,7 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   ClassBuilder class_builder = ClassBuilder::New(std::string("Array<") + e->typeName(element_type) + std::string(">"));
   auto shared_data = std::make_shared<SharedArrayData>(data);
   class_builder.setData(shared_data);
-  Class array_class = e->newClass(class_builder);
+  Class array_class = tplt.build(class_builder, arguments);
   shared_data->data.typeId = array_class.id();
 
   FunctionBuilder function_builder = FunctionBuilder::Constructor(array_class, Prototype{}, callbacks::array::default_ctor);
@@ -231,7 +231,11 @@ ClassTemplate ArrayImpl::register_array_template(Engine *e)
 {
   Namespace root = e->rootNamespace();
 
-  ClassTemplate array_template = e->newClassTemplate("Array", instantiate_array_class);
+  std::vector<TemplateParameter> params{
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+  };
+
+  ClassTemplate array_template = e->newClassTemplate("Array", std::move(params), instantiate_array_class);
   root.addTemplate(array_template);
   return array_template;
 }

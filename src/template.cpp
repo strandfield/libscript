@@ -5,7 +5,12 @@
 #include "script/template.h"
 #include "template_p.h"
 
+#include "script/classtemplate.h"
+#include "script/functiontemplate.h"
+
+#include "class_p.h"
 #include "script/engine.h"
+#include "engine_p.h"
 #include "function_p.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
@@ -17,8 +22,9 @@
 namespace script
 {
 
-TemplateImpl::TemplateImpl(const std::string & n, NativeTemplateDeductionFunction deduc, Engine *e, std::shared_ptr<ScriptImpl> s)
+TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc, Engine *e, std::shared_ptr<ScriptImpl> s)
   : name(n)
+  , parameters(std::move(params))
   , deduction(deduc)
   , engine(e)
   , script(s)
@@ -26,10 +32,10 @@ TemplateImpl::TemplateImpl(const std::string & n, NativeTemplateDeductionFunctio
 
 }
 
-FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, NativeTemplateDeductionFunction deduc, 
+FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc,
   NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
   Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, deduc, e, s)
+  : TemplateImpl(n, std::move(params), deduc, e, s)
   , substitute(sub)
   , instantiate(inst)
 {
@@ -41,10 +47,11 @@ FunctionTemplateImpl::~FunctionTemplateImpl()
 
 }
 
-ClassTemplateImpl::ClassTemplateImpl(const std::string & n,
+ClassTemplateImpl::ClassTemplateImpl(const std::string & n, 
+  std::vector<TemplateParameter> && params,
   NativeClassTemplateInstantiationFunction inst,
   Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, nullptr, e, s)
+  : TemplateImpl(n, std::move(params), nullptr, e, s)
   , instantiate(inst)
 {
 
@@ -55,23 +62,22 @@ ClassTemplateImpl::~ClassTemplateImpl()
 
 }
 
+TemplateArgument::TemplateArgument()
+  : kind(UnspecifiedArgument), integer(0), boolean(false) { }
 
-TemplateArgument TemplateArgument::make(const Type & t)
-{
-  TemplateArgument ret{ TypeArgument, t, 0, false };
-  return ret;
-}
+TemplateArgument::TemplateArgument(const Type & t)
+  : kind(TypeArgument), type(t), integer(0), boolean(false) { }
 
-TemplateArgument TemplateArgument::make(int val)
-{
-  TemplateArgument ret{ IntegerArgument, Type{}, val, false };
-  return ret;
-}
+TemplateArgument::TemplateArgument(int n)
+  : kind(IntegerArgument), integer(n), boolean(false) { }
 
-TemplateArgument TemplateArgument::make(bool val)
+TemplateArgument::TemplateArgument(bool b)
+  : kind(BoolArgument), integer(0), boolean(b) { }
+
+TemplateArgument::TemplateArgument(std::vector<TemplateArgument> && args)
+  : kind(PackArgument), integer(0), boolean(false)
 {
-  TemplateArgument ret{ IntegerArgument, Type{}, 0, val };
-  return ret;
+  pack = std::make_shared<TemplateArgumentPack>(std::move(args));
 }
 
 inline static int compare(bool a, bool b)
@@ -132,6 +138,13 @@ bool TemplateArgumentComparison::operator()(const std::vector<TemplateArgument> 
 }
 
 
+bool operator==(const TemplateArgument & lhs, const TemplateArgument & rhs)
+{
+  return TemplateArgumentComparison::compare(lhs, rhs) == 0;
+}
+
+
+
 
 Template::Template(const std::shared_ptr<TemplateImpl> & impl)
   : d(impl)
@@ -180,9 +193,28 @@ const std::string & Template::name() const
   return d->name;
 }
 
+const std::vector<TemplateParameter> & Template::parameters() const
+{
+  return d->parameters;
+}
+
+TemplateArgument Template::get(const std::string & name, const std::vector<TemplateArgument> & args) const
+{
+  /// TODO : should we throw if the sizes are different ?
+  size_t s = std::max(d->parameters.size(), args.size());
+
+  for (size_t i(0); i < s; ++i)
+  {
+    if (d->parameters.at(i).name() == name)
+      return args.at(i);
+  }
+
+  throw std::runtime_error{ "Template::get() : no such argument" };
+}
+
 bool Template::deduce(std::vector<TemplateArgument> & result, const std::vector<Type> & args)
 {
-  return d->deduction(result, args);
+  return d->deduction(*this, result, args);
 }
 
 std::weak_ptr<TemplateImpl> Template::weakref() const
@@ -193,189 +225,6 @@ std::weak_ptr<TemplateImpl> Template::weakref() const
 bool Template::operator==(const Template & other) const
 {
   return d == other.d;
-}
-
-
-FunctionTemplate::FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl)
-  : Template(impl)
-{
-
-}
-
-void FunctionTemplate::complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<std::shared_ptr<program::Expression>> & args)
-{
-  auto l = lookup.impl();
-  if (l->functionTemplateResult.empty())
-    return;
-
-  std::vector<Type> types;
-  for (const auto & a : args)
-    types.push_back(a->type());
-
-  complete(lookup, targs, types);
-}
-
-void FunctionTemplate::complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<Type> & args)
-{
-  auto l = lookup.impl();
-  
-  // Removing duplicates, important to perform overload resolution
-  auto & vec = l->functionTemplateResult;
-  std::sort(vec.begin(), vec.end());
-  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-
-  for (size_t i(0); i < vec.size(); ++i)
-  {
-    auto template_args = targs;
-    FunctionTemplate ft = vec.at(i);
-    /// TODO : if we can ensure that deduce() does not modify template_args on failure,
-    // we could save some copying of targs.
-    bool success = ft.deduce(template_args, args);
-    if (!success)
-      continue;
-    Function f;
-    if (!ft.hasInstance(template_args, &f))
-    {
-      f = ft.substitute(template_args);
-    }
-    if (f.isNull())
-      continue;
-    l->functions.push_back(f);
-  }
-
-  vec.clear();
-}
-
-Function FunctionTemplate::substitute(const std::vector<TemplateArgument> & targs)
-{
-  return impl()->substitute(*this, targs);
-}
-
-void FunctionTemplate::instantiate(Function & f)
-{
-  if (!f.isTemplateInstance())
-    throw std::runtime_error{ "Function is not a template instance" };
-
-  impl()->instantiate(*this, f);
-
-  impl()->instances[f.arguments()] = f;
-}
-
-Function FunctionTemplate::build(const FunctionBuilder & builder, const std::vector<TemplateArgument> & args)
-{
-  auto impl = std::make_shared<FunctionTemplateInstance>(*this, args, builder.name, builder.proto, engine(), builder.flags);
-  impl->implementation.callback = builder.callback;
-  impl->data = builder.data;
-  return Function{ impl };
-}
-
-void FunctionTemplate::setInstanceData(Function & f, const std::shared_ptr<UserData> & data)
-{
-  f.implementation()->data = data;
-}
-
-bool FunctionTemplate::hasInstance(const std::vector<TemplateArgument> & args, Function *value) const
-{
-  auto d = impl();
-  auto it = d->instances.find(args);
-  if (it == d->instances.end())
-    return false;
-  if (value != nullptr)
-    *value = it->second;
-  return true;
-}
-
-Function FunctionTemplate::getInstance(const std::vector<TemplateArgument> & args)
-{
-  Function ret;
-  if (hasInstance(args, &ret))
-    return ret;
-
-  auto d = impl();
-  ret = d->substitute(*this, args);
-  ret = d->instantiate(*this, ret);
-  if(ret.isNull())
-    throw TemplateInstantiationError{std::string{"An error occurred while instantiating the '"} 
-    + d->name + std::string{"' function template"} };
-
-  d->instances[args] = ret;
-  return ret;
-}
-
-Function FunctionTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBuilder & opts)
-{
-  auto d = impl();
-  Function ret = d->engine->newFunction(opts);
-  if (ret.isNull())
-    return ret;
-  d->instances[args] = ret;
-  return ret;
-}
-
-const std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> & FunctionTemplate::instances() const
-{
-  auto d = impl();
-  return d->instances;
-}
-
-std::shared_ptr<FunctionTemplateImpl> FunctionTemplate::impl() const
-{
-  return std::dynamic_pointer_cast<FunctionTemplateImpl>(d);
-}
-
-
-ClassTemplate::ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl)
-  : Template(impl)
-{
-
-}
-
-bool ClassTemplate::hasInstance(const std::vector<TemplateArgument> & args, Class *value) const
-{
-  auto d = impl();
-  auto it = d->instances.find(args);
-  if (it == d->instances.end())
-    return false;
-  if (value != nullptr)
-    *value = it->second;
-  return true;
-}
-
-Class ClassTemplate::getInstance(const std::vector<TemplateArgument> & args)
-{
-  Class ret;
-  if (hasInstance(args, &ret))
-    return ret;
-
-  auto d = impl();
-  ret = d->instantiate(*this, args);
-  if (ret.isNull())
-    throw TemplateInstantiationError{ std::string{ "An error occurred while instantiating the '" }
-                                      + d->name + std::string{ "' class template" } };
-
-  d->instances[args] = ret;
-  return ret;
-}
-
-Class ClassTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const ClassBuilder & opts)
-{
-  auto d = impl();
-  Class ret = d->engine->newClass(opts);
-  if (ret.isNull())
-    return ret;
-  d->instances[args] = ret;
-  return ret;
-}
-
-const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & ClassTemplate::instances() const
-{
-  auto d = impl();
-  return d->instances;
-}
-
-std::shared_ptr<ClassTemplateImpl> ClassTemplate::impl() const
-{
-  return std::dynamic_pointer_cast<ClassTemplateImpl>(d);
 }
 
 } // namespace script

@@ -45,6 +45,7 @@ public:
     FunctionScope,
     LambdaScope,
     ContextScope,
+    TemplateArgumentScope,
   };
 
   bool isNull() const;

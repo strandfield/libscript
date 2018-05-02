@@ -7,7 +7,7 @@
 
 #include "script/engine.h"
 #include "script/prototype.h"
-#include "script/template.h"
+#include "script/functiontemplate.h"
 
 namespace script
 {

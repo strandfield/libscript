@@ -29,10 +29,11 @@ class FunctionBuilder;
 class FunctionType;
 class FunctionTemplate;
 class Namespace;
-struct TemplateArgument;
+class TemplateArgument;
+class TemplateParameter;
 
 typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplate, const std::vector<TemplateArgument> &);
-typedef bool(*NativeTemplateDeductionFunction)(std::vector<TemplateArgument> &, const std::vector<Type> &);
+typedef bool(*NativeTemplateDeductionFunction)(const Template &, std::vector<TemplateArgument> &, const std::vector<Type> &);
 typedef Function(*NativeFunctionTemplateSubstitutionCallback)(FunctionTemplate, const std::vector<TemplateArgument> &);
 typedef Function(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
 
@@ -134,9 +135,9 @@ public:
   Value invoke(const Function & f, std::initializer_list<Value> && args);
   Value invoke(const Function & f, const std::vector<Value> & args);
 
-  FunctionTemplate newFunctionTemplate(const std::string & name, NativeTemplateDeductionFunction deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
+  FunctionTemplate newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
 
-  ClassTemplate newClassTemplate(const std::string & name, NativeClassTemplateInstantiationFunction callback);
+  ClassTemplate newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeClassTemplateInstantiationFunction callback);
   struct array_template_t {};
   static const array_template_t ArrayTemplate;
   ClassTemplate getTemplate(array_template_t) const;

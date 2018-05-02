@@ -24,6 +24,15 @@ Value ClassImpl::add_uninitialized_static_data_member(const std::string & name, 
   return ret;
 }
 
+ClassTemplateInstance::ClassTemplateInstance(ClassTemplate t, const std::vector<TemplateArgument> & args, int i, const std::string & n, Engine *e)
+  : ClassImpl(i, n, e)
+  , instance_of(t)
+  , template_arguments(args)
+{
+
+}
+
+
 
 Class::Class(const std::shared_ptr<ClassImpl> & impl)
   : d(impl)
@@ -483,6 +492,21 @@ Namespace Class::enclosingNamespace() const
   if (c.isNull())
     return Namespace{ d->enclosing_namespace.lock() };
   return c.enclosingNamespace();
+}
+
+bool Class::isTemplateInstance() const
+{
+  return dynamic_cast<const ClassTemplateInstance *>(d.get()) != nullptr;
+}
+
+ClassTemplate Class::instanceOf() const
+{
+  return dynamic_cast<const ClassTemplateInstance *>(d.get())->instance_of;
+}
+
+const std::vector<TemplateArgument> & Class::arguments() const
+{
+  return dynamic_cast<const ClassTemplateInstance *>(d.get())->template_arguments;
 }
 
 Engine * Class::engine() const

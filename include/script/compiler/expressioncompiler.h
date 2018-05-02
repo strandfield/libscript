@@ -21,7 +21,7 @@ namespace script
 
 class NameLookup;
 class Template;
-struct TemplateArgument;
+class TemplateArgument;
 
 namespace program
 {

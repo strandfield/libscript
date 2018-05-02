@@ -6,9 +6,9 @@
 #define LIBSCRIPT_CLASS_P_H
 
 #include "script/class.h"
+#include "script/classtemplate.h"
 #include "script/function.h"
 #include "script/cast.h"
-#include "script/template.h"
 #include "script/typedefs.h"
 
 #include <map>
@@ -61,6 +61,8 @@ public:
 
   }
 
+  virtual ~ClassImpl() = default;
+
   Value add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec = AccessSpecifier::Public);
   void registerConstructor(const Function & f);
 
@@ -70,6 +72,18 @@ public:
   void check_still_abstract();
   void update_vtable(Function f);
   void register_function(const Function & f);
+};
+
+class ClassTemplateInstance : public ClassImpl
+{
+public:
+  ClassTemplate instance_of;
+  std::vector<TemplateArgument> template_arguments;
+
+public:
+  ClassTemplateInstance(ClassTemplate t, const std::vector<TemplateArgument> & args, int i, const std::string & n, Engine *e);
+  ~ClassTemplateInstance() = default;
+
 };
 
 } // namespace script

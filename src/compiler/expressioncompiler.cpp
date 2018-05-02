@@ -202,7 +202,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   }
 
   auto array_template = engine()->getTemplate(Engine::ArrayTemplate);
-  Class array_class = array_template.getInstance({ TemplateArgument::make(element_type) });
+  Class array_class = array_template.getInstance({ TemplateArgument{element_type} });
 
   for (size_t i(0); i < args.size(); ++i)
     args[i] = ConversionProcessor::convert(engine(), args.at(i), element_type, conversions.at(i));

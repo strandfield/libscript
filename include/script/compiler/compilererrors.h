@@ -6,6 +6,7 @@
 #define LIBSCRIPT_COMPILER_ERRORS_H
 
 #include <string>
+#include <tuple>
 
 #include "script/diagnosticmessage.h"
 #include "script/exception.h"

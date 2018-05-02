@@ -9,10 +9,10 @@
 
 #include "script/enum.h"
 #include "script/class.h"
+#include "script/classtemplate.h"
 #include "script/context.h"
 #include "script/module.h"
 #include "script/namespace.h"
-#include "script/template.h"
 #include "script/value.h"
 
 #include "script/interpreter/interpreter.h"
@@ -81,6 +81,8 @@ public:
   void placement(const Function & ctor, Value object, const std::vector<Value> & args);
 
   Lambda newLambda();
+
+  void register_class(Class & c);
 
   void destroyClass(Class c);
   void destroyEnum(Enum e);

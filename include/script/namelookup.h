@@ -20,15 +20,8 @@
 namespace script
 {
 
-namespace program
-{
-class Expression;
-}
-
 namespace compiler
 {
-class Compiler;
-class ExpressionCompiler;
 class TemplateNameProcessor;
 } // namespace compiler
 
@@ -67,6 +60,7 @@ public:
     EnumValueName,
     NamespaceName,
     CaptureName,
+    TemplateParameterName,
   };
 
   ResultType resultType() const;
@@ -79,6 +73,7 @@ public:
   int dataMemberIndex() const;
   int globalIndex() const;
   int localIndex() const;
+  int templateParameterIndex() const;
   const EnumValue & enumValueResult() const;
   const Scope & scopeResult() const;
   const Class::StaticDataMember & staticDataMemberResult() const;

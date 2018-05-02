@@ -40,6 +40,7 @@ NameLookupImpl::NameLookupImpl()
   , globalIndex(-1)
   , localIndex(-1)
   , captureIndex(-1)
+  , templateParameterIndex(-1)
 {
   template_ = &default_template_;
 }
@@ -94,6 +95,8 @@ NameLookup::ResultType NameLookup::resultType() const
     return TypeName;
   else if (!d->valueResult.isNull())
     return VariableName;
+  else if (d->templateParameterIndex != -1)
+    return TemplateParameterName;
 
   return UnknownName;
 }
@@ -137,6 +140,11 @@ int NameLookup::globalIndex() const
 int NameLookup::localIndex() const
 {
   return d->localIndex;
+}
+
+int NameLookup::templateParameterIndex() const
+{
+  return d->templateParameterIndex;
 }
 
 const EnumValue & NameLookup::enumValueResult() const
