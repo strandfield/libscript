@@ -11,20 +11,18 @@
 
 #include "script/ast/node.h"
 
-#include "script/namelookup.h"
-
 namespace script
 {
 
 namespace compiler
 {
 
-TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shared_ptr<ast::Node> & arg)
+TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())
   {
     auto name = std::static_pointer_cast<ast::Identifier>(arg);
-    NameLookup lookup = NameLookup::resolve(name, nl.scope());
+    NameLookup lookup = NameLookup::resolve(name, scp);
     if (lookup.resultType() == NameLookup::TypeName)
       return TemplateArgument{ lookup.typeResult() };
     else
@@ -44,19 +42,34 @@ TemplateArgument TemplateNameProcessor::argument(NameLookup &nl, const std::shar
   {
     auto type = std::static_pointer_cast<ast::TypeNode>(arg);
     TypeResolver<BasicNameResolver> r;
-    return TemplateArgument{ r.resolve(type->value, nl.scope()) };
+    return TemplateArgument{ r.resolve(type->value, scp) };
   }
 
   throw InvalidTemplateArgument{ dpos(arg) };
 }
 
-std::vector<TemplateArgument> TemplateNameProcessor::arguments(NameLookup &nl, const std::vector<std::shared_ptr<ast::Node>> & args)
+std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args)
 {
   std::vector<TemplateArgument> result;
   result.reserve(args.size());
   for (const auto & a : args)
-    result.push_back(argument(nl, a));
+    result.push_back(argument(scp, a));
   return result;
+}
+
+void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
+{
+  if (t.parameters().size() == args.size())
+    return;
+
+  for (size_t i(0); i < t.parameters().size(); ++i)
+  {
+    if (!t.parameters().at(i).hasDefaultValue())
+      throw MissingNonDefaultedTemplateParameter{};
+
+    TemplateArgument arg = argument(scp, t.parameters().at(i).defaultValue());
+    args.push_back(arg);
+  }
 }
 
 } // namespace compiler

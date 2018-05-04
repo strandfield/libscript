@@ -12,12 +12,15 @@
 namespace script
 {
 
+class Function;
+class FunctionTemplate;
 class FunctionTemplateImpl;
 
 class FunctionBuilder;
-class NameLookup;
+class TemplateArgumentDeduction;
 class UserData;
 
+typedef TemplateArgumentDeduction(*NativeFunctionTemplateDeductionCallback)(const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
 typedef Function(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
 typedef Function(*NativeFunctionTemplateSubstitutionCallback)(FunctionTemplate, const std::vector<TemplateArgument> &);
 
@@ -34,12 +37,9 @@ public:
   ~FunctionTemplate() = default;
 
   FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl);
-
-  static void complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<std::shared_ptr<program::Expression>> & args);
-  static void complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<Type> & args);
-
-  inline bool deduce(std::vector<TemplateArgument> & out, const std::vector<Type> & in) { return Template::deduce(out, in); }
-  Function substitute(const std::vector<TemplateArgument> & targs);
+  
+  TemplateArgumentDeduction deduce(const std::vector<TemplateArgument> & args, const std::vector<Type> & types) const;
+  Function substitute(const std::vector<TemplateArgument> & targs) const;
   void instantiate(Function & f);
 
   Function build(const FunctionBuilder & builder, const std::vector<TemplateArgument> & args);

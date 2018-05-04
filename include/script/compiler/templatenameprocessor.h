@@ -12,7 +12,7 @@
 namespace script
 {
 
-class NameLookup;
+class Scope;
 
 namespace compiler
 {
@@ -24,8 +24,10 @@ public:
   TemplateNameProcessor(const TemplateNameProcessor &) = delete;
   virtual ~TemplateNameProcessor() = default;
 
-  virtual TemplateArgument argument(NameLookup &nl, const std::shared_ptr<ast::Node> & arg);
-  std::vector<TemplateArgument> arguments(NameLookup &nl, const std::vector<std::shared_ptr<ast::Node>> & args);
+  virtual TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg);
+  std::vector<TemplateArgument> arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args);
+
+  virtual void postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);
 
   TemplateNameProcessor & operator=(const TemplateNameProcessor &) = delete;
 };

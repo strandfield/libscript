@@ -15,7 +15,7 @@ namespace script
 class TemplateArgumentScope : public ScopeImpl
 {
 public:
-  TemplateArgumentScope();
+  TemplateArgumentScope(const Template & t, const std::vector<TemplateArgument> & args);
   TemplateArgumentScope(const TemplateArgumentScope & other);
   ~TemplateArgumentScope() = default;
 
@@ -27,7 +27,7 @@ public:
 
 public:
   Template template_;
-  std::vector<TemplateArgument> arguments_;
+  std::vector<TemplateArgument> arguments_; /// TODO : perhaps a const std::vector<TemplateArgument> * would be enough
 };
 
 class TemplateParameterScope : public ScopeImpl

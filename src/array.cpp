@@ -235,7 +235,7 @@ ClassTemplate ArrayImpl::register_array_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate array_template = e->newClassTemplate("Array", std::move(params), instantiate_array_class);
+  ClassTemplate array_template = e->newClassTemplate("Array", std::move(params), Scope{ root }, instantiate_array_class);
   root.addTemplate(array_template);
   return array_template;
 }

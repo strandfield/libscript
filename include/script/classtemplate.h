@@ -12,6 +12,8 @@
 namespace script
 {
 
+class Class;
+class ClassTemplate;
 class ClassTemplateImpl;
 
 class ClassBuilder;

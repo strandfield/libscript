@@ -9,6 +9,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"
 #include "script/functiontype.h"
+#include "script/templateargumentdeduction.h"
 
 #include "script/userdata.h"
 #include "script/namelookup.h"
@@ -56,39 +57,44 @@ script::Value max_function(script::FunctionCall *c)
 
 /// TODO : it could be nice to be able to set an error to explain why deduction failed
 /// or this could be done in another function (e.g. NativeTemplateDeductionDiagnosticFunction)
-bool max_function_template_deduce(const script::Template & max, std::vector<script::TemplateArgument> & result, const std::vector<script::Type> & args)
+script::TemplateArgumentDeduction max_function_template_deduce(const script::FunctionTemplate & max, const std::vector<script::TemplateArgument> & args, const std::vector<script::Type> & types)
 {
   using namespace script;
 
-  if (result.size() > 2) // too many argument provided
-    return false;
+  TemplateArgumentDeduction tad;
+  tad.fail();
 
-  if (result.size() > 0) 
+  if (args.size() > 2) // too many argument provided
+    return tad;
+
+  if (args.size() > 0) 
   {
     // checking first argument
-    if (result.front().kind != TemplateArgument::TypeArgument)
-      return false;
+    if (args.front().kind != TemplateArgument::TypeArgument)
+      return tad;
+
   }
   else 
   {
-    if (args.size() == 0)
-      return false;
+    if (types.size() == 0)
+      return tad;
 
-    result.push_back(script::TemplateArgument{ args.front().baseType() });
+    tad.record_deduction(0, TemplateArgument{ types.front().baseType() });
   }
 
-  if (result.size() > 1)
+  if (args.size() > 1)
   {
     // checking second argument
-    if (result.at(1).kind != TemplateArgument::IntegerArgument)
-      return false;
+    if (args.at(1).kind != TemplateArgument::IntegerArgument)
+      return tad;
   }
   else
   {
-    result.push_back(script::TemplateArgument{ int(args.size()) });
+    tad.record_deduction(1, TemplateArgument{ int(types.size()) });
   }
 
-  return true;
+  tad.set_success(true);
+  return tad;
 }
 
 script::Function max_function_template_substitution(script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
@@ -130,7 +136,7 @@ script::Function max_function_template_instantiation(script::FunctionTemplate t,
   return f;
 }
 
-TEST(TemplateTests, template1) {
+TEST(TemplateTests, deduction_and_instantiation) {
   using namespace script;
 
   Engine engine;
@@ -141,13 +147,16 @@ TEST(TemplateTests, template1) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  auto tmplt = engine.newFunctionTemplate("max", std::move(params), max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation);
+  auto tmplt = engine.newFunctionTemplate("max", std::move(params), Scope{ }, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation);
   
   std::vector<TemplateArgument> targs;
   std::vector<Type> types{ Type::Int, Type::Int };
   
-  ASSERT_TRUE(tmplt.deduce(targs, types));
+  auto tad = tmplt.deduce(targs, types);
+  ASSERT_TRUE(tad.success());
 
+  targs.push_back(tad.deduced_value_for(0));
+  targs.push_back(tad.deduced_value_for(1));
   Function f = tmplt.getInstance(targs);
 
   Value a = engine.newInt(1);
@@ -165,7 +174,10 @@ TEST(TemplateTests, template1) {
 
   targs.clear();
   types[1] = Type::Float;
-  ASSERT_TRUE(tmplt.deduce(targs, types));
+  tad = tmplt.deduce(targs, types);
+  ASSERT_TRUE(tad.success());
+  targs.push_back(tad.deduced_value_for(0));
+  targs.push_back(tad.deduced_value_for(1));
   f = tmplt.getInstance(targs);
   ASSERT_EQ(f.prototype().argv(1), Type::cref(Type::Int));
 
@@ -177,7 +189,7 @@ TEST(TemplateTests, template1) {
 }
 
 
-TEST(TemplateTests, compilation1) {
+TEST(TemplateTests, call_with_no_args) {
   using namespace script;
 
   const char *source =
@@ -191,7 +203,7 @@ TEST(TemplateTests, compilation1) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -200,8 +212,96 @@ TEST(TemplateTests, compilation1) {
 }
 
 
+TEST(TemplateTests, call_to_template_with_no_args) {
+  using namespace script;
+
+  const char *source =
+    " max<>(1, 2, 3); ";
+
+  Engine engine;
+  engine.setup();
+
+  std::vector<TemplateParameter> params{
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ Type::Int, "N" },
+  };
+
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+}
+
+TEST(TemplateTests, call_to_template_with_one_arg) {
+  using namespace script;
+
+  const char *source =
+    " max<int>(1, 2, 3); ";
+
+  Engine engine;
+  engine.setup();
+
+  std::vector<TemplateParameter> params{
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ Type::Int, "N" },
+  };
+
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+}
+
+TEST(TemplateTests, call_to_template_with_all_args) {
+  using namespace script;
+
+  const char *source =
+    " max<int, 3>(1, 2, 3); ";
+
+  Engine engine;
+  engine.setup();
+
+  std::vector<TemplateParameter> params{
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ Type::Int, "N" },
+  };
+
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+}
+
+TEST(TemplateTests, invalid_call_to_template_with_all_args) {
+  using namespace script;
+
+  const char *source =
+    " max<int, 4>(1, 2, 3); ";
+
+  Engine engine;
+  engine.setup();
+
+  std::vector<TemplateParameter> params{
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ Type::Int, "N" },
+  };
+
+  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+}
+
 #include "script/parser/parser.h"
-#include "script/private/templateargumentdeduction.h"
+#include "script/templateargumentdeduction.h"
 
 TEST(TemplateTests, argument_deduction_1) {
   using namespace script;
@@ -220,7 +320,7 @@ TEST(TemplateTests, argument_deduction_1) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("abs", std::move(params), nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = engine.newFunctionTemplate("abs", std::move(params), Scope{}, nullptr, nullptr, nullptr);
 
   std::vector<TemplateArgument> arguments;
   std::vector<Type> types{ Type::Int };
@@ -259,7 +359,7 @@ TEST(TemplateTests, argument_deduction_2) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("swap", std::move(params), nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = engine.newFunctionTemplate("swap", std::move(params), Scope{}, nullptr, nullptr, nullptr);
 
   std::vector<TemplateArgument> arguments;
   std::vector<Type> types{ Type::Int, Type::Int };
@@ -297,7 +397,7 @@ TEST(TemplateTests, argument_deduction_3) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("max", std::move(params), nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = engine.newFunctionTemplate("max", std::move(params), Scope{}, nullptr, nullptr, nullptr);
 
   std::vector<TemplateArgument> arguments;
   Type array_int = engine.newArray(Engine::ElementType{ Type::Int }).typeId();
@@ -337,7 +437,7 @@ TEST(TemplateTests, argument_deduction_4) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "A" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("apply", std::move(params), nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = engine.newFunctionTemplate("apply", std::move(params), Scope{}, nullptr, nullptr, nullptr);
 
   Prototype proto{ Type::Boolean, Type::Int };
   FunctionType function_type = engine.getFunctionType(proto);

@@ -11,7 +11,9 @@
 namespace script
 {
 
-TemplateArgumentScope::TemplateArgumentScope()
+TemplateArgumentScope::TemplateArgumentScope(const Template & t, const std::vector<TemplateArgument> & args)
+  : template_(t)
+  , arguments_(args)
 {
 
 }

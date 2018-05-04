@@ -7,6 +7,7 @@
 
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
+#include "script/scope.h"
 
 namespace script
 {
@@ -16,12 +17,12 @@ class ScriptImpl;
 class TemplateImpl
 {
 public:
-  TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params,  NativeTemplateDeductionFunction deduc, Engine *e, std::shared_ptr<ScriptImpl> s);
+  TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s);
   virtual ~TemplateImpl() {}
 
   std::string name;
   std::vector<TemplateParameter> parameters;
-  NativeTemplateDeductionFunction deduction;
+  Scope scope;
   std::weak_ptr<ScriptImpl> script;
   Engine *engine;
 };
@@ -29,12 +30,13 @@ public:
 class FunctionTemplateImpl : public TemplateImpl
 {
 public:
-  FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc,
+  FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
     NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback callback,
     Engine *e, std::shared_ptr<ScriptImpl> s);
   ~FunctionTemplateImpl();
 
   std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> instances;
+  NativeFunctionTemplateDeductionCallback deduction;
   NativeFunctionTemplateSubstitutionCallback substitute;
   NativeFunctionTemplateInstantiationCallback instantiate;
 };
@@ -42,7 +44,7 @@ public:
 class ClassTemplateImpl : public TemplateImpl
 {
 public:
-  ClassTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeClassTemplateInstantiationFunction inst,
+  ClassTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeClassTemplateInstantiationFunction inst,
     Engine *e, std::shared_ptr<ScriptImpl> s);
   ~ClassTemplateImpl();
 

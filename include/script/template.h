@@ -13,19 +13,12 @@ namespace script
 
 class TemplateImpl;
 
-class Class;
 class ClassTemplate;
 class Engine;
-class Function;
 class FunctionTemplate;
+class Scope;
 class Script;
 class Template;
-
-struct TemplateDeductionError : public  std::runtime_error
-{
-};
-
-typedef bool(*NativeTemplateDeductionFunction)(const Template &, std::vector<TemplateArgument> &, const std::vector<Type> &);
 
 struct TemplateInstantiationError : public std::runtime_error
 {
@@ -54,10 +47,9 @@ public:
 
   const std::string & name() const;
   const std::vector<TemplateParameter> & parameters() const;
+  Scope scope() const;
 
   TemplateArgument get(const std::string & name, const std::vector<TemplateArgument> & args) const;
-
-  bool deduce(std::vector<TemplateArgument> &result, const std::vector<Type> & args);
 
   std::weak_ptr<TemplateImpl> weakref() const;
 

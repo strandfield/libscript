@@ -19,6 +19,7 @@
 
 #include "script/cast.h"
 #include "../engine_p.h"
+#include "script/functiontemplateprocessor.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/literals.h"
@@ -285,8 +286,26 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
     NameLookup lookup = NameLookup::resolve(callee_name, scope());
     
-    /// TODO : complete with provided template arguments if any !
-    FunctionTemplate::complete(lookup, std::vector<TemplateArgument>{}, args);
+    if (!lookup.impl()->functionTemplateResult.empty())
+    {
+      FunctionTemplateProcessor::remove_duplicates(lookup.impl()->functionTemplateResult);
+
+      std::vector<Type> types;
+      for (const auto & a : args)
+        types.push_back(a->type());
+
+      std::vector<TemplateArgument> targs{};
+      if (callee->is<ast::TemplateIdentifier>())
+      {
+        /// TODO : possibly allow a custom TemplateNameProcessor for both NameLookup and FunctionTemplateProcessor
+        TemplateNameProcessor tnp;
+        const auto & template_name = callee->as<ast::TemplateIdentifier>();
+        targs = tnp.arguments(scope(), template_name.arguments);
+      }
+
+      FunctionTemplateProcessor ftp{ lookup.impl()->functionTemplateResult, targs, types };
+      ftp.complete(lookup.impl()->functions);
+    }
 
     if (lookup.resultType() == NameLookup::FunctionName)
     {
@@ -305,6 +324,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
       if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
       {
         FunctionTemplate ft = selected.instanceOf();
+        /// TODO : we could defer the instantiation with a custom FunctionTemplateProcessor 
         ft.instantiate(selected);
       }
 

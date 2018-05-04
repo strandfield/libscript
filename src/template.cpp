@@ -22,20 +22,21 @@
 namespace script
 {
 
-TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc, Engine *e, std::shared_ptr<ScriptImpl> s)
+TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s)
   : name(n)
   , parameters(std::move(params))
-  , deduction(deduc)
+  , scope(scp)
   , engine(e)
   , script(s)
 {
 
 }
 
-FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc,
+FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
   NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
   Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, std::move(params), deduc, e, s)
+  : TemplateImpl(n, std::move(params), scp, e, s)
+  , deduction(deduc)
   , substitute(sub)
   , instantiate(inst)
 {
@@ -48,10 +49,11 @@ FunctionTemplateImpl::~FunctionTemplateImpl()
 }
 
 ClassTemplateImpl::ClassTemplateImpl(const std::string & n, 
-  std::vector<TemplateParameter> && params,
+  std::vector<TemplateParameter> && params, 
+  const Scope & scp,
   NativeClassTemplateInstantiationFunction inst,
   Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, std::move(params), nullptr, e, s)
+  : TemplateImpl(n, std::move(params), scp, e, s)
   , instantiate(inst)
 {
 
@@ -198,6 +200,11 @@ const std::vector<TemplateParameter> & Template::parameters() const
   return d->parameters;
 }
 
+Scope Template::scope() const
+{
+  return d->scope;
+}
+
 TemplateArgument Template::get(const std::string & name, const std::vector<TemplateArgument> & args) const
 {
   /// TODO : should we throw if the sizes are different ?
@@ -210,11 +217,6 @@ TemplateArgument Template::get(const std::string & name, const std::vector<Templ
   }
 
   throw std::runtime_error{ "Template::get() : no such argument" };
-}
-
-bool Template::deduce(std::vector<TemplateArgument> & result, const std::vector<Type> & args)
-{
-  return d->deduction(*this, result, args);
 }
 
 std::weak_ptr<TemplateImpl> Template::weakref() const

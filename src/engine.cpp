@@ -1061,15 +1061,15 @@ Value Engine::invoke(const Function & f, const std::vector<Value> & args)
   return d->interpreter->invoke(f, args.begin(), args.end());
 }
 
-FunctionTemplate Engine::newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeTemplateDeductionFunction deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst)
+FunctionTemplate Engine::newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeFunctionTemplateDeductionCallback deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst)
 {
-  return FunctionTemplate{ std::make_shared<FunctionTemplateImpl>(name, std::move(params), deduc, substitute, inst, this, nullptr) };
+  return FunctionTemplate{ std::make_shared<FunctionTemplateImpl>(name, std::move(params), scp, deduc, substitute, inst, this, nullptr) };
 }
 
 
-ClassTemplate Engine::newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, NativeClassTemplateInstantiationFunction callback)
+ClassTemplate Engine::newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeClassTemplateInstantiationFunction callback)
 {
-  return ClassTemplate{ std::make_shared<ClassTemplateImpl>(name, std::move(params), callback, this, nullptr) };
+  return ClassTemplate{ std::make_shared<ClassTemplateImpl>(name, std::move(params), scp, callback, this, nullptr) };
 }
 
 const Engine::array_template_t Engine::ArrayTemplate = Engine::array_template_t{};

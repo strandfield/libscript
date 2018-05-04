@@ -9,6 +9,7 @@
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "namelookup_p.h"
+#include "script/templateargumentdeduction.h"
 
 #include "script/program/expression.h"
 
@@ -21,51 +22,12 @@ FunctionTemplate::FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> &
 
 }
 
-void FunctionTemplate::complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<std::shared_ptr<program::Expression>> & args)
+TemplateArgumentDeduction FunctionTemplate::deduce(const std::vector<TemplateArgument> & args, const std::vector<Type> & types) const
 {
-  auto l = lookup.impl();
-  if (l->functionTemplateResult.empty())
-    return;
-
-  std::vector<Type> types;
-  for (const auto & a : args)
-    types.push_back(a->type());
-
-  complete(lookup, targs, types);
+  return impl()->deduction(*this, args, types);
 }
 
-void FunctionTemplate::complete(NameLookup & lookup, const std::vector<TemplateArgument> & targs, const std::vector<Type> & args)
-{
-  auto l = lookup.impl();
-
-  // Removing duplicates, important to perform overload resolution
-  auto & vec = l->functionTemplateResult;
-  std::sort(vec.begin(), vec.end());
-  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-
-  for (size_t i(0); i < vec.size(); ++i)
-  {
-    auto template_args = targs;
-    FunctionTemplate ft = vec.at(i);
-    /// TODO : if we can ensure that deduce() does not modify template_args on failure,
-    // we could save some copying of targs.
-    bool success = ft.deduce(template_args, args);
-    if (!success)
-      continue;
-    Function f;
-    if (!ft.hasInstance(template_args, &f))
-    {
-      f = ft.substitute(template_args);
-    }
-    if (f.isNull())
-      continue;
-    l->functions.push_back(f);
-  }
-
-  vec.clear();
-}
-
-Function FunctionTemplate::substitute(const std::vector<TemplateArgument> & targs)
+Function FunctionTemplate::substitute(const std::vector<TemplateArgument> & targs) const
 {
   return impl()->substitute(*this, targs);
 }

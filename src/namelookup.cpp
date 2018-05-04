@@ -566,14 +566,15 @@ void NameLookup::process()
   else if (name->type() == ast::NodeType::TemplateIdentifier)
   {
     auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
-    auto template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
-    NameLookup tlookup = scope.lookup(template_name->getName());
-    if (tlookup.resultType() != NameLookup::TemplateName)
-      throw std::runtime_error{ "Not a template name" };
+    scope.lookup(tempid->getName(), d.get());
+    d->functions.clear(); // we only keep templates
 
-    Template t = tlookup.classTemplateResult();
-    Class cla = instantiate_class_template(tempid);
-    d->typeResult = cla.id();
+    if (resultType() == NameLookup::TemplateName)
+    {
+      Class cla = instantiate_class_template(tempid);
+      d->typeResult = cla.id();
+      d->classTemplateResult = ClassTemplate{};
+    }
   }
 }
 
@@ -614,7 +615,8 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
 Class NameLookup::instantiate_class_template(const std::shared_ptr<ast::Identifier> & name)
 {
   ClassTemplate ct = d->classTemplateResult;
-  std::vector<TemplateArgument> targs = d->template_->arguments(*this, name->as<ast::TemplateIdentifier>().arguments);
+  std::vector<TemplateArgument> targs = d->template_->arguments(this->scope(), name->as<ast::TemplateIdentifier>().arguments);
+  d->template_->postprocess(ct, this->scope(), targs);
   Class instantiated = ct.getInstance(targs);
   return instantiated;
 }
