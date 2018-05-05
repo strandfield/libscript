@@ -933,6 +933,18 @@ void register_builtin_operators(Namespace root)
   root.addOperator(gen(proto<float, float&>(), float_postdecrement));
   root.addOperator(gen(proto<double, double&>(), double_postdecrement));
 
+  gen.operation = Operator::UnaryPlusOperator;
+  root.addOperator(gen(proto<char, const char &>(), char_unary_plus));
+  root.addOperator(gen(proto<int, const int &>(), int_unary_plus));
+  root.addOperator(gen(proto<float, const float &>(), float_unary_plus));
+  root.addOperator(gen(proto<double, const double &>(), double_unary_plus));
+
+  gen.operation = Operator::UnaryMinusOperator;
+  root.addOperator(gen(proto<char, const char &>(), char_unary_minus));
+  root.addOperator(gen(proto<int, const int &>(), int_unary_minus));
+  root.addOperator(gen(proto<float, const float &>(), float_unary_minus));
+  root.addOperator(gen(proto<double, const double &>(), double_unary_minus));
+
   gen.operation = Operator::AssignmentOperator;
   root.addOperator(gen(proto<bool&, bool&, const bool&>(), bool_assign));
   root.addOperator(gen(proto<char&, char&, const char&>(), char_assign));
