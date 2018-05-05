@@ -234,7 +234,7 @@ FunctionBuilder & FunctionBuilder::setAccessibility(AccessSpecifier aspec)
 {
   // erase old access specifier
   this->flags = (this->flags & ~((Function::Private | Function::Protected) << 2));
-  int f;
+  int f = 0;
   switch (aspec)
   {
   case script::AccessSpecifier::Public:
