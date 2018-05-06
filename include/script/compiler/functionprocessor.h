@@ -88,7 +88,7 @@ public:
 
     if (fundecl->virtualKeyword.isValid())
     {
-      if (!scp.isClass() || builder.kind != Function::StandardFunction)
+      if (!scp.isClass() || (builder.kind != Function::StandardFunction && builder.kind != Function::Destructor))
         throw InvalidUseOfVirtualKeyword{ dpos(fundecl->virtualKeyword) };
 
       builder.setVirtual();

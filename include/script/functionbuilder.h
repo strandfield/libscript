@@ -29,6 +29,7 @@ public:
   std::shared_ptr<UserData> data;
 
 public:
+  FunctionBuilder(Function::Kind k);
   FunctionBuilder(Class cla, Function::Kind k);
   FunctionBuilder(Class cla, Operator::BuiltInOperator op);
   FunctionBuilder(Namespace ns);
@@ -40,7 +41,6 @@ public:
   static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
 
-  static FunctionBuilder Operator(Operator::BuiltInOperator op);
   static FunctionBuilder Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl = nullptr);
   [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, NativeFunctionSignature impl = nullptr);
   [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, const Type & b, NativeFunctionSignature impl = nullptr);
@@ -79,8 +79,6 @@ public:
   script::Function create();
 
 protected:
-  FunctionBuilder(Function::Kind k);
-
   bool is_member_function() const;
   Class member_of() const;
 };

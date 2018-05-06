@@ -117,14 +117,6 @@ FunctionBuilder FunctionBuilder::Method(const Class & cla, const std::string & n
   return ret;
 }
 
-
-FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op)
-{
-  FunctionBuilder ret{ Function::OperatorFunction };
-  ret.operation = op;
-  return ret;
-}
-
 FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::OperatorFunction };

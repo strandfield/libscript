@@ -59,7 +59,8 @@ ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
 {
   name_resolver.compiler = this;
   type_resolver.name_resolver() = name_resolver;
-  lenient_resolver.name_resolver() = name_resolver;
+
+  function_processor_.prototype_.type_.name_resolver() = name_resolver;
 }
 
 void ScriptCompiler::compile(const CompileScriptTask & task)
@@ -119,7 +120,7 @@ Function ScriptCompiler::registerRootFunction()
     }
   }
 
-  schedule(CompileFunctionTask{ Function{scriptfunc}, fakedecl, mCurrentScope });
+  schedule(Function{ scriptfunc }, fakedecl, mCurrentScope);
 
   return scriptfunc;
 }
@@ -530,37 +531,11 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(m.scope());
 }
 
-void ScriptCompiler::handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp)
-{
-  switch (scp.accessibility())
-  {
-  case AccessSpecifier::Protected:
-    builder.setProtected();
-    break;
-  case AccessSpecifier::Private:
-    builder.setPrivate();
-    break;
-  default:
-    break;
-  }
-}
-
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   const Scope scp = currentScope();
-  FunctionBuilder builder = FunctionBuilder::Function(fundecl->name->getName(), functionPrototype(fundecl));
-  if (fundecl->deleteKeyword.isValid())
-    builder.setDeleted();
-  if (fundecl->virtualKeyword.isValid())
-  {
-    if (!scp.isClass())
-      throw InvalidUseOfVirtualKeyword{ dpos(fundecl->virtualKeyword) };
-
-    builder.setVirtual();
-    if (fundecl->virtualPure.isValid())
-      builder.setPureVirtual();
-  }
-  handleAccessSpecifier(builder, scp);
+  FunctionBuilder builder = FunctionBuilder::Function(fundecl->name->getName(), Prototype{});
+  function_processor_.fill(builder, fundecl, scp);
   Function function = build(builder);
 
   scp.impl()->add_function(function);
@@ -569,38 +544,23 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
     log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
       << "Function overriding base virtual member declared without virtual or override specifier");
 
-  if (!function.isDeleted() && !function.isPureVirtual())
-    schedule(CompileFunctionTask{ function, fundecl, scp });
-
-  schedule_for_reprocessing(fundecl, function);
+  schedule(function, fundecl, scp);
 }
 
 void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl)
 {
   const Scope scp = currentScope();
-  const auto & ctor_decl = *decl;
   Class current_class = scp.asClass();
 
-  Prototype proto = functionPrototype(decl);
-
-  FunctionBuilder b = FunctionBuilder::Constructor(current_class, proto);
-  if (ctor_decl.explicitKeyword.isValid())
-    b.setExplicit();
-  if (ctor_decl.deleteKeyword.isValid())
-    b.setDeleted();
-  if (ctor_decl.defaultKeyword.isValid())
-    b.setDefaulted();
-  handleAccessSpecifier(b, scp);
+  FunctionBuilder b = FunctionBuilder::Constructor(current_class, Prototype{});
+  function_processor_.fill(b, decl, scp);
   Function ctor = build(b);
 
   /// TODO : be careful not to add the constructor twice
   // for now this is okay since the FunctionBuilder never adds anything to the class.
   current_class.implementation()->registerConstructor(ctor);
 
-  if (!ctor.isDeleted())
-    schedule(CompileFunctionTask{ ctor, decl, scp });
-
-  schedule_for_reprocessing(decl, ctor);
+  schedule(ctor, decl, scp);
 }
 
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
@@ -610,14 +570,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   Class current_class = scp.asClass();
 
   FunctionBuilder b = FunctionBuilder::Destructor(current_class);
-  if (dtor_decl.virtualKeyword.isValid())
-    b.setVirtual();
-  if (dtor_decl.deleteKeyword.isValid())
-    b.setDeleted();
-  if (dtor_decl.defaultKeyword.isValid())
-    b.setDefaulted();
-
-  handleAccessSpecifier(b, scp);
+  function_processor_.fill(b, decl, scp);
 
   if (!current_class.parent().isNull())
   {
@@ -630,11 +583,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   Function dtor = build(b);
   current_class.implementation()->destructor = dtor;
   
-  /// TODO : not sure why would anyone want to delete a destructor ?
-  if(!dtor.isDeleted())
-    schedule(CompileFunctionTask{ dtor, decl, scp });
-
-  schedule_for_reprocessing(decl, dtor);
+  schedule(dtor, decl, scp);
 }
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -644,18 +593,16 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   /// TODO : check that we are at namespace level !
 
-  Prototype proto = functionPrototype(decl);
+  FunctionBuilder b = FunctionBuilder::Operator(Operator::Null);
+  function_processor_.fill(b, decl, scp);
 
   std::string suffix_name = over_decl.name->as<ast::LiteralOperatorName>().suffix_string();
 
-  LiteralOperator function{ std::make_shared<LiteralOperatorImpl>(std::move(suffix_name), proto, engine()) };
+  LiteralOperator function{ std::make_shared<LiteralOperatorImpl>(std::move(suffix_name), b.proto, engine()) };
 
   scp.impl()->add_literal_operator(function);
 
-  if (!function.isDeleted())
-    schedule(CompileFunctionTask{ function, decl, scp });
-
-  schedule_for_reprocessing(decl, function);
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -666,50 +613,39 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (over_decl.name->is<ast::LiteralOperatorName>())
     return processLiteralOperatorDecl(decl);
 
-  Prototype proto = functionPrototype(decl);
+  FunctionBuilder builder = FunctionBuilder::Operator(Operator::Null, Prototype{});
+  function_processor_.fill(builder, decl, scp);
   
   const bool is_member = currentScope().type() == script::Scope::ClassScope;
   
-  auto arity = proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
-  Operator::BuiltInOperator operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
-  if (operation == Operator::Null)
+  auto arity = builder.proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
+  builder.operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
+  if (builder.operation == Operator::Null)
   {
     // operator++(int) and operator++() trick
     if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
-      && (proto.argc() == 2 && proto.argv(1) == Type::Int))
+      && (builder.proto.argc() == 2 && builder.proto.argv(1) == Type::Int))
     {
-      proto.popArgument();
-      operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
+      builder.proto.popArgument();
+      builder.operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
     }
     else
       throw CouldNotResolveOperatorName{ dpos(over_decl) };
   }
 
-  if (Operator::isBinary(operation) && proto.argc() != 2)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(proto.argc()) };
-  else if (Operator::isUnary(operation) && proto.argc() != 1)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(proto.argc()) };
+  if (Operator::isBinary(builder.operation) && builder.proto.argc() != 2)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(builder.proto.argc()) };
+  else if (Operator::isUnary(builder.operation) && builder.proto.argc() != 1)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(builder.proto.argc()) };
 
   
-  if (Operator::onlyAsMember(operation) && !is_member)
+  if (Operator::onlyAsMember(builder.operation) && !is_member)
     throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
-
-  FunctionBuilder builder = FunctionBuilder::Operator(operation, proto);
-  if (over_decl.deleteKeyword.isValid())
-    builder.setDeleted();
-  else if (over_decl.defaultKeyword.isValid())
-    builder.setDefaulted();
-
-  handleAccessSpecifier(builder, scp);
 
   Operator function = build(builder).toOperator();
 
   scp.impl()->add_operator(function);
-  
-  if(!function.isDeleted())
-    schedule(CompileFunctionTask{ function, decl, scp });
-
-  schedule_for_reprocessing(decl, function);
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl)
@@ -717,27 +653,17 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const Scope scp = currentScope();
   const ast::CastDecl & cast_decl = *decl;
 
-  Prototype proto = functionPrototype(decl);
-
   const bool is_member = scp.type() == script::Scope::ClassScope;
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  FunctionBuilder builder = FunctionBuilder::Cast(proto.argv(0), proto.returnType());
-  if (cast_decl.explicitKeyword.isValid())
-    builder.setExplicit();
-  if (cast_decl.deleteKeyword.isValid())
-    builder.setDeleted();
-
-  handleAccessSpecifier(builder, scp);
+  FunctionBuilder builder{ Function::CastFunction };
+  function_processor_.fill(builder, decl, scp);
 
   Cast cast = build(builder).toCast();
 
   scp.impl()->add_cast(cast);
   
-  if (!cast.isDeleted())
-    schedule(CompileFunctionTask{ cast, decl, scp });
-
-  schedule_for_reprocessing(decl, cast);
+  schedule(cast, decl, scp);
 }
 
 void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl)
@@ -800,53 +726,6 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   ft.impl()->definition = tdef;
   ft.impl()->script = script().weakref();
   scp.impl()->add_template(ft);
-}
-
-Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl)
-{
-  lenient_resolver.relax = false;
-
-  const Scope scp = currentScope();
-
-  Prototype result;
-
-  if (fundecl->is<ast::ConstructorDecl>())
-    result.setReturnType(Type{ scp.asClass().id(), Type::ReferenceFlag | Type::ConstFlag });
-  else if (fundecl->is<ast::DestructorDecl>())
-    result.setReturnType(Type::Void);
-  else
-    result.setReturnType(lenient_resolver.resolve(fundecl->returnType));
-
-  if (scp.type() == script::Scope::ClassScope && fundecl->staticKeyword == parser::Token::Invalid
-     && fundecl->is<ast::ConstructorDecl>() == false)
-  {
-    Type thisType{ scp.asClass().id(), Type::ReferenceFlag | Type::ThisFlag };
-    if (fundecl->constQualifier.isValid())
-      thisType.setFlag(Type::ConstFlag);
-
-    result.addArgument(thisType);
-  }
-
-  bool mustbe_defaulted = false;
-  for (size_t i(0); i < fundecl->params.size(); ++i)
-  {
-    Type argtype = lenient_resolver.resolve(fundecl->params.at(i).type);
-    if (fundecl->params.at(i).defaultValue != nullptr)
-      argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
-    else if (mustbe_defaulted)
-      throw InvalidUseOfDefaultArgument{ dpos(fundecl->params.at(i).name) };
-    result.addArgument(argtype);
-  }
-
-  return result;
-}
-
-void ScriptCompiler::schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f)
-{
-  if (lenient_resolver.relax)
-    mIncompleteFunctions.push_back(IncompleteFunction{ currentScope(), decl, f });
-
-  lenient_resolver.relax = false;
 }
 
 void ScriptCompiler::reprocess(const IncompleteFunction & func)
@@ -953,9 +832,15 @@ bool ScriptCompiler::is_loaded(const support::filesystem::path & p, Script & res
   return false;
 }
 
-void ScriptCompiler::schedule(const CompileFunctionTask & task)
+void ScriptCompiler::schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
-  mCompilationTasks.push_back(task);
+  if (function_processor_.prototype_.type_.relax)
+    mIncompleteFunctions.push_back(IncompleteFunction{ scp, fundecl, f });
+  function_processor_.prototype_.type_.relax = false;
+
+  if (f.isDeleted() || f.isPureVirtual())
+    return;
+  mCompilationTasks.push_back(CompileFunctionTask{ f, fundecl, scp });
 }
 
 Class ScriptCompiler::build(const ClassBuilder & builder)

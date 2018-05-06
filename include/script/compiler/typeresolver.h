@@ -127,7 +127,7 @@ public:
       return complete(handle_function(qt.functionType, scp), qt);
 
     NameLookup lookup = name_.resolve(qt.type, scp);
-    auto type_result = lookup.resultType();
+    auto result_type = lookup.resultType();
     if (result_type == NameLookup::UnknownName)
     {
       relax = true;
@@ -172,7 +172,7 @@ protected:
     if(relax)
       return Type{ 1 | Type::UnknownFlag };
 
-    return scp.engine()->getFunctionType(proto);
+    return scp.engine()->getFunctionType(proto).type();
   }
 
   Type handle_function(const std::shared_ptr<ast::FunctionType> & ft)

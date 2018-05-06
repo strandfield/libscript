@@ -8,6 +8,7 @@
 #include "script/compiler/compiler.h"
 
 #include "script/compiler/expressioncompiler.h"
+#include "script/compiler/functionprocessor.h"
 #include "script/compiler/typeresolver.h"
 #include "script/compiler/variableprocessor.h"
 
@@ -124,7 +125,6 @@ protected:
   void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
-  void handleAccessSpecifier(FunctionBuilder &builder, const Scope & scp);
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
   void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl);
   void processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl);
@@ -137,8 +137,6 @@ protected:
   void processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl);
 
   // function-related functions
-  Prototype functionPrototype(const std::shared_ptr<ast::FunctionDecl> & decl);
-  void schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f);
   void reprocess(const IncompleteFunction & func);
 
   // modules-related functions
@@ -148,7 +146,7 @@ protected:
   bool is_loaded(const support::filesystem::path & p, Script & result);
 
 protected:
-  void schedule(const CompileFunctionTask & task);
+  void schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
   Class build(const ClassBuilder & builder);
@@ -191,7 +189,9 @@ protected:
 
   ScriptCompilerNameResolver name_resolver;
   TypeResolver<ScriptCompilerNameResolver> type_resolver;
-  LenientTypeResolver<ScriptCompilerNameResolver> lenient_resolver;
+
+  typedef BasicPrototypeResolver<LenientTypeResolver<ScriptCompilerNameResolver>> PrototypeResolver;
+  FunctionProcessor<PrototypeResolver> function_processor_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const
