@@ -346,6 +346,7 @@ FunctionCompiler::FunctionCompiler(Compiler *c, CompileSession *s)
 {
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
+  scope_statements_.scope_ = &mCurrentScope;
 }
 
 
@@ -688,18 +689,11 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
   case ast::NodeType::ExpressionStatement:
     processExpressionStatement(std::dynamic_pointer_cast<ast::ExpressionStatement>(s));
     return;
-  case ast::NodeType::NamespaceAliasDef:
-    processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(s));
-    return;
-  case ast::NodeType::TypeAliasDecl:
-    processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(s));
-    return;
-  case ast::NodeType::UsingDeclaration:
-    processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(s));
-    return;
   case ast::NodeType::UsingDirective:
-    processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(s));
-    return;
+  case ast::NodeType::UsingDeclaration:
+  case ast::NodeType::NamespaceAliasDef:
+  case ast::NodeType::TypeAliasDecl:
+    return scope_statements_.process(s);
   case ast::NodeType::ImportDirective:
     processImportDirective(std::static_pointer_cast<ast::ImportDirective>(s));
     return;
@@ -868,29 +862,6 @@ void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpState
   throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
 }
 
-void FunctionCompiler::processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl)
-{
-  /// TODO : merge this duplicate of ScriptCompiler
-
-  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
-  const std::string & name = decl->alias_name->getName();
-
-  std::vector<std::string> nested;
-  auto target = decl->aliased_namespace;
-  while (target->is<ast::ScopedIdentifier>())
-  {
-    const auto & scpid = target->as<ast::ScopedIdentifier>();
-    nested.push_back(scpid.rhs->getName()); /// TODO : check that all names are simple ids
-    target = scpid.lhs;
-  }
-  nested.push_back(target->getName());
-
-  std::reverse(nested.begin(), nested.end());
-  NamespaceAlias alias{ name, std::move(nested) };
-
-  mCurrentScope.inject(alias); /// TODO : this may throw and we should handle that
-}
-
 void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
@@ -918,39 +889,6 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
   retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
-}
-
-void FunctionCompiler::processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl)
-{
-  /// TODO : merge this duplicate of ScriptCompiler
-
-  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
-  const std::string & name = decl->alias_name->getName();
-
-  NameLookup lookup = resolve(decl->aliased_type);
-  if (lookup.typeResult().isNull())
-    throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
-
-  mCurrentScope.inject(name, lookup.typeResult());
-}
-
-void FunctionCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)
-{
-  /// TODO : merge this duplicate of ScriptCompiler
-
-  NameLookup lookup = resolve(decl->used_name);
-  /// TODO : throw exception if nothing found
-  mCurrentScope.inject(lookup.impl().get());
-}
-
-void FunctionCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
-{
-  /// TODO : merge this duplicate of ScriptCompiler
-  NameLookup lookup = resolve(decl->namespace_name);
-  if (lookup.resultType() != NameLookup::NamespaceName)
-    throw InvalidNameInUsingDirective{ dpos(decl), dstr(decl->namespace_name) };
-
-  mCurrentScope.inject(lookup.scopeResult());
 }
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)

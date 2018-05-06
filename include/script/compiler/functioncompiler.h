@@ -7,6 +7,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
+#include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/stack.h"
 
 #include "script/types.h"
@@ -178,11 +179,7 @@ private:
   void processIfStatement(const std::shared_ptr<ast::IfStatement> & is);
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & id);
   void processJumpStatement(const std::shared_ptr<ast::JumpStatement> & js);
-  void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
   virtual void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs);
-  void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
-  void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
-  void processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, std::nullptr_t);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
@@ -211,7 +208,7 @@ protected:
   Scope mBaseScope;
   Scope mFunctionArgumentsScope;
   Scope mFunctionBodyScope;
-  script::Scope mCurrentScope;
+  Scope mCurrentScope;
   std::shared_ptr<ast::Declaration> mDeclaration;
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
@@ -220,6 +217,7 @@ protected:
   ExpressionCompiler expr_;
   StackVariableAccessor variable_;
   FunctionCompilerLambdaProcessor lambda_;
+  ScopeStatementProcessor<BasicNameResolver> scope_statements_;
 };
 
 } // namespace compiler

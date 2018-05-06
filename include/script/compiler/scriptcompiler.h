@@ -9,6 +9,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
+#include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/typeresolver.h"
 #include "script/compiler/variableprocessor.h"
 
@@ -119,10 +120,6 @@ protected:
   void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl);
   void processTypedef(const std::shared_ptr<ast::Typedef> & decl);
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl);
-  void processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl);
-  void processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl);
-  void processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl);
-  void processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl);
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
@@ -192,6 +189,8 @@ protected:
 
   typedef BasicPrototypeResolver<LenientTypeResolver<ScriptCompilerNameResolver>> PrototypeResolver;
   FunctionProcessor<PrototypeResolver> function_processor_;
+
+  ScopeStatementProcessor<BasicNameResolver> scope_statements_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const

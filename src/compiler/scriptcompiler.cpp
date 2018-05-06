@@ -61,6 +61,8 @@ ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   type_resolver.name_resolver() = name_resolver;
 
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
+
+  scope_statements_.scope_ = &mCurrentScope;
 }
 
 void ScriptCompiler::compile(const CompileScriptTask & task)
@@ -174,17 +176,10 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
     processNamespaceDecl(std::static_pointer_cast<ast::NamespaceDeclaration>(declaration));
     break;
   case ast::NodeType::UsingDirective:
-    processUsingDirective(std::static_pointer_cast<ast::UsingDirective>(declaration));
-    break;
   case ast::NodeType::UsingDeclaration:
-    processUsingDeclaration(std::static_pointer_cast<ast::UsingDeclaration>(declaration));
-    break;
   case ast::NodeType::NamespaceAliasDef:
-    processNamespaceAlias(std::static_pointer_cast<ast::NamespaceAliasDefinition>(declaration));
-    break;
   case ast::NodeType::TypeAliasDecl:
-    processTypeAlias(std::static_pointer_cast<ast::TypeAliasDeclaration>(declaration));
-    break;
+    return scope_statements_.process(declaration);
   case ast::NodeType::ImportDirective:
     processImportDirective(std::static_pointer_cast<ast::ImportDirective>(declaration));
     break;
@@ -452,55 +447,6 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
 
     processOrCollectDeclaration(std::static_pointer_cast<ast::Declaration>(s), child_scope);
   }
-}
-
-void ScriptCompiler::processUsingDirective(const std::shared_ptr<ast::UsingDirective> & decl)
-{
-  NameLookup lookup = resolve(decl->namespace_name);
-  if (lookup.resultType() != NameLookup::NamespaceName)
-    throw InvalidNameInUsingDirective{ dpos(decl), dstr(decl->namespace_name) };
-
-  mCurrentScope.inject(lookup.scopeResult());
-}
-
-void ScriptCompiler::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)
-{
-  NameLookup lookup = resolve(decl->used_name);
-  /// TODO : throw exception if nothing found
-  mCurrentScope.inject(lookup.impl().get());
-}
-
-void ScriptCompiler::processNamespaceAlias(const std::shared_ptr<ast::NamespaceAliasDefinition> & decl)
-{
-  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
-  const std::string & name = decl->alias_name->getName();
-
-  std::vector<std::string> nested;
-  auto target = decl->aliased_namespace;
-  while (target->is<ast::ScopedIdentifier>())
-  {
-    const auto & scpid = target->as<ast::ScopedIdentifier>();
-    nested.push_back(scpid.rhs->getName()); /// TODO : check that all names are simple ids
-    target = scpid.lhs;
-  }
-  nested.push_back(target->getName());
-
-  std::reverse(nested.begin(), nested.end());
-  NamespaceAlias alias{ name, std::move(nested) };
-
-  mCurrentScope.inject(alias); /// TODO : this may throw and we should handle that
-}
-
-void ScriptCompiler::processTypeAlias(const std::shared_ptr<ast::TypeAliasDeclaration> & decl)
-{
-  /// TODO : check that alias_name is a simple identifier or enforce it in the parser
-  const std::string & name = decl->alias_name->getName();
-
-  NameLookup lookup = resolve(decl->aliased_type);
-  if (lookup.typeResult().isNull())
-    throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
-
-  mCurrentScope.inject(name, lookup.typeResult());
 }
 
 void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl)
