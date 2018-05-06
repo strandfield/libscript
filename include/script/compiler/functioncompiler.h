@@ -7,6 +7,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
+#include "script/compiler/importprocessor.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/stack.h"
 
@@ -91,6 +92,13 @@ public:
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
+class FunctionCompilerModuleLoader
+{
+public:
+  FunctionCompiler *compiler_;
+  Engine* engine() const;
+  Script load(const SourceFile &src);
+};
 
 class FunctionCompiler : public CompilerComponent
 {
@@ -190,13 +198,6 @@ private:
   void processVariableDestruction(const Variable & var);
   void processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);
 
-private:
-  // modules-related functions
-  void load_script_module(const std::shared_ptr<ast::ImportDirective> & decl);
-  void load_script_module(const support::filesystem::path & p);
-  void load_script_module_recursively(const support::filesystem::path & p);
-  bool is_loaded(const support::filesystem::path & p, Script & result);
-
 protected:
   friend class FunctionScope;
   friend class FunctionCompilerExtension;
@@ -218,6 +219,7 @@ protected:
   StackVariableAccessor variable_;
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
+  ImportProcessor<FunctionCompilerModuleLoader> modules_;
 };
 
 } // namespace compiler

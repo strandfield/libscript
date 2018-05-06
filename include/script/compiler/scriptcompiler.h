@@ -9,6 +9,7 @@
 
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
+#include "script/compiler/importprocessor.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/typeresolver.h"
 #include "script/compiler/variableprocessor.h"
@@ -88,6 +89,15 @@ public:
   }
 };
 
+class ScriptCompilerModuleLoader
+{
+public:
+  ScriptCompiler *compiler_;
+  Engine* engine() const;
+
+  Script load(const SourceFile &src);
+};
+
 class ScriptCompiler : public CompilerComponent
 {
 public:
@@ -97,6 +107,8 @@ public:
 
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
+
+  void addTask(const CompileScriptTask & task);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);
@@ -135,12 +147,6 @@ protected:
 
   // function-related functions
   void reprocess(const IncompleteFunction & func);
-
-  // modules-related functions
-  void load_script_module(const std::shared_ptr<ast::ImportDirective> & decl);
-  void load_script_module(const support::filesystem::path & p);
-  void load_script_module_recursively(const support::filesystem::path & p);
-  bool is_loaded(const support::filesystem::path & p, Script & result);
 
 protected:
   void schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
@@ -191,6 +197,8 @@ protected:
   FunctionProcessor<PrototypeResolver> function_processor_;
 
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
+
+  ImportProcessor<ScriptCompilerModuleLoader> modules_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const

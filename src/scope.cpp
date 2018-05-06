@@ -1377,7 +1377,7 @@ void Scope::merge(const Scope & scp)
   auto imported = std::dynamic_pointer_cast<script::NamespaceScope>(scp.impl());
   
   int i = 0;
-  while (i < int(scopes.size()) && scopes[i]->kind() == Scope::NamespaceScope)
+  while (i < int(scopes.size()) && scopes[i]->kind() == Scope::NamespaceScope && imported != nullptr)
   {
     dynamic_cast<script::NamespaceScope*>(scopes[i].get())->import_namespace(dynamic_cast<const script::NamespaceScope &>(*imported));
     if (i < int(scopes.size()) - 1 && scopes[i+1]->kind() == Scope::NamespaceScope)

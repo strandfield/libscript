@@ -53,6 +53,25 @@ ScriptCompiler::StateGuard::~StateGuard()
   compiler->mCurrentScript = script;
 }
 
+Engine* ScriptCompilerModuleLoader::engine() const
+{
+  return compiler_->engine();
+}
+
+Script ScriptCompilerModuleLoader::load(const SourceFile &src)
+{
+  Script s = engine()->newScript(src);
+
+  parser::Parser parser{ s.source() };
+  auto ast = parser.parse(s.source());
+
+  assert(ast != nullptr);
+
+  compiler_->addTask(CompileScriptTask{ s, ast });
+
+  return s;
+}
+
 ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   : CompilerComponent(c, s)
   , variable_(c->engine())
@@ -63,6 +82,8 @@ ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
 
   scope_statements_.scope_ = &mCurrentScope;
+
+  modules_.loader_.compiler_ = this;
 }
 
 void ScriptCompiler::compile(const CompileScriptTask & task)
@@ -82,6 +103,23 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   {
     mTasks.at(i).script.run();
   }
+}
+
+void ScriptCompiler::addTask(const CompileScriptTask & task)
+{
+  if (task.ast->hasErrors())
+  {
+    log(diagnostic::info() << "While loading script module:");
+    for (const auto & m : task.ast->messages())
+      log(m);
+
+    /// TODO : destroy scripts
+    return;
+  }
+
+
+  mTasks.push_back(task);
+  processOrCollectScriptDeclarations(mTasks.back());
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
@@ -456,25 +494,8 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
     log(diagnostic::info() << dpos(decl->export_keyword) << "'export' is ignored for now");
   }
 
-  Module m = engine()->getModule(decl->at(0));
-  if (m.isNull())
-  {
-    load_script_module(decl);
-    return; 
-  }
-
-  for (size_t i(1); i < decl->size(); ++i)
-  {
-    Module child = m.getSubModule(decl->at(i));
-    if(child.isNull())
-      throw UnknownSubModuleName{ dpos(decl), decl->at(i), m.name() };
-
-    m = child;
-  }
-
-  m.load();
-
-  mCurrentScope.merge(m.scope());
+  Scope imported = modules_.process(decl);
+  mCurrentScope.merge(imported);
 }
 
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
@@ -694,88 +715,6 @@ void ScriptCompiler::reprocess(const IncompleteFunction & func)
     bool optional = decl->params.at(i - offset).defaultValue != nullptr;
     proto.setParameter(i, proto.argv(i).withFlag(Type::OptionalFlag));
   }
-}
-
-void ScriptCompiler::load_script_module(const std::shared_ptr<ast::ImportDirective> & decl)
-{
-  auto path = engine()->searchDirectory();
-
-  for (size_t i(0); i < decl->size(); ++i)
-    path /= decl->at(i);
-
-  if (support::filesystem::is_directory(path))
-  {
-    load_script_module_recursively(path);
-  }
-  else
-  {
-    path += engine()->scriptExtension();
-
-    if (!support::filesystem::exists(path))
-      throw UnknownModuleName{ dpos(decl), decl->full_name() };
-
-    load_script_module(path);
-  }
-}
-
-void ScriptCompiler::load_script_module(const support::filesystem::path & p)
-{
-  if (p.extension() != engine()->scriptExtension())
-    return;
-
-  Script s;
-  if (is_loaded(p, s))
-  {
-    mCurrentScope.merge(Scope{s.rootNamespace()});
-    return;
-  }
-
-  s = engine()->newScript(SourceFile{ p.string() });
-
-  parser::Parser parser{ s.source() };
-  auto ast = parser.parse(s.source());
-
-  assert(ast != nullptr);
-
-  if (ast->hasErrors())
-  {
-    log(diagnostic::info() << "While loading script module:");
-    for (const auto & m : ast->messages())
-      log(m);
-    
-    /// TODO : destroy scripts
-    return;
-  }
-
-  mTasks.push_back(CompileScriptTask{s, ast});
-  processOrCollectScriptDeclarations(mTasks.back());
-
-  mCurrentScope.merge(Scope{ s.rootNamespace() });
-}
-
-void ScriptCompiler::load_script_module_recursively(const support::filesystem::path & dir)
-{
-  for (auto& p : support::filesystem::directory_iterator(dir))
-  {
-    if (support::filesystem::is_directory(p))
-      load_script_module_recursively(p);
-    else
-      load_script_module(p);
-  }
-}
-
-bool ScriptCompiler::is_loaded(const support::filesystem::path & p, Script & result)
-{
-  for (const auto & s : engine()->scripts())
-  {
-    if (s.path() == p)
-    {
-      result = s;
-      return true;
-    }
-  }
-
-  return false;
 }
 
 void ScriptCompiler::schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
