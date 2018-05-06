@@ -34,9 +34,10 @@ class TemplateArgumentDeduction;
 class TemplateParameter;
 
 typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplate, const std::vector<TemplateArgument> &);
-typedef TemplateArgumentDeduction(*NativeFunctionTemplateDeductionCallback)(const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
-typedef Function(*NativeFunctionTemplateSubstitutionCallback)(FunctionTemplate, const std::vector<TemplateArgument> &);
-typedef Function(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
+
+typedef void(*NativeFunctionTemplateDeductionCallback)(TemplateArgumentDeduction &, const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
+typedef void(*NativeFunctionTemplateSubstitutionCallback)(FunctionBuilder &, FunctionTemplate, const std::vector<TemplateArgument> &);
+typedef std::pair<NativeFunctionSignature, std::shared_ptr<UserData>>(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
 
 namespace program
 {

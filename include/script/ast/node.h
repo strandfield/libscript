@@ -571,7 +571,7 @@ public:
 class LIBSCRIPT_API IfStatement : public SelectionStatement
 {
 public:
-  std::shared_ptr<Statement> initStatement;
+  std::shared_ptr<Statement> initStatement; // currently unused
   std::shared_ptr<Expression> condition;
   std::shared_ptr<Statement> body;
   parser::Token elseKeyword;
@@ -1266,6 +1266,8 @@ public:
   inline size_t size() const { return parameters.size(); }
   std::string parameter_name(size_t i) const;
   const TemplateParameter & at(size_t i) const;
+
+  bool is_class_template() const;
 
   bool is_full_specialization() const;
   bool is_partial_specialization() const;

@@ -7,11 +7,7 @@
 
 #include "function_p.h"
 #include "script/functionbuilder.h"
-#include "script/namelookup.h"
-#include "namelookup_p.h"
-#include "script/templateargumentdeduction.h"
-
-#include "script/program/expression.h"
+#include "script/functiontemplateprocessor.h"
 
 namespace script
 {
@@ -22,37 +18,16 @@ FunctionTemplate::FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> &
 
 }
 
-TemplateArgumentDeduction FunctionTemplate::deduce(const std::vector<TemplateArgument> & args, const std::vector<Type> & types) const
+bool FunctionTemplate::is_native() const
 {
-  return impl()->deduction(*this, args, types);
+  auto d = impl();
+  return d->callbacks.deduction != nullptr && d->callbacks.substitution != nullptr
+    && d->callbacks.instantiation != nullptr;
 }
 
-Function FunctionTemplate::substitute(const std::vector<TemplateArgument> & targs) const
+const FunctionTemplateCallbacks & FunctionTemplate::native_callbacks() const
 {
-  return impl()->substitute(*this, targs);
-}
-
-void FunctionTemplate::instantiate(Function & f)
-{
-  if (!f.isTemplateInstance())
-    throw std::runtime_error{ "Function is not a template instance" };
-
-  impl()->instantiate(*this, f);
-
-  impl()->instances[f.arguments()] = f;
-}
-
-Function FunctionTemplate::build(const FunctionBuilder & builder, const std::vector<TemplateArgument> & args)
-{
-  auto impl = std::make_shared<FunctionTemplateInstance>(*this, args, builder.name, builder.proto, engine(), builder.flags);
-  impl->implementation.callback = builder.callback;
-  impl->data = builder.data;
-  return Function{ impl };
-}
-
-void FunctionTemplate::setInstanceData(Function & f, const std::shared_ptr<UserData> & data)
-{
-  f.implementation()->data = data;
+  return impl()->callbacks;
 }
 
 bool FunctionTemplate::hasInstance(const std::vector<TemplateArgument> & args, Function *value) const
@@ -73,11 +48,10 @@ Function FunctionTemplate::getInstance(const std::vector<TemplateArgument> & arg
     return ret;
 
   auto d = impl();
-  ret = d->substitute(*this, args);
-  ret = d->instantiate(*this, ret);
-  if (ret.isNull())
-    throw TemplateInstantiationError{ std::string{ "An error occurred while instantiating the '" }
-  +d->name + std::string{ "' function template" } };
+
+  FunctionTemplateProcessor ftp;
+  ret = ftp.deduce_substitute(*this, args, {});
+  ftp.instantiate(ret);
 
   d->instances[args] = ret;
   return ret;

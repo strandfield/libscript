@@ -7,12 +7,14 @@
 
 #include "script/template.h"
 
+#include "script/function.h"
+
 #include <map>
+#include <utility> // std::pair
 
 namespace script
 {
 
-class Function;
 class FunctionTemplate;
 class FunctionTemplateImpl;
 
@@ -20,14 +22,21 @@ class FunctionBuilder;
 class TemplateArgumentDeduction;
 class UserData;
 
-typedef TemplateArgumentDeduction(*NativeFunctionTemplateDeductionCallback)(const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
-typedef Function(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
-typedef Function(*NativeFunctionTemplateSubstitutionCallback)(FunctionTemplate, const std::vector<TemplateArgument> &);
+typedef void(*NativeFunctionTemplateDeductionCallback)(TemplateArgumentDeduction &, const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
+typedef void(*NativeFunctionTemplateSubstitutionCallback)(FunctionBuilder &, FunctionTemplate, const std::vector<TemplateArgument> &);
+typedef std::pair<NativeFunctionSignature, std::shared_ptr<UserData>>(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
 
 namespace program
 {
 class Expression;
 } // namespace program
+
+struct LIBSCRIPT_API FunctionTemplateCallbacks
+{
+  NativeFunctionTemplateDeductionCallback deduction;
+  NativeFunctionTemplateSubstitutionCallback substitution;
+  NativeFunctionTemplateInstantiationCallback instantiation;
+};
 
 class LIBSCRIPT_API FunctionTemplate : public Template
 {
@@ -37,13 +46,9 @@ public:
   ~FunctionTemplate() = default;
 
   FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl);
-  
-  TemplateArgumentDeduction deduce(const std::vector<TemplateArgument> & args, const std::vector<Type> & types) const;
-  Function substitute(const std::vector<TemplateArgument> & targs) const;
-  void instantiate(Function & f);
 
-  Function build(const FunctionBuilder & builder, const std::vector<TemplateArgument> & args);
-  static void setInstanceData(Function & f, const std::shared_ptr<UserData> & data);
+  bool is_native() const;
+  const FunctionTemplateCallbacks & native_callbacks() const;
 
   bool hasInstance(const std::vector<TemplateArgument> & args, Function *value = nullptr) const;
   Function getInstance(const std::vector<TemplateArgument> & args);
@@ -52,10 +57,9 @@ public:
 
   const std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> & instances() const;
 
-  FunctionTemplate & operator=(const FunctionTemplate & other) = default;
-
-protected:
   std::shared_ptr<FunctionTemplateImpl> impl() const;
+
+  FunctionTemplate & operator=(const FunctionTemplate & other) = default;
 };
 
 } // namespace script

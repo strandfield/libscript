@@ -4,6 +4,8 @@
 
 #include "script/compiler/templatenameprocessor.h"
 
+#include "script/classtemplate.h"
+
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/literalprocessor.h"
 #include "script/compiler/nameresolver.h"
@@ -55,6 +57,16 @@ std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp
   for (const auto & a : args)
     result.push_back(argument(scp, a));
   return result;
+}
+
+TemplateNameProcessor::InstantiationPolicy TemplateNameProcessor::policy() const
+{
+  return InstantiateIfNeeded;
+}
+
+Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  return ct.getInstance(args);
 }
 
 void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)

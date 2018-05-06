@@ -52,6 +52,7 @@ public:
   TemplateArgument get(const std::string & name, const std::vector<TemplateArgument> & args) const;
 
   std::weak_ptr<TemplateImpl> weakref() const;
+  inline const std::shared_ptr<TemplateImpl> & impl() const { return d; }
 
   Template & operator=(const Template & other) = default;
   bool operator==(const Template & other) const;

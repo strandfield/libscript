@@ -8,6 +8,7 @@
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/functioncompiler.h"
+#include "script/compiler/templatedefinition.h"
 
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
@@ -28,6 +29,7 @@
 #include "../namespace_p.h"
 #include "script/private/scope_p.h"
 #include "../script_p.h"
+#include "../template_p.h"
 
 namespace script
 {
@@ -107,6 +109,7 @@ Function ScriptCompiler::registerRootFunction()
     case ast::NodeType::FunctionDeclaration:
     case ast::NodeType::OperatorOverloadDeclaration:
     case ast::NodeType::NamespaceDecl:
+    case ast::NodeType::TemplateDecl:
       break;
     case ast::NodeType::CastDeclaration:
       throw NotImplementedError{ "ScriptCompiler::registerRootFunction() : cast declaration are not allowed at this scope" };
@@ -197,6 +200,8 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
   case ast::NodeType::VariableDeclaration:
   case ast::NodeType::ClassFriendDecl:
     return collectDeclaration(declaration);
+  case ast::NodeType::TemplateDecl:
+    return processTemplateDeclaration(std::static_pointer_cast<ast::TemplateDeclaration>(declaration));
   default:
     throw NotImplementedError{ "This kind of declaration is not implemented yet" };
   }
@@ -733,6 +738,68 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
     schedule(CompileFunctionTask{ cast, decl, scp });
 
   schedule_for_reprocessing(decl, cast);
+}
+
+void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl)
+{
+  if (decl->is_full_specialization())
+  {
+    throw NotImplementedError{ dpos(decl), "Template full specialization not implemented yet" };
+  }
+  else if (decl->is_partial_specialization())
+  {
+    throw NotImplementedError{ dpos(decl), "Template partial specialization not implemented yet" };
+  }
+  else
+  {
+    if (decl->declaration->is<ast::FunctionDecl>())
+      return processFunctionTemplateDeclaration(decl, std::static_pointer_cast<ast::FunctionDecl>(decl->declaration));
+    else
+      throw NotImplementedError{ dpos(decl), "Class not implemented yet" };
+  }
+}
+
+std::vector<TemplateParameter> ScriptCompiler::processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl)
+{
+  std::vector<TemplateParameter> result;
+
+  for (size_t i(0); i < decl->parameters.size(); ++i)
+  {
+    const auto & p = decl->parameters.at(i);
+
+    if (p.kind == parser::Token::Typename)
+    {
+      result.push_back(TemplateParameter{ TemplateParameter::TypeParameter{}, decl->parameter_name(i) });
+    }
+    else if (p.kind == parser::Token::Bool)
+    {
+      result.push_back(TemplateParameter{ Type::Boolean, decl->parameter_name(i) });
+    }
+    else if (p.kind == parser::Token::Int)
+    {
+      result.push_back(TemplateParameter{ Type::Int, decl->parameter_name(i) });
+    }
+    else
+      throw NotImplementedError{ dpos(decl), "Invalid template parameter" };
+
+    result.back().setDefaultValue(p.default_value);
+  }
+
+  return result;
+}
+
+void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
+{
+  Scope scp = currentScope();
+
+  const std::string name = fundecl->name->getName();
+  std::vector<TemplateParameter> params = processTemplateParameters(decl);
+
+  FunctionTemplate ft = engine()->newFunctionTemplate(name, std::move(params), scp, nullptr, nullptr, nullptr);
+  TemplateDefinition tdef = TemplateDefinition::make(decl);
+  ft.impl()->definition = tdef;
+  ft.impl()->script = script().weakref();
+  scp.impl()->add_template(ft);
 }
 
 Prototype ScriptCompiler::functionPrototype(const std::shared_ptr<ast::FunctionDecl> & fundecl)

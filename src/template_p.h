@@ -9,6 +9,8 @@
 #include "script/functiontemplate.h"
 #include "script/scope.h"
 
+#include "script/compiler/templatedefinition.h"
+
 namespace script
 {
 
@@ -25,6 +27,7 @@ public:
   Scope scope;
   std::weak_ptr<ScriptImpl> script;
   Engine *engine;
+  compiler::TemplateDefinition definition;
 };
 
 class FunctionTemplateImpl : public TemplateImpl
@@ -36,9 +39,7 @@ public:
   ~FunctionTemplateImpl();
 
   std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> instances;
-  NativeFunctionTemplateDeductionCallback deduction;
-  NativeFunctionTemplateSubstitutionCallback substitute;
-  NativeFunctionTemplateInstantiationCallback instantiate;
+  FunctionTemplateCallbacks callbacks;
 };
 
 class ClassTemplateImpl : public TemplateImpl

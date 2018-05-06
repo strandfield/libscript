@@ -63,6 +63,7 @@ public:
   virtual void add_literal_operator(const LiteralOperator & lo) { throw std::runtime_error{ "Bad call to ScopeImpl::add_literal_operator()" }; }
   virtual void add_cast(const Cast & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_cast()" }; }
   virtual void add_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::add_enum()" }; }
+  virtual void add_template(const Template & t) { throw std::runtime_error{ "Bad call to ScopeImpl::add_template()" }; }
   virtual void add_typedef(const Typedef & td) { throw std::runtime_error{ "Bad call to ScopeImpl::add_typedef()" }; }
 
   virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
@@ -142,6 +143,7 @@ public:
   void add_operator(const Operator & op) override;
   void add_literal_operator(const LiteralOperator & lo) override;
   void add_enum(const Enum & e) override;
+  void add_template(const Template & t) override;
   void add_typedef(const Typedef & td) override;
 
   void remove_class(const Class & c) override;
@@ -180,6 +182,7 @@ public:
   void add_operator(const Operator & op) override;
   void add_cast(const Cast & c) override;
   void add_enum(const Enum & e) override;
+  void add_template(const Template & t) override;
   void add_typedef(const Typedef & td) override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
@@ -245,6 +248,7 @@ public:
   void add_operator(const Operator & op) override;
   void add_literal_operator(const LiteralOperator & lo) override;
   void add_enum(const Enum & e) override;
+  void add_template(const Template & t) override;
   void add_typedef(const Typedef & td) override;
 
   void remove_class(const Class & c) override;

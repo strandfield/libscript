@@ -36,11 +36,10 @@ FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<Te
   NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
   Engine *e, std::shared_ptr<ScriptImpl> s)
   : TemplateImpl(n, std::move(params), scp, e, s)
-  , deduction(deduc)
-  , substitute(sub)
-  , instantiate(inst)
 {
-
+  callbacks.deduction = deduc;
+  callbacks.substitution = sub;
+  callbacks.instantiation = inst;
 }
 
 FunctionTemplateImpl::~FunctionTemplateImpl()
@@ -68,6 +67,9 @@ TemplateArgument::TemplateArgument()
   : kind(UnspecifiedArgument), integer(0), boolean(false) { }
 
 TemplateArgument::TemplateArgument(const Type & t)
+  : kind(TypeArgument), type(t), integer(0), boolean(false) { }
+
+TemplateArgument::TemplateArgument(const Type::BuiltInType & t)
   : kind(TypeArgument), type(t), integer(0), boolean(false) { }
 
 TemplateArgument::TemplateArgument(int n)

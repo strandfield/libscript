@@ -292,6 +292,10 @@ Scope NameLookup::qualified_scope_lookup(const std::shared_ptr<ast::Identifier> 
     Template t = qualified_template_lookup(tempid->getName(), scope);
     if (t.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
+
+    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
+      return Scope{};
+
     return instantiate_class_template(tempid);
   }
 
@@ -318,6 +322,10 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
     Template t = qualified_template_lookup(tempid->getName(), scope);
     if (t.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
+
+    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
+      return Scope{};
+
     return instantiate_class_template(tempid);
   }
   else if (name->is<ast::ScopedIdentifier>())
@@ -571,6 +579,8 @@ void NameLookup::process()
 
     if (resultType() == NameLookup::TemplateName)
     {
+      if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
+        return; /// TODO : perhaps set some kind of errors ? / May not be needed since the template name is recorded
       Class cla = instantiate_class_template(tempid);
       d->typeResult = cla.id();
       d->classTemplateResult = ClassTemplate{};
@@ -606,6 +616,9 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
     if (d->classTemplateResult.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
+    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
+      return; 
+
     Class cla = instantiate_class_template(tempid);
     d->classTemplateResult = ClassTemplate{};
     d->typeResult = cla.id();
@@ -617,8 +630,7 @@ Class NameLookup::instantiate_class_template(const std::shared_ptr<ast::Identifi
   ClassTemplate ct = d->classTemplateResult;
   std::vector<TemplateArgument> targs = d->template_->arguments(this->scope(), name->as<ast::TemplateIdentifier>().arguments);
   d->template_->postprocess(ct, this->scope(), targs);
-  Class instantiated = ct.getInstance(targs);
-  return instantiated;
+  return d->template_->instantiate(ct, targs);
 }
 
 } // namespace script

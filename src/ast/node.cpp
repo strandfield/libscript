@@ -844,6 +844,11 @@ const TemplateParameter & TemplateDeclaration::at(size_t i) const
   return parameters.at(i);
 }
 
+bool TemplateDeclaration::is_class_template() const
+{
+  return declaration->is<ast::ClassDecl>();
+}
+
 bool TemplateDeclaration::is_full_specialization() const
 {
   return parameters.empty();

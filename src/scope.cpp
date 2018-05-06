@@ -591,6 +591,12 @@ void NamespaceScope::add_enum(const Enum & e)
   e.implementation()->enclosing_namespace = mNamespace.weakref();
 }
 
+void NamespaceScope::add_template(const Template & t)
+{
+  mNamespace.implementation()->templates.push_back(t);
+  //t.impl()->enclosing_namespace = mNamespace.weakref();
+}
+
 void NamespaceScope::add_typedef(const Typedef & td)
 {
   mNamespace.implementation()->typedefs.push_back(td);
@@ -735,6 +741,11 @@ void ClassScope::add_enum(const Enum & e)
 {
   mClass.implementation()->enums.push_back(e);
   e.implementation()->enclosing_class = mClass.weakref();
+}
+
+void ClassScope::add_template(const Template & t)
+{
+  mClass.implementation()->templates.push_back(t);
 }
 
 void ClassScope::add_typedef(const Typedef & td)
@@ -980,6 +991,11 @@ void ScriptScope::add_enum(const Enum & e)
 {
   mScript.rootNamespace().implementation()->enums.push_back(e);
   e.implementation()->enclosing_namespace = mScript.rootNamespace().weakref();
+}
+
+void ScriptScope::add_template(const Template & t)
+{
+  mScript.rootNamespace().implementation()->templates.push_back(t);
 }
 
 void ScriptScope::add_typedef(const Typedef & td)

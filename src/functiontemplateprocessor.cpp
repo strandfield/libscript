@@ -4,20 +4,44 @@
 
 #include "script/functiontemplateprocessor.h"
 
+#include "script/engine.h"
 #include "script/function.h"
+#include "function_p.h"
+#include "script/functionbuilder.h"
+#include "script/namelookup.h"
+#include "template_p.h"
 #include "script/templateargumentdeduction.h"
 #include "script/private/templateargumentscope_p.h"
+
+#include "script/compiler/functioncompiler.h"
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/functionprocessor.h"
 
 #include <algorithm>
 
 namespace script
 {
 
-FunctionTemplateProcessor::FunctionTemplateProcessor(std::vector<FunctionTemplate> & fts, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)
-  : templates_(&fts)
-  , arguments_(&args)
-  , types_(&types)
+class NameResolver
+{
+public:
+  compiler::TemplateNameProcessor *template_;
+public:
+  NameResolver() : template_(nullptr) {}
+  explicit NameResolver(compiler::TemplateNameProcessor *tnp) : template_(tnp) { }
+  NameResolver(const NameResolver &) = default;
+  ~NameResolver() = default;
+
+  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
+  {
+    return NameLookup::resolve(name, scp, *template_);
+  }
+
+  NameResolver & operator=(const NameResolver &) = default;
+};
+
+
+FunctionTemplateProcessor::FunctionTemplateProcessor()
 {
   name_ = &default_name_;
 }
@@ -28,13 +52,13 @@ void FunctionTemplateProcessor::remove_duplicates(std::vector<FunctionTemplate> 
   list.erase(std::unique(list.begin(), list.end()), list.end());
 }
 
-void FunctionTemplateProcessor::complete(std::vector<Function> & functions)
+void FunctionTemplateProcessor::complete(std::vector<Function> & functions, const std::vector<FunctionTemplate> & fts, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)
 {
-  const auto&  templates = *templates_;
+  const auto&  templates = fts;
 
   for (size_t i(0); i < templates.size(); ++i)
   {
-    Function f = process_one(templates.at(i));
+    Function f = deduce_substitute(templates.at(i), args, types);
     if (!f.isNull())
       functions.push_back(f);
   }
@@ -45,6 +69,32 @@ diagnostic::Message FunctionTemplateProcessor::emitDiagnostic() const
   throw std::runtime_error{ "Not implemented : FunctionTemplateProcessor::emitDiagnostic()" };
 }
 
+void FunctionTemplateProcessor::instantiate(Function & f)
+{
+  FunctionTemplate ft = f.instanceOf();
+  const std::vector<TemplateArgument> & targs = f.arguments();
+
+  if (ft.is_native())
+  {
+    auto result = ft.native_callbacks().instantiation(ft, f);
+    f.implementation()->implementation.callback = result.first;
+    f.implementation()->data = result.second;
+  }
+  else
+  {
+    Engine *e = ft.engine();
+    compiler::Compiler c{ e };
+    compiler::FunctionCompiler compiler{ &c, c.session() };
+    compiler::CompileFunctionTask task;
+    task.declaration = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
+    task.function = f;
+    task.scope = template_argument_scope(ft, f.arguments());
+    compiler.compile(task);
+  }
+
+  ft.impl()->instances[targs] = f;
+}
+
 Scope FunctionTemplateProcessor::template_argument_scope(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args) const
 {
   auto ret = std::make_shared<TemplateArgumentScope>(ft, args);
@@ -52,23 +102,29 @@ Scope FunctionTemplateProcessor::template_argument_scope(const FunctionTemplate 
   return Scope{ ret };
 }
 
-Function FunctionTemplateProcessor::process_one(const FunctionTemplate & ft)
+Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)
 {
-  const auto & targs_orig = *arguments_;
-  auto *template_args = arguments_;
+  const bool is_native = ft.is_native();
+  const std::vector<TemplateArgument> *template_args = &args;
   std::vector<TemplateArgument> targs_copy;
 
-  if (ft.parameters().size() > targs_orig.size())
+  if (ft.parameters().size() > args.size())
   {
-    auto deduction_result = ft.deduce(targs_orig, *types_);
+    TemplateArgumentDeduction deduction_result;
+
+    if (is_native)
+      ft.native_callbacks().deduction(deduction_result, ft, args, types);
+    else
+      deduction_result.fill(ft, args, types, ft.scope(), ft.impl()->definition.decl_);
+
     if (!deduction_result.success())
       return Function{};
 
     targs_copy.reserve(ft.parameters().size());
-    targs_copy.insert(targs_copy.begin(), targs_orig.begin(), targs_orig.end());
+    targs_copy.insert(targs_copy.begin(), args.begin(), args.end());
     template_args = &targs_copy;
 
-    for (size_t i(targs_orig.size()); i < ft.parameters().size(); ++i)
+    for (size_t i(args.size()); i < ft.parameters().size(); ++i)
     {
       if (deduction_result.has_deduction_for(i))
         targs_copy.push_back(deduction_result.deduced_value_for(i));
@@ -99,7 +155,34 @@ Function FunctionTemplateProcessor::process_one(const FunctionTemplate & ft)
   if (ft.hasInstance(*template_args, &f))
     return f;
   
-  return ft.substitute(*template_args);
+  FunctionBuilder builder = FunctionBuilder::Function(std::string{}, Prototype{});
+
+  if (is_native)
+  {
+    ft.native_callbacks().substitution(builder, ft, *template_args);
+  }
+  else
+  {
+    NameResolver nr{ name_ };
+    using TypeResolver = compiler::TypeResolver<NameResolver>;
+    TypeResolver tr;
+    tr.name_resolver() = nr;
+    using PrototypeResolver = compiler::BasicPrototypeResolver<TypeResolver>;
+    PrototypeResolver pr;
+    pr.type_ = tr;
+    compiler::FunctionProcessor<PrototypeResolver> fp;
+    fp.prototype_ = pr;
+
+    auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
+
+    auto tparamscope = template_argument_scope(ft, *template_args);
+    fp.fill(builder, fundecl, tparamscope);
+  }
+
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, *template_args, builder.name, builder.proto, ft.engine(), builder.flags);
+  impl->implementation.callback = builder.callback;
+  impl->data = builder.data;
+  return Function{ impl };
 }
 
 } // namespace script

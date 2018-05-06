@@ -37,6 +37,7 @@ public:
 public:
   TemplateArgument();
   explicit TemplateArgument(const Type & t);
+  explicit TemplateArgument(const Type::BuiltInType & t);
   explicit TemplateArgument(int n);
   explicit TemplateArgument(bool b);
   explicit TemplateArgument(std::vector<TemplateArgument> && args);

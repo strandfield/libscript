@@ -57,47 +57,43 @@ script::Value max_function(script::FunctionCall *c)
 
 /// TODO : it could be nice to be able to set an error to explain why deduction failed
 /// or this could be done in another function (e.g. NativeTemplateDeductionDiagnosticFunction)
-script::TemplateArgumentDeduction max_function_template_deduce(const script::FunctionTemplate & max, const std::vector<script::TemplateArgument> & args, const std::vector<script::Type> & types)
+void max_function_template_deduce(script::TemplateArgumentDeduction & result, const script::FunctionTemplate & max, const std::vector<script::TemplateArgument> & args, const std::vector<script::Type> & types)
 {
   using namespace script;
 
-  TemplateArgumentDeduction tad;
-  tad.fail();
-
   if (args.size() > 2) // too many argument provided
-    return tad;
+    return result.fail();
 
   if (args.size() > 0) 
   {
     // checking first argument
     if (args.front().kind != TemplateArgument::TypeArgument)
-      return tad;
+      return result.fail();
 
   }
   else 
   {
     if (types.size() == 0)
-      return tad;
+      return result.fail();
 
-    tad.record_deduction(0, TemplateArgument{ types.front().baseType() });
+    result.record_deduction(0, TemplateArgument{ types.front().baseType() });
   }
 
   if (args.size() > 1)
   {
     // checking second argument
     if (args.at(1).kind != TemplateArgument::IntegerArgument)
-      return tad;
+      return result.fail();
   }
   else
   {
-    tad.record_deduction(1, TemplateArgument{ int(types.size()) });
+    result.record_deduction(1, TemplateArgument{ int(types.size()) });
   }
 
-  tad.set_success(true);
-  return tad;
+  return result.set_success(true);
 }
 
-script::Function max_function_template_substitution(script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
+void max_function_template_substitution(script::FunctionBuilder & result, script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
 {
   using namespace script;
 
@@ -106,16 +102,13 @@ script::Function max_function_template_substitution(script::FunctionTemplate t, 
   Type T = t.get("T", args).type;
   int N = t.get("N", args).integer;
 
-  auto function = FunctionBuilder::Function("max", Prototype{}, max_function)
-    .setReturnType(T);
+  result.setReturnType(T);
 
   for (size_t i(0); i < size_t(N); ++i)
-    function.addParam(Type::cref(T));
-
-  return t.build(function, args);
+    result.addParam(Type::cref(T));
 }
 
-script::Function max_function_template_instantiation(script::FunctionTemplate t, script::Function f)
+std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> max_function_template_instantiation(script::FunctionTemplate t, script::Function f)
 {
   using namespace script;
 
@@ -131,63 +124,8 @@ script::Function max_function_template_instantiation(script::FunctionTemplate t,
 
   Function less = resol.selectedOverload();
 
-  FunctionTemplate::setInstanceData(f, std::make_shared<MaxData>(less, resol.conversionSequence()));
-
-  return f;
+  return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.conversionSequence()));
 }
-
-TEST(TemplateTests, deduction_and_instantiation) {
-  using namespace script;
-
-  Engine engine;
-  engine.setup();
-
-  std::vector<TemplateParameter> params{
-    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
-    TemplateParameter{ Type::Int, "N" },
-  };
-
-  auto tmplt = engine.newFunctionTemplate("max", std::move(params), Scope{ }, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation);
-  
-  std::vector<TemplateArgument> targs;
-  std::vector<Type> types{ Type::Int, Type::Int };
-  
-  auto tad = tmplt.deduce(targs, types);
-  ASSERT_TRUE(tad.success());
-
-  targs.push_back(tad.deduced_value_for(0));
-  targs.push_back(tad.deduced_value_for(1));
-  Function f = tmplt.getInstance(targs);
-
-  Value a = engine.newInt(1);
-  Value b = engine.newInt(2);
-
-  Value c = engine.invoke(f, { a, b });
-
-  ASSERT_EQ(c.type(), Type::Int);
-  ASSERT_EQ(c.toInt(), 2);
-
-  engine.destroy(c);
-  engine.destroy(b);
-  engine.destroy(a);
-
-
-  targs.clear();
-  types[1] = Type::Float;
-  tad = tmplt.deduce(targs, types);
-  ASSERT_TRUE(tad.success());
-  targs.push_back(tad.deduced_value_for(0));
-  targs.push_back(tad.deduced_value_for(1));
-  f = tmplt.getInstance(targs);
-  ASSERT_EQ(f.prototype().argv(1), Type::cref(Type::Int));
-
-  a = engine.newInt(1);
-  b = engine.newFloat(3.14f);
-  c = engine.call(f, { a, b });
-  ASSERT_EQ(c.type(), Type::Int);
-  ASSERT_EQ(c.toInt(), 3);
-}
-
 
 TEST(TemplateTests, call_with_no_args) {
   using namespace script;
@@ -455,4 +393,142 @@ TEST(TemplateTests, argument_deduction_4) {
 
   //std::cout << "Deduced " << deduction.deduction_name(0) << " = " << engine.typeName(deduction.deduced_value(0).type) << std::endl;
   //std::cout << "Deduced " << deduction.deduction_name(1) << " = " << engine.typeName(deduction.deduced_value(1).type) << std::endl;
+}
+
+
+/****************************************************************
+  Testing user-defined function templates
+****************************************************************/
+
+TEST(TemplateTests, user_defined_function_template_1) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>     "
+    "  T abs(const T & a)       "
+    "  {                        "
+    "    if(a < 0) return -a;   "
+    "    return a;              "
+    "  }                        ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  FunctionTemplate ft = s.rootNamespace().templates().front().asFunctionTemplate();
+  ASSERT_EQ(ft.name(), "abs");
+  Function f = ft.getInstance(std::vector<TemplateArgument>{TemplateArgument{ Type::Int }});
+
+  ASSERT_TRUE(f.isTemplateInstance());
+  ASSERT_EQ(f.instanceOf(), ft);
+  ASSERT_EQ(f.arguments().size(), 1);
+  ASSERT_EQ(f.arguments().front().type, Type::Int);
+}
+
+TEST(TemplateTests, user_defined_function_template_2) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>     "
+    "  T abs(const T & a)       "
+    "  {                        "
+    "    if(a < 0) return -a;   "
+    "    return a;              "
+    "  }                        "
+    "  int a = abs(-1);         ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 1);
+}
+
+TEST(TemplateTests, user_defined_function_template_3) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>               "
+    "  T max(const T & a, const T & b)    "
+    "  {                                  "
+    "    return a > b ? a : b;            "
+    "  }                                  "
+    "  int n = max(2, 3);                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 3);
+}
+
+TEST(TemplateTests, user_defined_function_template_failure_1) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>               "
+    "  T max(const T & a, const T & b)    "
+    "  {                                  "
+    "    return a > b ? a : b;            "
+    "  }                                  "
+    "  int n = max(2, 3.14);              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+}
+
+TEST(TemplateTests, user_defined_function_template_called_with_args) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>               "
+    "  T max(const T & a, const T & b)    "
+    "  {                                  "
+    "    return a > b ? a : b;            "
+    "  }                                  "
+    "  int n = max<int>(2, 3.14);         ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 3);
 }

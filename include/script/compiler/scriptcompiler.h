@@ -132,6 +132,10 @@ protected:
   void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
 
+  void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  std::vector<TemplateParameter> processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  void processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl);
+
   // function-related functions
   Prototype functionPrototype(const std::shared_ptr<ast::FunctionDecl> & decl);
   void schedule_for_reprocessing(const std::shared_ptr<ast::FunctionDecl> & decl, const Function & f);

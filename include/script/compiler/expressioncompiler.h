@@ -12,6 +12,7 @@
 
 #include "script/context.h"
 #include "script/conversions.h"
+#include "script/functiontemplateprocessor.h"
 #include "script/scope.h"
 
 #include "script/ast/forwards.h"
@@ -80,6 +81,9 @@ private:
   VariableAccessor default_variable_;
   VariableAccessor *variable_;
 
+  FunctionTemplateProcessor default_templates_;
+  FunctionTemplateProcessor *templates_;
+
 private:
   friend class VariableAccessor;
 
@@ -100,6 +104,9 @@ public:
 
   inline VariableAccessor & variableAccessor() { return *variable_; }
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
+
+  inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
+  inline void setTemplateProcessor(FunctionTemplateProcessor & ftp) { templates_ = &ftp; }
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);

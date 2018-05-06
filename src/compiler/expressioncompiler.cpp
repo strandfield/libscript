@@ -19,7 +19,6 @@
 
 #include "script/cast.h"
 #include "../engine_p.h"
-#include "script/functiontemplateprocessor.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/literals.h"
@@ -74,6 +73,7 @@ ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;
   variable_ = &default_variable_;
+  templates_ = &default_templates_;
 }
 
 ExpressionCompiler::ExpressionCompiler(const Scope & scp)
@@ -81,6 +81,7 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
 {
   lambda_ = &default_lambda_;
   variable_ = &default_variable_;
+  templates_ = &default_templates_;
 }
 
 std::string ExpressionCompiler::dstr(const Type & t) const
@@ -297,14 +298,11 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
       std::vector<TemplateArgument> targs{};
       if (callee->is<ast::TemplateIdentifier>())
       {
-        /// TODO : possibly allow a custom TemplateNameProcessor for both NameLookup and FunctionTemplateProcessor
-        TemplateNameProcessor tnp;
         const auto & template_name = callee->as<ast::TemplateIdentifier>();
-        targs = tnp.arguments(scope(), template_name.arguments);
+        targs = templateProcessor().name_processor().arguments(scope(), template_name.arguments);
       }
 
-      FunctionTemplateProcessor ftp{ lookup.impl()->functionTemplateResult, targs, types };
-      ftp.complete(lookup.impl()->functions);
+      templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
     }
 
     if (lookup.resultType() == NameLookup::FunctionName)
@@ -323,9 +321,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
 
       if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
       {
-        FunctionTemplate ft = selected.instanceOf();
-        /// TODO : we could defer the instantiation with a custom FunctionTemplateProcessor 
-        ft.instantiate(selected);
+        templateProcessor().instantiate(selected);
       }
 
       if (selected.isMemberFunction() && !selected.isConstructor() && object != nullptr)
@@ -544,8 +540,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const s
 
 NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
 {
-  /// TODO : pass a true TemplateNameProcessor !!
-  return NameLookup::resolve(identifier, scope());
+  return NameLookup::resolve(identifier, scope(), templateProcessor().name_processor());
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)

@@ -16,14 +16,11 @@ namespace script
 class LIBSCRIPT_API FunctionTemplateProcessor
 {
 private:
-  std::vector<FunctionTemplate> *templates_;
-  const std::vector<TemplateArgument> *arguments_;
-  const std::vector<Type> *types_;
   compiler::TemplateNameProcessor *name_;
   compiler::TemplateNameProcessor default_name_;
 
 public:
-  FunctionTemplateProcessor(std::vector<FunctionTemplate> & fts, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
+  FunctionTemplateProcessor();
   FunctionTemplateProcessor(const FunctionTemplateProcessor & ) = default;
   ~FunctionTemplateProcessor() = default;
 
@@ -32,14 +29,17 @@ public:
 
   static void remove_duplicates(std::vector<FunctionTemplate> & list);
 
-  void complete(std::vector<Function> & functions);
+  void complete(std::vector<Function> & functions, const std::vector<FunctionTemplate> & fts, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
+  
+  Function deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
+  void instantiate(Function & f);
+ 
   diagnostic::Message emitDiagnostic() const;
 
   FunctionTemplateProcessor & operator=(const FunctionTemplateProcessor & ) = default;
 
 protected:
   Scope template_argument_scope(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args) const;
-  Function process_one(const FunctionTemplate & ft);
 };
 
 } // namespace script
