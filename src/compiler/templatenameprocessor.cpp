@@ -5,6 +5,7 @@
 #include "script/compiler/templatenameprocessor.h"
 
 #include "script/classtemplate.h"
+#include "../template_p.h"
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/literalprocessor.h"
@@ -12,6 +13,8 @@
 #include "script/compiler/typeresolver.h"
 
 #include "script/ast/node.h"
+
+#include "script/compiler/scriptcompiler.h"
 
 namespace script
 {
@@ -66,7 +69,23 @@ TemplateNameProcessor::InstantiationPolicy TemplateNameProcessor::policy() const
 
 Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  return ct.getInstance(args);
+  if (ct.is_native())
+  {
+    auto instantiate = ct.native_callback();
+    Class ret = instantiate(ct, args);
+    ct.impl()->instances[args] = ret;
+    return ret;
+  }
+  else
+  {
+    Engine *e = ct.engine();
+    compiler::Compiler c{ e };
+    compiler::ScriptCompiler compiler{ &c, c.session() };
+    auto class_decl = std::static_pointer_cast<ast::ClassDecl>(ct.impl()->definition.decl_->declaration);
+    Class ret = compiler.compileClassTemplate(ct, args, class_decl);
+    ct.impl()->instances[args] = ret;
+    return ret;
+  }
 }
 
 void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)

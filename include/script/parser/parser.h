@@ -518,6 +518,7 @@ public:
 protected:
   void parseAccessSpecifier(); // public, private, protected
   void parseFriend();
+  void parseTemplate();
   void parseUsing();
   std::shared_ptr<ast::Identifier> readClassName();
   void readOptionalParent();

@@ -25,6 +25,21 @@ public:
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
+  void add_class(const Class & c) override;
+  void add_function(const Function & f) override;
+  void add_operator(const Operator & op) override;
+  void add_literal_operator(const LiteralOperator & lo) override;
+  void add_cast(const Cast & c) override;
+  void add_enum(const Enum & e) override;
+  void add_template(const Template & t) override;
+  void add_typedef(const Typedef & td) override;
+
+  void remove_class(const Class & c) override;
+  void remove_function(const Function & f) override;
+  void remove_operator(const Operator & op) override;
+  void remove_cast(const Cast & c) override;
+  void remove_enum(const Enum & e) override;
+
 public:
   Template template_;
   std::vector<TemplateArgument> arguments_; /// TODO : perhaps a const std::vector<TemplateArgument> * would be enough

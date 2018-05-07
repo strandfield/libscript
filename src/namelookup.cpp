@@ -367,7 +367,11 @@ NameLookup NameLookup::member(const std::string & name, const Class & cla)
 
   /// TODO : implement using-directive for functions
 
-  /// TODO : look for function templates
+  for (const auto & ft : cla.templates())
+  {
+    if (ft.isFunctionTemplate() && ft.name() == name)
+      result->functionTemplateResult.push_back(ft.asFunctionTemplate());
+  }
 
   const auto & data_members = cla.dataMembers();
   for (size_t i(0); i < data_members.size(); ++i)

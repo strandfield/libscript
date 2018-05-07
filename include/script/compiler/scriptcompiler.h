@@ -7,6 +7,7 @@
 
 #include "script/compiler/compiler.h"
 
+#include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
@@ -61,8 +62,6 @@ struct IncompleteFunction : public ScopedDeclaration
     : ScopedDeclaration(scp, decl), function(func) { }
 };
 
-struct CompileFunctionTask;
-
 struct CompileScriptTask
 {
   Script script;
@@ -105,10 +104,13 @@ public:
 
   void compile(const CompileScriptTask & task);
 
+  Class compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl);
+
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
 
   void addTask(const CompileScriptTask & task);
+  Class addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);
@@ -129,6 +131,8 @@ protected:
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & e);
 
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
+  void fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl);
+  void readClassContent(Class & c, const std::shared_ptr<ast::ClassDecl> & decl);
   void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl);
   void processTypedef(const std::shared_ptr<ast::Typedef> & decl);
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl);
@@ -143,6 +147,7 @@ protected:
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);
   std::vector<TemplateParameter> processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  void processClassTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::ClassDecl> & classdecl);
   void processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl);
 
   // function-related functions

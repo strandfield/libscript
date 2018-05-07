@@ -37,6 +37,15 @@ namespace script
 namespace compiler
 {
 
+static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
+{
+  if (as->visibility == parser::Token::Private)
+    return AccessSpecifier::Private;
+  else if (as->visibility == parser::Token::Protected)
+    return AccessSpecifier::Protected;
+  return AccessSpecifier::Public;
+}
+
 ScriptCompiler::StateGuard::StateGuard(ScriptCompiler *c)
   : compiler(c)
   , script(c->mCurrentScript)
@@ -105,6 +114,33 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   }
 }
 
+Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl)
+{
+  ClassBuilder builder{ std::string{} };
+  fill(builder, class_decl);
+
+  Class result{ ClassTemplateInstance::make(builder, ct, args) };
+  result.implementation()->script = script().weakref();
+  
+  StateGuard guard{ this };
+  mCurrentScope = ct.argumentScope(args);
+
+  readClassContent(result, class_decl);
+
+  // This is a standalone job 
+  resolveIncompleteTypes();
+  processPendingDeclarations();
+  compileFunctions();
+  variable_.initializeVariables();
+
+  for (size_t i(1); i < mTasks.size(); ++i)
+  {
+    mTasks.at(i).script.run();
+  }
+
+  return result;
+}
+
 void ScriptCompiler::addTask(const CompileScriptTask & task)
 {
   if (task.ast->hasErrors())
@@ -120,6 +156,22 @@ void ScriptCompiler::addTask(const CompileScriptTask & task)
 
   mTasks.push_back(task);
   processOrCollectScriptDeclarations(mTasks.back());
+}
+
+Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl)
+{
+  ClassBuilder builder{ std::string{} };
+  fill(builder, class_decl);
+
+  Class result{ ClassTemplateInstance::make(builder, ct, args) };
+  result.implementation()->script = script().weakref();
+  
+  StateGuard guard{ this };
+  mCurrentScope = ct.argumentScope(args);
+
+  readClassContent(result, class_decl);
+
+  return result;
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
@@ -390,51 +442,52 @@ std::shared_ptr<program::Expression> ScriptCompiler::generateExpression(const st
   return expr_.generateExpression(e);
 }
 
-static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
-{
-  if (as->visibility == parser::Token::Private)
-    return AccessSpecifier::Private;
-  else if (as->visibility == parser::Token::Protected)
-    return AccessSpecifier::Protected;
-  return AccessSpecifier::Public;
-}
-
 void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)
 {
   assert(class_decl != nullptr);
 
-  const Scope scp = currentScope();
-  const std::string & class_name = class_decl->name->getName();
+  ClassBuilder builder{ std::string{} };
+  fill(builder, class_decl);
 
+  Class cla = build(builder);
+  cla.implementation()->script = script().weakref();
+  currentScope().impl()->add_class(cla);
+
+  readClassContent(cla, class_decl);
+}
+
+void ScriptCompiler::fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl)
+{
   Class parent_class;
-  if (class_decl->parent != nullptr)
+  if (decl->parent != nullptr)
   {
-    NameLookup lookup = NameLookup::resolve(class_decl->parent, scp);
+    NameLookup lookup = resolve(decl->parent);
     if (lookup.resultType() != NameLookup::TypeName || !lookup.typeResult().isObjectType())
-      throw InvalidBaseClass{ dpos(class_decl->parent) };
+      throw InvalidBaseClass{ dpos(decl->parent) };
     parent_class = engine()->getClass(lookup.typeResult());
     assert(!parent_class.isNull());
   }
 
-  ClassBuilder builder{ class_decl->name->getName() };
+  builder.name = decl->name->getName();
   builder.setParent(parent_class);
-  Class cla = build(builder);
-  cla.implementation()->script = script().weakref();
-  scp.impl()->add_class(cla);
+}
 
-  Scope class_scope = Scope{ cla, scp };
-  for (size_t i(0); i < class_decl->content.size(); ++i)
+void ScriptCompiler::readClassContent(Class & c, const std::shared_ptr<ast::ClassDecl> & decl)
+{
+  Scope class_scope = Scope{ c, currentScope() };
+  for (size_t i(0); i < decl->content.size(); ++i)
   {
-    if (class_decl->content.at(i)->is<ast::Declaration>())
-      processOrCollectDeclaration(std::dynamic_pointer_cast<ast::Declaration>(class_decl->content.at(i)), class_scope);
-    else if (class_decl->content.at(i)->is<ast::AccessSpecifier>())
+    if (decl->content.at(i)->is<ast::Declaration>())
+      processOrCollectDeclaration(std::static_pointer_cast<ast::Declaration>(decl->content.at(i)), class_scope);
+    else if (decl->content.at(i)->is<ast::AccessSpecifier>())
     {
       log(diagnostic::warning() << "Access specifiers are ignored for type members");
-      AccessSpecifier aspec = get_access_specifier(std::dynamic_pointer_cast<ast::AccessSpecifier>(class_decl->content.at(i)));
+      AccessSpecifier aspec = get_access_specifier(std::static_pointer_cast<ast::AccessSpecifier>(decl->content.at(i)));
       class_scope = Scope{ std::static_pointer_cast<ClassScope>(class_scope.impl())->withAccessibility(aspec) };
     }
   }
 }
+
 
 void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl)
 {
@@ -648,7 +701,7 @@ void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::Templ
     if (decl->declaration->is<ast::FunctionDecl>())
       return processFunctionTemplateDeclaration(decl, std::static_pointer_cast<ast::FunctionDecl>(decl->declaration));
     else
-      throw NotImplementedError{ dpos(decl), "Class not implemented yet" };
+      return processClassTemplateDeclaration(decl, std::static_pointer_cast<ast::ClassDecl>(decl->declaration));
   }
 }
 
@@ -679,6 +732,20 @@ std::vector<TemplateParameter> ScriptCompiler::processTemplateParameters(const s
   }
 
   return result;
+}
+
+void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::ClassDecl> & classdecl)
+{
+  Scope scp = currentScope();
+
+  const std::string name = classdecl->name->getName();
+  std::vector<TemplateParameter> params = processTemplateParameters(decl);
+
+  ClassTemplate ct = engine()->newClassTemplate(name, std::move(params), scp, nullptr);
+  TemplateDefinition tdef = TemplateDefinition::make(decl);
+  ct.impl()->definition = tdef;
+  ct.impl()->script = script().weakref();
+  scp.impl()->add_template(ct);
 }
 
 void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)

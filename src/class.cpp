@@ -33,6 +33,22 @@ ClassTemplateInstance::ClassTemplateInstance(ClassTemplate t, const std::vector<
 }
 
 
+std::shared_ptr<ClassTemplateInstance> ClassTemplateInstance::make(const ClassBuilder & builder, const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  auto ret = std::make_shared<ClassTemplateInstance>(ct, args, -1, builder.name, ct.engine());
+  ret->set_parent(builder.parent);
+  ret->dataMembers = builder.dataMembers;
+  ret->isFinal = builder.isFinal;
+  ret->data = builder.userdata;
+  ret->instance_of = ct;
+  ret->template_arguments = args;
+
+  Class class_result{ ret };
+  ct.engine()->implementation()->register_class(class_result);
+
+  return ret;
+}
+
 
 Class::Class(const std::shared_ptr<ClassImpl> & impl)
   : d(impl)

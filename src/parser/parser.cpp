@@ -2613,7 +2613,7 @@ std::shared_ptr<ast::ClassDecl> ClassParser::parse()
 
   readOptionalParent();
 
-  const Token leftbrace = readToken<ExpectedLeftBrace>(Token::LeftBrace);
+  mClass->openingBrace = readToken<ExpectedLeftBrace>(Token::LeftBrace);
 
   while (!readClassEnd())
     readNode();
@@ -2640,6 +2640,13 @@ void ClassParser::parseFriend()
   mClass->content.push_back(friend_decl);
 }
 
+void ClassParser::parseTemplate()
+{
+  TemplateParser tp{ fragment() };
+  auto template_decl = tp.parse();
+  mClass->content.push_back(template_decl);
+}
+
 void ClassParser::parseUsing()
 {
   UsingParser np{ fragment() };
@@ -2662,7 +2669,7 @@ void ClassParser::readOptionalParent()
   if (peek() != Token::Colon)
     return;
 
-  const Token colon = read();
+  mClass->colon = unsafe_read();
 
   if (atEnd())
     throw UnexpectedEndOfInput{};
@@ -2703,6 +2710,9 @@ void ClassParser::readNode()
   case Token::Using:
     parseUsing();
     return;
+  case Token::Template:
+    parseTemplate();
+    return;
   default:
     break;
   }
@@ -2715,8 +2725,8 @@ bool ClassParser::readClassEnd()
   if (peek().type != Token::RightBrace)
     return false;
 
-  const Token rightbrace = unsafe_read();
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  mClass->closingBrace = unsafe_read();
+  mClass->endingSemicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
 
   return true;
 }

@@ -9,6 +9,7 @@
 #include "class_p.h"
 #include "script/engine.h"
 #include "engine_p.h"
+#include "script/compiler/templatenameprocessor.h"
 
 namespace script
 {
@@ -17,6 +18,16 @@ ClassTemplate::ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl)
   : Template(impl)
 {
 
+}
+
+bool ClassTemplate::is_native() const
+{
+  return impl()->instantiate != nullptr;
+}
+
+NativeClassTemplateInstantiationFunction ClassTemplate::native_callback() const
+{
+  return impl()->instantiate;
 }
 
 bool ClassTemplate::hasInstance(const std::vector<TemplateArgument> & args, Class *value) const
@@ -37,12 +48,13 @@ Class ClassTemplate::getInstance(const std::vector<TemplateArgument> & args)
     return ret;
 
   auto d = impl();
-  ret = d->instantiate(*this, args);
-  if (ret.isNull())
-    throw TemplateInstantiationError{ std::string{ "An error occurred while instantiating the '" }
-  +d->name + std::string{ "' class template" } };
 
+  compiler::TemplateNameProcessor tnp;
+  ret = tnp.instantiate(*this, args);
+
+  /// TODO : this might be unnecessary
   d->instances[args] = ret;
+
   return ret;
 }
 

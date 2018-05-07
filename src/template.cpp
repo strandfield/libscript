@@ -16,6 +16,7 @@
 #include "script/namelookup.h"
 #include "namelookup_p.h"
 #include "script/script.h"
+#include "script/private/templateargumentscope_p.h"
 
 #include "script/program/expression.h"
 
@@ -205,6 +206,13 @@ const std::vector<TemplateParameter> & Template::parameters() const
 Scope Template::scope() const
 {
   return d->scope;
+}
+
+Scope Template::argumentScope(const std::vector<TemplateArgument> & args) const
+{
+  auto ret = std::make_shared<TemplateArgumentScope>(*this, args);
+  ret->parent = d->scope.impl();
+  return Scope{ ret };
 }
 
 TemplateArgument Template::get(const std::string & name, const std::vector<TemplateArgument> & args) const

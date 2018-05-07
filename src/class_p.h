@@ -84,6 +84,7 @@ public:
   ClassTemplateInstance(ClassTemplate t, const std::vector<TemplateArgument> & args, int i, const std::string & n, Engine *e);
   ~ClassTemplateInstance() = default;
 
+  static std::shared_ptr<ClassTemplateInstance> make(const ClassBuilder & builder, const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 };
 
 } // namespace script

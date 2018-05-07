@@ -29,6 +29,9 @@ public:
 
   ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl);
 
+  bool is_native() const;
+  NativeClassTemplateInstantiationFunction native_callback() const;
+
   bool hasInstance(const std::vector<TemplateArgument> & args, Class *value = nullptr) const;
   Class getInstance(const std::vector<TemplateArgument> & args);
 
@@ -38,10 +41,9 @@ public:
 
   const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & instances() const;
 
-  ClassTemplate & operator=(const ClassTemplate & other) = default;
-
-protected:
   std::shared_ptr<ClassTemplateImpl> impl() const;
+
+  ClassTemplate & operator=(const ClassTemplate & other) = default;
 };
 
 } // namespace script

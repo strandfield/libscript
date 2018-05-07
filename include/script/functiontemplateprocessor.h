@@ -37,9 +37,6 @@ public:
   diagnostic::Message emitDiagnostic() const;
 
   FunctionTemplateProcessor & operator=(const FunctionTemplateProcessor & ) = default;
-
-protected:
-  Scope template_argument_scope(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args) const;
 };
 
 } // namespace script

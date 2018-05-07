@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
+#include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
 #include "script/compiler/importprocessor.h"
@@ -46,17 +47,6 @@ public:
   void leave();
 
   EnterScope(const EnterScope &) = delete;
-};
-
-struct CompileFunctionTask
-{
-  CompileFunctionTask() { }
-  CompileFunctionTask(const Function & f, const std::shared_ptr<ast::FunctionDecl> & d, const script::Scope & s) :
-    function(f), declaration(d), scope(s) { }
-
-  Function function;
-  std::shared_ptr<ast::FunctionDecl> declaration;
-  script::Scope scope;
 };
 
 class StackVariableAccessor : public VariableAccessor

@@ -532,3 +532,173 @@ TEST(TemplateTests, user_defined_function_template_called_with_args) {
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 3);
 }
+
+
+/****************************************************************
+Testing user-defined class templates
+****************************************************************/
+
+#include "script/classtemplate.h"
+
+TEST(TemplateTests, user_defined_class_template_definition) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename First, typename Second>   "
+    "  class Pair                                  "
+    "  {                                           "
+    "  public:                                     "
+    "    First first;                              "
+    "    Second second;                            "
+    "                                              "
+    "    Pair() = default;                         "
+    "    ~Pair() = default;                        "
+    "  };                                          ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  ClassTemplate pair = s.rootNamespace().templates().front().asClassTemplate();
+  ASSERT_EQ(pair.name(), "Pair");
+  ASSERT_FALSE(pair.is_native());
+
+  const auto & params = pair.parameters();
+  ASSERT_EQ(params.size(), 2);
+  ASSERT_EQ(params.front().name(), "First");
+  ASSERT_EQ(params.back().name(), "Second");
+  ASSERT_EQ(params.front().kind(), TemplateParameter::TypeTemplateParameter);
+  ASSERT_EQ(params.back().kind(), TemplateParameter::TypeTemplateParameter);
+
+  ASSERT_TRUE(pair.instances().empty());
+}
+
+TEST(TemplateTests, user_defined_class_template_instantiation) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename First, typename Second>   "
+    "  class Pair                                  "
+    "  {                                           "
+    "  public:                                     "
+    "    First first;                              "
+    "    Second second;                            "
+    "                                              "
+    "    Pair() = default;                         "
+    "    ~Pair() = default;                        "
+    "  };                                          "
+    "  Pair<int, float> p;                         "
+    "  p.first = 42;                               "
+    "  int n = p.first;                            ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value n = s.globals().back();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 42);
+
+  ClassTemplate pair = s.rootNamespace().templates().front().asClassTemplate();
+  ASSERT_EQ(pair.instances().size(), 1);
+  Class pair_int_float = pair.instances().begin()->second;
+  ASSERT_EQ(pair_int_float.instanceOf(), pair);
+  ASSERT_EQ(pair_int_float.arguments().size(), 2);
+  ASSERT_EQ(pair_int_float.arguments().front().type, Type::Int);
+  ASSERT_EQ(pair_int_float.arguments().back().type, Type::Float);
+}
+
+/****************************************************************
+Testing class with member function template
+****************************************************************/
+
+TEST(TemplateTests, class_with_member_template) {
+  using namespace script;
+
+  const char *source =
+    "  class Foo                           "
+    "  {                                   "
+    "  public:                             "
+    "    int n;                            "
+    "                                      "
+    "    template<int N>                   "
+    "    int bar() { return n + N; }       "
+    "  };                                  ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  Class Foo = s.classes().front();
+  ASSERT_EQ(Foo.name(), "Foo");
+
+  ASSERT_EQ(Foo.templates().size(), 1);
+
+  FunctionTemplate bar = Foo.templates().front().asFunctionTemplate();
+  ASSERT_EQ(bar.name(), "bar");
+  ASSERT_EQ(bar.parameters().size(), 1);
+  ASSERT_EQ(bar.parameters().front().type(), Type::Int);
+  ASSERT_EQ(bar.parameters().front().name(), "N");
+}
+
+
+TEST(TemplateTests, instantiating_class_member_template) {
+  using namespace script;
+
+  const char *source =
+    "  class Foo                           "
+    "  {                                   "
+    "  public:                             "
+    "    int n;                            "
+    "                                      "
+    "    Foo() = default;                  "
+    "    ~Foo() = default;                 "
+    "                                      "
+    "    template<int N>                   "
+    "    int bar() { return n + N; }       "
+    "  };                                  "
+    "  Foo f;  f.n = 0;                    "
+    "  int n = f.bar<42>();                ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  Class Foo = s.classes().front();
+  FunctionTemplate bar = Foo.templates().front().asFunctionTemplate();
+  ASSERT_EQ(bar.instances().size(), 1);
+  Function bar_42 = bar.instances().begin()->second;
+  ASSERT_EQ(bar_42.instanceOf(), bar);
+  ASSERT_EQ(bar_42.arguments().size(), 1);
+  ASSERT_EQ(bar_42.arguments().front().integer, 42);
+  ASSERT_TRUE(bar_42.isMemberFunction());
+  ASSERT_EQ(bar_42.memberOf(), Foo);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value n = s.globals().back();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 42);
+}

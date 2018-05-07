@@ -22,21 +22,28 @@ class BasicPrototypeResolver
 public:
   TypeResolver type_;
 
+  inline Class getClass(const Scope & scp)
+  {
+    return scp.isClass() ? scp.asClass() : (scp.type() == Scope::TemplateArgumentScope ? getClass(scp.parent()) : Class{});
+  }
+
   Prototype process(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
     Prototype result;
 
+    const Class class_scope = getClass(scp);
+
     if (fundecl->is<ast::ConstructorDecl>())
-      result.setReturnType(Type{ scp.asClass().id(), Type::ReferenceFlag | Type::ConstFlag });
+      result.setReturnType(Type{ class_scope.id(), Type::ReferenceFlag | Type::ConstFlag });
     else if (fundecl->is<ast::DestructorDecl>())
       result.setReturnType(Type::Void);
     else
       result.setReturnType(type_.resolve(fundecl->returnType, scp));
 
-    if (scp.type() == script::Scope::ClassScope && fundecl->staticKeyword == parser::Token::Invalid
+    if (!class_scope.isNull() && fundecl->staticKeyword == parser::Token::Invalid
       && fundecl->is<ast::ConstructorDecl>() == false)
     {
-      Type thisType{ scp.asClass().id(), Type::ReferenceFlag | Type::ThisFlag };
+      Type thisType{ class_scope.id(), Type::ReferenceFlag | Type::ThisFlag };
       if (fundecl->constQualifier.isValid())
         thisType.setFlag(Type::ConstFlag);
 

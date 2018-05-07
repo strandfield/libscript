@@ -48,6 +48,7 @@ public:
   const std::string & name() const;
   const std::vector<TemplateParameter> & parameters() const;
   Scope scope() const;
+  Scope argumentScope(const std::vector<TemplateArgument> & args) const;
 
   TemplateArgument get(const std::string & name, const std::vector<TemplateArgument> & args) const;
 

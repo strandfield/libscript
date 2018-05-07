@@ -88,18 +88,11 @@ void FunctionTemplateProcessor::instantiate(Function & f)
     compiler::CompileFunctionTask task;
     task.declaration = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
     task.function = f;
-    task.scope = template_argument_scope(ft, f.arguments());
+    task.scope = ft.argumentScope(f.arguments());
     compiler.compile(task);
   }
 
   ft.impl()->instances[targs] = f;
-}
-
-Scope FunctionTemplateProcessor::template_argument_scope(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args) const
-{
-  auto ret = std::make_shared<TemplateArgumentScope>(ft, args);
-  ret->parent = ft.scope().impl();
-  return Scope{ ret };
 }
 
 Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)
@@ -134,7 +127,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
         if (!ft.parameters().at(i).hasDefaultValue())
           return Function{}; // substitution / deduction failure is not an error !
 
-        Scope scp = template_argument_scope(ft, targs_copy);
+        Scope scp = ft.argumentScope(targs_copy);
         try {
           TemplateArgument arg = name_->argument(scp, ft.parameters().at(i).defaultValue());
           targs_copy.push_back(arg);
@@ -175,7 +168,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
 
     auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
 
-    auto tparamscope = template_argument_scope(ft, *template_args);
+    auto tparamscope = ft.argumentScope(*template_args);
     fp.fill(builder, fundecl, tparamscope);
   }
 
