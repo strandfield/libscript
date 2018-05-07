@@ -122,9 +122,7 @@ protected:
 
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
 
-
   virtual std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op);
-  virtual std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);
@@ -136,6 +134,7 @@ protected:
 
   std::shared_ptr<program::Expression> generateArrayConstruction(const std::shared_ptr<ast::ArrayExpression> & array_expr);
   std::shared_ptr<program::Expression> generateBraceConstruction(const std::shared_ptr<ast::BraceConstruction> & bc);
+  std::shared_ptr<program::Expression> generateCall(const std::shared_ptr<ast::FunctionCall> & call);
   std::shared_ptr<program::Expression> generateConstructorCall(const std::shared_ptr<ast::FunctionCall> & fc, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args);
   std::shared_ptr<program::Expression> generateListExpression(const std::shared_ptr<ast::ListExpression> & list_expr);
   std::shared_ptr<program::Expression> generateArraySubscript(const std::shared_ptr<ast::ArraySubscript> & as);
