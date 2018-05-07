@@ -285,60 +285,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (callee->is<ast::Identifier>())
   {
     const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(callee);
+
     NameLookup lookup = NameLookup::resolve(callee_name, scope());
-    
-    if (!lookup.impl()->functionTemplateResult.empty())
-    {
-      FunctionTemplateProcessor::remove_duplicates(lookup.impl()->functionTemplateResult);
 
-      std::vector<Type> types;
-      for (const auto & a : args)
-        types.push_back(a->type());
-
-      std::vector<TemplateArgument> targs{};
-      if (callee->is<ast::TemplateIdentifier>())
-      {
-        const auto & template_name = callee->as<ast::TemplateIdentifier>();
-        targs = templateProcessor().name_processor().arguments(scope(), template_name.arguments);
-      }
-
-      templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
-    }
-
-    if (lookup.resultType() == NameLookup::FunctionName)
-    {
-      std::shared_ptr<program::Expression> object = implicit_object();
-
-      OverloadResolution resol = OverloadResolution::New(engine());
-      if (!resol.process(lookup.functions(), args, object))
-        throw CouldNotFindValidMemberFunction{ dpos(call) };
-
-      Function selected = resol.selectedOverload();
-      if (selected.isDeleted())
-        throw CallToDeletedFunction{ dpos(call) };
-      else if (!Accessibility::check(caller(), selected))
-        throw InaccessibleMember{dpos(call), dstr(callee_name), dstr(selected.accessibility())};
-
-      if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
-      {
-        templateProcessor().instantiate(selected);
-      }
-
-      if (selected.isMemberFunction() && !selected.isConstructor() && object != nullptr)
-        args.insert(args.begin(), object);
-
-      const auto & convs = resol.conversionSequence();
-      ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
-      if (selected.isConstructor()) /// TODO : can this happen, shouldn't the lookup returns TypeName in this case ?
-        return program::ConstructorCall::New(selected, std::move(args));
-      else if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
-        return generateVirtualCall(call, selected, std::move(args));
-      return program::FunctionCall::New(selected, std::move(args));
-    }
-    else if (lookup.resultType() == NameLookup::VariableName || lookup.resultType() == NameLookup::GlobalName
+    if (lookup.resultType() == NameLookup::VariableName || lookup.resultType() == NameLookup::GlobalName
       || lookup.resultType() == NameLookup::DataMemberName || lookup.resultType() == NameLookup::LocalName)
     {
-      auto functor = generateVariableAccess(std::dynamic_pointer_cast<ast::Identifier>(callee), lookup);
+      auto functor = generateVariableAccess(callee_name, lookup);
       return generateFunctorCall(call, functor, std::move(args));
     }
     else if (lookup.resultType() == NameLookup::TypeName)
@@ -346,12 +299,11 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
       return generateConstructorCall(call, lookup.typeResult(), std::move(args));
     }
 
-    throw NotImplementedError{ dpos(callee), "ExpressionCompiler : call not implemented" };
-
+    return generateCall(call, callee_name, implicit_object(), args, lookup);
   }
   else if (callee->is<ast::Operation>() && callee->as<ast::Operation>().operatorToken == parser::Token::Dot)
   {
-    auto member_access = std::dynamic_pointer_cast<ast::Operation>(callee);
+    auto member_access = std::static_pointer_cast<ast::Operation>(callee);
     assert(member_access->arg2->is<ast::Identifier>());
 
     auto object = generateExpression(member_access->arg1);
@@ -363,40 +315,70 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
       auto functor = generateMemberAccess(object, lookup.dataMemberIndex(), dpos(call));
       return generateFunctorCall(call, functor, std::move(args));
     }
-    else if (lookup.resultType() == NameLookup::FunctionName)
-    {
-      args.insert(args.begin(), object);
 
-      OverloadResolution resol = OverloadResolution::New(engine());
-      if (!resol.process(lookup.functions(), args))
-        throw CouldNotFindValidOverload{ dpos(call) };
-
-      Function selected = resol.selectedOverload();
-      
-      if (selected.isDeleted())
-        throw CallToDeletedFunction{ dpos(call) };
-      else if (!Accessibility::check(caller(), selected))
-        throw InaccessibleMember{ dpos(call), dstr(callee_name), dstr(selected.accessibility()) };
-
-      const auto & convs = resol.conversionSequence();
-      ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
-      assert(!selected.isConstructor()); /// TODO : check that this is not possible
-      if (selected.isVirtual() && member_access->arg2->type() == ast::NodeType::SimpleIdentifier)
-        return generateVirtualCall(call, selected, std::move(args));
-      return program::FunctionCall::New(selected, std::move(args));
-    }
-    else
-      throw std::runtime_error{ "Not implemented" };
+    return generateCall(call, callee_name, object, args, lookup);
   }
   else if (callee->is<ast::Expression>())
   {
-    auto functor = generateExpression(std::dynamic_pointer_cast<ast::Expression>(callee));
+    auto functor = generateExpression(std::static_pointer_cast<ast::Expression>(callee));
     return generateFunctorCall(call, functor, std::move(args));
   }
   else
     throw std::runtime_error{ "Invalid callee / implementation error" }; /// TODO : which one
 
   throw std::runtime_error{ "Not implemented" };
+}
+
+std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<ast::Identifier> callee, const std::shared_ptr<program::Expression> & object, std::vector<std::shared_ptr<program::Expression>> & args, const NameLookup & lookup)
+{
+  using diagnostic::dstr;
+
+  if (!lookup.impl()->functionTemplateResult.empty())
+  {
+    FunctionTemplateProcessor::remove_duplicates(lookup.impl()->functionTemplateResult);
+
+    std::vector<Type> types;
+    for (const auto & a : args)
+      types.push_back(a->type());
+
+    std::vector<TemplateArgument> targs{};
+    if (callee->is<ast::TemplateIdentifier>())
+    {
+      const auto & template_name = callee->as<ast::TemplateIdentifier>();
+      targs = templateProcessor().name_processor().arguments(scope(), template_name.arguments);
+    }
+
+    templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
+  }
+
+  assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName);
+
+  if (lookup.resultType() == NameLookup::UnknownName)
+    throw NotImplementedError{ dpos(call), "Callee was not declared in this scope" };
+
+  OverloadResolution resol = OverloadResolution::New(engine());
+  if (!resol.process(lookup.functions(), args, object))
+    throw CouldNotFindValidMemberFunction{ dpos(call) };
+
+  Function selected = resol.selectedOverload();
+  if (selected.isDeleted())
+    throw CallToDeletedFunction{ dpos(call) };
+  else if (!Accessibility::check(caller(), selected))
+    throw InaccessibleMember{ dpos(call), dstr(callee), dstr(selected.accessibility()) };
+
+  if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
+  {
+    templateProcessor().instantiate(selected);
+  }
+
+  if (selected.isMemberFunction() && !selected.isConstructor() && object != nullptr)
+    args.insert(args.begin(), object);
+
+  const auto & convs = resol.conversionSequence();
+  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
+    return generateVirtualCall(call, selected, std::move(args));
+  return program::FunctionCall::New(selected, std::move(args));
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateVirtualCall(const std::shared_ptr<ast::FunctionCall> & call, const Function & f, std::vector<std::shared_ptr<program::Expression>> && args)
