@@ -259,12 +259,14 @@ ParserData::ParserData(const SourceFile & src)
 
 ParserData::ParserData(const std::vector<Token> & tokens)
   : mBuffer(tokens)
+  , mIndex(0)
 {
 
 }
 
 ParserData::ParserData(std::vector<Token> && tokens)
   : mBuffer(std::move(tokens))
+  , mIndex(0)
 {
 
 }
