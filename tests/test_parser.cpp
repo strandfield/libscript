@@ -24,7 +24,7 @@ TEST(ParserTests, identifier1) {
   using namespace ast;
 
   const char *source =
-    "foo qux::bar foo<4> qux::foo<4+4> foo<4,5> qux::bar::foo foo<bar,qux<foo>>";
+    "foo qux::bar foo<4> qux::foo<4+4> foo<4,5> qux::bar::foo foo<bar,qux<foo>> foo<int>::n";
 
   ScriptFragment fragment{ parser_data(source) };
   IdentifierParser parser{ &fragment };
@@ -73,6 +73,18 @@ TEST(ParserTests, identifier1) {
     ASSERT_TRUE(tid.arguments.at(1)->as<ast::TypeNode>().value.type->is<ast::TemplateIdentifier>());
   }
 
+  id = parser.parse();
+  ASSERT_TRUE(id->is<ast::ScopedIdentifier>());
+  {
+    const auto & scpid = id->as<ast::ScopedIdentifier>();
+    ASSERT_TRUE(scpid.rhs->type() == ast::NodeType::SimpleIdentifier);
+    ASSERT_TRUE(scpid.lhs->is<ast::TemplateIdentifier>());
+    {
+      const auto & tid = scpid.lhs->as<ast::TemplateIdentifier>();
+      ASSERT_TRUE(tid.arguments.size() == 1);
+      ASSERT_TRUE(tid.arguments.at(0)->is<ast::TypeNode>());
+    }
+  }
 
   ASSERT_TRUE(fragment.atEnd());
 }

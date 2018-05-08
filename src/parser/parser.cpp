@@ -1417,7 +1417,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
   if ((options() & ParseQualifiedId) && t == Token::ScopeResolution)
   {
     std::vector<std::shared_ptr<ast::Identifier>> identifiers;
-    identifiers.push_back(ast::Identifier::New(base, ast()));
+    identifiers.push_back(ret);
 
     while (t == Token::ScopeResolution)
     {
