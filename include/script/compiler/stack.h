@@ -27,7 +27,7 @@ struct Variable
 class Stack
 {
 public:
-  Stack() : size(0), capacity(0), data(0) { }
+  Stack() : size(0), capacity(0), data(nullptr) { }
   Stack(const Stack &) = delete;
   Stack(int s);
   ~Stack();
@@ -52,7 +52,6 @@ protected:
 public:
   int size;
   int capacity;
-  int max_size;
   Variable *data;
 };
 

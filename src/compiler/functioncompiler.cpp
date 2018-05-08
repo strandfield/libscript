@@ -140,7 +140,7 @@ Variable::Variable(const Type & t, const std::string & n, int i, bool g)
 
 }
 
-Stack::Stack(int s) : size(0), capacity(s), max_size(0)
+Stack::Stack(int s) : size(0), capacity(s)
 {
   this->data = new Variable[s];
 }
@@ -161,7 +161,6 @@ void Stack::clear()
 
   this->size = 0;
   this->capacity = 0;
-  this->max_size = 0;
 }
 
 int Stack::addVar(const Type & t, const std::string & name)
@@ -173,10 +172,6 @@ int Stack::addVar(const Type & t, const std::string & name)
 
   this->data[this->size] = Variable{ t, name, this->size };
   this->size += 1;
-  if (this->size > this->max_size)
-  {
-    this->max_size = this->size;
-  }
   return this->size - 1;
 }
 
