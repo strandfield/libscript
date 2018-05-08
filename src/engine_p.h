@@ -64,9 +64,7 @@ public:
 
   Object createObject(Type t);
   Object createObject(Class cla);
-  void finalizeObject(Object o, Type objectType);
 
-  Operator newBuiltInOperator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl);
   Function newConstructor(const FunctionBuilder & opts);
   Function newDestructor(const FunctionBuilder & opts);
   Function newFunction(const FunctionBuilder & opts);

@@ -35,7 +35,6 @@ public:
   void clear();
 
   int addVar(const Type & t, const std::string & name);
-  int addGlobal(const Type & t, const std::string & name);
   bool exists(const std::string & var) const;
   int indexOf(const std::string & var) const;
   int lastIndexOf(const std::string & var) const;

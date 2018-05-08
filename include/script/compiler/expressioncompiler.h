@@ -5,13 +5,9 @@
 #ifndef LIBSCRIPT_COMPILE_EXPRESSION_H
 #define LIBSCRIPT_COMPILE_EXPRESSION_H
 
-#include "script/compiler/compiler.h"
-
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
-#include "script/context.h"
-#include "script/conversions.h"
 #include "script/functiontemplateprocessor.h"
 #include "script/scope.h"
 

@@ -72,6 +72,7 @@ FunctionScope * FunctionScope::clone() const
 
 bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
+  /// TODO : this block is incorrect, 'this' is not always at index 1 !
   if (name == "this")
   {
     if (!mCompiler->canUseThis())
@@ -93,17 +94,10 @@ bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
   return ExtensibleScope::lookup(name, nl);
 }
 
-int FunctionScope::add_var(const std::string & name, const Type & t, bool global)
+int FunctionScope::add_var(const std::string & name, const Type & t)
 {
-  int stack_index;
-
-  if (global)
-    stack_index = mCompiler->mStack.addGlobal(t, name);
-  else
-    stack_index = mCompiler->mStack.addVar(t, name);
-
+  int stack_index = mCompiler->mStack.addVar(t, name);
   mSize++;
-
   return stack_index;
 }
 
@@ -184,13 +178,6 @@ int Stack::addVar(const Type & t, const std::string & name)
     this->max_size = this->size;
   }
   return this->size - 1;
-}
-
-int Stack::addGlobal(const Type & t, const std::string & name)
-{
-  const int offset = addVar(t, name);
-  this->data[offset].global = true;
-  return offset;
 }
 
 bool Stack::exists(const std::string & var) const
@@ -461,12 +448,6 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 {
   auto funcdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(declaration());
   return funcdecl->body;
-}
-
-std::shared_ptr<ast::Expression> FunctionCompiler::defaultArgumentValue(int index)
-{
-  auto funcdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(declaration());
-  return funcdecl->params.at(index).defaultValue;
 }
 
 
@@ -985,14 +966,6 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   // we could add copy elision
   value = ConversionProcessor::convert(engine(), value, var_type, seq);
   processVariableCreation(var_type, var_decl->name->getName(), value);
-}
-
-
-
-void FunctionCompiler::processFundamentalVariableCreation(const Type & type, const std::string & name)
-{
-  expr_.setScope(mCurrentScope);
-  processVariableCreation(type, name, ValueConstructor::fundamental(engine(), type, true));
 }
 
 void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)

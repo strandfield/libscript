@@ -39,7 +39,7 @@ public:
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
-  int add_var(const std::string & name, const Type & t, bool global = false);
+  int add_var(const std::string & name, const Type & t);
   void destroy();
 
   Category category() const;

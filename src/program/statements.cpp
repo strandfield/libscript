@@ -46,11 +46,6 @@ void ExpressionStatement::accept(StatementVisitor & visitor)
   visitor.visit(*this);
 }
 
-void FinalizeObjectStatement::accept(StatementVisitor & visitor)
-{
-  visitor.visit(*this);
-}
-
 void ForLoop::accept(StatementVisitor & visitor)
 {
   visitor.visit(*this);
@@ -351,20 +346,6 @@ std::shared_ptr<PopDataMember> PopDataMember::New(const Function & dtor)
 {
   return std::make_shared<PopDataMember>(dtor);
 }
-
-
-
-FinalizeObjectStatement::FinalizeObjectStatement(Type t)
-  : objectType(t)
-{
-
-}
-
-std::shared_ptr<FinalizeObjectStatement> FinalizeObjectStatement::New(const Type & t)
-{
-  return std::make_shared<FinalizeObjectStatement>(t);
-}
-
 
 
 PushDefaultArgument::PushDefaultArgument(int an, const std::shared_ptr<Expression> & val)

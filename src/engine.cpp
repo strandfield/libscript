@@ -163,11 +163,6 @@ Object EngineImpl::createObject(Class cla)
   return Object{ impl };
 }
 
-void EngineImpl::finalizeObject(Object /* o */, Type /* objectType */)
-{
-
-}
-
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
@@ -810,13 +805,6 @@ Enum Engine::newEnum(const std::string & name)
 Class Engine::newClass(const ClassBuilder &opts)
 {
   return buildClass(opts);
-}
-
-Operator EngineImpl::newBuiltInOperator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl)
-{
-  auto ret = std::make_shared<BuiltInOperatorImpl>(op, proto, engine);
-  ret->implementation.callback = impl;
-  return Operator{ ret };
 }
 
 Function EngineImpl::newConstructor(const FunctionBuilder & opts)

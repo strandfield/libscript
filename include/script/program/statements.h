@@ -278,19 +278,6 @@ public:
   void accept(StatementVisitor &) override;
 };
 
-struct LIBSCRIPT_API FinalizeObjectStatement : public Statement
-{
-  Type objectType;
-public:
-  FinalizeObjectStatement(Type objType);
-  ~FinalizeObjectStatement() = default;
-
-  static std::shared_ptr<FinalizeObjectStatement> New(const Type & objType);
-
-  void accept(StatementVisitor &) override;
-};
-
-
 class LIBSCRIPT_API PushDefaultArgument : public Statement
 {
 public:
@@ -332,7 +319,6 @@ public:
   virtual void visit(const InitObjectStatement &) = 0;
   virtual void visit(const PlacementStatement &) = 0;
   virtual void visit(const ExpressionStatement &) = 0;
-  virtual void visit(const FinalizeObjectStatement &) = 0;
   virtual void visit(const ForLoop &) = 0;
   virtual void visit(const IfStatement &) = 0;
   virtual void visit(const PushDataMember &) = 0;

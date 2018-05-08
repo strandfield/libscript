@@ -232,12 +232,6 @@ void Interpreter::visit(const program::ExpressionStatement & es)
   eval(es.expr);
 }
 
-void Interpreter::visit(const program::FinalizeObjectStatement & fos)
-{
-  Object obj = mExecutionContext->callstack.top()->returnValue().toObject();
-  mEngine->implementation()->finalizeObject(obj, fos.objectType);
-}
-
 void Interpreter::visit(const program::ForLoop & fl) 
 {
   exec(fl.init);

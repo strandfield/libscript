@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
+#include "script/compiler/compiler.h"
+
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
@@ -34,7 +36,6 @@ class LambdaExpression;
 namespace compiler
 {
 
-class Compiler;
 class FunctionCompiler;
 
 class EnterScope
@@ -110,7 +111,6 @@ protected:
   bool isCompilingAnonymousFunction() const;
   std::string argumentName(int index);
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();
-  std::shared_ptr<ast::Expression> defaultArgumentValue(int index);
 
   std::shared_ptr<program::Expression> generate(const std::shared_ptr<ast::Expression> & e);
 
@@ -183,7 +183,6 @@ private:
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::AssignmentInitialization> & init);
-  void processFundamentalVariableCreation(const Type & type, const std::string & name);
   void processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value);
   void processVariableDestruction(const Variable & var);
   void processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);

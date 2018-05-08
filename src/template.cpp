@@ -8,17 +8,9 @@
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
 
-#include "class_p.h"
-#include "script/engine.h"
-#include "engine_p.h"
-#include "function_p.h"
-#include "script/functionbuilder.h"
-#include "script/namelookup.h"
-#include "namelookup_p.h"
-#include "script/script.h"
 #include "script/private/templateargumentscope_p.h"
 
-#include "script/program/expression.h"
+#include <algorithm> // std::max
 
 namespace script
 {
