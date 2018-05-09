@@ -56,6 +56,7 @@ class ScopedIdentifier;
 class Statement;
 class StringLiteral;
 class TemplateDeclaration;
+class TemplateIdentifier;
 class TypeAliasDeclaration;
 class Typedef;
 class UserDefinedLiteral;

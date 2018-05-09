@@ -256,6 +256,21 @@ NameLookup NameLookup::resolve(Operator::BuiltInOperator op, const Scope & scope
 }
 
 
+static Template unqualified_template_lookup(const std::string & name, const Scope & scp)
+{
+  const auto & tmplts = scp.templates();
+  for (const auto & t : tmplts)
+  {
+    if (t.name() == name)
+      return t;
+  }
+
+  if (scp.parent().isNull())
+    return Template{};
+
+  return unqualified_template_lookup(name, scp.parent());
+}
+
 static Template qualified_template_lookup(const std::string & name, const Scope & scp)
 {
   const auto & tmplts = scp.templates();
@@ -290,13 +305,14 @@ Scope NameLookup::qualified_scope_lookup(const std::shared_ptr<ast::Identifier> 
   {
     const auto tempid = std::dynamic_pointer_cast<ast::TemplateIdentifier>(name);
     Template t = qualified_template_lookup(tempid->getName(), scope);
-    if (t.isNull())
+    ClassTemplate cla_tmplt = t.asClassTemplate();
+    if (cla_tmplt.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
-      return Scope{};
-
-    return instantiate_class_template(tempid);
+    Class result = d->template_->process(d->scope, cla_tmplt, tempid);
+    if (!result.isNull())
+      return result;
+    return Scope{};
   }
 
   return result;
@@ -319,14 +335,15 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
   else if (name->is<ast::TemplateIdentifier>())
   {
     const auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
-    Template t = qualified_template_lookup(tempid->getName(), scope);
-    if (t.isNull())
+    Template t = unqualified_template_lookup(tempid->getName(), scope);
+    ClassTemplate cla_tmplt = t.asClassTemplate();
+    if (cla_tmplt.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
-      return Scope{};
-
-    return instantiate_class_template(tempid);
+    Class result = d->template_->process(d->scope, cla_tmplt, tempid);
+    if (!result.isNull())
+      return result;
+    return Scope{};
   }
   else if (name->is<ast::ScopedIdentifier>())
   {
@@ -583,11 +600,12 @@ void NameLookup::process()
 
     if (resultType() == NameLookup::TemplateName)
     {
-      if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
-        return; /// TODO : perhaps set some kind of errors ? / May not be needed since the template name is recorded
-      Class cla = instantiate_class_template(tempid);
-      d->typeResult = cla.id();
-      d->classTemplateResult = ClassTemplate{};
+      Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+      if (!cla.isNull())
+      {
+        d->classTemplateResult = ClassTemplate{};
+        d->typeResult = cla.id();
+      }
     }
   }
 }
@@ -620,21 +638,13 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
     if (d->classTemplateResult.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    if (d->template_->policy() == compiler::TemplateNameProcessor::FailIfNotInstantiated)
-      return; 
-
-    Class cla = instantiate_class_template(tempid);
-    d->classTemplateResult = ClassTemplate{};
-    d->typeResult = cla.id();
+    Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+    if (!cla.isNull())
+    {
+      d->classTemplateResult = ClassTemplate{};
+      d->typeResult = cla.id();
+    }
   }
-}
-
-Class NameLookup::instantiate_class_template(const std::shared_ptr<ast::Identifier> & name)
-{
-  ClassTemplate ct = d->classTemplateResult;
-  std::vector<TemplateArgument> targs = d->template_->arguments(this->scope(), name->as<ast::TemplateIdentifier>().arguments);
-  d->template_->postprocess(ct, this->scope(), targs);
-  return d->template_->instantiate(ct, targs);
 }
 
 } // namespace script

@@ -62,11 +62,6 @@ std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp
   return result;
 }
 
-TemplateNameProcessor::InstantiationPolicy TemplateNameProcessor::policy() const
-{
-  return InstantiateIfNeeded;
-}
-
 Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
   if (ct.is_native())
@@ -86,6 +81,17 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
     ct.impl()->instances[args] = ret;
     return ret;
   }
+}
+
+Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
+{
+  std::vector<TemplateArgument> targs = arguments(scp, tmplt->arguments);
+  postprocess(ct, scp, targs);
+  Class c;
+  const bool result = ct.hasInstance(targs, &c);
+  if (result)
+    return c;
+  return instantiate(ct, targs);
 }
 
 void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
