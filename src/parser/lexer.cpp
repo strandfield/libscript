@@ -46,7 +46,6 @@ Token Lexer::read()
     throw std::runtime_error{ "Lexer::read() : reached end of input" };
 
   Position p = position();
-  int l = line();
 
   char c = readChar();
   auto ct = ctype(c);

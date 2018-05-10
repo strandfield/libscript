@@ -214,7 +214,7 @@ Function ScriptCompiler::registerRootFunction()
 
   schedule(Function{ scriptfunc }, fakedecl, mCurrentScope);
 
-  return scriptfunc;
+  return Function{ scriptfunc };
 }
 
 void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask & task)

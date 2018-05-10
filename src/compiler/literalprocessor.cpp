@@ -49,6 +49,8 @@ Value LiteralProcessor::generate(Engine *e, const std::shared_ptr<ast::Literal> 
   {
     throw NotImplementedError{ "LiteralProcessor::generate() : User defined literal not supported here" };
   }
+  default:
+    break;
   }
 
   throw NotImplementedError{ "LiteralProcessor::generate() : kind of literal not implemented" };

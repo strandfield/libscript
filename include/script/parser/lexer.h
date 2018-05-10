@@ -116,9 +116,9 @@ private:
   SourceFile mSourceFile;
   int mLength;
   int mId;
+  int mPos;
   int mLine;
   int mColumn;
-  int mPos;
 };
 
 } // parser

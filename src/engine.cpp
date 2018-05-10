@@ -216,7 +216,7 @@ void EngineImpl::placement(const Function & ctor, Value object, const std::vecto
 Lambda EngineImpl::newLambda()
 {
   const int id = static_cast<int>(this->lambdas.size()) | Type::LambdaFlag;
-  const int index = id & 0xFFFF;
+  // const int index = id & 0xFFFF;
   Lambda l{ std::make_shared<LambdaImpl>(id) };
   this->lambdas.push_back(l);
   return l;
