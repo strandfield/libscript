@@ -158,6 +158,7 @@ DECLARE_COMPILER_ERROR(InvalidLiteralTemplateArgument, "Only integer and boolean
 DECLARE_COMPILER_ERROR(NonConstExprTemplateArgument, "Template arguments must be constant expressions.");
 DECLARE_COMPILER_ERROR(InvalidTemplateArgumentType, "This constant epression does not evaluate to an int or a bool.");
 DECLARE_COMPILER_ERROR(MissingNonDefaultedTemplateParameter, "Missing non-defaulted template parameter.");
+DECLARE_COMPILER_ERROR(CouldNotFindPrimaryClassTemplate, "Could not find primary class template (must be declared in the same namespace).");
 
 DECLARE_COMPILER_ERROR(InvalidUseOfVirtualKeyword, "Invalid use of virtual keyword.");
 

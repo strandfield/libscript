@@ -690,7 +690,10 @@ void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::Templ
 {
   if (decl->is_full_specialization())
   {
-    throw NotImplementedError{ dpos(decl), "Template full specialization not implemented yet" };
+    if (decl->declaration->is<ast::FunctionDecl>())
+      return processFunctionTemplateFullSpecialization(decl, std::static_pointer_cast<ast::FunctionDecl>(decl->declaration));
+    else
+      return processClassTemplateFullSpecialization(decl, std::static_pointer_cast<ast::ClassDecl>(decl->declaration));
   }
   else if (decl->is_partial_specialization())
   {
@@ -760,6 +763,58 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   ft.impl()->definition = tdef;
   ft.impl()->script = script().weakref();
   scp.impl()->add_template(ft);
+}
+
+Namespace ScriptCompiler::findEnclosingNamespace(const Scope & scp) const
+{
+  if (scp.type() == Scope::NamespaceScope)
+    return scp.asNamespace();
+  else if (scp.isClass())
+    return scp.asClass().enclosingNamespace();
+  return findEnclosingNamespace(scp.parent());
+}
+
+ClassTemplate ScriptCompiler::findClassTemplate(const std::string & name, const std::vector<Template> & list)
+{
+  for (const auto & t : list)
+  {
+    if (t.isClassTemplate() && t.name() == name)
+      return t.asClassTemplate();
+  }
+
+  return ClassTemplate{};
+}
+
+void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::ClassDecl> & classdecl)
+{
+  Scope scp = currentScope();
+
+  auto template_name = ast::Identifier::New(classdecl->name->name, classdecl->name->ast.lock());
+  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
+  Namespace ns = findEnclosingNamespace(scp);
+  ClassTemplate ct = findClassTemplate(classdecl->name->getName(), ns.templates());
+
+  if (ct.isNull())
+    throw CouldNotFindPrimaryClassTemplate{dpos(classdecl)};
+
+  TemplateNameProcessor tnp; /// TODO : use a custom TNP
+  auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
+  std::vector<TemplateArgument> args = tnp.arguments(scp, template_full_name->arguments);
+
+  ClassBuilder builder{ std::string{} };
+  fill(builder, classdecl);
+
+  Class result{ ClassTemplateInstance::make(builder, ct, args) };
+  result.implementation()->script = script().weakref();
+
+  readClassContent(result, classdecl);
+
+  ct.impl()->instances[args] = result;
+}
+
+void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
+{
+  throw NotImplementedError{ dpos(decl), "Full specialization of function template not supported yet" };
 }
 
 void ScriptCompiler::reprocess(const IncompleteFunction & func)
