@@ -834,8 +834,9 @@ void ScriptCompiler::reprocess(const IncompleteFunction & func)
     if (proto.argv(i).testFlag(Type::UnknownFlag))
       proto.setParameter(i, resolve(decl->params.at(i-offset).type));
 
-    bool optional = decl->params.at(i - offset).defaultValue != nullptr;
-    proto.setParameter(i, proto.argv(i).withFlag(Type::OptionalFlag));
+    const bool optional = decl->params.at(i - offset).defaultValue != nullptr;
+    if(optional)
+      proto.setParameter(i, proto.argv(i).withFlag(Type::OptionalFlag));
   }
 }
 
