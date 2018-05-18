@@ -109,6 +109,41 @@ void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, st
   }
 }
 
+const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::get_trailing_template_arguments(const std::shared_ptr<ast::Identifier> & tname)
+{
+  if (tname->is<ast::TemplateIdentifier>())
+  {
+    const auto & name = tname->as<ast::TemplateIdentifier>();
+    return name.arguments;
+  }
+  else if (tname->is<ast::ScopedIdentifier>())
+  {
+    return get_trailing_template_arguments(tname->as<ast::ScopedIdentifier>().rhs);
+  }
+
+  throw std::runtime_error{ "Bad call to TemplateNameProcessor::get_trailing_template_arguments()" };
+}
+
+TemplateArgument DummyTemplateNameProcessor::argument(const Scope & , const std::shared_ptr<ast::Node> & )
+{
+  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::argument()" };
+}
+
+Class DummyTemplateNameProcessor::instantiate(ClassTemplate & , const std::vector<TemplateArgument> & )
+{
+  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::instantiate()" };
+}
+
+Class DummyTemplateNameProcessor::process(const Scope & , ClassTemplate & , const std::shared_ptr<ast::TemplateIdentifier> &)
+{
+  return Class{};
+}
+
+void DummyTemplateNameProcessor::postprocess(const Template & , const Scope &, std::vector<TemplateArgument> & )
+{
+  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::postprocess()" };
+}
+
 } // namespace compiler
 
 } // namespace script

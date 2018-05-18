@@ -702,3 +702,221 @@ TEST(TemplateTests, instantiating_class_member_template) {
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 42);
 }
+
+
+/****************************************************************
+Testing comparison of function template overloading
+****************************************************************/
+
+#include "script/compiler/templatespecialization.h"
+
+TEST(TemplateTests, basic_overload_comp) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>         "
+    "  T abs(T val) { }             "
+    "                               "
+    "  template<typename T>         "
+    "  T abs(const T val) { }       "
+    "                               "
+    "  template<typename T>         "
+    "  T abs(T & val) { }           "
+    "                               "
+    "  template<typename T>         "
+    "  T abs(const T & val) { }     ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 4);
+
+  FunctionTemplate abs_T = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate abs_cT = s.rootNamespace().templates().at(1).asFunctionTemplate();
+  FunctionTemplate abs_Tref = s.rootNamespace().templates().at(2).asFunctionTemplate();
+  FunctionTemplate abs_cTref = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  ASSERT_EQ(abs_T.name(), "abs");
+  ASSERT_EQ(abs_cT.name(), "abs");
+  ASSERT_EQ(abs_Tref.name(), "abs");
+  ASSERT_EQ(abs_cTref.name(), "abs");
+
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(abs_T, abs_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::Indistinguishable);
+  c = compiler::TemplateSpecialization::compare(abs_Tref, abs_Tref);
+  ASSERT_EQ(c, TemplatePartialOrdering::Indistinguishable);
+
+  c = compiler::TemplateSpecialization::compare(abs_T, abs_cT);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(abs_cT, abs_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(abs_Tref, abs_cTref);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(abs_cTref, abs_Tref);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(abs_Tref, abs_cT);
+  ASSERT_EQ(c, TemplatePartialOrdering::NotComparable);
+  c = compiler::TemplateSpecialization::compare(abs_cT, abs_Tref);
+  ASSERT_EQ(c, TemplatePartialOrdering::NotComparable);
+}
+
+
+TEST(TemplateTests, overload_comp_array_overload) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>                      "
+    "  int size(const T & a) = delete;           "
+    "                                            "
+    "  template<typename T>                      "
+    "  int size(const Array<T> & a) { }          "
+    "                                            "
+    "  template<typename T>                      "
+    "  int size(const Array<Array<T>> & a) { }   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 3);
+
+  FunctionTemplate size_T = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate size_Array_T = s.rootNamespace().templates().at(1).asFunctionTemplate();
+  FunctionTemplate size_Array_Array_T = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  ASSERT_EQ(size_T.name(), "size");
+  ASSERT_EQ(size_Array_T.name(), "size");
+  ASSERT_EQ(size_Array_Array_T.name(), "size");
+
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(size_T, size_Array_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(size_Array_T, size_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(size_T, size_Array_Array_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(size_Array_Array_T, size_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(size_Array_T, size_Array_Array_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(size_Array_Array_T, size_Array_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+}
+
+TEST(TemplateTests, overload_comp_function_type) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>                      "
+    "  int foo(T func) = delete;                 "
+    "                                            "
+    "  template<typename T, typename U>          "
+    "  int foo(T(U) func) { }                    ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 2);
+
+  FunctionTemplate foo_T = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate foo_T_U = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  ASSERT_EQ(foo_T.name(), "foo");
+  ASSERT_EQ(foo_T_U.name(), "foo");
+  
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(foo_T, foo_T_U);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(foo_T_U, foo_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+}
+
+TEST(TemplateTests, overload_comp_not_comparable) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T, typename U>          "
+    "  int foo(Array<T> a, U func) {}            "
+    "                                            "
+    "  template<typename T, typename U>          "
+    "  int foo(T a, T(U) func) { }               ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 2);
+
+  FunctionTemplate foo_array = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate foo_function = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  ASSERT_EQ(foo_array.name(), "foo");
+  ASSERT_EQ(foo_function.name(), "foo");
+
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(foo_array, foo_function);
+  ASSERT_EQ(c, TemplatePartialOrdering::NotComparable);
+  c = compiler::TemplateSpecialization::compare(foo_function, foo_array);
+  ASSERT_EQ(c, TemplatePartialOrdering::NotComparable);
+}
+
+TEST(TemplateTests, overload_less_parameters) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T, typename U>          "
+    "  int foo(T a, U b) {}                      "
+    "                                            "
+    "  template<typename T>                      "
+    "  int foo(T a, T b) { }                     ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 2);
+
+  FunctionTemplate foo_T_U = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate foo_T = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  ASSERT_EQ(foo_T_U.name(), "foo");
+  ASSERT_EQ(foo_T.name(), "foo");
+
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(foo_T_U, foo_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+  c = compiler::TemplateSpecialization::compare(foo_T, foo_T_U);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+}

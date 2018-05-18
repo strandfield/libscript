@@ -27,6 +27,9 @@ public:
   TemplateDefinition(const TemplateDefinition &) = default;
   ~TemplateDefinition() = default;
 
+  std::shared_ptr<ast::ClassDecl> get_class_decl() const;
+  std::shared_ptr<ast::FunctionDecl> get_function_decl() const;
+
   static TemplateDefinition make(const std::shared_ptr<ast::TemplateDeclaration> & decl);
 
   TemplateDefinition & operator=(const TemplateDefinition &) = default;

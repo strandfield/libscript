@@ -504,6 +504,16 @@ struct CutPasteVisitor
 
 };
 
+std::shared_ptr<ast::ClassDecl> TemplateDefinition::get_class_decl() const
+{
+  return std::static_pointer_cast<ast::ClassDecl>(decl_->declaration);
+}
+
+std::shared_ptr<ast::FunctionDecl> TemplateDefinition::get_function_decl() const
+{
+  return std::static_pointer_cast<ast::FunctionDecl>(decl_->declaration);
+}
+
 TemplateDefinition TemplateDefinition::make(const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
   TemplateDefinition ret;

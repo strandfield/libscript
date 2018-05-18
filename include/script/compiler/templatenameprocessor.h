@@ -35,7 +35,20 @@ public:
 
   virtual void postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);
 
+  static const std::vector<std::shared_ptr<ast::Node>> & get_trailing_template_arguments(const std::shared_ptr<ast::Identifier> & tname);
+
   TemplateNameProcessor & operator=(const TemplateNameProcessor &) = delete;
+};
+
+class LIBSCRIPT_API DummyTemplateNameProcessor : public TemplateNameProcessor
+{
+public:
+  ~DummyTemplateNameProcessor() = default;
+
+  TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg) override;
+  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;
+  Class process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt) override;
+  void postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args) override;
 };
 
 } // namespace compiler
