@@ -207,6 +207,13 @@ Scope Template::argumentScope(const std::vector<TemplateArgument> & args) const
   return Scope{ ret };
 }
 
+Scope Template::parameterScope() const
+{
+  auto tparamscope = std::make_shared<TemplateParameterScope>(*this);
+  tparamscope->parent = scope().impl();
+  return Scope{ tparamscope };
+}
+
 TemplateArgument Template::get(const std::string & name, const std::vector<TemplateArgument> & args) const
 {
   /// TODO : should we throw if the sizes are different ?

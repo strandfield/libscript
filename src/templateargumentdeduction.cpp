@@ -69,6 +69,7 @@ TemplateArgumentDeduction TemplateArgumentDeduction::process(FunctionTemplate ft
 
 void TemplateArgumentDeduction::fill(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const Scope & scp, const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
+  /// TODO : could be replaced by ft.parameterScope() if we remove the 'scp' parameter
   auto tparamscope = std::make_shared<TemplateParameterScope>(ft);
   tparamscope->parent = scp.impl();
 
