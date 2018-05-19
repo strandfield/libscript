@@ -1583,6 +1583,18 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
 
   sentinel.consumeSentinel();
 
+  if (atEnd())
+    return ret;
+
+  if (unsafe_peek() == Token::Const)
+    ret.constQualifier = unsafe_read();
+
+  if (atEnd())
+    return ret;
+
+  if (unsafe_peek() == Token::Ref)
+    ret.reference = unsafe_read();
+
   return ret;
 }
 

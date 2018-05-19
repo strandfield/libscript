@@ -103,7 +103,52 @@ TEST(ParserTests, identifier2) {
   auto id = parser.parse();
   ASSERT_TRUE(id->is<ast::Identifier>());
   ASSERT_FALSE(id->is<ast::TemplateIdentifier>());
+}
 
+TEST(ParserTests, function_types) {
+  using namespace script;
+  using namespace parser;
+  using namespace ast;
+
+  const char *source =
+    " void(const int) | "
+    " const int(int & ) | "
+    " int(int) const  |"
+    " int(int) const & | ";
+
+  ScriptFragment fragment{ parser_data(source) };
+  TypeParser tp{ &fragment };
+
+  auto t = tp.parse();
+  ASSERT_TRUE(t.functionType != nullptr);
+  ASSERT_EQ(t.functionType->params.size(), 1);
+  ASSERT_TRUE(t.functionType->params.at(0).constQualifier.isValid());
+
+  fragment.read();
+
+  t = tp.parse();
+  ASSERT_TRUE(t.functionType != nullptr);
+  ASSERT_TRUE(t.functionType->returnType.constQualifier.isValid());
+  ASSERT_EQ(t.functionType->params.size(), 1);
+  ASSERT_TRUE(t.functionType->params.at(0).reference.isValid());
+
+  fragment.read();
+
+  t = tp.parse();
+  ASSERT_TRUE(t.functionType != nullptr);
+  ASSERT_FALSE(t.functionType->returnType.constQualifier.isValid());
+  ASSERT_TRUE(t.constQualifier.isValid());
+  ASSERT_FALSE(t.reference.isValid());
+  ASSERT_EQ(t.functionType->params.size(), 1);
+
+  fragment.read();
+
+  t = tp.parse();
+  ASSERT_TRUE(t.functionType != nullptr);
+  ASSERT_FALSE(t.functionType->returnType.constQualifier.isValid());
+  ASSERT_TRUE(t.constQualifier.isValid());
+  ASSERT_TRUE(t.reference.isValid());
+  ASSERT_EQ(t.functionType->params.size(), 1);
 }
 
 TEST(ParserTests, expr1) {
