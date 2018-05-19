@@ -87,6 +87,10 @@ TEST(CoreUtilsTests, Types) {
 
   ASSERT_NE(Type{ Type::String }, Type{ Type::Int });
   ASSERT_NE(Type{ Type::Int }, Type{ Type::Boolean });
+
+  ASSERT_EQ(Type::cref(Type::Int).withoutRef(), Type(Type::Int, Type::ConstFlag));
+  ASSERT_EQ(Type(Type::Int).withConst(), Type(Type::Int, Type::ConstFlag));
+  ASSERT_EQ(Type(Type::Int).withConst().withoutConst(), Type::Int);
 }
 
 

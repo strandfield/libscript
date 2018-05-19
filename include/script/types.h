@@ -62,6 +62,10 @@ public:
   bool isRefRef() const;
   bool isConstRef() const;
 
+  Type withConst() const;
+  Type withoutConst() const;
+  Type withoutRef() const;
+
   bool isFundamentalType() const;
   bool isObjectType() const;
   bool isEnumType() const;

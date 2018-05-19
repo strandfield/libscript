@@ -61,6 +61,21 @@ bool Type::isConstRef() const
   return isConst() && isReference();
 }
 
+Type Type::withConst() const
+{
+  return this->withFlag(Type::ConstFlag);
+}
+
+Type Type::withoutConst() const
+{
+  return this->withoutFlag(Type::ConstFlag);
+}
+
+Type Type::withoutRef() const
+{
+  return this->withoutFlag(Type::ReferenceFlag).withoutFlag(Type::ForwardReferenceFlag);
+}
+
 bool Type::isFundamentalType() const
 {
   return (d & 0xFFFFF) <= static_cast<int>(Double);
