@@ -161,13 +161,23 @@ void TemplateArgumentDeductionEngine::process()
 void TemplateArgumentDeductionEngine::deduce(const ast::FunctionParameter & param, const Type & t)
 {
   if (param.type.functionType)
-    return deduce(*param.type.functionType, t);
+    return deduce(*param.type.functionType, t.baseType());
 
-  deduce(param.type, t);
+  auto pattern = param.type;
+  pattern.constQualifier = parser::Token{};
+  pattern.reference = parser::Token{};
+  deduce(pattern, t.baseType());
 }
 
 void TemplateArgumentDeductionEngine::deduce(const ast::QualifiedType & pattern, const Type & input)
 {
+  if (pattern.constQualifier.isValid() && !input.isConst())
+    return;
+  if (pattern.isRef() && !input.isReference())
+    return;
+  if (pattern.isRefRef() && !input.isRefRef())
+    return;
+
   if (pattern.functionType)
     return deduce(*pattern.functionType, input);
 
@@ -196,7 +206,18 @@ void TemplateArgumentDeductionEngine::deduce(const ast::QualifiedType & pattern,
   {
     NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
     if (lookup.templateParameterIndex() != -1)
-      return record_deduction(lookup.templateParameterIndex(), TemplateArgument{ input.baseType() });
+    {
+      Type t = input;
+
+      if (pattern.constQualifier.isValid())
+        t = t.withoutConst();
+      if (pattern.isRef())
+        t = t.withoutFlag(Type::ReferenceFlag);
+      if (pattern.isRefRef())
+        t = t.withFlag(Type::ForwardReferenceFlag);
+
+      return record_deduction(lookup.templateParameterIndex(), TemplateArgument{ t });
+    }
   }
   else
   {
@@ -235,10 +256,20 @@ void TemplateArgumentDeductionEngine::deduce(const std::shared_ptr<ast::Node> & 
 {
   if (pattern->is<ast::TypeNode>())
   {
+    if (input.kind != TemplateArgument::TypeArgument)
+    {
+      const ast::QualifiedType qt = pattern->as<ast::TypeNode>().value;
+      if (qt.isConst() || qt.reference.isValid())
+        return;
+
+      NameLookup lookup = NameLookup::resolve(qt.type->getName(), scope_);
+
+      if (lookup.templateParameterIndex() != -1)
+        return record_deduction(lookup.templateParameterIndex(), input);
+    }
+
     const ast::QualifiedType qt = pattern->as<ast::TypeNode>().value;
-    NameLookup lookup = NameLookup::resolve(qt.type->getName(), scope_);
-    if (lookup.templateParameterIndex() != -1)
-      return record_deduction(lookup.templateParameterIndex(), input);
+    return deduce(qt, input.type);
   }
 }
 

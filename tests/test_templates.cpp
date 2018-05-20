@@ -9,6 +9,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"
 #include "script/functiontype.h"
+#include "../src/template_p.h" /// TODO : ugly !
 #include "script/templateargumentdeduction.h"
 
 #include "script/userdata.h"
@@ -395,6 +396,61 @@ TEST(TemplateTests, argument_deduction_4) {
   //std::cout << "Deduced " << deduction.deduction_name(1) << " = " << engine.typeName(deduction.deduced_value(1).type) << std::endl;
 }
 
+TEST(TemplateTests, argument_deduction_5) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>                     "
+    "  int foo(const void(T) func) { }          "
+    "                                           "
+    "  template<typename T>                     "
+    "  int bar(const void(const T) func) { }    ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 2);
+
+  FunctionTemplate foo = s.rootNamespace().templates().front().asFunctionTemplate();
+  FunctionTemplate bar = s.rootNamespace().templates().back().asFunctionTemplate();
+
+  auto create_func_type = [&engine](const Type & t) -> Type {
+    Prototype proto{ Type::Void , t };
+    return engine.getFunctionType(proto).type();
+  };
+
+  std::vector<TemplateArgument> targs;
+  std::vector<Type> inputs;
+  TemplateArgumentDeduction deduction;
+
+  inputs = std::vector<Type>{ create_func_type(Type::Int) };
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.scope(), foo.impl()->definition.decl_);
+  ASSERT_TRUE(deduction.success());
+  ASSERT_EQ(deduction.get_deductions().size(), 1);
+  ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
+
+  inputs = std::vector<Type>{ create_func_type(Type{Type::Int}.withConst()) };
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.scope(), foo.impl()->definition.decl_);
+  ASSERT_TRUE(deduction.success()); 
+  ASSERT_EQ(deduction.get_deductions().size(), 1);
+  ASSERT_EQ(deduction.deduced_value(0).type, Type{ Type::Int }.withConst());
+
+  inputs = std::vector<Type>{ create_func_type(Type{ Type::Int }.withConst()) };
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.scope(), bar.impl()->definition.decl_);
+  ASSERT_TRUE(deduction.success()); 
+  ASSERT_EQ(deduction.get_deductions().size(), 1);
+  ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
+
+  inputs = std::vector<Type>{ create_func_type(Type::Int) };
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.scope(), bar.impl()->definition.decl_);
+  ASSERT_TRUE(deduction.success()); /// TODO : should it be a success in this case ?
+  ASSERT_EQ(deduction.get_deductions().size(), 0);
+}
 
 /****************************************************************
   Testing user-defined function templates
