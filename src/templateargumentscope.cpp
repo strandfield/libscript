@@ -45,10 +45,16 @@ bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl)
 {
   const auto & params = template_.parameters();
   size_t size = std::min(params.size(), arguments_.size());
-  for (size_t i(0); i < size; ++i)
+  for (size_t i(0); i < params.size(); ++i)
   {
     if (params.at(i).name() != name)
       continue;
+
+    if (arguments_.size() <= i)
+    {
+      nl->templateParameterIndex = i;
+      return true;
+    }
 
     const auto & targ = arguments_.at(i);
     if (targ.kind == TemplateArgument::TypeArgument)
