@@ -93,6 +93,13 @@ public:
   static TemplatePartialOrdering compare(const PartialTemplateSpecialization & a, const PartialTemplateSpecialization & b);
 };
 
+class LIBSCRIPT_API TemplateSpecializationSelector
+{
+public:
+  
+  std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> select(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs);
+};
+
 } // namespace compiler
 
 } // namespace script

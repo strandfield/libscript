@@ -310,5 +310,238 @@ void TemplateArgumentDeductionEngine::record_deduction(int param_index, const Te
   result_->record_deduction(param_index, value);
 }
 
+
+TemplatePatternMatching::TemplatePatternMatching(TemplateArgumentDeduction *tad, const Scope & parameterScope, const std::vector<TemplateArgument> & targs)
+  : deductions_(tad)
+  , scope_(parameterScope)
+  , arguments_(&targs)
+{
+
+}
+
+bool TemplatePatternMatching::match(const std::vector<std::shared_ptr<ast::Node>> & pattern)
+{
+  result_ = true;
+
+  size_t s = std::min(arguments().size(), pattern.size());
+
+  for (size_t i(0); i < s; ++i)
+  {
+    deduce(pattern.at(i), arguments().at(i));
+  }
+
+  if (!result_)
+    return false;
+
+  deductions_->agglomerate_deductions();
+  result_ = deductions_->success();
+  return result_;
+}
+
+void TemplatePatternMatching::deduce(const ast::QualifiedType & pattern, const Type & input)
+{
+  if (pattern.constQualifier.isValid() && !input.isConst())
+    return fail();
+  if (pattern.isRef() && !input.isReference())
+    return fail();
+  if (pattern.isRefRef() && !input.isRefRef())
+    return fail();
+
+  if (pattern.functionType)
+    return deduce(*pattern.functionType, input);
+
+  if (pattern.type->is<ast::TemplateIdentifier>())
+  {
+    auto tmpltid = std::static_pointer_cast<ast::TemplateIdentifier>(pattern.type);
+    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    if (lookup.classTemplateResult().isNull())
+      return fail();
+
+    if (!input.isObjectType())
+      return fail();
+
+    Class object_type = engine()->getClass(input);
+    if (!object_type.isTemplateInstance())
+      return fail();
+
+    ClassTemplate arg_template = object_type.instanceOf();
+
+    if (arg_template != lookup.classTemplateResult())
+      return fail();
+
+    return deduce(tmpltid->arguments, object_type.arguments());
+  }
+  else if (pattern.type->type() == ast::NodeType::SimpleIdentifier)
+  {
+    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    if (lookup.templateParameterIndex() != -1)
+    {
+      Type t = input;
+
+      if (pattern.constQualifier.isValid())
+        t = t.withoutConst();
+      if (pattern.isRef())
+        t = t.withoutFlag(Type::ReferenceFlag);
+      if (pattern.isRefRef())
+        t = t.withFlag(Type::ForwardReferenceFlag);
+
+      return record_deduction(lookup.templateParameterIndex(), TemplateArgument{ t });
+    }
+    else if (lookup.typeResult() == input)
+      return; // ok
+    else
+      return fail();
+  }
+  else
+  {
+    auto qualid = std::static_pointer_cast<ast::ScopedIdentifier>(pattern.type);
+    return deduce(qualid, input);
+  }
+}
+
+void TemplatePatternMatching::deduce(const ast::FunctionType & pattern, const Type & input)
+{
+  if (!input.isFunctionType())
+    return;
+
+  FunctionType ft = engine()->getFunctionType(input);
+
+  deduce(pattern.returnType, ft.prototype().returnType());
+
+  if (pattern.params.size() != (size_t)ft.prototype().argc())
+    return fail();
+
+  for (size_t i(0); i < pattern.params.size(); ++i)
+    deduce(pattern.params.at(i), ft.prototype().argv(i));
+}
+
+void TemplatePatternMatching::deduce(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
+{
+  // we should have pattern.size() < inputs.size() 
+  // because some arguments may be missing in the pattern but not in the instantiated template
+  size_t s = std::min(pattern.size(), inputs.size());
+
+  for (size_t i(0); i < s; ++i)
+  {
+    deduce(pattern.at(i), inputs.at(i));
+  }
+}
+
+void TemplatePatternMatching::deduce(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input)
+{
+  if (pattern->is<ast::TypeNode>())
+  {
+    if (input.kind != TemplateArgument::TypeArgument)
+    {
+      const ast::QualifiedType qt = pattern->as<ast::TypeNode>().value;
+      if (qt.isConst() || qt.reference.isValid())
+        return;
+
+      NameLookup lookup = NameLookup::resolve(qt.type->getName(), scope_);
+
+      if (lookup.templateParameterIndex() != -1)
+        return record_deduction(lookup.templateParameterIndex(), input);
+      else if (input.kind == TemplateArgument::IntegerArgument)
+      {
+        if (!lookup.variable().isNull() || lookup.variable().type().baseType() != Type::Int)
+          return fail();
+
+        if (lookup.variable().toInt() != input.integer)
+          return fail();
+
+        return; // ok
+      }
+      else if (input.kind == TemplateArgument::BoolArgument)
+      {
+        if (!lookup.variable().isNull() || lookup.variable().type().baseType() != Type::Boolean)
+          return fail();
+
+        if (lookup.variable().toBool() != input.boolean)
+          return fail();
+
+        return; // ok
+      }
+      else
+        return fail();
+    }
+
+    const ast::QualifiedType qt = pattern->as<ast::TypeNode>().value;
+    return deduce(qt, input.type);
+  }
+  else
+  {
+    if (pattern->is<ast::IntegerLiteral>())
+    {
+      if (input.kind != TemplateArgument::IntegerArgument)
+        return fail();
+
+      const int val = compiler::LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(pattern));
+      if (val != input.integer)
+        return fail();
+      return; // ok
+    }
+    else if (pattern->is<ast::BoolLiteral>())
+    {
+      if(input.kind != TemplateArgument::BoolArgument)
+        return fail();
+      
+      if (input.boolean != (pattern->as<ast::BoolLiteral>().token == parser::Token::Bool))
+        return fail();
+
+      return; // ok
+    }
+
+    /// TODO : pattern is an expr, we may need to evaluate it
+    // e.g. template<int N> class foo<N, N+N> { };
+    // problem is we don't have the necessary tools for now
+    // we would need a scope that supports a combination of template arg / template param / deductions 
+    // and a constant expression evaluator
+    return fail();
+  }
+}
+
+void TemplatePatternMatching::deduce(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input)
+{
+  if (pattern->rhs->is<ast::TemplateIdentifier>())
+  {
+    if (!input.isObjectType())
+      return fail();
+
+    Class object_type = engine()->getClass(input);
+    if (!object_type.isTemplateInstance())
+      return fail();
+
+    ClassTemplate arg_template = object_type.instanceOf();
+
+
+    auto template_name = ast::Identifier::New(pattern->rhs->name, pattern->ast.lock());
+    auto qualid = ast::ScopedIdentifier::New(pattern->lhs, pattern->scopeResolution, template_name);
+    NameLookup lookup = NameLookup::resolve(qualid, scope_);
+    if (lookup.classTemplateResult().isNull())
+      return fail();
+
+    if (arg_template != lookup.classTemplateResult())
+      return fail();
+
+    auto tmpltid = std::static_pointer_cast<ast::TemplateIdentifier>(pattern->rhs);
+    return deduce(tmpltid->arguments, object_type.arguments());
+  }
+  else
+  {
+    /// TODO : some template parameter may already have a value that will not be accessible through scope_
+    NameLookup lookup = NameLookup::resolve(pattern, scope_);
+    if (lookup.typeResult() == input)
+      return; // ok
+    else
+      return fail();
+  }
+}
+
+
+void TemplatePatternMatching::record_deduction(int param_index, const TemplateArgument & value)
+{
+  deductions_->record_deduction(param_index, value);
+}
+
 } // namespace script
 

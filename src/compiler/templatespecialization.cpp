@@ -9,6 +9,7 @@
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
 #include "script/namelookup.h"
+#include "script/templateargumentdeduction.h"
 
 #include "../template_p.h"
 
@@ -201,6 +202,48 @@ TemplatePartialOrdering TemplateSpecialization::compare(const PartialTemplateSpe
   return compare_from_args(a.parameterScope(), a.arguments(), b.parameterScope(), b.arguments());
 }
 
+
+std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> TemplateSpecializationSelector::select(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs)
+{
+  const auto & specs = ct.partialSpecializations();
+
+  std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> best;
+  for (const auto & tps : specs)
+  {
+    TemplateArgumentDeduction deduc;
+    TemplatePatternMatching pattern{ &deduc, tps.parameterScope(), targs };
+    if (!pattern.match(tps.arguments()))
+      continue;
+
+    std::vector<TemplateArgument> args;
+    bool ok = true;
+    for (size_t i(0); i < tps.parameters().size(); ++i)
+    {
+      if (!deduc.has_deduction_for(i))
+      {
+        ok = false;
+        break;
+      }
+      args.push_back(deduc.deduced_value_for(i));
+    }
+
+    if (!ok)
+      continue;
+
+    if (best.first.isNull())
+      best = std::make_pair(tps, args);
+    else
+    {
+      TemplatePartialOrdering order = TemplateSpecialization::compare(best.first, tps);
+      if (order == TemplatePartialOrdering::SecondIsMoreSpecialized)
+        best = std::make_pair(tps, args);
+      else if (order == TemplatePartialOrdering::Indistinguishable || order == TemplatePartialOrdering::NotComparable)
+        return {}; /// TODO : not totally correct but will do for now
+    }
+  }
+
+  return best;
+}
 
 } // namespace compiler
 

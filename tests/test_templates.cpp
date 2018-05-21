@@ -1034,3 +1034,78 @@ TEST(TemplateTests, partial_specializations_comp) {
   c = compiler::TemplateSpecialization::compare(foo_T_T, foo_T_T);
   ASSERT_EQ(c, TemplatePartialOrdering::Indistinguishable);
 }
+
+
+/****************************************************************
+Testing selection of partial template specializations
+****************************************************************/
+
+TEST(TemplateTests, partial_specializations_selec) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T, typename U>                 "
+    "  class foo {};                                    "
+    "                                                   "
+    "  template<typename T>                             "
+    "  class foo<T, T> { };                             "
+    "                                                   "
+    "  template<typename T, typename U>                 "
+    "  class foo<Array<T>, U> { };                      "
+    "                                                   "
+    "  template<typename T, typename U>                 "
+    "  class foo<T, U(T)> { };                          ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  ClassTemplate foo = s.rootNamespace().templates().front().asClassTemplate();
+
+  ASSERT_EQ(foo.partialSpecializations().size(), 3);
+
+  PartialTemplateSpecialization foo_T_T = foo.partialSpecializations().at(0);
+  PartialTemplateSpecialization foo_ArrayT_U = foo.partialSpecializations().at(1);
+  PartialTemplateSpecialization foo_T_UT = foo.partialSpecializations().at(2);
+
+  compiler::TemplateSpecializationSelector selector;
+  std::vector<TemplateArgument> targs;
+  std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> result;
+
+  targs = std::vector<TemplateArgument>{ TemplateArgument{Type::Int}, TemplateArgument{ Type::Boolean } };
+  result = selector.select(foo, targs);
+  ASSERT_TRUE(result.first.isNull());
+
+  targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Int }, TemplateArgument{ Type::Int } };
+  result = selector.select(foo, targs);
+  ASSERT_EQ(result.first, foo_T_T);
+  ASSERT_EQ(result.second.size(), 1);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+
+  Type array_int = engine.newArray(Engine::ElementType{ Type::Int }).typeId();
+  targs = std::vector<TemplateArgument>{ TemplateArgument{ array_int }, TemplateArgument{ Type::Boolean } };
+  result = selector.select(foo, targs);
+  ASSERT_EQ(result.first, foo_ArrayT_U);
+  ASSERT_EQ(result.second.size(), 2);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+  ASSERT_EQ(result.second.back().type, Type::Boolean);
+
+  Type void_int = engine.getFunctionType(Prototype{ Type::Void, Type::Int }).type();
+  targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Int }, TemplateArgument{ void_int } };
+  result = selector.select(foo, targs);
+  ASSERT_EQ(result.first, foo_T_UT);
+  ASSERT_EQ(result.second.size(), 2);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+  ASSERT_EQ(result.second.back().type, Type::Void);
+
+  Type int_int = engine.getFunctionType(Prototype{ Type::Int, Type::Int }).type();
+  targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Void }, TemplateArgument{ int_int } };
+  result = selector.select(foo, targs);
+  ASSERT_TRUE(result.first.isNull());
+}

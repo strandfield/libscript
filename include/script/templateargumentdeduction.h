@@ -99,6 +99,43 @@ private:
   void record_deduction(int param_index, const TemplateArgument & value);
 };
 
+
+class TemplatePatternMatching
+{
+private:
+  TemplateArgumentDeduction *deductions_;
+  const std::vector<TemplateArgument> *arguments_;
+  Scope scope_;
+  bool result_;
+
+public:
+  TemplatePatternMatching(TemplateArgumentDeduction *tad, const Scope & parameterScope, const std::vector<TemplateArgument> & targs);
+
+  bool match(const std::vector<std::shared_ptr<ast::Node>> & pattern);
+
+  inline TemplateArgumentDeduction & deductions() { return *deductions_; }
+
+  inline const std::vector<TemplateArgument> & arguments() const { return *arguments_; }
+  inline const Scope & scope() const { return scope_; }
+
+  inline Engine* engine() const { return scope_.engine(); }
+
+private:
+  void fail() { result_ = false; }
+
+private:
+  void deduce(const ast::QualifiedType & pattern, const Type & input);
+  void deduce(const ast::FunctionType & param, const Type & t);
+
+  // deduction from a template argument list
+  void deduce(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs);
+  void deduce(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input);
+
+  void deduce(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input);
+
+  void record_deduction(int param_index, const TemplateArgument & value);
+};
+
 } // namespace script
 
 #endif // LIBSCRIPT_TEMPLATE_ARGUMENT_DEDUCTION_H
