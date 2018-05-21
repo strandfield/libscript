@@ -15,6 +15,8 @@ namespace script
 class Class;
 class ClassTemplate;
 class ClassTemplateImpl;
+class PartialTemplateSpecialization;
+class PartialTemplateSpecializationImpl;
 
 class ClassBuilder;
 
@@ -39,11 +41,30 @@ public:
 
   Class build(const ClassBuilder & builder, const std::vector<TemplateArgument> & args) const;
 
+  const std::vector<PartialTemplateSpecialization> & partialSpecializations() const;
+
   const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & instances() const;
 
   std::shared_ptr<ClassTemplateImpl> impl() const;
 
   ClassTemplate & operator=(const ClassTemplate & other) = default;
+};
+
+class LIBSCRIPT_API PartialTemplateSpecialization : public Template
+{
+public:
+  PartialTemplateSpecialization() = default;
+  PartialTemplateSpecialization(const PartialTemplateSpecialization & ) = default;
+  ~PartialTemplateSpecialization() = default;
+
+  PartialTemplateSpecialization(const std::shared_ptr<PartialTemplateSpecializationImpl> & impl);
+
+  const std::vector<std::shared_ptr<ast::Node>> & arguments() const;
+  ClassTemplate specializationOf() const;
+
+  std::shared_ptr<PartialTemplateSpecializationImpl> impl() const;
+
+  PartialTemplateSpecialization & operator=(const PartialTemplateSpecialization & other) = default;
 };
 
 } // namespace script

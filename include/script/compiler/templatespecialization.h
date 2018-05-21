@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include "script/private/scope_p.h"
+
 #include "script/templateparameter.h"
 
 #include "script/compiler/templatedefinition.h"
@@ -18,19 +20,11 @@ namespace script
 
 class ClassTemplate;
 class FunctionTemplate;
+class PartialTemplateSpecialization;
 class TemplateArgument;
 
 namespace compiler
 {
-
-class LIBSCRIPT_API PartialSpecialization
-{
-public:
-  TemplateDefinition definition;
-  std::vector<TemplateParameter> parameters;
-  std::vector<std::shared_ptr<ast::Node>> arguments;
-};
-
 
 class LIBSCRIPT_API TemplatePartialOrdering
 {
@@ -96,7 +90,7 @@ private:
 
 public:
   // compares two patterns of class template specialization specialization 
-  static TemplatePartialOrdering compare(const ClassTemplate & primary, const PartialSpecialization & a, const PartialSpecialization & b);
+  static TemplatePartialOrdering compare(const PartialTemplateSpecialization & a, const PartialTemplateSpecialization & b);
 };
 
 } // namespace compiler

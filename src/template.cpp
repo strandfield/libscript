@@ -56,6 +56,13 @@ ClassTemplateImpl::~ClassTemplateImpl()
 
 }
 
+PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s)
+  : TemplateImpl(std::string{}, std::move(params), scp, e, s)
+  , class_template(ct.impl())
+{
+
+}
+
 TemplateArgument::TemplateArgument()
   : kind(UnspecifiedArgument), integer(0), boolean(false) { }
 

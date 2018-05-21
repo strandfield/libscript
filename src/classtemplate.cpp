@@ -82,6 +82,11 @@ Class ClassTemplate::build(const ClassBuilder & builder, const std::vector<Templ
   return result;
 }
 
+const std::vector<PartialTemplateSpecialization> & ClassTemplate::partialSpecializations() const
+{
+  return impl()->specializations;
+}
+
 const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & ClassTemplate::instances() const
 {
   auto d = impl();
@@ -92,5 +97,29 @@ std::shared_ptr<ClassTemplateImpl> ClassTemplate::impl() const
 {
   return std::dynamic_pointer_cast<ClassTemplateImpl>(d);
 }
+
+
+
+PartialTemplateSpecialization::PartialTemplateSpecialization(const std::shared_ptr<PartialTemplateSpecializationImpl> & impl)
+  : Template(impl)
+{
+
+}
+
+const std::vector<std::shared_ptr<ast::Node>> & PartialTemplateSpecialization::arguments() const
+{
+  return impl()->definition.get_class_decl()->name->as<ast::TemplateIdentifier>().arguments;
+}
+
+ClassTemplate PartialTemplateSpecialization::specializationOf() const
+{
+  return ClassTemplate{ impl()->class_template.lock() };
+}
+
+std::shared_ptr<PartialTemplateSpecializationImpl> PartialTemplateSpecialization::impl() const
+{
+  return std::static_pointer_cast<PartialTemplateSpecializationImpl>(d);
+}
+
 
 } // namespace script

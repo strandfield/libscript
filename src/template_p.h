@@ -51,6 +51,16 @@ public:
 
   std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> instances;
   NativeClassTemplateInstantiationFunction instantiate;
+  std::vector<PartialTemplateSpecialization> specializations;
+};
+
+class PartialTemplateSpecializationImpl : public TemplateImpl
+{
+public:
+  PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s);
+  ~PartialTemplateSpecializationImpl() = default;
+
+  std::weak_ptr<ClassTemplateImpl> class_template;
 };
 
 } // namespace script

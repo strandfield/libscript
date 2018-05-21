@@ -193,10 +193,12 @@ TemplatePartialOrdering TemplateSpecialization::compare(const SFunctionType & a,
   return TemplatePartialOrdering::Indistinguishable; // for now /// TODO : implement comparison of function types
 }
 
-TemplatePartialOrdering TemplateSpecialization::compare(const ClassTemplate & primary, const PartialSpecialization & a, const PartialSpecialization & b)
+TemplatePartialOrdering TemplateSpecialization::compare(const PartialTemplateSpecialization & a, const PartialTemplateSpecialization & b)
 {
-  //return compare_from_args(primary.scope(), a.arguments, b.arguments);
-  return TemplatePartialOrdering::Indistinguishable; /// TODO
+  if (a.specializationOf() != b.specializationOf())
+    return TemplatePartialOrdering::NotComparable;
+
+  return compare_from_args(a.parameterScope(), a.arguments(), b.parameterScope(), b.arguments());
 }
 
 

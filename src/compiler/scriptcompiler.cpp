@@ -697,7 +697,7 @@ void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::Templ
   }
   else if (decl->is_partial_specialization())
   {
-    throw NotImplementedError{ dpos(decl), "Template partial specialization not implemented yet" };
+    return processClassTemplatePartialSpecialization(decl, std::static_pointer_cast<ast::ClassDecl>(decl->declaration));
   }
   else
   {
@@ -810,6 +810,29 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   readClassContent(result, classdecl);
 
   ct.impl()->instances[args] = result;
+}
+
+void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::ClassDecl> & classdecl)
+{
+  assert(decl->is_partial_specialization());
+
+  Scope scp = currentScope();
+
+  auto template_name = ast::Identifier::New(classdecl->name->name, classdecl->name->ast.lock());
+  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
+  Namespace ns = findEnclosingNamespace(scp);
+  ClassTemplate ct = findClassTemplate(classdecl->name->getName(), ns.templates());
+
+  if (ct.isNull())
+    throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
+
+  std::vector<TemplateParameter> params = processTemplateParameters(decl);
+
+  auto ps = std::make_shared<PartialTemplateSpecializationImpl>(ct, std::move(params), scp, engine(), script().weakref().lock());
+  ps->definition = TemplateDefinition::make(decl);
+  ps->script = script().weakref();
+
+  ct.impl()->specializations.push_back(PartialTemplateSpecialization{ ps });
 }
 
 void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)

@@ -976,3 +976,61 @@ TEST(TemplateTests, overload_less_parameters) {
   c = compiler::TemplateSpecialization::compare(foo_T, foo_T_U);
   ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
 }
+
+
+/****************************************************************
+Testing comparison of partial template specializations
+****************************************************************/
+
+TEST(TemplateTests, partial_specializations_comp) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T, typename U>                 "
+    "  class foo {};                                    "
+    "                                                   "
+    "  template<typename T>                             "
+    "  class foo<T, T> { };                             "
+    "                                                   "
+    "  template<typename T, typename U>                 "
+    "  class foo<Array<T>, U> { };                      "
+    "                                                   "
+    "  template<typename T, typename U>                 "
+    "  class foo<T, U(T)> { };                          "
+    "                                                   "
+    "  template<typename T, typename U, typename V>     "
+    "  class foo<Array<T>, U(V)> { };                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  ClassTemplate foo = s.rootNamespace().templates().front().asClassTemplate();
+
+  ASSERT_EQ(foo.partialSpecializations().size(), 4);
+
+  PartialTemplateSpecialization foo_T_T = foo.partialSpecializations().at(0);
+  PartialTemplateSpecialization foo_ArrayT_U = foo.partialSpecializations().at(1);
+  PartialTemplateSpecialization foo_T_UT = foo.partialSpecializations().at(2);
+  PartialTemplateSpecialization foo_ArrayT_UV = foo.partialSpecializations().at(3);
+
+  using TemplatePartialOrdering = compiler::TemplatePartialOrdering;
+
+  TemplatePartialOrdering c = compiler::TemplateSpecialization::compare(foo_T_T, foo_T_UT);
+  ASSERT_EQ(c, TemplatePartialOrdering::SecondIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(foo_ArrayT_U, foo_T_UT);
+  ASSERT_EQ(c, TemplatePartialOrdering::NotComparable);
+
+  c = compiler::TemplateSpecialization::compare(foo_ArrayT_UV, foo_ArrayT_U);
+  ASSERT_EQ(c, TemplatePartialOrdering::FirstIsMoreSpecialized);
+
+  c = compiler::TemplateSpecialization::compare(foo_T_T, foo_T_T);
+  ASSERT_EQ(c, TemplatePartialOrdering::Indistinguishable);
+}
