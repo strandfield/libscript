@@ -211,8 +211,8 @@ std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> Template
   for (const auto & tps : specs)
   {
     TemplateArgumentDeduction deduc;
-    TemplatePatternMatching pattern{ &deduc, tps.parameterScope(), targs };
-    if (!pattern.match(tps.arguments()))
+    TemplatePatternMatching pattern{ &deduc, tps.parameterScope() };
+    if (!pattern.match(tps.arguments(), targs))
       continue;
 
     std::vector<TemplateArgument> args;
@@ -237,6 +237,52 @@ std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> Template
       TemplatePartialOrdering order = TemplateSpecialization::compare(best.first, tps);
       if (order == TemplatePartialOrdering::SecondIsMoreSpecialized)
         best = std::make_pair(tps, args);
+      else if (order == TemplatePartialOrdering::Indistinguishable || order == TemplatePartialOrdering::NotComparable)
+        return {}; /// TODO : not totally correct but will do for now
+    }
+  }
+
+  return best;
+}
+
+std::pair<FunctionTemplate, std::vector<TemplateArgument>> TemplateOverloadSelector::select(const std::vector<Template> & fts, const std::vector<TemplateArgument> & targs, const Prototype & proto)
+{
+  std::pair<FunctionTemplate, std::vector<TemplateArgument>> best;
+  for (const auto & ft_ : fts)
+  {
+    FunctionTemplate ft = ft_.asFunctionTemplate();
+
+    TemplateArgumentDeduction deduc;
+    TemplatePatternMatching pattern{ &deduc, ft.argumentScope(targs) };
+    if (!pattern.match(ft.impl()->definition.get_function_decl(), proto))
+      continue;
+
+    std::vector<TemplateArgument> args;
+    bool ok = true;
+    for (size_t i(0); i < ft.parameters().size(); ++i)
+    {
+      if (targs.size() > i)
+        args.push_back(targs.at(i));
+      else if(deduc.has_deduction_for(i))
+        args.push_back(deduc.deduced_value_for(i));
+      else if (ft.parameters().at(i).hasDefaultValue())
+      {
+        /// TODO : push evaluation of  ft.parameters().at(i).defaultValue()
+        ok = false;
+        break;
+      }
+    }
+
+    if (!ok)
+      continue;
+
+    if (best.first.isNull())
+      best = std::make_pair(ft, args);
+    else
+    {
+      TemplatePartialOrdering order = TemplateSpecialization::compare(best.first, ft);
+      if (order == TemplatePartialOrdering::SecondIsMoreSpecialized)
+        best = std::make_pair(ft, args);
       else if (order == TemplatePartialOrdering::Indistinguishable || order == TemplatePartialOrdering::NotComparable)
         return {}; /// TODO : not totally correct but will do for now
     }

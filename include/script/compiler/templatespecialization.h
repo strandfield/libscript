@@ -100,6 +100,13 @@ public:
   std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> select(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs);
 };
 
+class LIBSCRIPT_API TemplateOverloadSelector
+{
+public:
+
+  std::pair<FunctionTemplate, std::vector<TemplateArgument>> select(const std::vector<Template> & fts, const std::vector<TemplateArgument> & targs, const Prototype & proto);
+};
+
 } // namespace compiler
 
 } // namespace script

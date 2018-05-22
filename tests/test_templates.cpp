@@ -1109,3 +1109,67 @@ TEST(TemplateTests, partial_specializations_selec) {
   result = selector.select(foo, targs);
   ASSERT_TRUE(result.first.isNull());
 }
+
+
+/****************************************************************
+Testing selection of function template overload during full specialization
+****************************************************************/
+
+TEST(TemplateTests, full_spec_overload_selec) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>      "
+    "  void foo(T a) { }         "
+    "                            "
+    "  template<typename T>      "
+    "  void foo(const T a) { }   "
+    "                            "
+    "  template<typename T>      "
+    "  void foo(Array<T> a) { }  ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 3);
+
+  const auto & candidates = s.rootNamespace().templates();
+  FunctionTemplate foo_T = s.rootNamespace().templates().at(0).asFunctionTemplate();
+  FunctionTemplate foo_cT = s.rootNamespace().templates().at(1).asFunctionTemplate();
+  FunctionTemplate foo_ArrayT = s.rootNamespace().templates().at(2).asFunctionTemplate();
+
+  compiler::TemplateOverloadSelector selector;
+  std::vector<TemplateArgument> targs;
+  Prototype proto;
+  std::pair<FunctionTemplate, std::vector<TemplateArgument>> result;
+
+  proto = Prototype{ Type::Void, Type{Type::Int} };
+  result = selector.select(candidates, targs, proto);
+  ASSERT_EQ(result.first, foo_T);
+  ASSERT_EQ(result.second.size(), 1);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+
+  proto = Prototype{ Type::Void, Type{ Type::Int, Type::ConstFlag } };
+  result = selector.select(candidates, targs, proto);
+  ASSERT_EQ(result.first, foo_cT);
+  ASSERT_EQ(result.second.size(), 1);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+
+  proto = Prototype{ Type::Void, Type{ Type::Int, Type::ReferenceFlag } };
+  result = selector.select(candidates, targs, proto);
+  ASSERT_EQ(result.first, foo_T);
+  ASSERT_EQ(result.second.size(), 1);
+  ASSERT_EQ(result.second.front().type, Type(Type::Int, Type::ReferenceFlag));
+
+  Type array_int = engine.newArray(Engine::ElementType{ Type::Int }).typeId();
+  proto = Prototype{ Type::Void, array_int };
+  result = selector.select(candidates, targs, proto);
+  ASSERT_EQ(result.first, foo_ArrayT);
+  ASSERT_EQ(result.second.size(), 1);
+  ASSERT_EQ(result.second.front().type, Type::Int);
+}

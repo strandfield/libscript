@@ -311,23 +311,22 @@ void TemplateArgumentDeductionEngine::record_deduction(int param_index, const Te
 }
 
 
-TemplatePatternMatching::TemplatePatternMatching(TemplateArgumentDeduction *tad, const Scope & parameterScope, const std::vector<TemplateArgument> & targs)
+TemplatePatternMatching::TemplatePatternMatching(TemplateArgumentDeduction *tad, const Scope & parameterScope)
   : deductions_(tad)
   , scope_(parameterScope)
-  , arguments_(&targs)
 {
 
 }
 
-bool TemplatePatternMatching::match(const std::vector<std::shared_ptr<ast::Node>> & pattern)
+bool TemplatePatternMatching::match(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
 {
   result_ = true;
 
-  size_t s = std::min(arguments().size(), pattern.size());
+  size_t s = std::min(inputs.size(), pattern.size());
 
   for (size_t i(0); i < s; ++i)
   {
-    deduce(pattern.at(i), arguments().at(i));
+    match_(pattern.at(i), inputs.at(i));
   }
 
   if (!result_)
@@ -338,7 +337,28 @@ bool TemplatePatternMatching::match(const std::vector<std::shared_ptr<ast::Node>
   return result_;
 }
 
-void TemplatePatternMatching::deduce(const ast::QualifiedType & pattern, const Type & input)
+bool TemplatePatternMatching::match(const std::shared_ptr<ast::FunctionDecl> & pattern, const Prototype & input)
+{
+  result_ = true;
+
+  match_(pattern->returnType, input.returnType());
+
+  size_t s = std::min((size_t) input.argumentCount(), pattern->params.size());
+
+  for (size_t i(0); i < s; ++i)
+  {
+    match_(pattern->params.at(i).type, input.argv(i));
+  }
+
+  if (!result_)
+    return false;
+
+  deductions_->agglomerate_deductions();
+  result_ = deductions_->success();
+  return result_;
+}
+
+void TemplatePatternMatching::match_(const ast::QualifiedType & pattern, const Type & input)
 {
   if (pattern.constQualifier.isValid() && !input.isConst())
     return fail();
@@ -348,7 +368,7 @@ void TemplatePatternMatching::deduce(const ast::QualifiedType & pattern, const T
     return fail();
 
   if (pattern.functionType)
-    return deduce(*pattern.functionType, input);
+    return match_(*pattern.functionType, input);
 
   if (pattern.type->is<ast::TemplateIdentifier>())
   {
@@ -369,7 +389,7 @@ void TemplatePatternMatching::deduce(const ast::QualifiedType & pattern, const T
     if (arg_template != lookup.classTemplateResult())
       return fail();
 
-    return deduce(tmpltid->arguments, object_type.arguments());
+    return match_(tmpltid->arguments, object_type.arguments());
   }
   else if (pattern.type->type() == ast::NodeType::SimpleIdentifier)
   {
@@ -395,27 +415,27 @@ void TemplatePatternMatching::deduce(const ast::QualifiedType & pattern, const T
   else
   {
     auto qualid = std::static_pointer_cast<ast::ScopedIdentifier>(pattern.type);
-    return deduce(qualid, input);
+    return match_(qualid, input);
   }
 }
 
-void TemplatePatternMatching::deduce(const ast::FunctionType & pattern, const Type & input)
+void TemplatePatternMatching::match_(const ast::FunctionType & pattern, const Type & input)
 {
   if (!input.isFunctionType())
     return;
 
   FunctionType ft = engine()->getFunctionType(input);
 
-  deduce(pattern.returnType, ft.prototype().returnType());
+  match_(pattern.returnType, ft.prototype().returnType());
 
   if (pattern.params.size() != (size_t)ft.prototype().argc())
     return fail();
 
   for (size_t i(0); i < pattern.params.size(); ++i)
-    deduce(pattern.params.at(i), ft.prototype().argv(i));
+    match_(pattern.params.at(i), ft.prototype().argv(i));
 }
 
-void TemplatePatternMatching::deduce(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
+void TemplatePatternMatching::match_(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
 {
   // we should have pattern.size() < inputs.size() 
   // because some arguments may be missing in the pattern but not in the instantiated template
@@ -423,11 +443,11 @@ void TemplatePatternMatching::deduce(const std::vector<std::shared_ptr<ast::Node
 
   for (size_t i(0); i < s; ++i)
   {
-    deduce(pattern.at(i), inputs.at(i));
+    match_(pattern.at(i), inputs.at(i));
   }
 }
 
-void TemplatePatternMatching::deduce(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input)
+void TemplatePatternMatching::match_(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input)
 {
   if (pattern->is<ast::TypeNode>())
   {
@@ -466,7 +486,7 @@ void TemplatePatternMatching::deduce(const std::shared_ptr<ast::Node> & pattern,
     }
 
     const ast::QualifiedType qt = pattern->as<ast::TypeNode>().value;
-    return deduce(qt, input.type);
+    return match_(qt, input.type);
   }
   else
   {
@@ -500,7 +520,7 @@ void TemplatePatternMatching::deduce(const std::shared_ptr<ast::Node> & pattern,
   }
 }
 
-void TemplatePatternMatching::deduce(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input)
+void TemplatePatternMatching::match_(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input)
 {
   if (pattern->rhs->is<ast::TemplateIdentifier>())
   {
@@ -524,7 +544,7 @@ void TemplatePatternMatching::deduce(const std::shared_ptr<ast::ScopedIdentifier
       return fail();
 
     auto tmpltid = std::static_pointer_cast<ast::TemplateIdentifier>(pattern->rhs);
-    return deduce(tmpltid->arguments, object_type.arguments());
+    return match_(tmpltid->arguments, object_type.arguments());
   }
   else
   {
