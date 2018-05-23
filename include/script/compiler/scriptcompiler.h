@@ -104,13 +104,13 @@ public:
 
   void compile(const CompileScriptTask & task);
 
-  Class compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl);
+  Class compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
 
   void addTask(const CompileScriptTask & task);
-  Class addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl);
+  Class addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);

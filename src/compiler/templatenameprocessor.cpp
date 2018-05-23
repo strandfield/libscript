@@ -76,8 +76,7 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
     Engine *e = ct.engine();
     compiler::Compiler c{ e };
     compiler::ScriptCompiler compiler{ &c, c.session() };
-    auto class_decl = std::static_pointer_cast<ast::ClassDecl>(ct.impl()->definition.decl_->declaration);
-    Class ret = compiler.compileClassTemplate(ct, args, class_decl);
+    Class ret = compiler.compileClassTemplate(ct, args);
     ct.impl()->instances[args] = ret;
     return ret;
   }

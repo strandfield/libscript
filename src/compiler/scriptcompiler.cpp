@@ -9,6 +9,7 @@
 #include "script/compiler/compiler.h"
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/templatedefinition.h"
+#include "script/compiler/templatespecialization.h"
 
 #include "script/ast/ast.h"
 #include "script/ast/node.h"
@@ -114,18 +115,42 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   }
 }
 
-Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl)
+Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  ClassBuilder builder{ std::string{} };
-  fill(builder, class_decl);
+  Class result;
 
-  Class result{ ClassTemplateInstance::make(builder, ct, args) };
-  result.implementation()->script = script().weakref();
-  
-  StateGuard guard{ this };
-  mCurrentScope = ct.argumentScope(args);
+  TemplateSpecializationSelector selector;
+  auto selected_specialization = selector.select(ct, args);
+  if (!selected_specialization.first.isNull())
+  {
+    ClassBuilder builder{ std::string{} };
 
-  readClassContent(result, class_decl);
+    auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
+    fill(builder, class_decl);
+
+    result = Class{ ClassTemplateInstance::make(builder, ct, args) };
+    result.implementation()->script = script().weakref();
+
+    StateGuard guard{ this };
+    mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
+
+    readClassContent(result, class_decl);
+  }
+  else
+  {
+    ClassBuilder builder{ std::string{} };
+
+    auto class_decl = ct.impl()->definition.get_class_decl();
+    fill(builder, class_decl);
+
+    result = Class{ ClassTemplateInstance::make(builder, ct, args) };
+    result.implementation()->script = script().weakref();
+
+    StateGuard guard{ this };
+    mCurrentScope = ct.argumentScope(args);
+
+    readClassContent(result, class_decl);
+  }
 
   // This is a standalone job 
   resolveIncompleteTypes();
@@ -158,20 +183,44 @@ void ScriptCompiler::addTask(const CompileScriptTask & task)
   processOrCollectScriptDeclarations(mTasks.back());
 }
 
-Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, const std::shared_ptr<ast::ClassDecl> & class_decl)
+Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  ClassBuilder builder{ std::string{} };
-  fill(builder, class_decl);
+  TemplateSpecializationSelector selector;
+  auto selected_specialization = selector.select(ct, args);
+  if (!selected_specialization.first.isNull())
+  {
+    ClassBuilder builder{ std::string{} };
 
-  Class result{ ClassTemplateInstance::make(builder, ct, args) };
-  result.implementation()->script = script().weakref();
-  
-  StateGuard guard{ this };
-  mCurrentScope = ct.argumentScope(args);
+    auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
+    fill(builder, class_decl);
 
-  readClassContent(result, class_decl);
+    Class result{ ClassTemplateInstance::make(builder, ct, args) };
+    result.implementation()->script = script().weakref();
 
-  return result;
+    StateGuard guard{ this };
+    mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
+
+    readClassContent(result, class_decl);
+
+    return result;
+  }
+  else
+  {
+    ClassBuilder builder{ std::string{} };
+
+    auto class_decl = ct.impl()->definition.get_class_decl();
+    fill(builder, class_decl);
+
+    Class result{ ClassTemplateInstance::make(builder, ct, args) };
+    result.implementation()->script = script().weakref();
+
+    StateGuard guard{ this };
+    mCurrentScope = ct.argumentScope(args);
+
+    readClassContent(result, class_decl);
+
+    return result;
+  }
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
