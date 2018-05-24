@@ -886,7 +886,51 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
 
 void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
-  throw NotImplementedError{ dpos(decl), "Full specialization of function template not supported yet" };
+  assert(decl->is_full_specialization());
+
+  const Scope scp = currentScope();
+
+  auto template_name = ast::Identifier::New(fundecl->name->name, fundecl->name->ast.lock());
+  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
+  Namespace ns = findEnclosingNamespace(scp);
+  ClassTemplate ct = findClassTemplate(fundecl->name->getName(), ns.templates());
+
+  const std::vector<Template> & tmplts = ns.templates();
+
+  if (tmplts.empty())
+    throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
+
+  std::vector<TemplateArgument> args;
+  if (fundecl->name->is<ast::TemplateIdentifier>())
+  {
+    TemplateNameProcessor tnp; /// TODO : use a custom TNP
+    auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(fundecl->name);
+    args = tnp.arguments(scp, template_full_name->arguments);
+  }
+
+  FunctionBuilder builder{ Function::StandardFunction };
+  function_processor_.fill(builder, fundecl, scp);
+  /// TODO : to avoid this error, process all specializations at the end !
+  if(function_processor_.prototype_.type_.relax)
+    throw NotImplementedError{ dpos(fundecl), "Could not resolve some types in full specialization" };
+
+  TemplateOverloadSelector selector;
+  auto selection = selector.select(tmplts, args, builder.proto);
+
+  if(selection.first.isNull())
+    throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
+
+  /// TODO : merge this duplicate of FunctionTemplateProcessor
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name, builder.proto, engine(), builder.flags);
+  impl->implementation.callback = builder.callback;
+  impl->data = builder.data;
+  impl->script = script().weakref();
+  Function result = Function{ impl };
+
+  schedule(result, fundecl, scp);
+
+  /// TODO : should this be done now or after full compilation ?
+  selection.first.impl()->instances[selection.second] = result;
 }
 
 void ScriptCompiler::reprocess(const IncompleteFunction & func)

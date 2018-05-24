@@ -1254,3 +1254,85 @@ TEST(TemplateTests, class_template_complete_test_2) {
   ASSERT_EQ(b.type(), Type::Int);
   ASSERT_EQ(b.toInt(), 1);
 }
+
+
+/****************************************************************
+Testing function template with full specialization
+****************************************************************/
+
+TEST(TemplateTests, function_template_complete_test_1) {
+  using namespace script;
+
+  const char *source =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo<int>(int a) { return 0; }   "
+    "                                      "
+    "  int a = foo<bool>(false);           "
+    "  int b = foo<int>(0);                ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  FunctionTemplate foo = s.rootNamespace().templates().front().asFunctionTemplate();
+  ASSERT_EQ(foo.instances().size(), 2);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 1);
+
+  Value b = s.globals().back();
+  ASSERT_EQ(b.type(), Type::Int);
+  ASSERT_EQ(b.toInt(), 0);
+}
+
+TEST(TemplateTests, function_template_complete_test_2) {
+  using namespace script;
+
+  // template argument deduction for the win
+  const char *source =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo(int a) { return 0; }        "
+    "                                      "
+    "  int a = foo(false);                 "
+    "  int b = foo(0);                     ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+  FunctionTemplate foo = s.rootNamespace().templates().front().asFunctionTemplate();
+  ASSERT_EQ(foo.instances().size(), 2);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 1);
+
+  Value b = s.globals().back();
+  ASSERT_EQ(b.type(), Type::Int);
+  ASSERT_EQ(b.toInt(), 0);
+}
