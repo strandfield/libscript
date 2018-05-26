@@ -172,6 +172,8 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & expr,
   compiler::CommandCompiler c{ this, mSession.get() };
   if (!script.isNull())
     c.setScope(Scope{ script });
+  else
+    c.setScope(Scope{ engine()->rootNamespace() });
   
   return c.compile(ast->expression(), context);
 }
