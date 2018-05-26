@@ -86,7 +86,7 @@ struct LIBSCRIPT_API ValueImpl
   void set_function(const Function & fval);
   bool is_lambda() const;
   const LambdaObject & get_lambda() const;
-  void get_lambda(const LambdaObject & lval);
+  void set_lambda(const LambdaObject & lval);
   const EnumValue & get_enum_value() const;
   void set_enum_value(const EnumValue & evval);
 

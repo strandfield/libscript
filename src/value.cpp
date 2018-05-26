@@ -81,7 +81,7 @@ const LambdaObject & ValueImpl::get_lambda() const
   return data.lambda;
 }
 
-void ValueImpl::get_lambda(const LambdaObject & lval)
+void ValueImpl::set_lambda(const LambdaObject & lval)
 {
   data.lambda = lval;
 }
@@ -316,7 +316,7 @@ Value Value::fromLambda(const LambdaObject & obj)
     return Value{};
   Engine *e = obj.engine();
   Value ret = e->implementation()->buildValue(obj.closureType().id());
-  ret.impl()->get_lambda(obj);
+  ret.impl()->set_lambda(obj);
   return ret;
 }
 
