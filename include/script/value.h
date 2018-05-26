@@ -19,7 +19,7 @@ class Function;
 class LambdaObject;
 class Object;
 
-struct ValueStruct;
+struct ValueImpl;
 
 class LIBSCRIPT_API Value
 {
@@ -28,7 +28,7 @@ public:
   Value(const Value & other);
   ~Value();
 
-  Value(ValueStruct * impl);
+  Value(ValueImpl * impl);
 
   enum ParameterPolicy {
     Copy,
@@ -67,9 +67,7 @@ public:
 
   static Value fromEnumValue(const EnumValue & ev);
   static Value fromFunction(const Function & f, const Type & ft);
-  static Value fromObject(const Object & obj);
   static Value fromLambda(const LambdaObject & obj);
-
   static Value fromArray(const Array & a);
 
   Engine* engine() const;
@@ -79,10 +77,10 @@ public:
   bool operator==(const Value & other) const;
   inline bool operator!=(const Value & other) const { return !operator==(other); }
 
-  inline ValueStruct * impl() const { return d; }
+  inline ValueImpl * impl() const { return d; }
 
 private:
-  ValueStruct *d;
+  ValueImpl *d;
 };
 
 } // namespace script

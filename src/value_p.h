@@ -6,15 +6,22 @@
 #define LIBSCRIPT_VALUE_P_H
 
 #include "script/array.h"
-#include "script/object.h"
 #include "script/lambda.h"
+#include "script/object.h"
+#include "script/string.h"
 
 namespace script
 {
 
-struct LIBSCRIPT_API ValueStruct
+struct LIBSCRIPT_API CharRef
 {
-  ValueStruct(Type t, Engine *e) : ref(0), type(t), engine(e) { }
+  String *string;
+  size_t pos;
+};
+
+struct LIBSCRIPT_API ValueImpl
+{
+  ValueImpl(Type t, Engine *e) : ref(0), type(t), engine(e) { }
 
   reference_counter_type ref;
   Type type;
@@ -32,9 +39,12 @@ struct LIBSCRIPT_API ValueStruct
       double reald;
       String *string;
       EnumValue *enumValue;
+      CharRef charref;
       void *data;
     }builtin;
 
+    /// TODO : we could try to merge LambdaObject and Object
+    // a LambdaObject is an object (and its members are captures)
     Object object;
     Array array;
     Function function;
@@ -42,48 +52,45 @@ struct LIBSCRIPT_API ValueStruct
   };
   Storage data;
 
-  inline bool getBool() const { return data.builtin.boolean; }
-  inline void setBool(bool bval) { data.builtin.boolean = bval; }
-  inline char getChar() const { return data.builtin.character; }
-  inline void setChar(char cval) { data.builtin.character = cval; }
-  inline int getInt() const { return data.builtin.integer; }
-  inline void setInt(int ival) { data.builtin.integer = ival; }
-  inline float getFloat() const { return data.builtin.realf; }
-  inline void setFloat(float fval) { data.builtin.realf = fval; }
-  inline double getDouble() const { return data.builtin.reald; }
-  inline void setDouble(double dval) { data.builtin.reald = dval; }
-  inline const String & getString() const { return *data.builtin.string; }
-  inline String & getString() { return *data.builtin.string; }
-  inline void setString(const String & sval)
+  // these are part of the public interface (required by any implementation)
+  inline bool get_bool() const { return data.builtin.boolean; }
+  inline void set_bool(bool bval) { data.builtin.boolean = bval; }
+  inline char get_char() const { return data.builtin.character; }
+  inline void set_char(char cval) { data.builtin.character = cval; }
+  inline int get_int() const { return data.builtin.integer; }
+  inline void set_int(int ival) { data.builtin.integer = ival; }
+  inline float get_float() const { return data.builtin.realf; }
+  inline void set_float(float fval) { data.builtin.realf = fval; }
+  inline double get_double() const { return data.builtin.reald; }
+  inline void set_double(double dval) { data.builtin.reald = dval; }
+
+  inline const String & get_string() const { return *data.builtin.string; }
+  inline String & get_string() { return *data.builtin.string; }
+  inline void set_string(const String & sval)
   {
     if (data.builtin.string == nullptr)
       data.builtin.string = new String{ sval };
     *data.builtin.string = sval;
   }
-  bool isObject() const;
-  const Object & getObject() const;
-  void setObject(const Object & oval);
-  bool isArray() const;
-  const Array & getArray() const;
-  void setArray(const Array & aval);
-  bool isFunction() const;
-  const Function & getFunction() const;
-  void setFunction(const Function & fval);
-  bool isLambda() const;
-  const LambdaObject & getLambda() const;
-  void setLambda(const LambdaObject & lval);
-  const EnumValue & getEnumValue() const;
-  void setEnumValue(const EnumValue & evval);
-  void clear();
 
-  inline bool isManaged() const { return this->type.testFlag(Type::ManagedFlag); }
-  inline void setManaged(bool m)
-  {
-    if (m)
-      this->type = this->type.withFlag(Type::ManagedFlag);
-    else
-      this->type = this->type.withoutFlag(Type::ManagedFlag);
-  }
+  bool is_object() const;
+  const Object & get_object() const;
+  void init_object();
+
+  bool is_array() const;
+  const Array & get_array() const;
+  void set_array(const Array & aval);
+
+  bool is_function() const;
+  const Function & get_function() const;
+  void set_function(const Function & fval);
+  bool is_lambda() const;
+  const LambdaObject & get_lambda() const;
+  void get_lambda(const LambdaObject & lval);
+  const EnumValue & get_enum_value() const;
+  void set_enum_value(const EnumValue & evval);
+
+  void clear();
 };
 
 } // namespace script

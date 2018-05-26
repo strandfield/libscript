@@ -27,7 +27,7 @@ namespace operators
 // bool & operator=(bool & a, const bool & b)
 Value bool_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setBool(c->arg(1).toBool());
+  c->arg(0).impl()->set_bool(c->arg(1).toBool());
   return c->arg(0);
 }
 
@@ -70,56 +70,56 @@ Value bool_logical_or(FunctionCall *c)
 // char & operator=(char & a, const char & b)
 Value char_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator+=(char & a, const char & b)
 Value char_add_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() + c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() + c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator-=(char & a, const char & b)
 Value char_sub_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() - c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() - c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator*=(char & a, const char & b)
 Value char_mul_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() * c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() * c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator/=(char & a, const char & b)
 Value char_div_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() / c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() / c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator%=(char & a, const char & b)
 Value char_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() + c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() + c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator<<=(char & a, const char & b)
 Value char_leftshift_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() << c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() << c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator>>=(char & a, const char & b)
 Value char_rightshift_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() >> c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() >> c->arg(1).toChar());
   return c->arg(0);
 }
 
@@ -203,14 +203,14 @@ Value char_shiftright(FunctionCall *c)
 // char & operator++(char & a);
 Value char_preincrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() + 1);
+  c->arg(0).impl()->set_char(c->arg(0).toChar() + 1);
   return c->arg(0);
 }
 
 // char & operator--(char & a);
 Value char_predecrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() - 1);
+  c->arg(0).impl()->set_char(c->arg(0).toChar() - 1);
   return c->arg(0);
 }
 
@@ -218,7 +218,7 @@ Value char_predecrement(FunctionCall *c)
 Value char_postincrement(FunctionCall *c)
 {
   Value ret = c->engine()->newChar(c->arg(0).toChar());
-  c->arg(0).impl()->setChar(c->arg(0).toChar() + 1);
+  c->arg(0).impl()->set_char(c->arg(0).toChar() + 1);
   return ret;
 }
 
@@ -226,7 +226,7 @@ Value char_postincrement(FunctionCall *c)
 Value char_postdecrement(FunctionCall *c)
 {
   Value ret = c->engine()->newChar(c->arg(0).toChar());
-  c->arg(0).impl()->setChar(c->arg(0).toChar() - 1);
+  c->arg(0).impl()->set_char(c->arg(0).toChar() - 1);
   return ret;
 }
 
@@ -269,21 +269,21 @@ Value char_bitnot(FunctionCall *c)
 // char & operator&=(char & a, const char & b);
 Value char_bitand_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() & c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() & c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator|=(char & a, const char & b);
 Value char_bitor_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() | c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() | c->arg(1).toChar());
   return c->arg(0);
 }
 
 // char & operator^=(char & a, const char & b);
 Value char_bitxor_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setChar(c->arg(0).toChar() ^ c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() ^ c->arg(1).toChar());
   return c->arg(0);
 }
 
@@ -294,56 +294,56 @@ Value char_bitxor_assign(FunctionCall *c)
 // int & operator=(int & a, const int & b)
 Value int_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator+=(int & a, const int & b)
 Value int_add_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() + c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() + c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator-=(int & a, const int & b)
 Value int_sub_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() - c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() - c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator*=(int & a, const int & b)
 Value int_mul_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() * c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() * c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator/=(int & a, const int & b)
 Value int_div_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() / c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() / c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator%=(int & a, const int & b)
 Value int_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() + c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() + c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator<<=(int & a, const int & b)
 Value int_leftshift_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() << c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() << c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator>>=(int & a, const int & b)
 Value int_rightshift_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() >> c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() >> c->arg(1).toInt());
   return c->arg(0);
 }
 
@@ -427,14 +427,14 @@ Value int_shiftright(FunctionCall *c)
 // int & operator++(int & a);
 Value int_preincrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() + 1);
+  c->arg(0).impl()->set_int(c->arg(0).toInt() + 1);
   return c->arg(0);
 }
 
 // int & operator--(int & a);
 Value int_predecrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() - 1);
+  c->arg(0).impl()->set_int(c->arg(0).toInt() - 1);
   return c->arg(0);
 }
 
@@ -442,7 +442,7 @@ Value int_predecrement(FunctionCall *c)
 Value int_postincrement(FunctionCall *c)
 {
   Value ret = c->engine()->newInt(c->arg(0).toInt());
-  c->arg(0).impl()->setInt(c->arg(0).toInt() + 1);
+  c->arg(0).impl()->set_int(c->arg(0).toInt() + 1);
   return ret;
 }
 
@@ -450,7 +450,7 @@ Value int_postincrement(FunctionCall *c)
 Value int_postdecrement(FunctionCall *c)
 {
   Value ret = c->engine()->newInt(c->arg(0).toInt());
-  c->arg(0).impl()->setInt(c->arg(0).toInt() - 1);
+  c->arg(0).impl()->set_int(c->arg(0).toInt() - 1);
   return ret;
 }
 
@@ -494,21 +494,21 @@ Value int_bitnot(FunctionCall *c)
 // int & operator&=(int & a, const int & b);
 Value int_bitand_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() & c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() & c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator|=(int & a, const int & b);
 Value int_bitor_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() | c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() | c->arg(1).toInt());
   return c->arg(0);
 }
 
 // int & operator^=(int & a, const int & b);
 Value int_bitxor_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setInt(c->arg(0).toInt() ^ c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() ^ c->arg(1).toInt());
   return c->arg(0);
 }
 
@@ -519,42 +519,42 @@ Value int_bitxor_assign(FunctionCall *c)
 // float & operator=(float & a, const float & b)
 Value float_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(1).toFloat());
   return c->arg(0);
 }
 
 // float & operator+=(float & a, const float & b)
 Value float_add_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() + c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() + c->arg(1).toFloat());
   return c->arg(0);
 }
 
 // float & operator-=(float & a, const float & b)
 Value float_sub_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() - c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() - c->arg(1).toFloat());
   return c->arg(0);
 }
 
 // float & operator*=(float & a, const float & b)
 Value float_mul_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() * c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() * c->arg(1).toFloat());
   return c->arg(0);
 }
 
 // float & operator/=(float & a, const float & b)
 Value float_div_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() / c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() / c->arg(1).toFloat());
   return c->arg(0);
 }
 
 // float & operator%=(float & a, const float & b)
 Value float_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() + c->arg(1).toFloat());
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() + c->arg(1).toFloat());
   return c->arg(0);
 }
 
@@ -621,14 +621,14 @@ Value float_leq(FunctionCall *c)
 // float & operator++(float & a);
 Value float_preincrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() + 1);
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() + 1);
   return c->arg(0);
 }
 
 // float & operator--(float & a);
 Value float_predecrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() - 1);
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() - 1);
   return c->arg(0);
 }
 
@@ -636,7 +636,7 @@ Value float_predecrement(FunctionCall *c)
 Value float_postincrement(FunctionCall *c)
 {
   Value ret = c->engine()->newFloat(c->arg(0).toFloat());
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() + 1);
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() + 1);
   return ret;
 }
 
@@ -644,7 +644,7 @@ Value float_postincrement(FunctionCall *c)
 Value float_postdecrement(FunctionCall *c)
 {
   Value ret = c->engine()->newFloat(c->arg(0).toFloat());
-  c->arg(0).impl()->setFloat(c->arg(0).toFloat() - 1);
+  c->arg(0).impl()->set_float(c->arg(0).toFloat() - 1);
   return ret;
 }
 
@@ -668,42 +668,42 @@ Value float_unary_minus(FunctionCall *c)
 // double & operator=(double & a, const double & b)
 Value double_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(1).toDouble());
   return c->arg(0);
 }
 
 // double & operator+=(double & a, const double & b)
 Value double_add_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() + c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() + c->arg(1).toDouble());
   return c->arg(0);
 }
 
 // double & operator-=(double & a, const double & b)
 Value double_sub_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() - c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() - c->arg(1).toDouble());
   return c->arg(0);
 }
 
 // double & operator*=(double & a, const double & b)
 Value double_mul_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() * c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() * c->arg(1).toDouble());
   return c->arg(0);
 }
 
 // double & operator/=(double & a, const double & b)
 Value double_div_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() / c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() / c->arg(1).toDouble());
   return c->arg(0);
 }
 
 // double & operator%=(double & a, const double & b)
 Value double_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() + c->arg(1).toDouble());
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() + c->arg(1).toDouble());
   return c->arg(0);
 }
 
@@ -770,14 +770,14 @@ Value double_leq(FunctionCall *c)
 // double & operator++(double & a);
 Value double_preincrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() + 1);
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() + 1);
   return c->arg(0);
 }
 
 // double & operator--(double & a);
 Value double_predecrement(FunctionCall *c)
 {
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() - 1);
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() - 1);
   return c->arg(0);
 }
 
@@ -785,7 +785,7 @@ Value double_predecrement(FunctionCall *c)
 Value double_postincrement(FunctionCall *c)
 {
   Value ret = c->engine()->newDouble(c->arg(0).toDouble());
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() + 1);
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() + 1);
   return ret;
 }
 
@@ -793,7 +793,7 @@ Value double_postincrement(FunctionCall *c)
 Value double_postdecrement(FunctionCall *c)
 {
   Value ret = c->engine()->newDouble(c->arg(0).toDouble());
-  c->arg(0).impl()->setDouble(c->arg(0).toDouble() - 1);
+  c->arg(0).impl()->set_double(c->arg(0).toDouble() - 1);
   return ret;
 }
 

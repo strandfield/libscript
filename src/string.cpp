@@ -18,12 +18,6 @@ namespace script
 
 static int charref_id = 0;
 
-struct charref_t
-{
-  String *string;
-  size_t pos;
-};
-
 namespace callbacks
 {
 
@@ -34,7 +28,7 @@ namespace string
 Value default_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->setString(String{});
+  that.impl()->set_string(String{});
   return that;
 }
 
@@ -42,7 +36,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->setString(c->arg(0).toString());
+  that.impl()->set_string(c->arg(0).toString());
   return that;
 }
 
@@ -50,7 +44,7 @@ Value copy_ctor(FunctionCall *c)
 Value char_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->setString(String{ c->arg(0).toChar() });
+  that.impl()->set_string(String{ c->arg(0).toChar() });
   return that;
 }
 
@@ -66,7 +60,7 @@ Value dtor(FunctionCall *c)
 Value at(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
   const int position = c->arg(1).toInt();
 
@@ -77,14 +71,14 @@ Value at(FunctionCall *c)
 Value capacity(FunctionCall *c)
 {
   Value that = c->thisObject();
-  return c->engine()->newInt(that.impl()->getString().capacity());
+  return c->engine()->newInt(that.impl()->get_string().capacity());
 }
 
 // void String::clear();
 Value clear(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->getString().clear();
+  that.impl()->get_string().clear();
   return Value::Void;
 }
 
@@ -92,14 +86,14 @@ Value clear(FunctionCall *c)
 Value empty(FunctionCall *c)
 {
   Value that = c->thisObject();
-  return c->engine()->newBool(that.impl()->getString().empty());
+  return c->engine()->newBool(that.impl()->get_string().empty());
 }
 
 // String & erase(int position, int n);
 Value erase(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
   const int position = c->arg(1).toInt();
   const int n = c->arg(2).toInt();
@@ -113,10 +107,10 @@ Value erase(FunctionCall *c)
 Value insert(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
   const int position = c->arg(1).toInt();
-  const String & str = c->arg(2).impl()->getString();
+  const String & str = c->arg(2).impl()->get_string();
 
   self.insert(position, str);
 
@@ -128,7 +122,7 @@ Value insert(FunctionCall *c)
 Value length(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
   return c->engine()->newInt(self.size());
 }
 
@@ -136,11 +130,11 @@ Value length(FunctionCall *c)
 Value replace(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
   const int pos = c->arg(1).toInt();
   const int count = c->arg(2).toInt();
-  const String & str = c->arg(3).impl()->getString();
+  const String & str = c->arg(3).impl()->get_string();
 
   self.replace(pos, count, str);
 
@@ -151,9 +145,9 @@ Value replace(FunctionCall *c)
 Value swap(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
-  auto & other = c->arg(1).impl()->getString();
+  auto & other = c->arg(1).impl()->get_string();
 
   self.swap(other);
 
@@ -167,9 +161,9 @@ namespace operators
 Value eq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self == other);
 }
@@ -178,9 +172,9 @@ Value eq(FunctionCall *c)
 Value neq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self != other);
 }
@@ -189,9 +183,9 @@ Value neq(FunctionCall *c)
 Value greater(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self > other);
 }
@@ -200,9 +194,9 @@ Value greater(FunctionCall *c)
 Value geq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self >= other);
 }
@@ -211,9 +205,9 @@ Value geq(FunctionCall *c)
 Value less(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self < other);
 }
@@ -222,9 +216,9 @@ Value less(FunctionCall *c)
 Value leq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newBool(self <= other);
 }
@@ -233,9 +227,9 @@ Value leq(FunctionCall *c)
 Value assign(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   self = other;
 
@@ -246,9 +240,9 @@ Value assign(FunctionCall *c)
 Value add(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->getString();
+  const auto & self = that.impl()->get_string();
 
-  const auto & other = c->arg(1).impl()->getString();
+  const auto & other = c->arg(1).impl()->get_string();
 
   return c->engine()->newString(self + other);
 }
@@ -257,12 +251,12 @@ Value add(FunctionCall *c)
 Value subscript(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->getString();
+  auto & self = that.impl()->get_string();
 
   const int pos = c->arg(1).toInt();
 
   Value ret = c->engine()->implementation()->buildValue(charref_id);
-  ret.impl()->data.builtin.data = new charref_t{ &self, (size_t)pos };
+  ret.impl()->data.builtin.charref = CharRef{ &self, (size_t)pos };
   return ret;
 }
 
@@ -278,10 +272,10 @@ Value ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
 
-  auto & str = c->arg(0).impl()->getString();
+  auto & str = c->arg(0).impl()->get_string();
   const int pos = c->arg(1).toInt();
 
-  that.impl()->data.builtin.data = new charref_t{ &str, (size_t)pos };
+  that.impl()->data.builtin.charref = CharRef{ &str, (size_t)pos };
 
   return that;
 }
@@ -290,10 +284,9 @@ Value ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
+  const CharRef & other = c->arg(0).impl()->data.builtin.charref;
 
-  charref_t *other = static_cast<charref_t*>(c->arg(0).impl()->data.builtin.data);
-
-  that.impl()->data.builtin.data = new charref_t{ other->string, other->pos };
+  that.impl()->data.builtin.charref = other;
 
   return that;
 }
@@ -303,9 +296,7 @@ Value dtor(FunctionCall *c)
 {
   Value that = c->thisObject();
 
-  charref_t *content = static_cast<charref_t*>(that.impl()->data.builtin.data);
-  delete content;
-  that.impl()->data.builtin.data = nullptr;
+  that.impl()->data.builtin.charref.string = nullptr;
 
   return that;
 }
@@ -314,19 +305,17 @@ Value dtor(FunctionCall *c)
 Value operator_char(FunctionCall *c)
 {
   Value that = c->thisObject();
-  charref_t *self = static_cast<charref_t*>(that.impl()->data.builtin.data);
-  return c->engine()->newChar(self->string->at(self->pos));
+  String & str = that.impl()->get_string();
+  return c->engine()->newChar(static_cast<char>(str.at(that.impl()->data.builtin.charref.pos)));
 }
 
 // charref & operator=(char c);
 Value assign(FunctionCall *c)
 {
   Value that = c->thisObject();
-  charref_t *self = static_cast<charref_t*>(that.impl()->data.builtin.data);
-
+  String & self = *(that.impl()->data.builtin.charref.string);
   char character = c->arg(1).toChar();
-  auto & str = *self->string;
-  str[self->pos] = character;
+  self[that.impl()->data.builtin.charref.pos] = character;
 
   return that;
 }

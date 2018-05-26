@@ -138,7 +138,7 @@ namespace callbacks
 
 Value function_variable_assignment(interpreter::FunctionCall *c)
 {
-  c->arg(0).impl()->setFunction(c->arg(1).toFunction());
+  c->arg(0).impl()->set_function(c->arg(1).toFunction());
   return c->arg(0);
 }
 
@@ -320,43 +320,43 @@ void Engine::setup()
 
 Value Engine::newBool(bool bval)
 {
-  Value v{ new ValueStruct{Type::Boolean, this} };
-  v.impl()->setBool(bval);
+  Value v{ new ValueImpl{Type::Boolean, this} };
+  v.impl()->set_bool(bval);
   return v;
 }
 
 Value Engine::newChar(char cval)
 {
-  Value v{ new ValueStruct{ Type::Char, this } };
-  v.impl()->setChar(cval);
+  Value v{ new ValueImpl{ Type::Char, this } };
+  v.impl()->set_char(cval);
   return v;
 }
 
 Value Engine::newInt(int ival)
 {
-  Value v{ new ValueStruct{ Type::Int, this } };
-  v.impl()->setInt(ival);
+  Value v{ new ValueImpl{ Type::Int, this } };
+  v.impl()->set_int(ival);
   return v;
 }
 
 Value Engine::newFloat(float fval)
 {
-  Value v{ new ValueStruct{ Type::Float, this } };
-  v.impl()->setFloat(fval);
+  Value v{ new ValueImpl{ Type::Float, this } };
+  v.impl()->set_float(fval);
   return v;
 }
 
 Value Engine::newDouble(double dval)
 {
-  Value v{ new ValueStruct{ Type::Double, this } };
-  v.impl()->setDouble(dval);
+  Value v{ new ValueImpl{ Type::Double, this } };
+  v.impl()->set_double(dval);
   return v;
 }
 
 Value Engine::newString(const String & sval)
 {
-  Value v{ new ValueStruct{ Type::String, this } };
-  v.impl()->setString(sval);
+  Value v{ new ValueImpl{ Type::String, this } };
+  v.impl()->set_string(sval);
   return v;
 }
 
@@ -467,19 +467,19 @@ void Engine::initialize(Value & memory)
     switch (t.baseType().data())
     {
     case Type::Boolean:
-      memory.impl()->setBool(false);
+      memory.impl()->set_bool(false);
       break;
     case Type::Char:
-      memory.impl()->setChar('\0');
+      memory.impl()->set_char('\0');
       break;
     case Type::Int:
-      memory.impl()->setInt(0);
+      memory.impl()->set_int(0);
       break;
     case Type::Float:
-      memory.impl()->setFloat(0.f);
+      memory.impl()->set_float(0.f);
       break;
     case Type::Double:
-      memory.impl()->setDouble(0.);
+      memory.impl()->set_double(0.);
       break;
     default:
       throw std::runtime_error{ "Engine::initialize() : fundamental type not implemented" };
@@ -524,19 +524,19 @@ void Engine::uninitialized_copy(const Value & value, Value & memory)
     switch (t.baseType().data())
     {
     case Type::Boolean:
-      memory.impl()->setBool(value.toBool());
+      memory.impl()->set_bool(value.toBool());
       break;
     case Type::Char:
-      memory.impl()->setChar(value.toChar());
+      memory.impl()->set_char(value.toChar());
       break;
     case Type::Int:
-      memory.impl()->setInt(value.toInt());
+      memory.impl()->set_int(value.toInt());
       break;
     case Type::Float:
-      memory.impl()->setFloat(value.toFloat());
+      memory.impl()->set_float(value.toFloat());
       break;
     case Type::Double:
-      memory.impl()->setDouble(value.toDouble());
+      memory.impl()->set_double(value.toDouble());
       break;
     default:
       throw std::runtime_error{ "Engine::uninitialized_copy() : fundamental type not implemented" };
@@ -544,7 +544,7 @@ void Engine::uninitialized_copy(const Value & value, Value & memory)
   }
   else if (t.isEnumType())
   {
-    memory.impl()->setEnumValue(value.toEnumValue());
+    memory.impl()->set_enum_value(value.toEnumValue());
   }
   else
     throw std::runtime_error{ "Engine::uninitialized_copy() : case not implemented" };
@@ -580,7 +580,7 @@ void Engine::manage(Value val)
     return;
 
   d->garbageCollector.push_back(val);
-  val.impl()->setManaged(true);
+  val.impl()->type = val.impl()->type.withFlag(Type::ManagedFlag);
 }
 
 void Engine::garbageCollect()
@@ -1080,7 +1080,7 @@ EngineImpl * Engine::implementation() const
 
 Value EngineImpl::buildValue(Type t)
 {
-  Value v{ new ValueStruct{ t, this->engine } };
+  Value v{ new ValueImpl{ t, this->engine } };
   return v;
 }
 

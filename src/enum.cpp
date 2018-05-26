@@ -22,7 +22,7 @@ namespace callbacks
 
 Value enum_assignment(interpreter::FunctionCall *c)
 {
-  c->arg(0).impl()->setEnumValue(c->arg(1).toEnumValue());
+  c->arg(0).impl()->set_enum_value(c->arg(1).toEnumValue());
   return c->arg(0);
 }
 

@@ -12,81 +12,87 @@
 #include "script/enumvalue.h"
 #include "script/function.h"
 #include "script/object.h"
+#include "object_p.h"
 
 namespace script
 {
 
-ValueStruct::Storage::Storage()
+ValueImpl::Storage::Storage()
 {
   builtin.string = nullptr;
 }
 
-bool ValueStruct::isObject() const
+bool ValueImpl::is_object() const
 {
   return !data.object.isNull();
 }
 
-const Object & ValueStruct::getObject() const
+const Object & ValueImpl::get_object() const
 {
   return data.object;
 }
-void ValueStruct::setObject(const Object & oval)
+
+void ValueImpl::init_object()
 {
-  data.object = oval;
+  if (!data.object.isNull())
+    return;
+
+  auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
+  data.object = Object{ impl };
 }
 
-bool ValueStruct::isArray() const
+bool ValueImpl::is_array() const
 {
   return !data.array.isNull();
 }
 
-const Array & ValueStruct::getArray() const
+const Array & ValueImpl::get_array() const
 {
   return data.array;
 }
 
-void ValueStruct::setArray(const Array & aval)
+void ValueImpl::set_array(const Array & aval)
 {
   data.array = aval;
 }
 
-bool ValueStruct::isFunction() const
+bool ValueImpl::is_function() const
 {
   return !data.function.isNull();
 }
 
-const Function & ValueStruct::getFunction() const
+const Function & ValueImpl::get_function() const
 {
   return data.function;
 }
 
-void ValueStruct::setFunction(const Function & fval)
+void ValueImpl::set_function(const Function & fval)
 {
   data.function = fval;
 }
 
-bool ValueStruct::isLambda() const
+bool ValueImpl::is_lambda() const
 {
   return !data.lambda.isNull();
 }
 
-const LambdaObject & ValueStruct::getLambda() const
+const LambdaObject & ValueImpl::get_lambda() const
 {
   return data.lambda;
 }
 
-void ValueStruct::setLambda(const LambdaObject & lval)
+void ValueImpl::get_lambda(const LambdaObject & lval)
 {
   data.lambda = lval;
 }
 
 
-const EnumValue & ValueStruct::getEnumValue() const
+const EnumValue & ValueImpl::get_enum_value() const
 {
   return *data.builtin.enumValue;
 }
 
-void ValueStruct::setEnumValue(const EnumValue & evval)
+void ValueImpl::set_enum_value(const EnumValue & evval)
 {
   if (data.builtin.enumValue == nullptr)
     data.builtin.enumValue = new EnumValue{ evval };
@@ -94,7 +100,7 @@ void ValueStruct::setEnumValue(const EnumValue & evval)
     *data.builtin.enumValue = evval;
 }
 
-void ValueStruct::clear()
+void ValueImpl::clear()
 {
   data.array = Array{};
   data.object = Object{};
@@ -111,14 +117,14 @@ void ValueStruct::clear()
   this->type = Type::Null;
 }
 
-static ValueStruct construct_void()
+static ValueImpl construct_void()
 {
-  ValueStruct vs{ Type::Void, nullptr };
+  ValueImpl vs{ Type::Void, nullptr };
   vs.ref = 1;
   return vs;
 }
 
-ValueStruct void_struct = construct_void();
+ValueImpl void_struct = construct_void();
 const Value Value::Void = Value{ &void_struct };
 
 Value::Value()
@@ -146,7 +152,7 @@ Value::~Value()
   }
 }
 
-Value::Value(ValueStruct * impl)
+Value::Value(ValueImpl * impl)
   : d(impl)
 {
   if (d)
@@ -211,67 +217,67 @@ bool Value::isString() const
 
 bool Value::isObject() const
 {
-  return d->isObject();
+  return d->is_object();
 }
 
 bool Value::isArray() const
 {
-  return d->isArray();
+  return d->is_array();
 }
 
 bool Value::toBool() const
 {
-  return d->getBool();
+  return d->get_bool();
 }
 
 char Value::toChar() const
 {
-  return d->getChar();
+  return d->get_char();
 }
 
 int Value::toInt() const
 {
-  return d->getInt();
+  return d->get_int();
 }
 
 float Value::toFloat() const
 {
-  return d->getFloat();
+  return d->get_float();
 }
 
 double Value::toDouble() const
 {
-  return d->getDouble();
+  return d->get_double();
 }
 
 String Value::toString() const
 {
-  return d->getString();
+  return d->get_string();
 }
 
 Function Value::toFunction() const
 {
-  return d->getFunction();
+  return d->get_function();
 }
 
 Object Value::toObject() const
 {
-  return d->getObject();
+  return d->get_object();
 }
 
 Array Value::toArray() const
 {
-  return d->getArray();
+  return d->get_array();
 }
 
 EnumValue Value::toEnumValue() const
 {
-  return d->getEnumValue();
+  return d->get_enum_value();
 }
 
 LambdaObject Value::toLambda() const
 {
-  return d->getLambda();
+  return d->get_lambda();
 }
 
 Value Value::fromEnumValue(const EnumValue & ev)
@@ -280,7 +286,7 @@ Value Value::fromEnumValue(const EnumValue & ev)
     return Value{}; // TODO : should we throw
   Engine *e = ev.enumeration().engine();
   Value ret = e->implementation()->buildValue(ev.enumeration().id());
-  ret.impl()->setEnumValue(ev);
+  ret.impl()->set_enum_value(ev);
   return ret;
 }
 
@@ -290,7 +296,7 @@ Value Value::fromFunction(const Function & f, const Type & ft)
     return Value{}; // TODO : should we throw
   Engine *e = f.engine();
   Value ret = e->implementation()->buildValue(ft);
-  ret.impl()->setFunction(f);
+  ret.impl()->set_function(f);
   return ret;
 }
 
@@ -300,17 +306,7 @@ Value Value::fromArray(const Array & a)
     return Value{};
   Engine *e = a.engine();
   Value ret = e->implementation()->buildValue(a.typeId());
-  ret.impl()->setArray(a);
-  return ret;
-}
-
-Value Value::fromObject(const Object & obj)
-{
-  if (obj.isNull())
-    return Value{};
-  Engine *e = obj.engine();
-  Value ret = e->implementation()->buildValue(obj.instanceOf().id());
-  ret.impl()->setObject(obj);
+  ret.impl()->set_array(a);
   return ret;
 }
 
@@ -320,7 +316,7 @@ Value Value::fromLambda(const LambdaObject & obj)
     return Value{};
   Engine *e = obj.engine();
   Value ret = e->implementation()->buildValue(obj.closureType().id());
-  ret.impl()->setLambda(obj);
+  ret.impl()->get_lambda(obj);
   return ret;
 }
 
@@ -332,7 +328,7 @@ Engine* Value::engine() const
 
 bool Value::isManaged() const
 {
-  return d->isManaged();
+  return d->type.testFlag(Type::ManagedFlag);
 }
 
 Value & Value::operator=(const Value & other)

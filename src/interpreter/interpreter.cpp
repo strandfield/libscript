@@ -220,10 +220,7 @@ void Interpreter::visit(const program::ContinueStatement & cs)
 void Interpreter::visit(const program::InitObjectStatement & cos)
 {
   Value & memplace = mExecutionContext->callstack.top()->returnValue();
-  if (memplace.isObject())
-    return;
-
-  memplace.impl()->setObject(mEngine->implementation()->createObject(cos.objectType));
+  memplace.impl()->init_object();
 }
 
 void Interpreter::visit(const program::ExpressionStatement & es) 
