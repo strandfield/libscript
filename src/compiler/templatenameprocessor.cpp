@@ -5,7 +5,7 @@
 #include "script/compiler/templatenameprocessor.h"
 
 #include "script/classtemplate.h"
-#include "../template_p.h"
+#include "script/private/template_p.h"
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/literalprocessor.h"

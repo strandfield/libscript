@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/namelookup.h"
-#include "namelookup_p.h"
+#include "script/private/namelookup_p.h"
 
 #include "script/engine.h"
 #include "script/private/scope_p.h"

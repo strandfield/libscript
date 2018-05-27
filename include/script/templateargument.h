@@ -9,6 +9,7 @@
 
 #include "script/ast/forwards.h"
 
+#include <memory>
 #include <vector>
 
 namespace script

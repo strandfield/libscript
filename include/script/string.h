@@ -7,6 +7,10 @@
 
 #include "libscriptdefs.h"
 
+#if defined(LIBSCRIPT_CONFIG_STRING_HEADER)
+#include LIBSCRIPT_CONFIG_STRING_HEADER
+#else 
+
 #include <string>
 
 namespace script
@@ -14,5 +18,6 @@ namespace script
 using String = std::string;
 } // namespace script
 
+#endif // defined(LIBSCRIPT_CONFIG_STRING_HEADER)
 
 #endif // LIBSCRIPT_STRING_H

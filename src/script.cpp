@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/script.h"
-#include "script_p.h"
+#include "script/private/script_p.h"
 
 #include "script/engine.h"
 

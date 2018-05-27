@@ -20,17 +20,17 @@
 
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
-#include "../class_p.h"
-#include "../engine_p.h"
-#include "../enum_p.h"
-#include "../function_p.h"
+#include "script/private/class_p.h"
+#include "script/private/engine_p.h"
+#include "script/private/enum_p.h"
+#include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
-#include "../literals_p.h"
-#include "../namespace_p.h"
+#include "script/private/literals_p.h"
+#include "script/private/namespace_p.h"
 #include "script/private/scope_p.h"
-#include "../script_p.h"
-#include "../template_p.h"
+#include "script/private/script_p.h"
+#include "script/private/template_p.h"
 
 namespace script
 {

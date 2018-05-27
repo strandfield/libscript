@@ -4,15 +4,15 @@
 
 #include "script/class.h"
 
-#include "class_p.h"
+#include "script/private/class_p.h"
 #include "script/functionbuilder.h"
-#include "function_p.h"
+#include "script/private/function_p.h"
 #include "script/engine.h"
-#include "engine_p.h"
-#include "enum_p.h"
+#include "script/private/engine_p.h"
+#include "script/private/enum_p.h"
 #include "script/object.h"
 #include "script/userdata.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 namespace script
 {

@@ -3,15 +3,15 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/function.h"
-#include "function_p.h"
+#include "script/private/function_p.h"
 
 #include "script/cast.h"
-#include "cast_p.h"
+#include "script/private/cast_p.h"
 #include "script/class.h"
 #include "script/literals.h"
-#include "literals_p.h"
+#include "script/private/literals_p.h"
 #include "script/operator.h"
-#include "operator_p.h"
+#include "script/private/operator_p.h"
 
 namespace script
 {

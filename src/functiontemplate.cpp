@@ -3,9 +3,9 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/functiontemplate.h"
-#include "template_p.h"
+#include "script/private/template_p.h"
 
-#include "function_p.h"
+#include "script/private/function_p.h"
 #include "script/functionbuilder.h"
 #include "script/functiontemplateprocessor.h"
 

@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/object.h"
-#include "object_p.h"
+#include "script/private/object_p.h"
 
 namespace script
 {

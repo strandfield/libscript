@@ -3,15 +3,15 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/enum.h"
-#include "enum_p.h"
+#include "script/private/enum_p.h"
 #include "script/enumvalue.h"
 
 #include <algorithm>
 
 #include "script/script.h"
 
-#include "operator_p.h"
-#include "value_p.h"
+#include "script/private/operator_p.h"
+#include "script/private/value_p.h"
 #include "script/interpreter/executioncontext.h"
 
 namespace script

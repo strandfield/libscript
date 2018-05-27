@@ -11,7 +11,7 @@
 #include "script/namelookup.h"
 #include "script/templateargumentdeduction.h"
 
-#include "../template_p.h"
+#include "script/private/template_p.h"
 
 #include <algorithm> // std::min
 

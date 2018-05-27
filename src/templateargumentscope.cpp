@@ -6,7 +6,7 @@
 
 #include "script/engine.h"
 #include "script/template.h"
-#include "namelookup_p.h"
+#include "script/private/namelookup_p.h"
 
 namespace script
 {

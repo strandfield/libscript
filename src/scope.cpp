@@ -6,15 +6,15 @@
 #include "script/private/scope_p.h"
 
 #include "script/engine.h"
-#include "class_p.h"
-#include "enum_p.h"
+#include "script/private/class_p.h"
+#include "script/private/enum_p.h"
 #include "script/enumvalue.h"
-#include "namespace_p.h"
+#include "script/private/namespace_p.h"
 #include "script/operator.h"
-#include "script_p.h"
+#include "script/private/script_p.h"
 
 #include "script/namelookup.h"
-#include "namelookup_p.h"
+#include "script/private/namelookup_p.h"
 
 namespace script
 {

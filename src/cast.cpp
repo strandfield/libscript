@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/cast.h"
-#include "cast_p.h"
+#include "script/private/cast_p.h"
 
 namespace script
 {

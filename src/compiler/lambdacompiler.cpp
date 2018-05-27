@@ -13,10 +13,10 @@
 #include "script/program/statements.h"
 
 #include "script/functionbuilder.h"
-#include "../lambda_p.h"
+#include "script/private/lambda_p.h"
 #include "script/namelookup.h"
-#include "../namelookup_p.h"
-#include "../operator_p.h"
+#include "script/private/namelookup_p.h"
+#include "script/private/operator_p.h"
 
 
 namespace script

@@ -2,13 +2,13 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "builtinoperators.h"
+#include "script/private/builtinoperators.h"
 
 #include "script/functionbuilder.h"
 #include "script/operator.h"
-#include "operator_p.h"
+#include "script/private/operator_p.h"
 #include "script/value.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 #include "script/interpreter/executioncontext.h"
 

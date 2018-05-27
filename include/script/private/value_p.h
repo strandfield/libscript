@@ -5,6 +5,10 @@
 #ifndef LIBSCRIPT_VALUE_P_H
 #define LIBSCRIPT_VALUE_P_H
 
+#if defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
+#include LIBSCRIPT_CONFIG_VALUEIMPL_HEADER
+#else
+
 #include "script/array.h"
 #include "script/lambda.h"
 #include "script/object.h"
@@ -94,5 +98,7 @@ struct LIBSCRIPT_API ValueImpl
 };
 
 } // namespace script
+
+#endif // defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
 
 #endif // LIBSCRIPT_VALUE_P_H

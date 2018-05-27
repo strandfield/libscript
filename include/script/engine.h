@@ -151,6 +151,10 @@ public:
 
   Engine & operator=(const Engine & other) = delete;
 
+#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS)
+#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS
+#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS)
+
 protected:
   Value buildValue(Type t);
   Class buildClass(const ClassBuilder & opts, int id = -1);

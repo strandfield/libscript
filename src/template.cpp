@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/template.h"
-#include "template_p.h"
+#include "script/private/template_p.h"
 
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"

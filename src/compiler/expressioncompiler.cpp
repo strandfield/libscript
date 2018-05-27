@@ -18,12 +18,12 @@
 #include "script/program/statements.h"
 
 #include "script/cast.h"
-#include "../engine_p.h"
+#include "script/private/engine_p.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/literals.h"
 #include "script/namelookup.h"
-#include "../namelookup_p.h"
+#include "script/private/namelookup_p.h"
 #include "script/overloadresolution.h"
 
 namespace script

@@ -7,13 +7,13 @@
 #include "script/compiler/diagnostichelper.h"
 
 #include "script/array.h"
-#include "../array_p.h"
+#include "script/private/array_p.h"
 #include "script/class.h"
-#include "../class_p.h"
+#include "script/private/class_p.h"
 #include "script/engine.h"
-#include "../engine_p.h"
+#include "script/private/engine_p.h"
 #include "script/namespace.h"
-#include "../namespace_p.h"
+#include "script/private/namespace_p.h"
 #include "script/object.h"
 
 namespace script

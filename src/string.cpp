@@ -2,16 +2,21 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "string_p.h"
+#include "libscriptdefs.h"
+#include "script/private/string_p.h"
+
+#if defined(LIBSCRIPT_CONFIG_STRING_SOURCE)
+#include LIBSCRIPT_CONFIG_STRING_SOURCE
+#else 
 
 #include "script/engine.h"
-#include "engine_p.h"
+#include "script/private/engine_p.h"
 #include "script/class.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
 
 #include "script/interpreter/executioncontext.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 namespace script
 {
@@ -400,3 +405,4 @@ void register_string_type(Class string)
 
 } // namespace script
 
+#endif // defined(LIBSCRIPT_CONFIG_STRING_SOURCE)

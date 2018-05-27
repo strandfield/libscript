@@ -8,7 +8,7 @@
 #include "script/engine.h"
 #include "script/scope.h"
 
-#include "namespace_p.h"
+#include "script/private/namespace_p.h"
 
 namespace script
 {

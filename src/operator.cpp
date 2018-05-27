@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/operator.h"
-#include "operator_p.h"
+#include "script/private/operator_p.h"
 
 namespace script
 {

@@ -3,12 +3,12 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/classtemplate.h"
-#include "template_p.h"
+#include "script/private/template_p.h"
 
 #include "script/class.h"
-#include "class_p.h"
+#include "script/private/class_p.h"
 #include "script/engine.h"
-#include "engine_p.h"
+#include "script/private/engine_p.h"
 #include "script/compiler/templatenameprocessor.h"
 
 namespace script

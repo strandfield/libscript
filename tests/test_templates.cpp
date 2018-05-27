@@ -9,7 +9,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"
 #include "script/functiontype.h"
-#include "../src/template_p.h" /// TODO : ugly !
+#include "script/private/template_p.h"
 #include "script/templateargumentdeduction.h"
 
 #include "script/userdata.h"

@@ -3,19 +3,25 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/value.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 #include "script/engine.h"
-#include "engine_p.h"
+#include "script/private/engine_p.h"
 
 #include "script/array.h"
 #include "script/enumvalue.h"
 #include "script/function.h"
 #include "script/object.h"
-#include "object_p.h"
+#include "script/private/object_p.h"
+
+#if defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE)
+#include LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE
+#endif // defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE)
 
 namespace script
 {
+
+#if !defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
 
 ValueImpl::Storage::Storage()
 {
@@ -116,6 +122,9 @@ void ValueImpl::clear()
   }
   this->type = Type::Null;
 }
+
+#endif // !defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
+
 
 static ValueImpl construct_void()
 {

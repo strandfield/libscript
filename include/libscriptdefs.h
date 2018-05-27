@@ -15,6 +15,10 @@
 #  define LIBSCRIPT_API __declspec(dllimport)
 #endif
 
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include LIBSCRIPT_CONFIG_HEADER
+#endif //defined(LIBSCRIPT_HAS_CONFIG)
+
 namespace script
 {
 using reference_counter_type = int;

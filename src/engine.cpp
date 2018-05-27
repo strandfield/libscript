@@ -3,44 +3,49 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/engine.h"
-#include "engine_p.h"
+#include "script/private/engine_p.h"
 
 #include "script/array.h"
-#include "array_p.h"
-#include "builtinoperators.h"
+#include "script/private/array_p.h"
+#include "script/private/builtinoperators.h"
 #include "script/cast.h"
-#include "cast_p.h"
+#include "script/private/cast_p.h"
 #include "script/class.h"
-#include "class_p.h"
+#include "script/private/class_p.h"
 #include "script/context.h"
-#include "context_p.h"
+#include "script/private/context_p.h"
 #include "script/enum.h"
-#include "enum_p.h"
+#include "script/private/enum_p.h"
 #include "script/enumvalue.h"
 #include "script/function.h"
-#include "function_p.h"
+#include "script/private/function_p.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
-#include "lambda_p.h"
+#include "script/private/lambda_p.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
-#include "namespace_p.h"
+#include "script/private/namespace_p.h"
 #include "script/object.h"
-#include "object_p.h"
+#include "script/private/object_p.h"
 #include "script/operator.h"
-#include "operator_p.h"
+#include "script/private/operator_p.h"
 #include "script/overloadresolution.h"
 #include "script/scope.h"
 #include "script/private/scope_p.h"
-#include "string_p.h"
-#include "template_p.h"
+#include "script/private/string_p.h"
+#include "script/private/template_p.h"
 #include "script/value.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 #include "script/compiler/compiler.h"
 
 #include "script/private/module_p.h"
+
+
+#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE)
+#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE
+#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE)
 
 namespace script
 {

@@ -4,12 +4,12 @@
 
 #include "script/array.h"
 
-#include "array_p.h"
+#include "script/private/array_p.h"
 #include "script/engine.h"
-#include "engine_p.h"
+#include "script/private/engine_p.h"
 #include "script/functionbuilder.h"
 #include "script/template.h"
-#include "value_p.h"
+#include "script/private/value_p.h"
 
 
 namespace script

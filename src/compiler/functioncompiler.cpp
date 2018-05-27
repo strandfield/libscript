@@ -21,14 +21,14 @@
 #include "script/program/statements.h"
 
 #include "script/cast.h"
-#include "../function_p.h"
+#include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/literals.h"
 #include "script/namelookup.h"
-#include "../namelookup_p.h"
+#include "script/private/namelookup_p.h"
 #include "script/overloadresolution.h"
-#include "../script_p.h"
+#include "script/private/script_p.h"
 
 namespace script
 {

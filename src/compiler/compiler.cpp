@@ -5,7 +5,7 @@
 #include "script/compiler/compiler.h"
 
 #include "script/engine.h"
-#include "../engine_p.h"
+#include "script/private/engine_p.h"
 
 #include "script/parser/parser.h"
 
@@ -14,9 +14,9 @@
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/scriptcompiler.h"
 
-#include "../class_p.h"
+#include "script/private/class_p.h"
 #include "script/private/scope_p.h"
-#include "../script_p.h"
+#include "script/private/script_p.h"
 
 namespace script
 {

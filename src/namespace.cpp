@@ -3,11 +3,11 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/namespace.h"
-#include "namespace_p.h"
+#include "script/private/namespace_p.h"
 
-#include "class_p.h"
+#include "script/private/class_p.h"
 #include "script/engine.h"
-#include "enum_p.h"
+#include "script/private/enum_p.h"
 #include "script/functionbuilder.h"
 
 namespace script

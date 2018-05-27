@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/context.h"
-#include "context_p.h"
+#include "script/private/context_p.h"
 
 namespace script
 {

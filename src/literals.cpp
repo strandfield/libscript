@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/literals.h"
-#include "literals_p.h"
+#include "script/private/literals_p.h"
 
 namespace script
 {

@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/sourcefile.h"
-#include "sourcefile_p.h"
+#include "script/private/sourcefile_p.h"
 
 #include <fstream>
 #include <sstream>

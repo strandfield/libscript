@@ -5,10 +5,10 @@
 #include "script/functionbuilder.h"
 
 #include "script/class.h"
-#include "class_p.h"
+#include "script/private/class_p.h"
 #include "script/engine.h"
 #include "script/namespace.h"
-#include "namespace_p.h"
+#include "script/private/namespace_p.h"
 
 namespace script
 {

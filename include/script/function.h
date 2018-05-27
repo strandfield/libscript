@@ -8,6 +8,8 @@
 #include "prototype.h"
 #include "value.h"
 
+#include <string>
+
 namespace script
 {
 

@@ -3,7 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/lambda.h"
-#include "lambda_p.h"
+#include "script/private/lambda_p.h"
 
 namespace script
 {
