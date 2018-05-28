@@ -87,6 +87,21 @@ public:
   Value accept(ExpressionVisitor &) override;
 };
 
+struct LIBSCRIPT_API VariableAccess : public Expression
+{
+  Value value;
+
+public:
+  VariableAccess(const Value & val);
+  ~VariableAccess() = default;
+
+  Type type() const override;
+
+  static std::shared_ptr<VariableAccess> New(const Value & val);
+
+  Value accept(ExpressionVisitor &) override;
+};
+
 struct LIBSCRIPT_API LogicalOperation : public Expression
 {
   std::shared_ptr<Expression> lhs;
@@ -378,6 +393,7 @@ public:
   virtual Value visit(const LogicalOr &) = 0;
   virtual Value visit(const MemberAccess &) = 0;
   virtual Value visit(const StackValue &) = 0;
+  virtual Value visit(const VariableAccess &) = 0;
   virtual Value visit(const VirtualCall &) = 0;
 };
 

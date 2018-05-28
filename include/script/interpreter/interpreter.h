@@ -123,6 +123,7 @@ private:
   Value visit(const program::LogicalOr &) override;
   Value visit(const program::MemberAccess &) override;
   Value visit(const program::StackValue &) override;
+  Value visit(const program::VariableAccess &) override;
   Value visit(const program::VirtualCall &) override;
 
 private:

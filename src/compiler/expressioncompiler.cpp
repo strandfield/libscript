@@ -633,7 +633,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::TypeName:
     throw TypeNameInExpression{ dpos(identifier) };
   case NameLookup::VariableName:
-    return program::Literal::New(lookup.variable()); // perhaps a VariableAccess would be better
+    return program::VariableAccess::New(lookup.variable());
   case NameLookup::StaticDataMemberName:
     return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
@@ -698,7 +698,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMembe
   if (!Accessibility::check(caller(), c, sdm.accessibility()))
     throw InaccessibleMember{ dpos(id), sdm.name, dstr(sdm.accessibility()) };
 
-  return program::Literal::New(sdm.value);
+  return program::VariableAccess::New(sdm.value);
 }
 
 } // namespace compiler

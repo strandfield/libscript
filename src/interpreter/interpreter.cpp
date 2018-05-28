@@ -523,6 +523,11 @@ Value Interpreter::visit(const program::StackValue & sv)
   return mExecutionContext->stack[sv.stackIndex + mExecutionContext->callstack.top()->stackOffset()];
 }
 
+Value Interpreter::visit(const program::VariableAccess & va)
+{
+  return va.value;
+}
+
 Value Interpreter::visit(const program::VirtualCall & vc)
 {
   Value object = eval(vc.object);

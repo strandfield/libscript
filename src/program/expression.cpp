@@ -99,6 +99,11 @@ Value StackValue::accept(ExpressionVisitor & visitor)
   return visitor.visit(*this);
 }
 
+Value VariableAccess::accept(ExpressionVisitor & visitor)
+{
+  return visitor.visit(*this);
+}
+
 Value VirtualCall::accept(ExpressionVisitor & visitor)
 {
   return visitor.visit(*this);
@@ -160,6 +165,24 @@ Type Literal::type() const
 std::shared_ptr<Literal> Literal::New(const Value & val)
 {
   return std::make_shared<Literal>(val);
+}
+
+
+
+VariableAccess::VariableAccess(const Value & val)
+  : value(val)
+{
+
+}
+
+Type VariableAccess::type() const
+{
+  return Type::ref(this->value.type());
+}
+
+std::shared_ptr<VariableAccess> VariableAccess::New(const Value & val)
+{
+  return std::make_shared<VariableAccess>(val);
 }
 
 

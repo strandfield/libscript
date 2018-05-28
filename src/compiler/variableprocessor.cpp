@@ -308,6 +308,12 @@ Value VariableProcessor::visit(const program::StackValue &)
   throw InvalidStaticInitialization{};
 }
 
+Value VariableProcessor::visit(const program::VariableAccess & va)
+{
+  /// TODO : detect circular references during initialization
+  return va.value;
+}
+
 Value VariableProcessor::visit(const program::VirtualCall &)
 {
   throw InvalidStaticInitialization{};

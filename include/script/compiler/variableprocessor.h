@@ -77,6 +77,7 @@ protected:
   Value visit(const program::LogicalOr &);
   Value visit(const program::MemberAccess & ma);
   Value visit(const program::StackValue &);
+  Value visit(const program::VariableAccess &);
   Value visit(const program::VirtualCall &);
 };
 
