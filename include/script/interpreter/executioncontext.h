@@ -41,7 +41,7 @@ public:
   Stack & operator=(const Stack &) = delete;
 };
 
-class StackView
+class LIBSCRIPT_API StackView
 {
 public:
   StackView(Stack *s, int begin, int end);
@@ -64,7 +64,7 @@ private:
 
 class ExecutionContext;
 
-class FunctionCall
+class LIBSCRIPT_API FunctionCall
 {
 public:
   FunctionCall();
