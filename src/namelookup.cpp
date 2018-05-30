@@ -400,7 +400,7 @@ NameLookup NameLookup::member(const std::string & name, const Class & cla)
     }
   }
   
-  if(result->functions.empty())
+  if(!result->functions.empty() || !result->functionTemplateResult.empty())
     return NameLookup{ result };
 
   Class base = cla.parent();

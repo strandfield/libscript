@@ -180,3 +180,24 @@ TEST(NameLookup, parsing_nested_name) {
   ASSERT_EQ(lookup.resultType(), NameLookup::VariableName);
   ASSERT_EQ(lookup.variable().toInt(), 3);
 }
+
+TEST(NameLookup, member_lookup) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class foo = e.newClass(ClassBuilder::New("foo"));
+  foo.Method("f").create();
+
+  Class bar = e.newClass(ClassBuilder::New("bar").setParent(foo));
+  bar.Method("g").create();
+
+  NameLookup lookup = NameLookup::member("g", bar);
+  ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
+  ASSERT_EQ(lookup.functions().size(), 1);
+
+  lookup = NameLookup::member("f", bar);
+  ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
+  ASSERT_EQ(lookup.functions().size(), 1);
+}
