@@ -100,6 +100,7 @@ protected:
   void qualified_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
   Scope qualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
   Scope unqualified_scope_lookup(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
+  static void recursive_member_lookup(NameLookupImpl *result, const std::string & name, const Class & cla);
 
 protected:
   std::shared_ptr<NameLookupImpl> d;

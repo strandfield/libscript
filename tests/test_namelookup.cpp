@@ -200,4 +200,8 @@ TEST(NameLookup, member_lookup) {
   lookup = NameLookup::member("f", bar);
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
   ASSERT_EQ(lookup.functions().size(), 1);
+
+  lookup = NameLookup::member("k", bar);
+  ASSERT_EQ(lookup.resultType(), NameLookup::UnknownName);
+  ASSERT_EQ(lookup.scope().asClass(), bar);
 }

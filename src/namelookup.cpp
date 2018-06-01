@@ -371,11 +371,8 @@ NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, co
   return l;
 }
 
-NameLookup NameLookup::member(const std::string & name, const Class & cla)
+void NameLookup::recursive_member_lookup(NameLookupImpl *result, const std::string & name, const Class & cla)
 {
-  std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
-  result->scope = Scope{ cla };
-
   for (const auto & f : cla.memberFunctions())
   {
     if (f.name() == name)
@@ -396,18 +393,28 @@ NameLookup NameLookup::member(const std::string & name, const Class & cla)
     if (data_members.at(i).name == name)
     {
       result->dataMemberIndex = i + cla.attributesOffset();
-      return NameLookup{ result };
+      return;
     }
   }
-  
-  if(!result->functions.empty() || !result->functionTemplateResult.empty())
-    return NameLookup{ result };
+
+  if (!result->functions.empty() || !result->functionTemplateResult.empty())
+    return;
 
   Class base = cla.parent();
   if (base.isNull())
-    return NameLookup{ result };
+    return;
 
-  return NameLookup::member(name, base);
+  recursive_member_lookup(result, name, base);
+}
+
+NameLookup NameLookup::member(const std::string & name, const Class & cla)
+{
+  std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
+  result->scope = Scope{ cla };
+  
+  recursive_member_lookup(result.get(), name, cla);
+
+  return NameLookup{ result };
 }
 
 static void remove_duplicated_operators(std::vector<Function> & list)
