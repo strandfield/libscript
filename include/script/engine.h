@@ -97,6 +97,7 @@ public:
   FunctionType getFunctionType(Type id) const;
   FunctionType getFunctionType(const Prototype & proto);
 
+  bool hasType(const Type & t) const;
   Class getClass(Type id) const;
   Enum getEnum(Type id) const;
   Lambda getLambda(Type id) const;

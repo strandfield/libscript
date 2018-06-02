@@ -754,6 +754,24 @@ FunctionType Engine::getFunctionType(const Prototype & proto)
   return newFunctionType(proto);
 }
 
+bool Engine::hasType(const Type & t) const
+{
+  if (t.isFundamentalType())
+    return true;
+
+  const int index = t.data() & 0xFFFF;
+  if (t.isObjectType())
+    return d->classes.size() > index && !d->classes.at(index).isNull();
+  else if(t.isEnumType())
+    return d->enums.size() > index && !d->enums.at(index).isNull();
+  else if(t.isClosureType())
+    return d->lambdas.size() > index && d->lambdas.at(index).impl() != nullptr;
+  else if (t.isFunctionType())
+    return d->prototypes.size() > index && !d->prototypes.at(index).assignment().isNull();
+
+  return false;
+}
+
 Class Engine::getClass(Type id) const
 {
   if (!id.isObjectType())

@@ -14,6 +14,7 @@
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
 #include "script/functionbuilder.h"
+#include "script/functiontype.h"
 #include "script/namelookup.h"
 #include "script/namespacealias.h"
 #include "script/sourcefile.h"
@@ -91,6 +92,14 @@ TEST(CoreUtilsTests, Types) {
   ASSERT_EQ(Type::cref(Type::Int).withoutRef(), Type(Type::Int, Type::ConstFlag));
   ASSERT_EQ(Type(Type::Int).withConst(), Type(Type::Int, Type::ConstFlag));
   ASSERT_EQ(Type(Type::Int).withConst().withoutConst(), Type::Int);
+
+  Engine e;
+  e.setup();
+  ASSERT_TRUE(e.hasType(Type::Int));
+  ASSERT_TRUE(e.hasType(Type::String));
+  ASSERT_FALSE(e.hasType(Type::Auto));
+  ASSERT_FALSE(e.hasType(Type::String + 66));
+  ASSERT_TRUE(e.hasType(e.newFunctionType(Prototype{ Type::Void }).type()));
 }
 
 
