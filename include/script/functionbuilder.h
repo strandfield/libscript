@@ -62,6 +62,9 @@ public:
   FunctionBuilder & setPublic();
   FunctionBuilder & setProtected();
   FunctionBuilder & setPrivate();
+  FunctionBuilder & setStatic();
+
+  bool isStatic() const;
 
   FunctionBuilder & setReturnType(const Type & t);
   inline FunctionBuilder & returns(const Type & t) { return setReturnType(t); }

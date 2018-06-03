@@ -428,7 +428,7 @@ std::string FunctionCompiler::argumentName(int index)
 {
   auto funcdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(declaration());
 
-  if (mFunction.isMemberFunction())
+  if (mFunction.isNonStaticMemberFunction())
   {
     if (index == 0)
       return "this";
@@ -448,7 +448,7 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 
 bool FunctionCompiler::canUseThis() const
 {
-  return mFunction.isMemberFunction() || mFunction.isConstructor() || mFunction.isDestructor();
+  return mFunction.isNonStaticMemberFunction() || mFunction.isConstructor() || mFunction.isDestructor();
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
@@ -548,7 +548,7 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
 std::shared_ptr<program::Expression> FunctionCompiler::generateDefaultArgument(int index)
 {
   auto fdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(mDeclaration);
-  const int param_offset = mFunction.isMemberFunction() ? 1 : 0;
+  const int param_offset = mFunction.isNonStaticMemberFunction() ? 1 : 0;
   auto expr = generate(fdecl->params.at(index - param_offset).defaultValue);
 
   ConversionSequence conv = ConversionSequence::compute(expr, mFunction.prototype().argv(index), engine());

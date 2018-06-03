@@ -92,8 +92,15 @@ public:
 
       builder.setExplicit();
     }
+    else if (fundecl->staticKeyword.isValid())
+    {
+      if (!scp.isClass())
+        throw InvalidUseOfStaticKeyword{ dpos(fundecl->staticKeyword) };
 
-    if (fundecl->virtualKeyword.isValid())
+      builder.special = scp.asClass();
+      builder.setStatic();
+    }
+    else if (fundecl->virtualKeyword.isValid())
     {
       if (!scp.isClass() || (builder.kind != Function::StandardFunction && builder.kind != Function::Destructor))
         throw InvalidUseOfVirtualKeyword{ dpos(fundecl->virtualKeyword) };

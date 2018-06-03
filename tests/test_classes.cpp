@@ -89,3 +89,23 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo_B);
 }
+
+
+TEST(ClassTest, static_member_functions) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  Class A = engine.newClass(ClassBuilder::New("A"));
+
+  Function foo = A.Method("foo")
+    .setStatic()
+    .params(Type::Int).create();
+
+  ASSERT_TRUE(foo.isMemberFunction());
+  ASSERT_FALSE(foo.isNonStaticMemberFunction());
+  ASSERT_TRUE(foo.isStatic());
+
+  ASSERT_EQ(foo.prototype().argc(), 1);
+}

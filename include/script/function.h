@@ -50,7 +50,7 @@ public:
 
   enum Flag {
     NoFlags = 0,
-    // Static = 1, // Static functions are just free functions defined in a class, not need for a flag
+    Static = 1,
     Explicit = 2,
     Virtual = 4,
     Pure = 8,
@@ -92,6 +92,8 @@ public:
   bool isDeleted() const;
 
   bool isMemberFunction() const;
+  bool isStatic() const;
+  inline bool isNonStaticMemberFunction() const { return isMemberFunction() && !isStatic(); }
   Class memberOf() const;
   AccessSpecifier accessibility() const;
 

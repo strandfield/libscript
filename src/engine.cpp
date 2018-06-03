@@ -854,7 +854,12 @@ Function EngineImpl::newDestructor(const FunctionBuilder & opts)
 
 Function EngineImpl::newFunction(const FunctionBuilder & opts)
 {
-  auto impl = std::make_shared<RegularFunctionImpl>(opts.name, opts.proto, engine, opts.flags);
+  auto impl = [&opts](Engine *e) -> std::shared_ptr<RegularFunctionImpl> {
+    if(opts.isStatic())
+      return std::make_shared<StaticMemberFunctionImpl>(opts.special, opts.name, opts.proto, e, opts.flags);
+    else
+      return std::make_shared<RegularFunctionImpl>(opts.name, opts.proto, e, opts.flags);
+  }(engine);
   impl->implementation.callback = opts.callback;
   impl->data = opts.data;
   return Function{ impl };

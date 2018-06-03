@@ -55,6 +55,20 @@ RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototy
 
 }
 
+
+StaticMemberFunctionImpl::StaticMemberFunctionImpl(const Class & c, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+  : RegularFunctionImpl(name, p, e, f)
+  , mClass(c)
+{
+
+}
+
+StaticMemberFunctionImpl::~StaticMemberFunctionImpl()
+{
+
+}
+
+
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
   : FunctionImpl(Prototype{ Type::Void }, e)
 {
@@ -215,7 +229,7 @@ bool Function::isExplicit() const
 
 bool Function::isConst() const
 {
-  return isMemberFunction() && d->prototype.argv(0).isConstRef();
+  return isNonStaticMemberFunction() && d->prototype.argv(0).isConstRef();
 }
 
 bool Function::isVirtual() const
@@ -240,17 +254,27 @@ bool Function::isDeleted() const
 
 bool Function::isMemberFunction() const
 {
+  if (isStatic())
+    return true;
+
   if (d->prototype.argc() == 0)
     return false;
   return d->prototype.argv(0).testFlag(Type::ThisFlag);
+}
+
+bool Function::isStatic() const
+{
+  return dynamic_cast<StaticMemberFunctionImpl*>(d.get()) != nullptr;
 }
 
 Class Function::memberOf() const
 {
   if (isConstructor())
     return static_cast<const ConstructorImpl*>(d.get())->mClass;
-  else if(isDestructor())
+  else if (isDestructor())
     return static_cast<const DestructorImpl*>(d.get())->mClass;
+  else if (isStatic())
+    return static_cast<const StaticMemberFunctionImpl*>(d.get())->mClass;
 
   if (d->prototype.argc() == 0)
     return Class{};

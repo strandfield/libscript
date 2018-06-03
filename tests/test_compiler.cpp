@@ -1313,6 +1313,101 @@ TEST(CompilerTests, static_data_member) {
   ASSERT_EQ(it->second.value.toInt(), 4);
 }
 
+TEST(CompilerTests, static_member_function) {
+  using namespace script;
+
+  const char *source =
+    "  class A                             "
+    "  {                                   "
+    "  public:                             "
+    "    static int foo() { return 66; }   "
+    "  };                                  "
+    "                                      "
+    "  int n = A::foo();                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  ASSERT_EQ(s.rootNamespace().classes().size(), 1);
+
+  Class A = s.rootNamespace().classes().front();
+  ASSERT_EQ(A.memberFunctions().size(), 1);
+
+  Function foo = A.memberFunctions().front();
+  ASSERT_TRUE(foo.isMemberFunction());
+  ASSERT_EQ(foo.memberOf(), A);
+  ASSERT_TRUE(foo.isStatic());
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().back();
+  ASSERT_EQ(n.toInt(), 66);
+}
+
+
+TEST(CompilerTests, protected_static_member_function) {
+  using namespace script;
+
+  const char *source =
+    "  class A                             "
+    "  {                                   "
+    "  protected:                          "
+    "    static int foo() { return 66; }   "
+    "  };                                  "
+    "                                      "
+    "  int n = A::foo();                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+
+  // The error messages should refer to the 'protected' keyword.
+  bool protected_keyword = false;
+  for (const auto & e : errors)
+    protected_keyword = protected_keyword | e.to_string().find("protected") != std::string::npos;
+  ASSERT_TRUE(protected_keyword);
+}
+
+TEST(CompilerTests, access_static_member_function_through_object) {
+  using namespace script;
+
+  const char *source =
+    "  class A                             "
+    "  {                                   "
+    "  public:                             "
+    "    A() = default;                    "
+    "    ~A() = default;                   "
+    "    static int foo() { return 66; }   "
+    "  };                                  "
+    "                                      "
+    "  A a;                                "
+    "  int n = a.foo();                   ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value n = s.globals().back();
+  ASSERT_EQ(n.toInt(), 66);
+}
+
 TEST(CompilerTests, namespace_decl_with_function) {
   using namespace script;
 

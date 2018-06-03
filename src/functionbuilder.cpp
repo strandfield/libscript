@@ -258,6 +258,25 @@ FunctionBuilder & FunctionBuilder::setPrivate()
   return setAccessibility(AccessSpecifier::Private);
 }
 
+FunctionBuilder & FunctionBuilder::setStatic()
+{
+  flags |= (Function::Static << 2);
+
+  if (proto.argc() == 0 || !proto.argv(0).testFlag(Type::ThisFlag))
+    return *this;
+
+  for (int i(0); i < proto.argc() - 1; ++i)
+    proto.setParameter(i, proto.argv(i+1));
+  proto.popArgument();
+
+  return *this;
+}
+
+bool FunctionBuilder::isStatic() const
+{
+  return flags & (Function::Static << 2);
+}
+
 FunctionBuilder & FunctionBuilder::setReturnType(const Type & t)
 {
   this->proto.setReturnType(t);

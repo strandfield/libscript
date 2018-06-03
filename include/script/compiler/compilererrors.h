@@ -161,6 +161,7 @@ DECLARE_COMPILER_ERROR(MissingNonDefaultedTemplateParameter, "Missing non-defaul
 DECLARE_COMPILER_ERROR(CouldNotFindPrimaryClassTemplate, "Could not find primary class template (must be declared in the same namespace).");
 DECLARE_COMPILER_ERROR(CouldNotFindPrimaryFunctionTemplate, "Could not find primary function template (must be declared in the same namespace).");
 
+DECLARE_COMPILER_ERROR(InvalidUseOfStaticKeyword, "Invalid use of static keyword.");
 DECLARE_COMPILER_ERROR(InvalidUseOfVirtualKeyword, "Invalid use of virtual keyword.");
 
 DECLARE_COMPILER_ERROR(AutoMustBeUsedWithAssignment, "'auto' can only be used with assignment initialization.");
