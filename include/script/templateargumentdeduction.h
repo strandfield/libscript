@@ -25,7 +25,7 @@ struct Deduction
 
 } // namespace deduction
 
-class TemplateArgumentDeduction
+class LIBSCRIPT_API TemplateArgumentDeduction
 {
 public:
   std::vector<deduction::Deduction> deductions_;
