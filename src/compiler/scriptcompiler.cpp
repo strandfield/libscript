@@ -945,7 +945,7 @@ void ScriptCompiler::reprocess(const IncompleteFunction & func)
 
   const int offset = proto.argc() > 0 && proto.argv(0).testFlag(Type::ThisFlag) ? 1 : 0;
 
-  for (int i(0); i < proto.argc(); ++i)
+  for (int i(offset); i < proto.argc(); ++i)
   {
     if (proto.argv(i).testFlag(Type::UnknownFlag))
       proto.setParameter(i, resolve(decl->params.at(i-offset).type));
