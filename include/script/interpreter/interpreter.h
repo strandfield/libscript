@@ -47,11 +47,7 @@ public:
 
     invoke(f);
 
-    // pop the arguments
-    while (mExecutionContext->stack.size > sp + 1)
-      mExecutionContext->stack.pop();
-
-    return mExecutionContext->stack.pop();
+    return mExecutionContext->pop();
   }
 
   template<typename Iter>
@@ -68,11 +64,7 @@ public:
 
     invoke(ctor);
 
-    // pop the arguments
-    while (mExecutionContext->stack.size > sp + 1)
-      mExecutionContext->stack.pop();
-
-    mExecutionContext->stack.pop();
+    mExecutionContext->pop();
   }
 
   Value eval(program::Expression & expr);

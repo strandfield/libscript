@@ -114,7 +114,6 @@ Value Interpreter::call(const Function & f, const std::vector<Value> & args)
     while (mExecutionContext->stack.size > sp + 1)
       mExecutionContext->stack.pop();
 
-    mExecutionContext->pop();
     throw exception;
   }
 
@@ -541,10 +540,6 @@ Value Interpreter::visit(const program::VirtualCall & vc)
   mExecutionContext->push(callee, sp);
 
   invoke(callee);
-
-  // pop the arguments
-  while (mExecutionContext->stack.size > sp + 1)
-    mExecutionContext->stack.pop();
 
   Value ret = mExecutionContext->pop();
   if (!(callee.returnType().isReference() || callee.returnType().isRefRef()))
