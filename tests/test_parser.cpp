@@ -215,10 +215,6 @@ TEST(ParserTests, operations) {
 }
 
 
-
-
-
-
 TEST(ParserTests, expr2) {
   using namespace script;
   using namespace parser;
@@ -258,6 +254,33 @@ TEST(ParserTests, expr2) {
     ASSERT_TRUE(fcall.callee->is<Operation>());
   }
 }
+
+
+TEST(ParserTests, nested_calls) {
+  using namespace script;
+  using namespace ast;
+
+  const char *source =
+    " f(a, g(y(x))); ";
+
+  parser::Parser parser{ script::SourceFile::fromString(source) };
+
+  auto actual = parser.parseStatement();
+
+  ASSERT_TRUE(actual->is<ast::ExpressionStatement>());
+  auto expr = actual->as<ast::ExpressionStatement>().expression;
+  ASSERT_TRUE(expr->is<ast::FunctionCall>());
+  auto & call = expr->as<ast::FunctionCall>();
+  ASSERT_EQ(call.arguments.size(), 2);
+  auto arg = call.arguments.back();
+  ASSERT_TRUE(arg->is<ast::FunctionCall>());
+  {
+    auto & nested_call = arg->as<ast::FunctionCall>();
+    ASSERT_EQ(nested_call.arguments.size(), 1);
+    ASSERT_TRUE(nested_call.arguments.front()->is<ast::FunctionCall>());
+  }
+}
+
 
 TEST(ParserTests, expr3) {
   using namespace script;

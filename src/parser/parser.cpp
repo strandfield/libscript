@@ -196,25 +196,6 @@ void TemplateArgumentFragment::consumeComma()
 }
 
 
-
-FunctionArgFragment::FunctionArgFragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-{
-}
-
-FunctionArgFragment::~FunctionArgFragment()
-{
-
-}
-
-bool FunctionArgFragment::atEnd() const
-{
-  if (data()->atEnd())
-    return true;
-  Token tok = data()->peek();
-  return tok.type == Token::Comma || tok.type == Token::RightPar;
-}
-
 ListFragment::ListFragment(AbstractFragment *parent)
   : AbstractFragment(parent)
 {
@@ -636,21 +617,12 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     }
     else if (t.type == Token::LeftPar)
     {
-      auto leftPar = unsafe_read();
-      Token next = peek();
-      std::vector<std::shared_ptr<ast::Expression>> args;
-      while (next != Token::RightPar)
-      {
-        FunctionArgFragment fargFrag{ fragment() };
-        ExpressionParser exprParser{ &fargFrag };
-        args.push_back(exprParser.parse());
-        next = peek();
-        if (next.type == Token::Comma)
-          read();
-      }
-
-      operand = ast::FunctionCall::New(operand, leftPar, std::move(args), next);
-      read(); // reads the rightPar
+      const Token leftpar = unsafe_read();
+      SentinelFragment sentinel{ Token::RightPar, fragment() };
+      ExpressionListParser argsParser{ &sentinel };
+      std::vector<std::shared_ptr<ast::Expression>> args = argsParser.parse();
+      const Token rightpar = sentinel.consumeSentinel();
+      operand = ast::FunctionCall::New(operand, leftpar, std::move(args), rightpar);
     }
     else if (t.type == Token::LeftBracket) // subscript operator
     {

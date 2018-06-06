@@ -139,16 +139,6 @@ public:
   void consumeComma();
 };
 
-
-class FunctionArgFragment : public AbstractFragment
-{
-public:
-  FunctionArgFragment(AbstractFragment *parent);
-  ~FunctionArgFragment();
-
-  bool atEnd() const override;
-};
-
 class ListFragment : public AbstractFragment
 {
 public:
