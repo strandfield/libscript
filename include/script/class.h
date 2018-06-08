@@ -84,6 +84,7 @@ public:
   Enum newEnum(const std::string & src);
   const std::vector<Enum> & enums() const;
 
+  void addTemplate(const Template & t);
   const std::vector<Template> & templates() const;
   const std::vector<Typedef> & typedefs() const;
 

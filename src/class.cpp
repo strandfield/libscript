@@ -193,6 +193,11 @@ const std::vector<Enum> & Class::enums() const
   return d->enums;
 }
 
+void Class::addTemplate(const Template & t)
+{
+  return d->templates.push_back(t);
+}
+
 const std::vector<Template> & Class::templates() const
 {
   return d->templates;
