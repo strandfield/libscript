@@ -539,9 +539,11 @@ bool ExpressionParser::isInfixOperator(const Token & tok) const
 
 std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
 {
-  assert(!atEnd());
+  if (atEnd())
+    throw UnexpectedFragmentEnd{};
+
   auto p = pos();
-  Token t = peek();
+  Token t = unsafe_peek();
 
   std::shared_ptr<ast::Expression> operand = nullptr;
 
