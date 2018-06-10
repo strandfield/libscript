@@ -171,18 +171,6 @@ const std::vector<Typedef> & ScopeImpl::typedefs() const
 
 bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
 {
-  bool found_something = false;
-  for (const auto & fn : functions())
-  {
-    if (fn.name() == name)
-    {
-      nl->functions.push_back(fn);
-      found_something = true;
-    }
-  }
-
-  if (found_something)
-    return true;
 
   for (const auto & e : enums())
   {
@@ -212,6 +200,33 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
     }
   }
 
+  for (const auto & td : typedefs())
+  {
+    if (td.name() == name)
+    {
+      nl->typeResult = td.type();
+      return true;
+    }
+  }
+
+  const auto & vars = values();
+  auto it = vars.find(name);
+  if (it != vars.end())
+  {
+    nl->valueResult = it->second;
+    return true;
+  }
+
+  bool found_something = false;
+  for (const auto & fn : functions())
+  {
+    if (fn.name() == name)
+    {
+      nl->functions.push_back(fn);
+      found_something = true;
+    }
+  }
+
   for (const auto & t : templates())
   {
     if (t.name() == name)
@@ -231,24 +246,6 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
 
   if (found_something)
     return true;
-
-  const auto & vars = values();
-  auto it = vars.find(name);
-  if (it != vars.end())
-  {
-    nl->valueResult = it->second;
-    return true;
-  }
-
-
-  for (const auto & td : typedefs())
-  {
-    if (td.name() == name)
-    {
-      nl->typeResult = td.type();
-      return true;
-    }
-  }
 
   return false;
 }
@@ -756,8 +753,19 @@ void ClassScope::add_typedef(const Typedef & td)
 
 bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
-  Class c = mClass;
-  while (!c.isNull())
+  if (ExtensibleScope::lookup(name, nl))
+    return true;
+
+  // not really optimised, but we cannot pass the parent directly 
+  // if we want to look at the static and non-static data members...
+  return lookup(name, mClass, nl);
+}
+
+bool ClassScope::lookup(const std::string & name, const Class & c, NameLookupImpl *nl)
+{
+  if (c.isNull())
+    return false;
+
   {
     const auto & dm = c.dataMembers();
     for (int i(dm.size() - 1); i >= 0; --i)
@@ -769,24 +777,88 @@ bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
         return true;
       }
     }
-
-    c = c.parent();
   }
 
   {
-    const auto & sdm = mClass.staticDataMembers();
+    const auto & sdm = c.staticDataMembers();
     auto it = sdm.find(name);
     if (it != sdm.end())
     {
       nl->staticDataMemberResult = it->second;
-      nl->memberOfResult = mClass;
+      nl->memberOfResult = c;
       return true;
     }
   }
 
-  return ExtensibleScope::lookup(name, nl);
-}
+  for (const auto & e : c.enums())
+  {
+    if (e.name() == name)
+    {
+      nl->typeResult = e.id();
+      return true;
+    }
 
+    if (e.isEnumClass())
+      continue;
+
+    auto it = e.values().find(name);
+    if (it != e.values().end())
+    {
+      nl->enumValueResult = EnumValue{ e, it->second };
+      return true;
+    }
+  }
+
+  for (const auto & nested_class : c.classes())
+  {
+    if (nested_class.name() == name)
+    {
+      nl->typeResult = c.id();
+      return true;
+    }
+  }
+
+  for (const auto & td : c.typedefs())
+  {
+    if (td.name() == name)
+    {
+      nl->typeResult = td.type();
+      return true;
+    }
+  }
+
+  bool found_something = false;
+  for (const auto & fn : c.memberFunctions())
+  {
+    if (fn.name() == name)
+    {
+      nl->functions.push_back(fn);
+      found_something = true;
+    }
+  }
+
+  for (const auto & t : c.templates())
+  {
+    if (t.name() == name)
+    {
+      if (t.isClassTemplate())
+      {
+        nl->classTemplateResult = t.asClassTemplate();
+        return true;
+      }
+      else
+      {
+        nl->functionTemplateResult.push_back(t.asFunctionTemplate());
+        found_something = true;
+      }
+    }
+  }
+
+  if (found_something)
+    return true;
+
+  return lookup(name, c.parent(), nl);
+}
 
 
 LambdaScope::LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p)

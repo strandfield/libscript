@@ -186,6 +186,8 @@ public:
   void add_typedef(const Typedef & td) override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
+
+  static bool lookup(const std::string & name, const Class & c, NameLookupImpl *nl);
 };
 
 class LambdaScope : public ScopeImpl
