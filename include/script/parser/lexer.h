@@ -63,6 +63,7 @@ public:
     Colon, 
     QuestionMark,
     Comma,
+    Tabulation,
     LineBreak,
     CarriageReturn,
     Other,

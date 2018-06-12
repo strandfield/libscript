@@ -310,7 +310,7 @@ Lexer::CharacterType Lexer::ctype(char c)
     Invalid, // ACK    (Acknowledgment)
     Invalid, // BEL    (Bell)
     Invalid, //  BS    (Backspace)
-    Invalid, //  HT    (Horizontal Tab)
+    Tabulation, //  HT    (Horizontal Tab)
     LineBreak, //  LF    (Line Feed)
     Invalid, //  VT    (Vertical Tab)
     Invalid, //  FF    (Form Feed)
@@ -438,7 +438,7 @@ Lexer::CharacterType Lexer::ctype(char c)
 
 bool Lexer::isDiscardable(char c)
 {
-  return ctype(c) == Space || ctype(c) == LineBreak || ctype(c) == CarriageReturn;
+  return ctype(c) == Space || ctype(c) == LineBreak || ctype(c) == CarriageReturn || ctype(c) == Tabulation;
 }
 
 

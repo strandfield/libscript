@@ -8,6 +8,15 @@
 #include "script/parser/token.h"
 
 
+TEST(LexerTests, characters) {
+  using namespace script;
+  using namespace parser;
+
+  ASSERT_EQ(Lexer::ctype('\t'), Lexer::Tabulation);
+  ASSERT_TRUE(Lexer::isDiscardable('\t'));
+}
+
+
 TEST(LexerTests, tokens) {
   using namespace script;
   using namespace parser;
