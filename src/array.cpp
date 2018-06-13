@@ -198,6 +198,7 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   class_builder.setData(shared_data);
   Class array_class = tplt.build(class_builder, arguments);
   shared_data->data.typeId = array_class.id();
+  Type array_type = array_class.id();
 
   FunctionBuilder function_builder = FunctionBuilder::Constructor(array_class, Prototype{}, callbacks::array::default_ctor);
   array_class.newConstructor(function_builder);
@@ -210,19 +211,24 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
 
   array_class.newDestructor(callbacks::array::dtor);
 
-  function_builder = FunctionBuilder::Function("size", Prototype{ Type::Int, Type::cref(array_class.id() | Type::ThisFlag) }, callbacks::array::size);
-  array_class.newMethod(function_builder);
+  array_class.Method("size", callbacks::array::size)
+    .setConst().returns(Type::Int).create();
 
-  function_builder = FunctionBuilder::Function("resize", Prototype{ Type::Void, Type::ref(array_class.id() | Type::ThisFlag), Type::cref(Type::Int) }, callbacks::array::resize);
-  array_class.newMethod(function_builder);
+  array_class.Method("resize", callbacks::array::resize)
+    .params(Type::cref(Type::Int)).create();
 
-  function_builder = FunctionBuilder::Operator(Operator::AssignmentOperator, Type::ref(array_class.id()), Type::ref(array_class.id() | Type::ThisFlag), Type::cref(array_class.id()), callbacks::array::assign);
-  array_class.newOperator(function_builder);
+  array_class.Operation(Operator::AssignmentOperator, callbacks::array::assign)
+    .returns(Type::ref(array_type))
+    .params(Type::cref(array_type)).create();
 
-  function_builder = FunctionBuilder::Operator(Operator::SubscriptOperator, Type::ref(element_type), Type::ref(array_class.id() | Type::ThisFlag), Type::cref(Type::Int), callbacks::array::subscript);
-  array_class.newOperator(function_builder);
-  function_builder = FunctionBuilder::Operator(Operator::SubscriptOperator, Type::cref(element_type), Type::cref(array_class.id() | Type::ThisFlag), Type::cref(Type::Int), callbacks::array::subscript);
-  array_class.newOperator(function_builder);
+  array_class.Operation(Operator::SubscriptOperator, callbacks::array::subscript)
+    .returns(Type::ref(element_type))
+    .params(Type::cref(Type::Int)).create();
+
+  array_class.Operation(Operator::SubscriptOperator, callbacks::array::subscript)
+    .setConst()
+    .returns(Type::cref(element_type))
+    .params(Type::cref(Type::Int)).create();
 
   return array_class;
 }

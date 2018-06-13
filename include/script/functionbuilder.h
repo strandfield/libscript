@@ -39,12 +39,10 @@ public:
   static FunctionBuilder Constructor(const Class & cla, Prototype proto, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Constructor(const Class & cla, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
-  static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Class instead")]] static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
 
-  static FunctionBuilder Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, const Type & b, NativeFunctionSignature impl = nullptr);
-  static FunctionBuilder Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl = nullptr);
 
   static FunctionBuilder Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl = nullptr);
 

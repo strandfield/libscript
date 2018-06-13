@@ -125,24 +125,6 @@ FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, NativeFu
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::OperatorFunction };
-  ret.operation = op;
-  ret.proto = Prototype{ rt, a };
-  ret.callback = impl;
-  return ret;
-}
-
-FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, const Type & rt, const Type & a, const Type & b, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::OperatorFunction };
-  ret.operation = op;
-  ret.proto = Prototype{ rt, a, b };
-  ret.callback = impl;
-  return ret;
-}
-
 FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::OperatorFunction };

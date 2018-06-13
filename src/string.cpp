@@ -351,8 +351,7 @@ Type register_charref_type(Engine *e)
 
   charref.newDestructor(callbacks::charref::dtor);
 
-  fb = FunctionBuilder::Operator(Operator::AssignmentOperator, Type::ref(charref.id()), Type::ref(charref.id() | Type::ThisFlag), Type::Char, callbacks::charref::assign);
-  charref.newOperator(fb);
+  charref.Operation(Operator::AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
 
   fb = FunctionBuilder::Cast(Type::cref(charref.id()), Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char);
   charref.newCast(fb);
