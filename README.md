@@ -58,9 +58,9 @@ int main()
   Engine e;
   e.setup();
 
-  auto b = FunctionBuilder::Function("print", Prototype{}, print_callback)
-    .addParam(Type::cref(Type::String));
-  e.rootNamespace().newFunction(b);
+  e.rootNamespace().Function("print", print_callback)
+    .params(Type::cref(Type::String))
+    .create();
   
   Script s = e.newScript(SourceFile{ "script.txt" });
   const bool result = s.compile();
