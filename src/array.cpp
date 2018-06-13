@@ -200,14 +200,11 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   shared_data->data.typeId = array_class.id();
   Type array_type = array_class.id();
 
-  FunctionBuilder function_builder = FunctionBuilder::Constructor(array_class, Prototype{}, callbacks::array::default_ctor);
-  array_class.newConstructor(function_builder);
+  array_class.Constructor(callbacks::array::default_ctor).create();
 
-  function_builder = FunctionBuilder::Constructor(array_class, Prototype{Type::cref(array_class.id()), Type::cref(array_class.id()) }, callbacks::array::copy_ctor);
-  array_class.newConstructor(function_builder);
+  array_class.Constructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
 
-  function_builder = FunctionBuilder::Constructor(array_class, Prototype{ Type::cref(array_class.id()), Type::cref(Type::Int) }, callbacks::array::size_ctor);
-  array_class.newConstructor(function_builder);
+  array_class.Constructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
 
   array_class.newDestructor(callbacks::array::dtor);
 

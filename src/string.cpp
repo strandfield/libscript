@@ -341,36 +341,24 @@ Type register_charref_type(Engine *e)
 
   charref_id = charref.id();
 
-  FunctionBuilder fb = FunctionBuilder::Constructor(charref, callbacks::charref::ctor)
-    .addParam(Type::ref(Type::String)).addParam(Type::Int);
-  charref.newConstructor(fb);
+  charref.Constructor(callbacks::charref::ctor).params(Type::ref(Type::String), Type::Int).create();
 
-  fb = FunctionBuilder::Constructor(charref, callbacks::charref::copy_ctor)
-    .addParam(Type::cref(charref.id()));
-  charref.newConstructor(fb);
+  charref.Constructor(callbacks::charref::copy_ctor).params(Type::cref(charref.id())).create();
 
   charref.newDestructor(callbacks::charref::dtor);
 
   charref.Operation(Operator::AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
 
-  fb = FunctionBuilder::Cast(Type::cref(charref.id()), Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char);
-  charref.newCast(fb);
+  charref.Conversion(Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char).setConst().create();
 
   return charref.id();
 }
 
 void register_string_type(Class string)
 {
-  FunctionBuilder fb = FunctionBuilder::Constructor(string, callbacks::string::default_ctor);
-  string.newConstructor(fb);
-
-  fb = FunctionBuilder::Constructor(string, callbacks::string::copy_ctor)
-    .addParam(Type::cref(string.id()));
-  string.newConstructor(fb);
-
-  fb = FunctionBuilder::Constructor(string, callbacks::string::char_ctor).setExplicit()
-    .addParam(Type::Char);
-  string.newConstructor(fb);
+  string.Constructor(callbacks::string::default_ctor).create();
+  string.Constructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
+  string.Constructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
   string.newDestructor(callbacks::string::dtor);
 

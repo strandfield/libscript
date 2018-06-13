@@ -91,8 +91,8 @@ public:
   const std::vector<Operator> & operators() const;
   const std::vector<Cast> & casts() const;
 
-  Function newConstructor(const Prototype & proto, NativeFunctionSignature func, uint8 flags = Function::NoFlags);
-  Function newConstructor(const FunctionBuilder & builder);
+  [[deprecated("use Class::Constructor instead")]] Function newConstructor(const Prototype & proto, NativeFunctionSignature func, uint8 flags = Function::NoFlags);
+  [[deprecated("use Class::Constructor instead")]] Function newConstructor(const FunctionBuilder & builder);
   const std::vector<Function> & constructors() const;
   Function defaultConstructor() const;
   bool isDefaultConstructible() const;
@@ -110,6 +110,7 @@ public:
   Operator newOperator(const FunctionBuilder & builder);
   Cast newCast(const FunctionBuilder & builder);
 
+  FunctionBuilder Constructor(NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;

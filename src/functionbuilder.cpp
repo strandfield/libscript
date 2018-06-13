@@ -32,7 +32,11 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
   , operation(Operator::Null)
 {
   this->proto.setReturnType(Type::Void);
-  this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+
+  if (k != Function::Constructor)
+    this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+  else 
+    this->proto.setReturnType(Type::cref(cla.id()));
 }
 
 FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)

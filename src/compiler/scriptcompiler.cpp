@@ -621,7 +621,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Constructor(current_class, Prototype{});
+  FunctionBuilder b = current_class.Constructor();
   function_processor_.fill(b, decl, scp);
   Function ctor = build(b);
 

@@ -434,6 +434,13 @@ Cast Class::newCast(const FunctionBuilder & builder)
   return cast;
 }
 
+FunctionBuilder Class::Constructor(NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, Function::Constructor };
+  builder.callback = func;
+  return builder;
+}
+
 FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature func) const
 {
   FunctionBuilder builder{ *this, Function::StandardFunction };

@@ -113,7 +113,7 @@ TEST(Conversions, user_defined_converting_constructor) {
   e.setup();
 
   Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
-  Function ctor = A.newConstructor(FunctionBuilder::Constructor(A).addParam(Type::Float));
+  Function ctor = A.Constructor().params(Type::Float).create();
 
   ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
   ASSERT_FALSE(conv == ConversionSequence::NotConvertible());

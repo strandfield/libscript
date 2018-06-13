@@ -8,6 +8,44 @@
 #include "script/class.h"
 #include "script/functionbuilder.h"
 
+
+TEST(ClassTest, builder_functions) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  Class A = engine.newClass(ClassBuilder::New("A"));
+  Type A_type = A.id();
+
+  Function default_ctor = A.Constructor().create();
+  ASSERT_TRUE(default_ctor.isConstructor());
+  ASSERT_EQ(default_ctor.memberOf(), A);
+  ASSERT_EQ(default_ctor, A.defaultConstructor());
+
+  Function copy_ctor = A.Constructor().params(Type::cref(A_type)).create();
+  ASSERT_TRUE(copy_ctor.isConstructor());
+  ASSERT_EQ(copy_ctor.memberOf(), A);
+  ASSERT_EQ(copy_ctor, A.copyConstructor());
+
+  Function ctor_1 = A.Constructor().params(Type::Int).create();
+  ASSERT_TRUE(ctor_1.isConstructor());
+  ASSERT_EQ(ctor_1.memberOf(), A);
+  ASSERT_EQ(ctor_1.prototype().argc(), 1);
+  ASSERT_EQ(ctor_1.parameter(0), Type::Int);
+  ASSERT_FALSE(ctor_1.isExplicit());
+
+  Function ctor_2 = A.Constructor().setExplicit().params(Type::Boolean).create();
+  ASSERT_TRUE(ctor_2.isConstructor());
+  ASSERT_EQ(ctor_2.memberOf(), A);
+  ASSERT_EQ(ctor_2.prototype().argc(), 1);
+  ASSERT_EQ(ctor_2.parameter(0), Type::Boolean);
+  ASSERT_TRUE(ctor_2.isExplicit());
+
+  ASSERT_EQ(A.constructors().size(), 4);
+}
+
+
 TEST(ClassTest, datamembers) {
   using namespace script;
 
