@@ -1374,7 +1374,7 @@ TEST(CompilerTests, protected_static_member_function) {
   // The error messages should refer to the 'protected' keyword.
   bool protected_keyword = false;
   for (const auto & e : errors)
-    protected_keyword = protected_keyword | e.to_string().find("protected") != std::string::npos;
+    protected_keyword = protected_keyword || e.to_string().find("protected") != std::string::npos;
   ASSERT_TRUE(protected_keyword);
 }
 
