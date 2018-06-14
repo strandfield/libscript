@@ -108,7 +108,7 @@ public:
   Function newMethod(const FunctionBuilder & builder);
 
   Operator newOperator(const FunctionBuilder & builder);
-  Cast newCast(const FunctionBuilder & builder);
+  [[deprecated("use Class::Conversion instead")]] Cast newCast(const FunctionBuilder & builder);
 
   FunctionBuilder Constructor(NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;

@@ -18,6 +18,8 @@ TEST(ClassTest, builder_functions) {
   Class A = engine.newClass(ClassBuilder::New("A"));
   Type A_type = A.id();
 
+  /* Constructors */
+
   Function default_ctor = A.Constructor().create();
   ASSERT_TRUE(default_ctor.isConstructor());
   ASSERT_EQ(default_ctor.memberOf(), A);
@@ -43,6 +45,23 @@ TEST(ClassTest, builder_functions) {
   ASSERT_TRUE(ctor_2.isExplicit());
 
   ASSERT_EQ(A.constructors().size(), 4);
+
+  /* Conversion functions */
+
+  Cast cast_1 = A.Conversion(Type::cref(Type::Int)).setConst().create().toCast();
+  ASSERT_TRUE(cast_1.isMemberFunction());
+  ASSERT_EQ(cast_1.memberOf(), A);
+  ASSERT_TRUE(cast_1.isConst());
+  ASSERT_EQ(cast_1.destType(), Type::cref(Type::Int));
+  ASSERT_EQ(cast_1.destType(), cast_1.returnType());
+  ASSERT_FALSE(cast_1.isExplicit());
+
+  Cast cast_2 = A.Conversion(Type::ref(Type::Int)).setExplicit().create().toCast();
+  ASSERT_TRUE(cast_2.isMemberFunction());
+  ASSERT_EQ(cast_2.memberOf(), A);
+  ASSERT_FALSE(cast_2.isConst());
+  ASSERT_EQ(cast_2.destType(), Type::ref(Type::Int));
+  ASSERT_TRUE(cast_2.isExplicit());
 }
 
 

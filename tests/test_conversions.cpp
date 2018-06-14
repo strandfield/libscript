@@ -97,7 +97,7 @@ TEST(Conversions, user_defined_cast) {
   e.setup();
 
   Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
-  Cast to_int = A.newCast(FunctionBuilder::Cast(Type::cref(A.id()), Type::Int));
+  Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
 
   ConversionSequence conv = ConversionSequence::compute(A.id(), Type::Int, &e);
   ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
