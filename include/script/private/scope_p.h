@@ -116,9 +116,6 @@ public:
 
   bool has_child(const std::string & name) const;
 
-  [[deprecated("has_child() : use member function instead")]]
-  inline static bool has_child(const std::shared_ptr<NamespaceScope> & that, const std::string & name) { return that->has_child(name); }
-
   mutable std::vector<Class> mClasses;
   mutable std::vector<Enum> mEnums;
   mutable std::vector<Function> mFunctions;

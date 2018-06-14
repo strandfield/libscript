@@ -1474,7 +1474,7 @@ void Scope::inject(const NamespaceAlias & alias)
     }
 
     auto ns_scope = std::dynamic_pointer_cast<script::NamespaceScope>(target);
-    if (script::NamespaceScope::has_child(ns_scope, alias.nested().front()))
+    if (ns_scope->has_child(alias.nested().front()))
     {
       ns_scope->mNamespaceAliases[alias.name()] = alias;
       return;
