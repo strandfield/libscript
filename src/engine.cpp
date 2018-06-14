@@ -759,7 +759,7 @@ bool Engine::hasType(const Type & t) const
   if (t.isFundamentalType())
     return true;
 
-  const int index = t.data() & 0xFFFF;
+  const size_t index = t.data() & 0xFFFF;
   if (t.isObjectType())
     return d->classes.size() > index && !d->classes.at(index).isNull();
   else if(t.isEnumType())
