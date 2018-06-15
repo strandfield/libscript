@@ -73,6 +73,19 @@ FunctionBuilder::FunctionBuilder(Namespace ns, Operator::BuiltInOperator op)
 
 }
 
+FunctionBuilder::FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix)
+  : callback(nullptr)
+  , engine(ns.engine())
+  , namespace_scope(ns)
+  , kind(Function::LiteralOperatorFunction)
+  , flags(0)
+  , name(suffix)
+  , operation(Operator::Null)
+{
+
+}
+
+
 
 FunctionBuilder FunctionBuilder::Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl)
 {

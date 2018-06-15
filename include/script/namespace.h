@@ -64,6 +64,8 @@ public:
 
   FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   Engine * engine() const;
   NamespaceImpl * implementation() const;

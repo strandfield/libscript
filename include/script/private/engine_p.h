@@ -68,6 +68,7 @@ public:
   Function newConstructor(const FunctionBuilder & opts);
   Function newDestructor(const FunctionBuilder & opts);
   Function newFunction(const FunctionBuilder & opts);
+  Function newLiteralOperator(const FunctionBuilder & opts);
   Function newOperator(const FunctionBuilder & opts);
   Function newCast(const FunctionBuilder & opts);
 

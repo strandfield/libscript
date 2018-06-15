@@ -45,7 +45,8 @@ public:
     Destructor = 2,
     OperatorFunction = 3,
     CastFunction = 4,
-    Root = 5
+    Root = 5,
+    LiteralOperatorFunction = 6,
   };
 
   enum Flag {

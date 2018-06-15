@@ -211,6 +211,18 @@ FunctionBuilder Namespace::Operation(Operator::BuiltInOperator op, NativeFunctio
   return builder;
 }
 
+FunctionBuilder Namespace::UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, FunctionBuilder::LiteralOperatorTag{}, suffix };
+  builder.callback = func;
+  return builder;
+}
+
+FunctionBuilder Namespace::UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
+{
+  return UserDefinedLiteral(suffix, func).returns(output).params(input);
+}
+
 Engine * Namespace::engine() const
 {
   return d->engine;

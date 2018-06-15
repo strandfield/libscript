@@ -23,6 +23,7 @@
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/private/lambda_p.h"
+#include "script/private/literals_p.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
@@ -865,6 +866,14 @@ Function EngineImpl::newFunction(const FunctionBuilder & opts)
   return Function{ impl };
 }
 
+Function EngineImpl::newLiteralOperator(const FunctionBuilder & opts)
+{
+  auto impl = std::make_shared<LiteralOperatorImpl>(std::string{ opts.name }, opts.proto, engine, opts.flags);
+  impl->implementation.callback = opts.callback;
+  impl->data = opts.data;
+  return Function{ impl };
+}
+
 Function EngineImpl::newOperator(const FunctionBuilder & opts)
 {
   auto impl = std::make_shared<OperatorImpl>(opts.operation, opts.proto, engine, opts.flags);
@@ -895,6 +904,8 @@ Function Engine::newFunction(const FunctionBuilder & opts)
     return d->newFunction(opts);
   case Function::OperatorFunction:
     return d->newOperator(opts);
+  case Function::LiteralOperatorFunction:
+    return d->newLiteralOperator(opts);
   default:
     break;
   }

@@ -657,19 +657,21 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
 {
-  const Scope scp = currentScope();
-  const ast::OperatorOverloadDecl & over_decl = *decl;
+  Scope scp = currentScope().escapeTemplate();
 
-  /// TODO : check that we are at namespace level !
+  /// TODO : remove this temporary hack !
+  if (scp.type() == Scope::ScriptScope)
+    scp = scp.parent();
 
-  FunctionBuilder b = FunctionBuilder::Operator(Operator::Null);
-  function_processor_.fill(b, decl, scp);
+  if (scp.type() != Scope::NamespaceScope)
+    throw NotImplementedError{ dpos(decl), "Literal operator can only be declared inside a namespace" };
 
-  std::string suffix_name = over_decl.name->as<ast::LiteralOperatorName>().suffix_string();
+  std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  LiteralOperator function{ std::make_shared<LiteralOperatorImpl>(std::move(suffix_name), b.proto, engine()) };
+  FunctionBuilder b = scp.asNamespace().UserDefinedLiteral(suffix_name);
+  function_processor_.fill(b, decl, currentScope());
 
-  scp.impl()->add_literal_operator(function);
+  Function function = b.create();
 
   schedule(function, decl, scp);
 }

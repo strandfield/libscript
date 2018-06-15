@@ -29,11 +29,15 @@ public:
   std::shared_ptr<UserData> data;
 
 public:
+  struct LiteralOperatorTag {};
+
+public:
   FunctionBuilder(Function::Kind k);
   FunctionBuilder(Class cla, Function::Kind k);
   FunctionBuilder(Class cla, Operator::BuiltInOperator op);
   FunctionBuilder(Namespace ns);
   FunctionBuilder(Namespace ns, Operator::BuiltInOperator op);
+  FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix);
 
   static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
   [[deprecated("use Class::Constructor instead")]] static FunctionBuilder Constructor(const Class & cla, Prototype proto, NativeFunctionSignature impl = nullptr);
