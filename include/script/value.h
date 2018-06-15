@@ -6,7 +6,7 @@
 #define LIBSCRIPT_VALUE_H
 
 #include "libscriptdefs.h"
-#include "types.h"
+#include "script/types.h"
 #include "script/string.h"
 
 #if defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_HEADER)
