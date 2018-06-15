@@ -56,6 +56,8 @@ public:
   bool hasParent() const;
   Scope parent() const;
 
+  inline Scope escapeTemplate() const { return type() == TemplateArgumentScope ? parent() : *this; }
+
   bool isClass() const;
 
   Class asClass() const;
