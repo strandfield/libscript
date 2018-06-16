@@ -915,11 +915,9 @@ Function Engine::newFunction(const FunctionBuilder & opts)
 
 Script Engine::newScript(const SourceFile & source)
 {
-  auto ret = std::make_shared<ScriptImpl>(this, source);
-  ret->root = Namespace{ std::make_shared<NamespaceImpl>(std::string{}, this) };
-  ret->root.implementation()->script = ret;
-  d->scripts.push_back(Script{ ret });
-  return Script{ ret };
+  Script ret{ std::make_shared<ScriptImpl>(this, source) };
+  d->scripts.push_back(ret);
+  return ret;
 }
 
 bool Engine::compile(Script s)
@@ -930,16 +928,14 @@ bool Engine::compile(Script s)
 
 Module Engine::newModule(const std::string & name)
 {
-  Namespace ns{ std::make_shared<NamespaceImpl>("", this) };
-  Module m{ std::make_shared<ModuleImpl>(name, ns) };
+  Module m{ std::make_shared<ModuleImpl>(this, name) };
   d->modules.push_back(m);
   return m;
 }
 
 Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Namespace ns{ std::make_shared<NamespaceImpl>("", this) };
-  Module m{ std::make_shared<ModuleImpl>(name, ns, load, cleanup) };
+  Module m{ std::make_shared<ModuleImpl>(this, name, load, cleanup) };
   d->modules.push_back(m);
   return m;
 }

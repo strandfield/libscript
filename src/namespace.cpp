@@ -9,6 +9,7 @@
 #include "script/engine.h"
 #include "script/private/enum_p.h"
 #include "script/functionbuilder.h"
+#include "script/private/module_p.h"
 
 namespace script
 {
@@ -36,12 +37,22 @@ bool Namespace::isUnnamed() const
 
 bool Namespace::isScriptNamespace() const
 {
-  return d->script.lock() != nullptr;
+  return dynamic_cast<ScriptImpl*>(d.get()) != nullptr;
 }
 
-Script Namespace::script() const
+Script Namespace::asScript() const
 {
-  return Script{ d->script.lock() };
+  return Script{ std::dynamic_pointer_cast<ScriptImpl>(d) };
+}
+
+bool Namespace::isModuleNamesapce() const
+{
+  return dynamic_cast<ModuleImpl*>(d.get()) != nullptr;
+}
+
+Module Namespace::asModule() const
+{
+  return Module{ std::dynamic_pointer_cast<ModuleImpl>(d) };
 }
 
 const std::string & Namespace::name() const

@@ -16,6 +16,7 @@ namespace script
 class NamespaceImpl;
 
 class FunctionBuilder;
+class Module;
 class Template;
 class Typedef;
 
@@ -33,7 +34,10 @@ public:
   bool isUnnamed() const;
 
   bool isScriptNamespace() const;
-  Script script() const;
+  Script asScript() const;
+
+  bool isModuleNamesapce() const;
+  Module asModule() const;
 
   const std::string & name() const;
 

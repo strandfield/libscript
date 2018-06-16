@@ -42,12 +42,20 @@ public:
 
   const std::string & Script::path() const;
   const SourceFile & source() const;
-  const Namespace & rootNamespace() const;
   const std::map<std::string, int> & globalNames() const;
   const std::vector<Value> & globals() const;
 
-  const std::vector<Class> & classes() const;
-  const std::vector<Operator> & operators() const;
+  Namespace rootNamespace() const;
+
+  inline const std::map<std::string, Value> & vars() const { return rootNamespace().vars(); }
+  inline const std::vector<Enum> & enums() const { return rootNamespace().enums(); }
+  inline const std::vector<Function> & functions() const { return rootNamespace().functions(); }
+  inline const std::vector<Operator> & operators() const { return rootNamespace().operators(); }
+  inline const std::vector<LiteralOperator> & literalOperators() const { return rootNamespace().literalOperators(); }
+  inline const std::vector<Class> & classes() const { return rootNamespace().classes(); }
+  inline const std::vector<Namespace> & namespaces() const { return rootNamespace().namespaces(); }
+  inline const std::vector<Template> & templates() const { return rootNamespace().templates(); }
+  inline const std::vector<Typedef> & typedefs() const { return rootNamespace().typedefs(); }
 
   const std::vector<diagnostic::Message> & messages() const;
 

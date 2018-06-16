@@ -219,39 +219,15 @@ public:
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };
 
-class ScriptScope : public ExtensibleScope
+class ScriptScope : public NamespaceScope
 {
 public:
   ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p = nullptr);
   ScriptScope(const ScriptScope & other);
   ~ScriptScope() = default;
 
-  Script mScript;
-
-  Engine * engine() const override;
   int kind() const override;
   ScriptScope * clone() const override;
-
-  const std::vector<Class> & classes() const override;
-  const std::vector<Enum> & enums() const override;
-  const std::vector<Function> & functions() const override;
-  const std::vector<LiteralOperator> & literal_operators() const override;
-  const std::vector<Namespace> & namespaces() const override;
-  const std::vector<Operator> & operators() const override;
-  const std::vector<Template> & templates() const override;
-  const std::map<std::string, Value> & values() const override;
-  const std::vector<Typedef> & typedefs() const override;
-
-  void add_class(const Class & c) override;
-  void add_function(const Function & f) override;
-  void add_operator(const Operator & op) override;
-  void add_literal_operator(const LiteralOperator & lo) override;
-  void add_enum(const Enum & e) override;
-  void add_template(const Template & t) override;
-  void add_typedef(const Typedef & td) override;
-
-  void remove_class(const Class & c) override;
-  void remove_enum(const Enum & e) override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 };

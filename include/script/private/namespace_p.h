@@ -15,7 +15,6 @@
 #include "script/template.h"
 #include "script/value.h"
 #include "script/typedefs.h"
-#include "script_p.h"
 
 namespace script
 {
@@ -34,7 +33,6 @@ public:
   std::vector<LiteralOperator> literal_operators;
   std::vector<Template> templates;
   std::vector<Typedef> typedefs;
-  std::weak_ptr<ScriptImpl> script;
   std::weak_ptr<NamespaceImpl> parent;
 
 public:
@@ -45,7 +43,7 @@ public:
 
   }
   NamespaceImpl(const NamespaceImpl &) = delete;
-  ~NamespaceImpl() = default;
+  virtual ~NamespaceImpl() = default;
 };
 
 } // namespace script

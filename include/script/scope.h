@@ -59,6 +59,8 @@ public:
   inline Scope escapeTemplate() const { return type() == TemplateArgumentScope ? parent() : *this; }
 
   bool isClass() const;
+  bool isNamespace() const;
+  bool isScript() const;
 
   Class asClass() const;
   Namespace asNamespace() const;

@@ -11,8 +11,8 @@ namespace script
 {
 
 ScriptImpl::ScriptImpl(Engine *e, const SourceFile & src)
-  : loaded(false)
-  , engine(e)
+  : NamespaceImpl("", e)
+  , loaded(false)
   , source(src)
 {
 
@@ -85,9 +85,9 @@ const SourceFile & Script::source() const
   return d->source;
 }
 
-const Namespace & Script::rootNamespace() const
+Namespace Script::rootNamespace() const
 {
-  return d->root;
+  return Namespace{ d };
 }
 
 const std::map<std::string, int> & Script::globalNames() const
@@ -98,16 +98,6 @@ const std::map<std::string, int> & Script::globalNames() const
 const std::vector<Value> & Script::globals() const
 {
   return d->globals;
-}
-
-const std::vector<Class> & Script::classes() const
-{
-  return d->root.classes();
-}
-
-const std::vector<Operator> & Script::operators() const
-{
-  return d->root.operators();
 }
 
 const std::vector<diagnostic::Message> & Script::messages() const

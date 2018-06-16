@@ -41,7 +41,7 @@ public:
   bool isLoaded() const;
   void load();
 
-  const Namespace & root() const;
+  Namespace root() const;
   Scope scope() const;
 
   inline ModuleImpl* impl() const { return d.get(); }

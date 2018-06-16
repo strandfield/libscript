@@ -38,7 +38,7 @@ void VariableProcessor::process(const std::shared_ptr<ast::VariableDecl> & decl,
 
   if (scp.isClass())
     process_data_member(decl, scp);
-  else if (scp.type() == Scope::NamespaceScope)
+  else if (scp.isNamespace())
     process_namespace_variable(decl, scp);
   else
     throw std::runtime_error{ "Not implemented" };

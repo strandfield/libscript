@@ -273,9 +273,8 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask 
   mCurrentAst = task.ast;
   mCurrentScript = task.script;
 
-  mCurrentScope = Scope{ mCurrentScript.rootNamespace() };
+  mCurrentScope = Scope{ mCurrentScript };
   mCurrentScope.merge(engine()->rootNamespace());
-  mCurrentScope = Scope{ mCurrentScript, mCurrentScope };
 
   Function program = registerRootFunction();
   mCurrentScript.implementation()->program = program;
@@ -571,10 +570,10 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   const Scope scp = currentScope();
   const ast::NamespaceDeclaration & ndecl = *decl;
 
-  if (scp.type() != Scope::NamespaceScope && scp.type() != Scope::ScriptScope)
+  if (!scp.isNamespace())
     throw NamespaceDeclarationCannotAppearAtThisLevel{ dpos(decl) };
 
-  Namespace parent_ns = scp.type() == Scope::NamespaceScope ? scp.asNamespace() : scp.asScript().rootNamespace();
+  Namespace parent_ns = scp.asNamespace();
   const std::string name = ndecl.namespace_name->getName();
 
   Namespace ns = parent_ns.newNamespace(name); /// TODO : what-if the namespace already exists ?
@@ -659,11 +658,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 {
   Scope scp = currentScope().escapeTemplate();
 
-  /// TODO : remove this temporary hack !
-  if (scp.type() == Scope::ScriptScope)
-    scp = scp.parent();
-
-  if (scp.type() != Scope::NamespaceScope)
+  if (!scp.isNamespace())
     throw NotImplementedError{ dpos(decl), "Literal operator can only be declared inside a namespace" };
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
@@ -687,7 +682,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   FunctionBuilder builder = FunctionBuilder::Operator(Operator::Null, Prototype{});
   function_processor_.fill(builder, decl, scp);
   
-  const bool is_member = currentScope().type() == script::Scope::ClassScope;
+  const bool is_member = currentScope().isClass();
   
   auto arity = builder.proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
   builder.operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
@@ -724,7 +719,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const Scope scp = currentScope();
   const ast::CastDecl & cast_decl = *decl;
 
-  const bool is_member = scp.type() == script::Scope::ClassScope;
+  const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
   FunctionBuilder builder{ Function::CastFunction };
@@ -818,7 +813,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
 
 Namespace ScriptCompiler::findEnclosingNamespace(const Scope & scp) const
 {
-  if (scp.type() == Scope::NamespaceScope)
+  if (scp.isNamespace())
     return scp.asNamespace();
   else if (scp.isClass())
     return scp.asClass().enclosingNamespace();

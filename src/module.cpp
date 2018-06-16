@@ -24,9 +24,8 @@ static void module_default_cleanup(Module)
 
 }
 
-ModuleImpl::ModuleImpl(const std::string & str, const Namespace &n)
-  : name(str)
-  , ns(n)
+ModuleImpl::ModuleImpl(Engine *e, const std::string & str)
+  : NamespaceImpl(str, e)
   , load(module_default_load)
   , cleanup(module_default_cleanup)
   , loaded(false)
@@ -34,9 +33,8 @@ ModuleImpl::ModuleImpl(const std::string & str, const Namespace &n)
 
 }
 
-ModuleImpl::ModuleImpl(const std::string & module_name, const Namespace & nmspc, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback)
-  : name(module_name)
-  , ns(nmspc)
+ModuleImpl::ModuleImpl(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback)
+  : NamespaceImpl(module_name, e)
   , load(load_callback)
   , cleanup(cleanup_callback)
   , loaded(false)
@@ -50,7 +48,7 @@ Module::Module(const std::shared_ptr<ModuleImpl> & impl)
 
 Engine * Module::engine() const
 {
-  return d->ns.engine();
+  return d->engine;
 }
 
 const std::string & Module::name() const
@@ -60,16 +58,14 @@ const std::string & Module::name() const
 
 Module Module::newSubModule(const std::string & name)
 {
-  Namespace ns{ std::make_shared<NamespaceImpl>("", engine()) };
-  Module m{ std::make_shared<ModuleImpl>(name, ns) };
+  Module m{ std::make_shared<ModuleImpl>(engine(), name) };
   d->modules.push_back(m);
   return m;
 }
 
 Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Namespace ns{ std::make_shared<NamespaceImpl>("", engine()) };
-  Module m{ std::make_shared<ModuleImpl>(name, ns, load, cleanup) };
+  Module m{ std::make_shared<ModuleImpl>(engine(), name, load, cleanup) };
   d->modules.push_back(m);
   return m;
 }
@@ -104,14 +100,14 @@ void Module::load()
   d->load(*this);
 }
 
-const Namespace & Module::root() const
+Namespace Module::root() const
 {
-  return d->ns;
+  return Namespace{ d };
 }
 
 Scope Module::scope() const
 {
-  Scope scp{ d->ns };
+  Scope scp{ Namespace{ d } };
 
   for (const auto & child : d->modules)
   {
@@ -136,7 +132,14 @@ void Module::destroy()
 
   d->modules.clear();
 
-  d->ns = Namespace{}; /// TODO : is that correct ?
+  d->functions.clear();
+  d->classes.clear();
+  d->enums.clear();
+  d->namespaces.clear();
+  d->operators.clear();
+  d->templates.clear();
+  d->variables.clear();
+  d->typedefs.clear();
 }
 
 

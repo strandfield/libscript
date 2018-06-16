@@ -565,38 +565,45 @@ void NamespaceScope::add_class(const Class & c)
 {
   mNamespace.implementation()->classes.push_back(c);
   c.implementation()->enclosing_namespace = mNamespace.weakref();
+  mClasses.clear();
 }
 
 void NamespaceScope::add_function(const Function & f)
 {
   mNamespace.implementation()->functions.push_back(f);
+  mFunctions.clear();
 }
 
 void NamespaceScope::add_operator(const Operator & op)
 {
   mNamespace.implementation()->operators.push_back(op);
+  mOperators.clear();
 }
 
 void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
 {
   mNamespace.implementation()->literal_operators.push_back(lo);
+  mLiteralOperators.clear();
 }
 
 void NamespaceScope::add_enum(const Enum & e)
 {
   mNamespace.implementation()->enums.push_back(e);
   e.implementation()->enclosing_namespace = mNamespace.weakref();
+  mEnums.clear();
 }
 
 void NamespaceScope::add_template(const Template & t)
 {
   mNamespace.implementation()->templates.push_back(t);
   //t.impl()->enclosing_namespace = mNamespace.weakref();
+  mTemplates.clear();
 }
 
 void NamespaceScope::add_typedef(const Typedef & td)
 {
   mNamespace.implementation()->typedefs.push_back(td);
+  mTypedefs.clear();
 }
 
 void NamespaceScope::remove_class(const Class & c)
@@ -962,22 +969,15 @@ bool EnumScope::lookup(const std::string & name, NameLookupImpl *nl) const
 
 
 ScriptScope::ScriptScope(const Script & s, std::shared_ptr<ScopeImpl> p)
-  : ExtensibleScope(p)
-  , mScript(s)
+  : NamespaceScope(s.rootNamespace(), p)
 {
 
 }
 
 ScriptScope::ScriptScope(const ScriptScope & other)
-  : ExtensibleScope(other)
-  , mScript(other.mScript)
+  : NamespaceScope(other)
 {
 
-}
-
-Engine * ScriptScope::engine() const
-{
-  return mScript.engine();
 }
 
 int ScriptScope::kind() const
@@ -990,108 +990,9 @@ ScriptScope * ScriptScope::clone() const
   return new ScriptScope(*this);
 }
 
-const std::vector<Class> & ScriptScope::classes() const
-{
-  return mScript.classes();
-}
-
-const std::vector<Enum> & ScriptScope::enums() const
-{
-  return mScript.rootNamespace().enums();
-}
-
-const std::vector<Function> & ScriptScope::functions() const
-{
-  return mScript.rootNamespace().functions();
-}
-
-const std::vector<LiteralOperator> & ScriptScope::literal_operators() const
-{
-  return mScript.rootNamespace().literalOperators();
-}
-
-
-const std::vector<Namespace> & ScriptScope::namespaces() const
-{
-  return mScript.rootNamespace().namespaces();
-}
-
-const std::vector<Operator> & ScriptScope::operators() const
-{
-  return mScript.rootNamespace().operators();
-}
-
-const std::vector<Template> & ScriptScope::templates() const
-{
-  return mScript.rootNamespace().templates();
-}
-
-const std::map<std::string, Value> & ScriptScope::values() const
-{
-  return mScript.rootNamespace().vars();
-}
-
-const std::vector<Typedef> & ScriptScope::typedefs() const
-{
-  return mScript.rootNamespace().typedefs();
-}
-
-
-
-void ScriptScope::add_class(const Class & c)
-{
-  mScript.rootNamespace().implementation()->classes.push_back(c);
-  c.implementation()->enclosing_namespace = mScript.rootNamespace().weakref();
-}
-
-void ScriptScope::add_function(const Function & f)
-{
-  mScript.rootNamespace().implementation()->functions.push_back(f);
-}
-
-void ScriptScope::add_operator(const Operator & op)
-{
-  mScript.rootNamespace().implementation()->operators.push_back(op);
-}
-
-void ScriptScope::add_literal_operator(const LiteralOperator & lo)
-{
-  mScript.rootNamespace().implementation()->literal_operators.push_back(lo);
-}
-
-void ScriptScope::add_enum(const Enum & e)
-{
-  mScript.rootNamespace().implementation()->enums.push_back(e);
-  e.implementation()->enclosing_namespace = mScript.rootNamespace().weakref();
-}
-
-void ScriptScope::add_template(const Template & t)
-{
-  mScript.rootNamespace().implementation()->templates.push_back(t);
-}
-
-void ScriptScope::add_typedef(const Typedef & td)
-{
-  mScript.rootNamespace().implementation()->typedefs.push_back(td);
-}
-
-void ScriptScope::remove_class(const Class & c)
-{
-  auto & container = mScript.rootNamespace().implementation()->classes;
-  auto it = std::find(container.begin(), container.end(), c);
-  container.erase(it);
-}
-
-void ScriptScope::remove_enum(const Enum & e)
-{
-  auto & container = mScript.rootNamespace().implementation()->enums;
-  auto it = std::find(container.begin(), container.end(), e);
-  container.erase(it);
-}
-
 bool ScriptScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
-  const auto & globals = mScript.globalNames();
+  const auto & globals = mNamespace.asScript().globalNames();
   auto it = globals.find(name);
   if (it != globals.end())
   {
@@ -1099,7 +1000,7 @@ bool ScriptScope::lookup(const std::string & name, NameLookupImpl *nl) const
     return true;
   }
 
-  return ExtensibleScope::lookup(name, nl);
+  return NamespaceScope::lookup(name, nl);
 }
 
 
@@ -1205,6 +1106,17 @@ bool Scope::isClass() const
   return dynamic_cast<const script::ClassScope*>(d.get()) != nullptr;
 }
 
+bool Scope::isNamespace() const
+{
+  return dynamic_cast<const script::NamespaceScope*>(d.get()) != nullptr;
+}
+
+bool Scope::isScript() const
+{
+  return dynamic_cast<const script::ScriptScope*>(d.get()) != nullptr;
+}
+
+
 Class Scope::asClass() const
 {
   return std::dynamic_pointer_cast<script::ClassScope>(d)->mClass;
@@ -1222,7 +1134,7 @@ Enum Scope::asEnum() const
 
 Script Scope::asScript() const
 {
-  return std::dynamic_pointer_cast<script::ScriptScope>(d)->mScript;
+  return std::dynamic_pointer_cast<script::NamespaceScope>(d)->mNamespace.asScript();
 }
 
 
@@ -1300,10 +1212,9 @@ Scope Scope::child(const std::string & name) const
       return Scope{ e, *this };
   }
 
-  if (d->kind() == Scope::NamespaceScope)
+  auto nsscope = std::dynamic_pointer_cast<script::NamespaceScope>(d);
+  if (nsscope != nullptr)
   {
-    auto nsscope = std::dynamic_pointer_cast<script::NamespaceScope>(d);
-
     auto it = nsscope->mNamespaceAliases.find(name);
     if (it != nsscope->mNamespaceAliases.end())
       return this->child(it->second.nested());
@@ -1409,12 +1320,12 @@ void Scope::inject(const NameLookupImpl *nl)
 
 void Scope::inject(const Scope & scp)
 {
-  if (scp.type() != Scope::NamespaceScope)
+  if (!scp.isNamespace())
     throw std::runtime_error{ "Cannot inject non-namespace scope" };
 
   d = std::shared_ptr<ScopeImpl>(d->clone());
   auto target = d;
-  while (target->kind() != Scope::NamespaceScope)
+  while (dynamic_cast<script::NamespaceScope*>(target.get()) == nullptr)
   {
     if (target->parent == nullptr)
       throw std::runtime_error{ "Cannot inject namespace scope into non-namespace scope" };
@@ -1449,10 +1360,10 @@ void Scope::merge(const Scope & scp)
   auto imported = std::dynamic_pointer_cast<script::NamespaceScope>(scp.impl());
   
   int i = 0;
-  while (i < int(scopes.size()) && scopes[i]->kind() == Scope::NamespaceScope && imported != nullptr)
+  while (i < int(scopes.size()) && dynamic_cast<script::NamespaceScope*>(scopes[i].get()) != nullptr && imported != nullptr)
   {
     dynamic_cast<script::NamespaceScope*>(scopes[i].get())->import_namespace(dynamic_cast<const script::NamespaceScope &>(*imported));
-    if (i < int(scopes.size()) - 1 && scopes[i+1]->kind() == Scope::NamespaceScope)
+    if (i < int(scopes.size()) - 1 && dynamic_cast<script::NamespaceScope*>(scopes[i+1].get()) != nullptr)
     {
       const std::string & child_name = std::dynamic_pointer_cast<script::NamespaceScope>(scopes[i + 1])->name();
       imported = script::NamespaceScope::child_scope(imported, child_name);
@@ -1467,7 +1378,7 @@ void Scope::inject(const NamespaceAlias & alias)
   auto target = d;
   while (target != nullptr)
   {
-    if (target->kind() != Scope::NamespaceScope)
+    if (dynamic_cast<script::NamespaceScope*>(target.get()) == nullptr)
     {
       target = target->parent;
       continue;
