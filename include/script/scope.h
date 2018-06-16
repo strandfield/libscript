@@ -5,9 +5,8 @@
 #ifndef LIBSCRIPT_SCOPE_H
 #define LIBSCRIPT_SCOPE_H
 
-#include "libscriptdefs.h"
-#include "function.h"
-#include "operator.h"
+#include "script/function.h"
+#include "script/operator.h"
 
 namespace script
 {

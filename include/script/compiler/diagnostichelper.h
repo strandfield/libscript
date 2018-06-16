@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILER_DIAGNOSTIC_HELPER_H
 #define LIBSCRIPT_COMPILER_DIAGNOSTIC_HELPER_H
 
+#include "script/accessspecifier.h"
 #include "script/diagnosticmessage.h"
 #include "script/ast/node.h"
 

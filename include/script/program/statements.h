@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_PROGRAM_STATEMENT_H
 #define LIBSCRIPT_PROGRAM_STATEMENT_H
 
-#include "expression.h"
+#include "script/program/expression.h"
 
 namespace script
 {

@@ -7,8 +7,8 @@
 
 #include <map>
 
-#include "class.h"
-#include "operator.h"
+#include "script/class.h"
+#include "script/operator.h"
 
 namespace script
 {

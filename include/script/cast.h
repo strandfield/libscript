@@ -5,7 +5,7 @@
 #ifndef LIBSCRIP_CAST_H
 #define LIBSCRIP_CAST_H
 
-#include "function.h"
+#include "script/function.h"
 
 namespace script
 {

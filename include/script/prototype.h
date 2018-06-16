@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "types.h"
+#include "script/types.h"
 
 namespace script
 {

@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-#include "value.h"
+#include "script/value.h"
 
 namespace script
 {

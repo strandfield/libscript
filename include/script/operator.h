@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_OPERATOR_H
 #define LIBSCRIPT_OPERATOR_H
 
-#include "function.h"
+#include "script/function.h"
 
 namespace script
 {

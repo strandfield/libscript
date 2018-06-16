@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_ENUM_P_H
 #define LIBSCRIPT_ENUM_P_H
 
-#include "script_p.h"
+#include "script/private/script_p.h"
 
 #include "script/operator.h"
 

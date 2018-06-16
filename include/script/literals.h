@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_LITERALS_H
 #define LIBSCRIPT_LITERALS_H
 
-#include "function.h"
+#include "script/function.h"
 
 namespace script
 {

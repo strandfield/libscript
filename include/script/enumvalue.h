@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_ENUMVALUE_H
 #define LIBSCRIPT_ENUMVALUE_H
 
-#include "enum.h"
+#include "script/enum.h"
 
 namespace script
 {

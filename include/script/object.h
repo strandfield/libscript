@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_OBJECT_H
 #define LIBSCRIPT_OBJECT_H
 
-#include "value.h"
-#include "class.h"
+#include "script/value.h"
+#include "script/class.h"
 
 namespace script
 {

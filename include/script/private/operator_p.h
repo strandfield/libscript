@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_OPERATOR_P_H
 #define LIBSCRIPT_OPERATOR_P_H
 
-#include "function_p.h"
+#include "script/private/function_p.h"
 
 #include "script/operator.h"
 

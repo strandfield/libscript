@@ -5,17 +5,17 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_H
 #define LIBSCRIPT_NAMELOOKUP_H
 
-#include "scope.h"
+#include "script/scope.h"
 
-#include "class.h"
-#include "enum.h"
-#include "enumvalue.h"
-#include "namespace.h"
-#include "script.h"
-#include "template.h"
+#include "script/class.h"
+#include "script/enum.h"
+#include "script/enumvalue.h"
+#include "script/namespace.h"
+#include "script/script.h"
+#include "script/template.h"
 
 /// TODO : remove this, replace it by a simple forward declaration
-#include "ast/ast.h"
+#include "script/ast/ast.h"
 
 namespace script
 {

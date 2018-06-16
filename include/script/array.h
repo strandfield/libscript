@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_ARRAY_H
 #define LIBSCRIPT_ARRAY_H
 
-#include "value.h"
+#include "script/value.h"
 
 namespace script
 {

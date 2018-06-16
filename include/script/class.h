@@ -5,10 +5,9 @@
 #ifndef LIBSCRIPT_CLASS_H
 #define LIBSCRIPT_CLASS_H
 
-#include "libscriptdefs.h"
-#include "accessspecifier.h"
-#include "function.h"
-#include "operator.h"
+#include "script/accessspecifier.h"
+#include "script/function.h"
+#include "script/operator.h"
 
 #include <map>
 

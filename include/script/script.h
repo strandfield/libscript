@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "diagnosticmessage.h"
-#include "sourcefile.h"
-#include "namespace.h"
+#include "script/diagnosticmessage.h"
+#include "script/sourcefile.h"
+#include "script/namespace.h"
 
 namespace script
 {

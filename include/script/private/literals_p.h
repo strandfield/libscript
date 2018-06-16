@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_LITERALS_P_H
 #define LIBSCRIPT_LITERALS_P_H
 
-#include "function_p.h"
+#include "script/private/function_p.h"
 
 namespace script
 {

@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_FUNCTION_H
 #define LIBSCRIPT_FUNCTION_H
 
-#include "prototype.h"
-#include "value.h"
+#include "script/prototype.h"
+#include "script/value.h"
 
 #include <string>
 
