@@ -15,6 +15,7 @@
 #include "script/enum.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/name.h"
 #include "script/namelookup.h"
 #include "script/namespacealias.h"
 #include "script/sourcefile.h"
@@ -617,4 +618,38 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
 };
 
 
+TEST(CoreUtilsTests, test_names) {
+  using namespace script;
+
+  Name a{ "foo" };
+  Name b{ "bar" };
+
+  ASSERT_EQ(a.kind(), Name::StringName);
+  ASSERT_FALSE(a == b);
+
+  a = Operator::AssignmentOperator; // operator=
+  ASSERT_EQ(a.kind(), Name::OperatorName);
+  ASSERT_FALSE(a == b);
+
+  ASSERT_TRUE(a == Operator::AssignmentOperator);
+
+  a = "foo";
+  b = Name{ Name::LiteralOperatorTag{}, "foo" }; // operator"" foo;
+  ASSERT_FALSE(a == b);
+
+  a = Name{};
+  b = Name{};
+  ASSERT_TRUE(a == b);
+
+  a = Name{ Name::CastTag{}, Type::Int }; // operator int
+  b = Name{ Name::CastTag{}, Type::Int };
+  ASSERT_TRUE(a == b);
+
+  a = "foo";
+  b = "foo";
+  ASSERT_TRUE(a == b);
+
+  a = std::move(b);
+  ASSERT_EQ(b.kind(), Name::InvalidName);
+};
 
