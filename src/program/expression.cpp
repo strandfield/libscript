@@ -295,7 +295,7 @@ FunctionCall::FunctionCall(const Function & f, std::vector<std::shared_ptr<Expre
   : callee(f)
   , args(std::move(arguments))
 {
-
+  assert(f.prototype().argc() == args.size());
 }
 
 Type FunctionCall::type() const

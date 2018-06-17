@@ -16,6 +16,52 @@
 namespace script
 {
 
+DefaultArgumentList::DefaultArgumentList()
+  : data(nullptr)
+{
+
+}
+
+DefaultArgumentList::~DefaultArgumentList()
+{
+  data = nullptr;
+}
+
+bool DefaultArgumentList::isEmpty() const
+{
+  return data == nullptr;
+}
+
+size_t DefaultArgumentList::size() const
+{
+  if (isEmpty())
+    return 0;
+  return get().size();
+}
+
+void DefaultArgumentList::push_back(const DefaultArgument & value)
+{
+  if (isEmpty())
+    data.reset(new std::vector<DefaultArgument>{});
+
+  get().push_back(value);
+}
+
+std::vector<DefaultArgument> & DefaultArgumentList::get()
+{
+  if (isEmpty())
+    throw std::runtime_error{ "Function has no default parameters" };
+  return *data.get();
+}
+
+const std::vector<DefaultArgument> & DefaultArgumentList::get() const
+{
+  if (isEmpty())
+    throw std::runtime_error{ "Function has no default parameters" };
+  return *data.get();
+}
+
+
 FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : prototype(p)
   , engine(e)
@@ -139,27 +185,6 @@ const Prototype & Function::prototype() const
   return d->prototype;
 }
 
-std::vector<Prototype> Function::prototypes() const
-{
-  std::vector<Prototype> ret;
-  Prototype proto = d->prototype;
-  ret.push_back(proto);
-  while (proto.hasDefaultArgument())
-  {
-    proto.popArgument();
-    ret.push_back(proto);
-  }
-  return ret;
-}
-
-bool Function::accepts(int argc) const
-{
-  const int parameter_count = prototype().argumentCount();
-  const int default_count = prototype().defaultArgCount();
-
-  return parameter_count - default_count <= argc && argc <= parameter_count;
-}
-
 const Type & Function::parameter(int index) const
 {
   return prototype().argv(index);
@@ -168,6 +193,34 @@ const Type & Function::parameter(int index) const
 const Type & Function::returnType() const
 {
   return prototype().returnType();
+}
+
+bool Function::accepts(int argc) const
+{
+  const int parameter_count = prototype().argumentCount();
+  const int default_count = d->default_arguments.size();
+
+  return parameter_count - default_count <= argc && argc <= parameter_count;
+}
+
+bool Function::hasDefaultArguments() const
+{
+  return !d->default_arguments.isEmpty();
+}
+
+size_t Function::defaultArgumentCount() const
+{
+  return d->default_arguments.size();
+}
+
+void Function::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
+{
+  d->default_arguments.push_back(value);
+}
+
+const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
+{
+  return d->default_arguments.get();
 }
 
 

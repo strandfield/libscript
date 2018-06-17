@@ -14,8 +14,31 @@ namespace script
 
 namespace program
 {
+class Expression;
 class Statement;
 }
+
+typedef std::shared_ptr<program::Expression> DefaultArgument;
+
+class DefaultArgumentList
+{
+public:
+  DefaultArgumentList();
+  DefaultArgumentList(const DefaultArgumentList &) = delete;
+  ~DefaultArgumentList();
+
+  bool isEmpty() const;
+  size_t size() const;
+  void push_back(const DefaultArgument & value);
+
+  std::vector<DefaultArgument> & get();
+  const std::vector<DefaultArgument> & get() const;
+
+private:
+  std::unique_ptr<std::vector<DefaultArgument>> data;
+};
+
+static_assert(sizeof(DefaultArgumentList) == sizeof(std::unique_ptr<std::vector<DefaultArgument>>), "haa");
 
 class LIBSCRIPT_API FunctionImpl
 {
@@ -36,6 +59,7 @@ public:
     NativeFunctionSignature callback;
     std::shared_ptr<program::Statement> program;
   }implementation;
+  DefaultArgumentList default_arguments;
 
   void force_virtual();
   void set_impl(NativeFunctionSignature callback);

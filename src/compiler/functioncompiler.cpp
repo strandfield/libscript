@@ -382,19 +382,6 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
   std::shared_ptr<program::CompoundStatement> body = generateBody();
   /// TODO : add implicit return statement in void functions
-
-  std::vector<std::shared_ptr<program::Statement>> default_arg_inits;
-  if (mFunction.prototype().hasDefaultArgument())
-  {
-    const int default_arg_count = mFunction.prototype().defaultArgCount();
-    for (int i(mFunction.prototype().argc() - default_arg_count); i < mFunction.prototype().argc(); ++i)
-    {
-      auto val = generateDefaultArgument(i);
-      default_arg_inits.push_back(program::PushDefaultArgument::New(i, val));
-    }
-  }
-  body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
-  
   mFunction.implementation()->set_impl(body);
 }
 
@@ -543,19 +530,6 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
   }
 
   throw FunctionCannotBeDefaulted{ dpos(mDeclaration) };
-}
-
-std::shared_ptr<program::Expression> FunctionCompiler::generateDefaultArgument(int index)
-{
-  auto fdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(mDeclaration);
-  const int param_offset = mFunction.isNonStaticMemberFunction() ? 1 : 0;
-  auto expr = generate(fdecl->params.at(index - param_offset).defaultValue);
-
-  ConversionSequence conv = ConversionSequence::compute(expr, mFunction.prototype().argv(index), engine());
-  if (conv == ConversionSequence::NotConvertible())
-    throw NotImplementedError{ "FunctionCompiler::generateDefaultArgument() : failed to convert default value" };
-
-  return ConversionProcessor::convert(engine(), expr, mFunction.prototype().argv(index), conv);
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructorHeader()
@@ -716,18 +690,6 @@ void FunctionCompiler::processExitScope(const Scope & scp)
 
   for (int i(stack.size - 1); i >= sp; --i)
     processVariableDestruction(stack.at(i));
-
-  // destroying default arguments
-  if (fscp->category() == FunctionScope::FunctionBody)
-  {
-    const int default_count = mFunction.prototype().defaultArgCount();
-    for (int i(mFunction.prototype().argc() - 1); i >= mFunction.prototype().argc() - default_count; --i)
-    {
-      const Type & arg_type = mFunction.prototype().argv(i);
-      const bool destroy = !(arg_type.isReference() || arg_type.isRefRef());
-      write(program::PopDefaultArgument::New(i, destroy));
-    }
-  }
 }
 
 void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)

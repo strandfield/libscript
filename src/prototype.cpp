@@ -193,27 +193,6 @@ void Prototype::setParameter(int index, const Type & t)
   *(mBegin + index) = t;
 }
 
-bool Prototype::hasDefaultArgument() const
-{
-  if (argc() == 0)
-    return false;
-
-  return argv(argc() - 1).data() & Type::OptionalFlag;
-}
-
-int Prototype::defaultArgCount() const
-{
-  int c = 0;
-  for (int i(argc() - 1); i >= 0; --i)
-  {
-    if (argv(i).data() & Type::OptionalFlag)
-      c += 1;
-    else
-      break;
-  }
-  return c;
-}
-
 Prototype & Prototype::operator=(const Prototype & other)
 {
   mReturnType = other.returnType();

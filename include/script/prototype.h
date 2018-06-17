@@ -41,9 +41,6 @@ public:
   const Type * end() const;
   void setParameter(int index, const Type & t);
 
-  bool hasDefaultArgument() const;
-  int defaultArgCount() const;
-
   Prototype & operator=(const Prototype & other);
   bool operator==(const Prototype & other) const;
   bool operator!=(const Prototype & other) const;

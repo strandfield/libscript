@@ -50,14 +50,9 @@ public:
       result.addArgument(thisType);
     }
 
-    bool mustbe_defaulted = false;
     for (size_t i(0); i < fundecl->params.size(); ++i)
     {
       Type argtype = type_.resolve(fundecl->params.at(i).type, scp);
-      if (fundecl->params.at(i).defaultValue != nullptr)
-        argtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
-      else if (mustbe_defaulted)
-        throw InvalidUseOfDefaultArgument{ dpos(fundecl->params.at(i).name) };
       result.addArgument(argtype);
     }
 

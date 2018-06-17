@@ -131,8 +131,6 @@ protected:
 
   std::shared_ptr<program::CompoundStatement> generateBody();
 
-  std::shared_ptr<program::Expression> generateDefaultArgument(int index);
-
   std::shared_ptr<program::CompoundStatement> generateConstructorHeader();
 
   std::shared_ptr<program::CompoundStatement> generateDestructorFooter();

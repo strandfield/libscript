@@ -6,6 +6,7 @@
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/conversionprocessor.h"
+#include "script/compiler/defaultargumentprocessor.h"
 
 #include "script/ast/node.h"
 
@@ -168,6 +169,9 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 {
   mCurrentTask = &task;
   mCurrentScope = task.scope;
+  /// TODO : we should set mDeclaration, but FunctionCompiler assumes it's a ast::FunctionDecl
+  // we should fix that !!
+  //mDeclaration = task.lexpr;
 
   mLambda = build(Lambda{});
 
@@ -193,24 +197,14 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   std::shared_ptr<program::CompoundStatement> body = this->generateCompoundStatement(task.lexpr->body, FunctionScope::FunctionBody);
 
-  // generating default arguments
-  std::vector<std::shared_ptr<program::Statement>> default_arg_inits;
-  if (function.prototype().hasDefaultArgument())
-  {
-    const int default_arg_count = function.prototype().defaultArgCount();
-    for (int i(function.prototype().argc() - default_arg_count); i < function.prototype().argc(); ++i)
-    {
-      auto val = generateDefaultArgument(i);
-      default_arg_inits.push_back(program::PushDefaultArgument::New(i, val));
-    }
-  }
-  body->statements.insert(body->statements.begin(), default_arg_inits.begin(), default_arg_inits.end());
-
   guard.leave(); // leaves the FunctionScope::FunctionArguments scope
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
   function.implementation()->set_impl(body);
+
+  DefaultArgumentProcessor default_arguments;
+  default_arguments.process(task.lexpr->params, function, task.scope);
 
   removeUnusedCaptures();
 
@@ -333,14 +327,9 @@ Prototype LambdaCompiler::computePrototype()
   Type closure_type{ mLambda.id(), Type::ReferenceFlag | Type::ThisFlag };
   result.addArgument(closure_type);
 
-  bool mustbe_defaulted = false;
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
     Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
-    if (lexpr->params.at(i).defaultValue != nullptr)
-      paramtype.setFlag(Type::OptionalFlag), mustbe_defaulted = true;
-    else if (mustbe_defaulted)
-      throw InvalidUseOfDefaultArgument{ dpos(lexpr->params.at(i).defaultValue) };
     result.addArgument(paramtype);
   }
 

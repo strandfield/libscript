@@ -350,7 +350,7 @@ void ScriptCompiler::resolveIncompleteTypes()
 {
   ScopeGuard guard{ mCurrentScope };
 
-  for (const auto & f : mIncompleteFunctions)
+  for (auto & f : mIncompleteFunctions)
     reprocess(f);
 
   mIncompleteFunctions.clear();
@@ -930,7 +930,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   selection.first.impl()->instances[selection.second] = result;
 }
 
-void ScriptCompiler::reprocess(const IncompleteFunction & func)
+void ScriptCompiler::reprocess(IncompleteFunction & func)
 {
   const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
   mCurrentScope = func.scope;
@@ -946,17 +946,18 @@ void ScriptCompiler::reprocess(const IncompleteFunction & func)
   {
     if (proto.argv(i).testFlag(Type::UnknownFlag))
       proto.setParameter(i, resolve(decl->params.at(i-offset).type));
-
-    const bool optional = decl->params.at(i - offset).defaultValue != nullptr;
-    if(optional)
-      proto.setParameter(i, proto.argv(i).withFlag(Type::OptionalFlag));
   }
+
+  default_arguments_.process(func.declaration->as<ast::FunctionDecl>().params, func.function, func.scope);
 }
 
-void ScriptCompiler::schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
+void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
   if (function_processor_.prototype_.type_.relax)
     mIncompleteFunctions.push_back(IncompleteFunction{ scp, fundecl, f });
+  else
+    default_arguments_.process(fundecl->params, f, scp);
+
   function_processor_.prototype_.type_.relax = false;
 
   if (f.isDeleted() || f.isPureVirtual())

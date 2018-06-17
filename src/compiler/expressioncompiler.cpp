@@ -376,6 +376,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
 
   const auto & convs = resol.conversionSequence();
   ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  complete(selected, args);
   if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
     return generateVirtualCall(call, selected, std::move(args));
   return program::FunctionCall::New(selected, std::move(args));
@@ -419,6 +420,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
   args.insert(args.begin(), functor);
   const auto & convs = resol.conversionSequence();
   ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  complete(selected, args);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
@@ -523,6 +525,16 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const s
 NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
 {
   return NameLookup::resolve(identifier, scope(), templateProcessor().name_processor());
+}
+
+void ExpressionCompiler::complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args)
+{
+  size_t diff = size_t(f.prototype().argc()) - args.size();
+  if (diff == 0)
+    return;
+
+  const auto & defaults = f.defaultArguments();
+  args.insert(args.end(), defaults.end() - diff, defaults.end());
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)

@@ -8,6 +8,7 @@
 #include "script/compiler/compiler.h"
 
 #include "script/compiler/compilefunctiontask.h"
+#include "script/compiler/defaultargumentprocessor.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
@@ -156,10 +157,10 @@ protected:
   void processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl);
 
   // function-related functions
-  void reprocess(const IncompleteFunction & func);
+  void reprocess(IncompleteFunction & func);
 
 protected:
-  void schedule(const Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
+  void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
   Class build(const ClassBuilder & builder);
@@ -209,6 +210,8 @@ protected:
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
 
   ImportProcessor<ScriptCompilerModuleLoader> modules_;
+
+  DefaultArgumentProcessor default_arguments_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const

@@ -280,13 +280,6 @@ void Interpreter::visit(const program::PushDataMember & ims)
   impl->attributes.push_back(eval(ims.value));
 }
 
-void Interpreter::visit(const program::PushDefaultArgument & pda)
-{
-  if (mExecutionContext->callstack.top()->args().size() > pda.arg_num)
-    return;
-  mExecutionContext->stack.push(eval(pda.value));
-}
-
 void Interpreter::visit(const program::ReturnStatement & rs) 
 {
   auto retval = rs.returnValue ? eval(rs.returnValue) : Value::Void;
@@ -318,15 +311,6 @@ void Interpreter::visit(const program::PopDataMember & pop)
   Value member = impl->attributes.back();
   mEngine->implementation()->destroy(member, pop.destructor);
   impl->attributes.pop_back();
-}
-
-void Interpreter::visit(const program::PopDefaultArgument & pda)
-{
-  if (mExecutionContext->callstack.top()->args().size() > pda.arg_num)
-    return;
-  Value v = mExecutionContext->stack.pop();
-  if (pda.destroy)
-    mEngine->destroy(v);
 }
 
 void Interpreter::visit(const program::PopValue & pop) 

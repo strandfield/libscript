@@ -278,34 +278,6 @@ public:
   void accept(StatementVisitor &) override;
 };
 
-class LIBSCRIPT_API PushDefaultArgument : public Statement
-{
-public:
-  std::shared_ptr<Expression> value;
-  int arg_num;
-public:
-  PushDefaultArgument(int arg_num, const std::shared_ptr<Expression> & val);
-  ~PushDefaultArgument() = default;
-
-  static std::shared_ptr<PushDefaultArgument> New(int arg_num, const std::shared_ptr<Expression> & val);
-
-  void accept(StatementVisitor &) override;
-};
-
-class LIBSCRIPT_API PopDefaultArgument : public Statement
-{
-public:
-  bool destroy;
-  int arg_num;
-public:
-  PopDefaultArgument(int arg_num, bool des);
-  ~PopDefaultArgument() = default;
-
-  static std::shared_ptr<PopDefaultArgument> New(int arg_num, bool des);
-
-  void accept(StatementVisitor &) override;
-};
-
 class LIBSCRIPT_API StatementVisitor
 {
 public:
@@ -322,11 +294,9 @@ public:
   virtual void visit(const ForLoop &) = 0;
   virtual void visit(const IfStatement &) = 0;
   virtual void visit(const PushDataMember &) = 0;
-  virtual void visit(const PushDefaultArgument &) = 0;
   virtual void visit(const PushGlobal &) = 0;
   virtual void visit(const PushValue &) = 0;
   virtual void visit(const ReturnStatement &) = 0;
-  virtual void visit(const PopDefaultArgument &) = 0;
   virtual void visit(const PopValue &) = 0;
   virtual void visit(const WhileLoop &) = 0;
 };

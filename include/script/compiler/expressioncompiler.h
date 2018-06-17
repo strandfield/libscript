@@ -119,6 +119,7 @@ protected:
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
 
   virtual std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op);
+  static void complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);

@@ -61,11 +61,6 @@ void PushDataMember::accept(StatementVisitor & visitor)
   visitor.visit(*this);
 }
 
-void PushDefaultArgument::accept(StatementVisitor & visitor)
-{
-  visitor.visit(*this);
-}
-
 void PushGlobal::accept(StatementVisitor & visitor)
 {
   visitor.visit(*this);
@@ -77,11 +72,6 @@ void ReturnStatement::accept(StatementVisitor & visitor)
 }
 
 void PushValue::accept(StatementVisitor & visitor)
-{
-  visitor.visit(*this);
-}
-
-void PopDefaultArgument::accept(StatementVisitor & visitor)
 {
   visitor.visit(*this);
 }
@@ -345,32 +335,6 @@ PopDataMember::PopDataMember(const Function & dtor)
 std::shared_ptr<PopDataMember> PopDataMember::New(const Function & dtor)
 {
   return std::make_shared<PopDataMember>(dtor);
-}
-
-
-PushDefaultArgument::PushDefaultArgument(int an, const std::shared_ptr<Expression> & val)
-  : arg_num(an)
-  , value(val)
-{
-
-}
-
-std::shared_ptr<PushDefaultArgument> PushDefaultArgument::New(int arg_num, const std::shared_ptr<Expression> & val)
-{
-  return std::make_shared<PushDefaultArgument>(arg_num, val);
-}
-
-
-PopDefaultArgument::PopDefaultArgument(int an, bool des)
-  : arg_num(an)
-  , destroy(des)
-{
-
-}
-
-std::shared_ptr<PopDefaultArgument> PopDefaultArgument::New(int arg_num, bool des)
-{
-  return std::make_shared<PopDefaultArgument>(arg_num, des);
 }
 
 } // namespace program

@@ -88,11 +88,9 @@ private:
   void visit(const program::IfStatement &) override;
   void visit(const program::PlacementStatement &) override;
   void visit(const program::PushDataMember &) override;
-  void visit(const program::PushDefaultArgument &) override;
   void visit(const program::PushGlobal &) override;
   void visit(const program::PushValue &) override;
   void visit(const program::PopDataMember &) override;
-  void visit(const program::PopDefaultArgument &) override;
   void visit(const program::PopValue &) override;
   void visit(const program::ReturnStatement &) override;
   void visit(const program::WhileLoop &) override;

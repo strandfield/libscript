@@ -19,7 +19,7 @@ class Class;
 class Engine;
 namespace interpreter { class FunctionCall; }
 typedef interpreter::FunctionCall FunctionCall;
-namespace program { class Statement; }
+namespace program { class Expression; class Statement; }
 class FunctionImpl;
 class FunctionTemplate;
 class LiteralOperator;
@@ -71,10 +71,14 @@ public:
 
   std::string name() const;
   const Prototype & prototype() const;
-  std::vector<Prototype> prototypes() const;
-  bool accepts(int argc) const;
   const Type & parameter(int index) const;
   const Type & returnType() const;
+
+  bool accepts(int argc) const;
+  bool hasDefaultArguments() const;
+  size_t defaultArgumentCount() const;
+  void addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+  const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const;
 
   Script script() const;
 
