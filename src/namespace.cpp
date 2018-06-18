@@ -45,7 +45,7 @@ Script Namespace::asScript() const
   return Script{ std::dynamic_pointer_cast<ScriptImpl>(d) };
 }
 
-bool Namespace::isModuleNamesapce() const
+bool Namespace::isModuleNamespace() const
 {
   return dynamic_cast<ModuleImpl*>(d.get()) != nullptr;
 }

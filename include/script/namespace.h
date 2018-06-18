@@ -36,7 +36,7 @@ public:
   bool isScriptNamespace() const;
   Script asScript() const;
 
-  bool isModuleNamesapce() const;
+  bool isModuleNamespace() const;
   Module asModule() const;
 
   const std::string & name() const;
