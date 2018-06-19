@@ -19,11 +19,6 @@ public:
 public:
   OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
-
-  std::string name() const override
-  {
-    throw std::runtime_error{ "Not implemented" };
-  }
 };
 
 class BuiltInOperatorImpl : public OperatorImpl

@@ -75,6 +75,11 @@ FunctionImpl::~FunctionImpl()
 
 }
 
+const std::string & FunctionImpl::name() const
+{
+  throw std::runtime_error{ "This kind of function does not implement name()" };
+}
+
 void FunctionImpl::force_virtual()
 {
   this->flags |= (Function::Virtual << 2);
@@ -175,7 +180,7 @@ bool Function::isNull() const
   return d == nullptr;
 }
 
-std::string Function::name() const
+const std::string & Function::name() const
 {
   return d->name();
 }

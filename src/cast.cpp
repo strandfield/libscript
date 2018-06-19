@@ -14,11 +14,6 @@ CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
 
 }
 
-std::string CastImpl::name() const
-{
-  throw std::runtime_error{ "Not implemented" };
-}
-
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)
   : Function(impl)
 {

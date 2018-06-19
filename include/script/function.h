@@ -69,7 +69,7 @@ public:
 
   bool isNull() const;
 
-  std::string name() const;
+  const std::string & name() const;
   const Prototype & prototype() const;
   const Type & parameter(int index) const;
   const Type & returnType() const;

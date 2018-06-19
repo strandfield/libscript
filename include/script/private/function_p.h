@@ -48,7 +48,7 @@ public:
   FunctionImpl(const Prototype &p, Engine *e, flag_type f = 0);
   virtual ~FunctionImpl();
 
-  virtual std::string name() const = 0;
+  virtual const std::string & name() const;
 
   Prototype prototype;
   Engine *engine;
@@ -72,7 +72,7 @@ public:
   RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   std::string mName;
 public:
-  std::string name() const override
+  const std::string & name() const override
   {
     return mName;
   }
@@ -91,11 +91,6 @@ class ScriptFunctionImpl : public FunctionImpl
 public:
   ScriptFunctionImpl(Engine *e);
   ~ScriptFunctionImpl() = default;
-
-  std::string name() const override
-  {
-    throw std::runtime_error{ "Function::name() :  function has no name" };
-  }
 };
 
 class ConstructorImpl : public FunctionImpl
@@ -104,7 +99,7 @@ public:
   ConstructorImpl(const Class & cla, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   Class mClass;
 public:
-  std::string name() const override
+  const std::string & name() const override
   {
     return mClass.name();
   }
@@ -120,11 +115,6 @@ class DestructorImpl : public FunctionImpl
 public:
   DestructorImpl(const Class & cla, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   Class mClass;
-public:
-  std::string name() const override
-  {
-    return mClass.name();
-  }
 };
 
 

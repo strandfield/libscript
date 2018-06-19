@@ -17,11 +17,6 @@ public:
 public:
   LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~LiteralOperatorImpl() = default;
-
-  std::string name() const override
-  {
-    throw std::runtime_error{ "Not implemented : LiteralOperator::name()" };
-  }
 };
 
 } // namespace script
