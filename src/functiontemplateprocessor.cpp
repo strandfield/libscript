@@ -77,8 +77,8 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   if (ft.is_native())
   {
     auto result = ft.native_callbacks().instantiation(ft, f);
-    f.implementation()->implementation.callback = result.first;
-    f.implementation()->data = result.second;
+    f.impl()->implementation.callback = result.first;
+    f.impl()->data = result.second;
   }
   else
   {

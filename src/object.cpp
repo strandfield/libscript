@@ -48,16 +48,6 @@ Engine* Object::engine() const
   return d->instanceOf.engine();
 }
 
-ObjectImpl * Object::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<ObjectImpl> Object::weakref() const
-{
-  return std::weak_ptr<ObjectImpl>{d};
-}
-
 bool Object::operator==(const Object & other) const
 {
   return other.d == d;

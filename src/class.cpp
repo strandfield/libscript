@@ -166,7 +166,7 @@ Class Class::newClass(const ClassBuilder & opts)
   if (!c.isNull())
   {
     d->classes.push_back(c);
-    c.implementation()->enclosing_class = d;
+    c.impl()->enclosing_class = d;
   }
   return c;
 }
@@ -183,7 +183,7 @@ Enum Class::newEnum(const std::string & src)
   if (!enm.isNull())
   {
     d->enums.push_back(enm);
-    enm.implementation()->enclosing_class = d;
+    enm.impl()->enclosing_class = d;
   }
   return enm;
 }
@@ -249,7 +249,7 @@ void ClassImpl::set_parent(const Class & p)
 {
   if (p.isNull())
     return;
-  this->parent = p.weakref();
+  this->parent = p.impl();
   this->isAbstract = p.isAbstract();
   this->virtualMembers = p.vtable();
 }
@@ -313,7 +313,7 @@ void ClassImpl::update_vtable(Function f)
     {
       if (check_overrides(f, vt.at(i)))
       {
-        f.implementation()->force_virtual();
+        f.impl()->force_virtual();
         this->virtualMembers[i] = f;
         if (vt.at(i).isPureVirtual())
           check_still_abstract();
@@ -540,16 +540,6 @@ const std::vector<TemplateArgument> & Class::arguments() const
 Engine * Class::engine() const
 {
   return d->engine;
-}
-
-ClassImpl * Class::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<ClassImpl> Class::weakref() const
-{
-  return std::weak_ptr<ClassImpl>{d};
 }
 
 bool Class::operator==(const Class & other) const

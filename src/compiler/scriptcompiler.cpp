@@ -129,7 +129,7 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
     fill(builder, class_decl);
 
     result = Class{ ClassTemplateInstance::make(builder, ct, args) };
-    result.implementation()->script = script().weakref();
+    result.impl()->script = script().impl();
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -144,7 +144,7 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
     fill(builder, class_decl);
 
     result = Class{ ClassTemplateInstance::make(builder, ct, args) };
-    result.implementation()->script = script().weakref();
+    result.impl()->script = script().impl();
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -195,7 +195,7 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
     fill(builder, class_decl);
 
     Class result{ ClassTemplateInstance::make(builder, ct, args) };
-    result.implementation()->script = script().weakref();
+    result.impl()->script = script().impl();
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -212,7 +212,7 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
     fill(builder, class_decl);
 
     Class result{ ClassTemplateInstance::make(builder, ct, args) };
-    result.implementation()->script = script().weakref();
+    result.impl()->script = script().impl();
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -236,7 +236,7 @@ NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
 Function ScriptCompiler::registerRootFunction()
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
-  scriptfunc->script = mCurrentScript.weakref();
+  scriptfunc->script = mCurrentScript.impl();
   
   auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
   fakedecl->body = ast::CompoundStatement::New(parser::Token{ parser::Token::LeftBrace, 0, 0, 0, 0 }, parser::Token{ parser::Token::RightBrace, 0, 0, 0, 0 });
@@ -277,7 +277,7 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask 
   mCurrentScope.merge(engine()->rootNamespace());
 
   Function program = registerRootFunction();
-  mCurrentScript.implementation()->program = program;
+  mCurrentScript.impl()->program = program;
   processOrCollectScriptDeclarations();
 }
 
@@ -385,14 +385,14 @@ void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDe
     }
     else
     {
-      Value staticMember = current_class.implementation()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, scp.accessibility());
+      Value staticMember = current_class.impl()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, scp.accessibility());
       mStaticVariables.push_back(StaticVariable{ staticMember, var_decl, scp });
     }
   }
   else
   {
     Class::DataMember dataMember{ var_type, var_decl->name->getName(), scp.accessibility() };
-    current_class.implementation()->dataMembers.push_back(dataMember);
+    current_class.impl()->dataMembers.push_back(dataMember);
   }
 }
 
@@ -427,7 +427,7 @@ void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::Var
   }
 
   engine()->manage(val);
-  ns.implementation()->variables[decl->name->getName()] = val;
+  ns.impl()->variables[decl->name->getName()] = val;
 }
 
 void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl)
@@ -498,7 +498,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
   fill(builder, class_decl);
 
   Class cla = build(builder);
-  cla.implementation()->script = script().weakref();
+  cla.impl()->script = script().impl();
   currentScope().impl()->add_class(cla);
 
   readClassContent(cla, class_decl);
@@ -543,7 +543,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
   const ast::EnumDeclaration & enum_decl = *decl;
 
   Enum e = build(Enum{}, enum_decl.name->getName());
-  e.implementation()->script = script().weakref();
+  e.impl()->script = script().impl();
   scp.impl()->add_enum(e);
 
   for (size_t i(0); i < enum_decl.values.size(); ++i)
@@ -626,7 +626,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   /// TODO : be careful not to add the constructor twice
   // for now this is okay since the FunctionBuilder never adds anything to the class.
-  current_class.implementation()->registerConstructor(ctor);
+  current_class.impl()->registerConstructor(ctor);
 
   schedule(ctor, decl, scp);
 }
@@ -649,7 +649,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
 
   /// TODO : check if a destructor already exists
   Function dtor = build(b);
-  current_class.implementation()->destructor = dtor;
+  current_class.impl()->destructor = dtor;
   
   schedule(dtor, decl, scp);
 }
@@ -793,7 +793,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   ClassTemplate ct = engine()->newClassTemplate(name, std::move(params), scp, nullptr);
   TemplateDefinition tdef = TemplateDefinition::make(decl);
   ct.impl()->definition = tdef;
-  ct.impl()->script = script().weakref();
+  ct.impl()->script = script().impl();
   scp.impl()->add_template(ct);
 }
 
@@ -807,7 +807,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   FunctionTemplate ft = engine()->newFunctionTemplate(name, std::move(params), scp, nullptr, nullptr, nullptr);
   TemplateDefinition tdef = TemplateDefinition::make(decl);
   ft.impl()->definition = tdef;
-  ft.impl()->script = script().weakref();
+  ft.impl()->script = script().impl();
   scp.impl()->add_template(ft);
 }
 
@@ -851,7 +851,7 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   fill(builder, classdecl);
 
   Class result{ ClassTemplateInstance::make(builder, ct, args) };
-  result.implementation()->script = script().weakref();
+  result.impl()->script = script().impl();
 
   readClassContent(result, classdecl);
 
@@ -874,9 +874,9 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
 
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  auto ps = std::make_shared<PartialTemplateSpecializationImpl>(ct, std::move(params), scp, engine(), script().weakref().lock());
+  auto ps = std::make_shared<PartialTemplateSpecializationImpl>(ct, std::move(params), scp, engine(), script().impl());
   ps->definition = TemplateDefinition::make(decl);
-  ps->script = script().weakref();
+  ps->script = script().impl();
 
   ct.impl()->specializations.push_back(PartialTemplateSpecialization{ ps });
 }
@@ -921,7 +921,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name, builder.proto, engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;
-  impl->script = script().weakref();
+  impl->script = script().impl();
   Function result = Function{ impl };
 
   schedule(result, fundecl, scp);
@@ -935,7 +935,7 @@ void ScriptCompiler::reprocess(IncompleteFunction & func)
   const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
   mCurrentScope = func.scope;
 
-  auto impl = func.function.implementation();
+  auto impl = func.function.impl();
   Prototype & proto = impl->prototype;
   if (proto.returnType().testFlag(Type::UnknownFlag))
     proto.setReturnType(resolve(decl->returnType));
@@ -968,21 +968,21 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 Class ScriptCompiler::build(const ClassBuilder & builder)
 {
   Class cla = CompilerComponent::build(builder);
-  cla.implementation()->script = mCurrentScript.weakref();
+  cla.impl()->script = mCurrentScript.impl();
   return cla;
 }
 
 Function ScriptCompiler::build(const FunctionBuilder & builder)
 {
   Function f = CompilerComponent::build(builder);
-  f.implementation()->script = mCurrentScript.weakref();
+  f.impl()->script = mCurrentScript.impl();
   return f;
 }
 
 Enum ScriptCompiler::build(const Enum &, const std::string & name)
 {
   Enum e = CompilerComponent::build(Enum{}, name);
-  e.implementation()->script = mCurrentScript.weakref();
+  e.impl()->script = mCurrentScript.impl();
   return e;
 }
 

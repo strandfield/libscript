@@ -31,8 +31,7 @@ public:
 
   Engine* engine() const;
 
-  ObjectImpl * implementation() const;
-  std::weak_ptr<ObjectImpl> weakref() const;
+  inline const std::shared_ptr<ObjectImpl> & impl() const { return d; }
 
   Object & operator=(const Object & other) = default;
   bool operator==(const Object & other) const;

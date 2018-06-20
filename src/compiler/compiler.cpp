@@ -190,7 +190,7 @@ bool Compiler::compile(Script s)
 
   if (ast->hasErrors())
   {
-    s.implementation()->messages = ast->steal_messages();
+    s.impl()->messages = ast->steal_messages();
     return false;
   }
 
@@ -213,7 +213,7 @@ bool Compiler::compile(Script s)
   if (mSession.get()->error)
   {
     wipe_out(mSession.get());
-    s.implementation()->messages = std::move(mSession->messages);
+    s.impl()->messages = std::move(mSession->messages);
     return false;
   }
 

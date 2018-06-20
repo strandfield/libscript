@@ -298,15 +298,15 @@ script::Function FunctionBuilder::create()
     Class cla = member_of();
     script::Function f = this->engine->newFunction(*this);
     if (f.isOperator())
-      cla.implementation()->operators.push_back(f.toOperator());
+      cla.impl()->operators.push_back(f.toOperator());
     else if (f.isCast())
-      cla.implementation()->casts.push_back(f.toCast());
+      cla.impl()->casts.push_back(f.toCast());
     else if (f.isConstructor())
-      cla.implementation()->registerConstructor(f);
+      cla.impl()->registerConstructor(f);
     else if (f.isDestructor())
-      cla.implementation()->destructor = f;
+      cla.impl()->destructor = f;
     else
-      cla.implementation()->register_function(f);
+      cla.impl()->register_function(f);
     return f;
   }
   else if (!this->namespace_scope.isNull())
@@ -314,11 +314,11 @@ script::Function FunctionBuilder::create()
     Namespace ns = this->namespace_scope;
     script::Function f = this->engine->newFunction(*this);
     if (f.isOperator())
-      ns.implementation()->operators.push_back(f.toOperator());
+      ns.impl()->operators.push_back(f.toOperator());
     else if (f.isLiteralOperator())
-      ns.implementation()->literal_operators.push_back(f.toLiteralOperator());
+      ns.impl()->literal_operators.push_back(f.toLiteralOperator());
     else
-      ns.implementation()->functions.push_back(f);
+      ns.impl()->functions.push_back(f);
     return f;
   }
 

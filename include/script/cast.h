@@ -26,7 +26,7 @@ public:
 
   Cast & operator=(const Cast & other) = default;
 
-  CastImpl * implementation() const;
+  std::shared_ptr<CastImpl> impl() const;
 };
 
 } // namespace script

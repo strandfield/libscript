@@ -201,7 +201,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
-  function.implementation()->set_impl(body);
+  function.impl()->set_impl(body);
 
   DefaultArgumentProcessor default_arguments;
   default_arguments.process(task.lexpr->params, function, task.scope);
@@ -275,14 +275,14 @@ void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement
 
   if (val == nullptr)
   {
-    mFunction.implementation()->prototype.setReturnType(Type::Void);
+    mFunction.impl()->prototype.setReturnType(Type::Void);
     return;
   }
 
   if (val->type() == Type::InitializerList)
     throw CannotDeduceLambdaReturnType{ dpos(rs) };
 
-  mFunction.implementation()->prototype.setReturnType(val->type().baseType());
+  mFunction.impl()->prototype.setReturnType(val->type().baseType());
 }
 
 void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)

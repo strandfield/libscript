@@ -116,8 +116,7 @@ public:
   bool operator!=(const Operator & other) const;
   bool operator<(const Operator & other) const { return d < other.d; }
 
-
-  OperatorImpl * implementation() const;
+  std::shared_ptr<OperatorImpl> impl() const;
 };
 
 } // namespace script

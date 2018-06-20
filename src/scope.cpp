@@ -563,59 +563,59 @@ const std::map<std::string, Value> & NamespaceScope::values() const
 
 void NamespaceScope::add_class(const Class & c)
 {
-  mNamespace.implementation()->classes.push_back(c);
-  c.implementation()->enclosing_namespace = mNamespace.weakref();
+  mNamespace.impl()->classes.push_back(c);
+  c.impl()->enclosing_namespace = mNamespace.impl();
   mClasses.clear();
 }
 
 void NamespaceScope::add_function(const Function & f)
 {
-  mNamespace.implementation()->functions.push_back(f);
+  mNamespace.impl()->functions.push_back(f);
   mFunctions.clear();
 }
 
 void NamespaceScope::add_operator(const Operator & op)
 {
-  mNamespace.implementation()->operators.push_back(op);
+  mNamespace.impl()->operators.push_back(op);
   mOperators.clear();
 }
 
 void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
 {
-  mNamespace.implementation()->literal_operators.push_back(lo);
+  mNamespace.impl()->literal_operators.push_back(lo);
   mLiteralOperators.clear();
 }
 
 void NamespaceScope::add_enum(const Enum & e)
 {
-  mNamespace.implementation()->enums.push_back(e);
-  e.implementation()->enclosing_namespace = mNamespace.weakref();
+  mNamespace.impl()->enums.push_back(e);
+  e.impl()->enclosing_namespace = mNamespace.impl();
   mEnums.clear();
 }
 
 void NamespaceScope::add_template(const Template & t)
 {
-  mNamespace.implementation()->templates.push_back(t);
+  mNamespace.impl()->templates.push_back(t);
   //t.impl()->enclosing_namespace = mNamespace.weakref();
   mTemplates.clear();
 }
 
 void NamespaceScope::add_typedef(const Typedef & td)
 {
-  mNamespace.implementation()->typedefs.push_back(td);
+  mNamespace.impl()->typedefs.push_back(td);
   mTypedefs.clear();
 }
 
 void NamespaceScope::remove_class(const Class & c)
 {
-  auto & container = mNamespace.implementation()->classes;
+  auto & container = mNamespace.impl()->classes;
   auto it = std::find(container.begin(), container.end(), c);
   container.erase(it);
 }
 
 void NamespaceScope::remove_enum(const Enum & e)
 {
-  auto & container = mNamespace.implementation()->enums;
+  auto & container = mNamespace.impl()->enums;
   auto it = std::find(container.begin(), container.end(), e);
   container.erase(it);
 }
@@ -722,39 +722,39 @@ const std::vector<Typedef> & ClassScope::typedefs() const
 
 void ClassScope::add_class(const Class & c)
 {
-  mClass.implementation()->classes.push_back(c);
-  c.implementation()->enclosing_class = mClass.weakref();
+  mClass.impl()->classes.push_back(c);
+  c.impl()->enclosing_class = mClass.impl();
 }
 
 void ClassScope::add_function(const Function & f)
 {
-  mClass.implementation()->register_function(f);
+  mClass.impl()->register_function(f);
 }
 
 void ClassScope::add_operator(const Operator & op)
 {
-  mClass.implementation()->operators.push_back(op);
+  mClass.impl()->operators.push_back(op);
 }
 
 void ClassScope::add_cast(const Cast & c)
 {
-  mClass.implementation()->casts.push_back(c);
+  mClass.impl()->casts.push_back(c);
 }
 
 void ClassScope::add_enum(const Enum & e)
 {
-  mClass.implementation()->enums.push_back(e);
-  e.implementation()->enclosing_class = mClass.weakref();
+  mClass.impl()->enums.push_back(e);
+  e.impl()->enclosing_class = mClass.impl();
 }
 
 void ClassScope::add_template(const Template & t)
 {
-  mClass.implementation()->templates.push_back(t);
+  mClass.impl()->templates.push_back(t);
 }
 
 void ClassScope::add_typedef(const Typedef & td)
 {
-  mClass.implementation()->typedefs.push_back(td);
+  mClass.impl()->typedefs.push_back(td);
 }
 
 

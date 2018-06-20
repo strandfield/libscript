@@ -172,7 +172,7 @@ void Interpreter::exec(const std::shared_ptr<program::Statement> & s)
 
 void Interpreter::invoke(const Function & f)
 {
-  auto impl = f.implementation();
+  auto impl = f.impl();
   if (f.isNative()) {
     interpreter::FunctionCall *fcall = mExecutionContext->callstack.top();
     fcall->setReturnValue(impl->implementation.callback(fcall));
@@ -276,7 +276,7 @@ void Interpreter::visit(const program::PlacementStatement & placement)
 void Interpreter::visit(const program::PushDataMember & ims)
 {
   Object obj = mExecutionContext->callstack.top()->returnValue().toObject();
-  auto impl = obj.implementation();
+  auto impl = obj.impl();
   impl->attributes.push_back(eval(ims.value));
 }
 
@@ -294,7 +294,7 @@ void Interpreter::visit(const program::PushGlobal & push)
 {
   auto val = mExecutionContext->stack[push.global_index + mExecutionContext->callstack.top()->stackOffset()];
   Script s = mExecutionContext->callstack.top()->callee().script();
-  s.implementation()->globals.push_back(val);
+  s.impl()->globals.push_back(val);
 }
 
 void Interpreter::visit(const program::PushValue & push) 
@@ -307,7 +307,7 @@ void Interpreter::visit(const program::PopDataMember & pop)
 {
   const int object_offset = mExecutionContext->callstack.top()->stackOffset();
   Value object = mExecutionContext->stack[object_offset];
-  auto impl = object.toObject().implementation();
+  auto impl = object.toObject().impl();
   Value member = impl->attributes.back();
   mEngine->implementation()->destroy(member, pop.destructor);
   impl->attributes.pop_back();
@@ -411,7 +411,7 @@ Value Interpreter::visit(const program::Copy & copy)
 Value Interpreter::visit(const program::FetchGlobal & fetch)
 {
   const Script & script = mExecutionContext->callstack.top()->callee().script();
-  auto impl = script.implementation();
+  auto impl = script.impl();
   return impl->globals[fetch.global_index];
 }
 

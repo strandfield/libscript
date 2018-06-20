@@ -33,7 +33,7 @@ Operator::BuiltInOperator Operator::operatorId() const
 {
   if (d == nullptr)
     return Null;
-  return implementation()->operatorId;
+  return impl()->operatorId;
 }
 
 bool Operator::isBinary() const
@@ -231,10 +231,9 @@ bool Operator::operator!=(const Operator & other) const
 }
 
 
-OperatorImpl * Operator::implementation() const
+std::shared_ptr<OperatorImpl> Operator::impl() const
 {
-  return dynamic_cast<OperatorImpl*>(d.get());
+  return std::static_pointer_cast<OperatorImpl>(d);
 }
-
 
 } // namespace script

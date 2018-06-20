@@ -153,8 +153,7 @@ public:
   const std::vector<TemplateArgument> & arguments() const;
 
   Engine * engine() const;
-  ClassImpl * implementation() const;
-  std::weak_ptr<ClassImpl> weakref() const;
+  inline const std::shared_ptr<ClassImpl> & impl() const { return d; }
 
   Class & operator=(const Class & other) = default;
   bool operator==(const Class & other) const;

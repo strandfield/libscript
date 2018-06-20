@@ -40,8 +40,7 @@ public:
 
   void clear();
 
-  ContextImpl * implementation() const;
-  std::weak_ptr<ContextImpl> weakref() const;
+  inline const std::shared_ptr<ContextImpl> & impl() const { return d; }
 
 private:
   std::shared_ptr<ContextImpl> d;

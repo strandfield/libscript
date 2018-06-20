@@ -230,7 +230,7 @@ Lambda EngineImpl::newLambda()
 
 void EngineImpl::register_class(Class & c)
 {
-  auto impl = c.implementation();
+  auto impl = c.impl();
   if (impl->id != -1)
     throw std::runtime_error{ "Class already registered" };
 
@@ -258,13 +258,13 @@ void EngineImpl::destroyClass(Class c)
   if (decl.isNull())
     return;
   decl.impl()->remove_class(c);
-  auto & name = c.implementation()->name;
+  auto & name = c.impl()->name;
   name.insert(0, "deleted_");
   const int index = c.id() & 0xFFFF;
   this->classes[index] = Class();
   while (!this->classes.empty() && this->classes.back().isNull())
     this->classes.pop_back();
-  c.implementation()->id = 0;
+  c.impl()->id = 0;
 }
 
 void EngineImpl::destroyEnum(Enum e)
@@ -278,13 +278,13 @@ void EngineImpl::destroyEnum(Enum e)
   if (decl.isNull())
     return;
   decl.impl()->remove_enum(e);
-  auto & name = e.implementation()->name;
+  auto & name = e.impl()->name;
   name.insert(0, "deleted_");
   const int index = e.id() & 0xFFFF;
   this->enums[index] = Enum();
   while (!this->enums.empty() && this->enums.back().isNull())
     this->enums.pop_back();
-  e.implementation()->id = 0;
+  e.impl()->id = 0;
 }
 
 
@@ -315,8 +315,8 @@ void Engine::setup()
 
   Class string = buildClass(ClassBuilder::New(get_string_typename()), Type::String);
   register_string_type(string);
-  d->rootNamespace.implementation()->classes.push_back(string);
-  string.implementation()->enclosing_namespace = d->rootNamespace.weakref();
+  d->rootNamespace.impl()->classes.push_back(string);
+  string.impl()->enclosing_namespace = d->rootNamespace.impl();
 
   d->templates.array = ArrayImpl::register_array_template(this);
 
@@ -1139,10 +1139,10 @@ Class Engine::buildClass(const ClassBuilder & opts, int id)
   }
 
   Class ret{ std::make_shared<ClassImpl>(id, opts.name, this) };
-  ret.implementation()->set_parent(opts.parent);
-  ret.implementation()->dataMembers = opts.dataMembers;
-  ret.implementation()->isFinal = opts.isFinal;
-  ret.implementation()->data = opts.userdata;
+  ret.impl()->set_parent(opts.parent);
+  ret.impl()->dataMembers = opts.dataMembers;
+  ret.impl()->isFinal = opts.isFinal;
+  ret.impl()->data = opts.userdata;
 
   d->classes[index] = ret;
 

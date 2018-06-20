@@ -286,7 +286,7 @@ StackVariableAccessor::StackVariableAccessor(Stack & s, FunctionCompiler* fc)
 std::shared_ptr<program::Expression> StackVariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   Script s = script_;
-  auto simpl = s.implementation();
+  auto simpl = s.impl();
   const Type & gtype = simpl->global_types[offset];
 
   return program::FetchGlobal::New(gtype, offset);
@@ -382,7 +382,7 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
   std::shared_ptr<program::CompoundStatement> body = generateBody();
   /// TODO : add implicit return statement in void functions
-  mFunction.implementation()->set_impl(body);
+  mFunction.impl()->set_impl(body);
 }
 
 
@@ -408,7 +408,7 @@ const Function & FunctionCompiler::compiledFunction() const
 
 bool FunctionCompiler::isCompilingAnonymousFunction() const
 {
-  return dynamic_cast<const ScriptFunctionImpl*>(compiledFunction().implementation()) != nullptr;
+  return dynamic_cast<const ScriptFunctionImpl*>(compiledFunction().impl().get()) != nullptr;
 }
 
 std::string FunctionCompiler::argumentName(int index)
@@ -935,7 +935,7 @@ void FunctionCompiler::processVariableCreation(const Type & type, const std::str
   {
     mStack[stack_index].global = true;
 
-    auto simpl = mScript.implementation();
+    auto simpl = mScript.impl();
     simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
 
     write(program::PushGlobal::New(stack_index));

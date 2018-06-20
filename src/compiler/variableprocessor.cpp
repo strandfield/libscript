@@ -82,7 +82,7 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   }
 
   e->manage(val);
-  ns.implementation()->variables[decl->name->getName()] = val;
+  ns.impl()->variables[decl->name->getName()] = val;
 }
 
 void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp)
@@ -115,14 +115,14 @@ void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableD
     }
     else
     {
-      Value staticMember = c.implementation()->add_uninitialized_static_data_member(decl->name->getName(), var_type, scp.accessibility());
+      Value staticMember = c.impl()->add_uninitialized_static_data_member(decl->name->getName(), var_type, scp.accessibility());
       uninitialized_variables_.push_back(Variable{ staticMember, decl, scp });
     }
   }
   else
   {
     Class::DataMember dataMember{ var_type, decl->name->getName(), scp.accessibility() };
-    c.implementation()->dataMembers.push_back(dataMember);
+    c.impl()->dataMembers.push_back(dataMember);
   }
 }
 

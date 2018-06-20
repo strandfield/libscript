@@ -64,7 +64,7 @@ Enum Namespace::newEnum(const std::string & name)
 {
   Enum e = engine()->newEnum(name);
   d->enums.push_back(e);
-  e.implementation()->enclosing_namespace = d;
+  e.impl()->enclosing_namespace = d;
   return e;
 }
 
@@ -85,7 +85,7 @@ Class Namespace::newClass(const ClassBuilder & opts)
 {
   Class cla = engine()->newClass(opts);
   d->classes.push_back(cla);
-  cla.implementation()->enclosing_namespace = d;
+  cla.impl()->enclosing_namespace = d;
   return cla;
 }
 
@@ -237,16 +237,6 @@ FunctionBuilder Namespace::UserDefinedLiteral(const std::string & suffix, const 
 Engine * Namespace::engine() const
 {
   return d->engine;
-}
-
-NamespaceImpl * Namespace::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<NamespaceImpl> Namespace::weakref() const
-{
-  return std::weak_ptr<NamespaceImpl>(d);
 }
 
 bool Namespace::operator==(const Namespace & other) const

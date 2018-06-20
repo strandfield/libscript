@@ -143,14 +143,4 @@ Script Enum::script() const
   return Script{ d->script.lock() };
 }
 
-EnumImpl * Enum::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<EnumImpl> Enum::weakref() const
-{
-  return std::weak_ptr<EnumImpl>{d};
-}
-
 } // namespace script

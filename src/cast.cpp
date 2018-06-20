@@ -31,9 +31,9 @@ Type Cast::destType() const
 }
 
 
-CastImpl * Cast::implementation() const
+std::shared_ptr<CastImpl> Cast::impl() const
 {
-  return dynamic_cast<CastImpl*>(d.get());
+  return std::static_pointer_cast<CastImpl>(d);
 }
 
 } // namespace script

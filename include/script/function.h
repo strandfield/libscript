@@ -121,8 +121,7 @@ public:
   const std::shared_ptr<UserData> & data() const;
 
   Engine * engine() const;
-  FunctionImpl * implementation() const;
-  std::weak_ptr<FunctionImpl> weakref() const;
+  inline const std::shared_ptr<FunctionImpl> & impl() const { return d; }
 
   Function & operator=(const Function & other);
   bool operator==(const Function & other) const;

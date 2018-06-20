@@ -54,8 +54,7 @@ public:
   Engine * engine() const;
   Script script() const;
 
-  EnumImpl * implementation() const;
-  std::weak_ptr<EnumImpl> weakref() const;
+  inline const std::shared_ptr<EnumImpl> & impl() const { return d; }
 
 private:
   std::shared_ptr<EnumImpl> d;

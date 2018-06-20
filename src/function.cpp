@@ -414,16 +414,6 @@ Engine * Function::engine() const
   return d->engine;
 }
 
-FunctionImpl * Function::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<FunctionImpl> Function::weakref() const
-{
-  return std::weak_ptr<FunctionImpl>(d);
-}
-
 Function & Function::operator=(const Function & other)
 {
   d = other.d;

@@ -70,14 +70,4 @@ void Context::clear()
   d->variables.clear();
 }
 
-ContextImpl * Context::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<ContextImpl> Context::weakref() const
-{
-  return std::weak_ptr<ContextImpl>{d};
-}
-
 } // namespace script

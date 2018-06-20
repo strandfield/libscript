@@ -60,8 +60,7 @@ public:
   const std::vector<diagnostic::Message> & messages() const;
 
   Engine * engine() const;
-  ScriptImpl * implementation() const;
-  std::weak_ptr<ScriptImpl> weakref() const;
+  inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }
 
   Script & operator=(const Script &) = default;
 

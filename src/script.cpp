@@ -111,16 +111,6 @@ Engine * Script::engine() const
   return d->engine;
 }
 
-ScriptImpl * Script::implementation() const
-{
-  return d.get();
-}
-
-std::weak_ptr<ScriptImpl> Script::weakref() const
-{
-  return std::weak_ptr<ScriptImpl>(d);
-}
-
 bool Script::operator==(const Script & other) const
 {
   return d == other.d;

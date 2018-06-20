@@ -72,8 +72,7 @@ public:
   FunctionBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   Engine * engine() const;
-  NamespaceImpl * implementation() const;
-  std::weak_ptr<NamespaceImpl> weakref() const;
+  inline const std::shared_ptr<NamespaceImpl> & impl() const { return d; }
 
   Namespace & operator=(const Namespace &) = default;
   bool operator==(const Namespace & other) const;
