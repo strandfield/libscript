@@ -60,8 +60,8 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
   {
     for (int i(0); i < argc; ++i)
     {
-      Value arg = e->cast(begin[i], proto.argv(i));
-      if (!proto.argv(i).isReference())
+      Value arg = e->cast(begin[i], proto.at(i));
+      if (!proto.at(i).isReference())
         e->manage(arg);
       mExecutionContext->stack.push(arg);
     }
@@ -102,8 +102,8 @@ Value Interpreter::call(const Function & f, const std::vector<Value> & args)
   {
     for (int i(0); i < argc; ++i)
     {
-      Value arg = e->cast(args[i], proto.argv(i));
-      if (!proto.argv(i).isReference())
+      Value arg = e->cast(args[i], proto.at(i));
+      if (!proto.at(i).isReference())
         e->manage(arg);
       mExecutionContext->stack.push(arg);
     }

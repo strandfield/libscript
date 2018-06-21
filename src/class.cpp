@@ -256,15 +256,15 @@ void ClassImpl::set_parent(const Class & p)
 
 bool ClassImpl::check_overrides(const Function & derived, const Function & base)
 {
-  if (base.prototype().argc() != base.prototype().argc())
+  if (base.prototype().count() != base.prototype().count())
     return false;
 
   if (derived.returnType() != base.returnType())
     return false;
 
-  for (int i(1); i < derived.prototype().argc(); ++i)
+  for (int i(1); i < derived.prototype().count(); ++i)
   {
-    if (base.prototype().argv(i) != base.prototype().argv(i))
+    if (base.prototype().at(i) != base.prototype().at(i))
       return false;
   }
 

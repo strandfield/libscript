@@ -136,21 +136,21 @@ ConstructorImpl::ConstructorImpl(const Class & name, const Prototype &p, Engine 
 
 bool ConstructorImpl::is_default_ctor() const
 {
-  return this->prototype.argc() == 0;
+  return this->prototype.count() == 0;
 }
 
 bool ConstructorImpl::is_copy_ctor() const
 {
-  if (this->prototype.argc() != 1)
+  if (this->prototype.count() != 1)
     return false;
-  return this->prototype.argv(0) == Type::cref(this->mClass.id());
+  return this->prototype.at(0) == Type::cref(this->mClass.id());
 }
 
 bool ConstructorImpl::is_move_ctor() const
 {
-  if (this->prototype.argc() != 1)
+  if (this->prototype.count() != 1)
     return false;
-  return this->prototype.argv(0) == Type::rref(this->mClass.id());
+  return this->prototype.at(0) == Type::rref(this->mClass.id());
 }
 
 DestructorImpl::DestructorImpl(const Class & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
@@ -192,7 +192,7 @@ const Prototype & Function::prototype() const
 
 const Type & Function::parameter(int index) const
 {
-  return prototype().argv(index);
+  return prototype().at(index);
 }
 
 const Type & Function::returnType() const
@@ -202,7 +202,7 @@ const Type & Function::returnType() const
 
 bool Function::accepts(int argc) const
 {
-  const int parameter_count = prototype().argumentCount();
+  const int parameter_count = prototype().parameterCount();
   const int default_count = d->default_arguments.size();
 
   return parameter_count - default_count <= argc && argc <= parameter_count;
@@ -237,10 +237,10 @@ Script Function::script() const
 bool Function::isConstructor() const
 {
   // THe following is incorrect I believe
-  // return d->prototype.argc() >= 1
-  //   & d->prototype.argv(0).testFlag(Type::ThisFlag)
+  // return d->prototype.count() >= 1
+  //   & d->prototype.at(0).testFlag(Type::ThisFlag)
   //   & d->prototype.returnType().isConstRef()
-  //   & d->prototype.returnType().baseType() == d->prototype.argv(0).baseType();
+  //   & d->prototype.returnType().baseType() == d->prototype.at(0).baseType();
   
   // correct implementation
   return dynamic_cast<ConstructorImpl *>(d.get()) != nullptr;
@@ -249,8 +249,8 @@ bool Function::isConstructor() const
 bool Function::isDestructor() const
 {
   // This is also incorrect
-  /*return d->prototype.argc() == 1
-    && d->prototype.argv(0).testFlag(Type::ThisFlag)
+  /*return d->prototype.count() == 1
+    && d->prototype.at(0).testFlag(Type::ThisFlag)
     && d->prototype.returnType() == Type::Void;*/
 
   // correct implementation
@@ -287,7 +287,7 @@ bool Function::isExplicit() const
 
 bool Function::isConst() const
 {
-  return isNonStaticMemberFunction() && d->prototype.argv(0).isConstRef();
+  return isNonStaticMemberFunction() && d->prototype.at(0).isConstRef();
 }
 
 bool Function::isVirtual() const
@@ -315,9 +315,9 @@ bool Function::isMemberFunction() const
   if (isStatic())
     return true;
 
-  if (d->prototype.argc() == 0)
+  if (d->prototype.count() == 0)
     return false;
-  return d->prototype.argv(0).testFlag(Type::ThisFlag);
+  return d->prototype.at(0).testFlag(Type::ThisFlag);
 }
 
 bool Function::isStatic() const
@@ -334,11 +334,11 @@ Class Function::memberOf() const
   else if (isStatic())
     return static_cast<const StaticMemberFunctionImpl*>(d.get())->mClass;
 
-  if (d->prototype.argc() == 0)
+  if (d->prototype.count() == 0)
     return Class{};
-  if (!d->prototype.argv(0).testFlag(Type::ThisFlag))
+  if (!d->prototype.at(0).testFlag(Type::ThisFlag))
     return Class{};
-  Type cla = d->prototype.argv(0);
+  Type cla = d->prototype.at(0);
   return d->engine->getClass(cla);
 }
 

@@ -84,7 +84,7 @@ protected:
     proto.setReturnType(resolve(ft->returnType, scp));
 
     for (const auto & p : ft->params)
-      proto.addArgument(resolve(p, scp));
+      proto.addParameter(resolve(p, scp));
 
     return scp.engine()->getFunctionType(proto).type();
   }
@@ -95,7 +95,7 @@ protected:
     proto.setReturnType(resolve(qt.functionType->returnType));
 
     for (const auto & p : qt.functionType->params)
-      proto.addArgument(resolve(p));
+      proto.addParameter(resolve(p));
 
     return scp.engine()->getFunctionType(proto).type();
   }
@@ -167,7 +167,7 @@ protected:
     proto.setReturnType(resolve(ft->returnType, scp));
 
     for (const auto & p : ft->params)
-      proto.addArgument(resolve(p, scp));
+      proto.addParameter(resolve(p, scp));
 
     if(relax)
       return Type{ 1 | Type::UnknownFlag };
@@ -181,7 +181,7 @@ protected:
     proto.setReturnType(resolve(ft->returnType));
 
     for (const auto & p : ft->params)
-      proto.addArgument(resolve(p));
+      proto.addParameter(resolve(p));
 
     if (relax)
       return Type{ 1 | Type::UnknownFlag };

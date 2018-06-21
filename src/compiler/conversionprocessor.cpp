@@ -60,7 +60,7 @@ std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, con
     assert(conv.function.isConstructor());
 
     auto ctor = conv.function;
-    ret = sconvert(e, arg, ctor.prototype().argv(0), conv.conv1);
+    ret = sconvert(e, arg, ctor.prototype().at(0), conv.conv1);
     ret = program::ConstructorCall::New(ctor, { ret });
   }
 
@@ -71,7 +71,7 @@ void ConversionProcessor::prepare(Engine *e, std::vector<std::shared_ptr<program
 {
   for (size_t i(0); i < args.size(); ++i)
   {
-    args[i] = convert(e, args.at(i), proto.argv(i), conversions.at(i));
+    args[i] = convert(e, args.at(i), proto.at(i), conversions.at(i));
   }
 }
 

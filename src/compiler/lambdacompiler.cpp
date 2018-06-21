@@ -191,9 +191,9 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   /// TODO : where is the return value ?
   EnterScope guard{ this, FunctionScope::FunctionArguments };
-  mStack.addVar(proto.argv(0), "lambda-object");
-  for (int i(1); i < proto.argc(); ++i)
-    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), proto.argv(i));
+  mStack.addVar(proto.at(0), "lambda-object");
+  for (int i(1); i < proto.count(); ++i)
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), proto.at(i));
 
   std::shared_ptr<program::CompoundStatement> body = this->generateCompoundStatement(task.lexpr->body, FunctionScope::FunctionBody);
 
@@ -325,12 +325,12 @@ Prototype LambdaCompiler::computePrototype()
   result.setReturnType(Type::Null);
 
   Type closure_type{ mLambda.id(), Type::ReferenceFlag | Type::ThisFlag };
-  result.addArgument(closure_type);
+  result.addParameter(closure_type);
 
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
     Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
-    result.addArgument(paramtype);
+    result.addParameter(paramtype);
   }
 
   return result;

@@ -153,7 +153,7 @@ TEST(CompilerTests, function2) {
   Function f = s.rootNamespace().functions().front();
 
   ASSERT_EQ(f.returnType(), Type::Int);
-  ASSERT_EQ(f.prototype().argc(), 2);
+  ASSERT_EQ(f.prototype().count(), 2);
   ASSERT_EQ(f.parameter(0), Type::Int);
   ASSERT_EQ(f.parameter(1), Type::Int);
 
@@ -212,8 +212,8 @@ TEST(CompilerTests, deleted_function) {
   
   Function f = s.rootNamespace().functions().front();
   ASSERT_EQ(f.returnType(), Type::Int);
-  ASSERT_EQ(f.prototype().argc(), 1);
-  ASSERT_EQ(f.prototype().argv(0), Type::Int);
+  ASSERT_EQ(f.prototype().count(), 1);
+  ASSERT_EQ(f.prototype().at(0), Type::Int);
   ASSERT_TRUE(f.isDeleted());
 }
 
@@ -574,11 +574,11 @@ TEST(CompilerTests, operator_overload_2) {
   Operator op = A.operators().front();
   ASSERT_EQ(op.operatorId(), Operator::FunctionCallOperator);
   ASSERT_EQ(op.returnType(), Type::Int);
-  ASSERT_EQ(op.prototype().argc(), 4);
-  ASSERT_EQ(op.prototype().argv(0), Type::ref(A.id()));
-  ASSERT_EQ(op.prototype().argv(1), Type::Int);
-  ASSERT_EQ(op.prototype().argv(2), Type::Int);
-  ASSERT_EQ(op.prototype().argv(3), Type::Int);
+  ASSERT_EQ(op.prototype().count(), 4);
+  ASSERT_EQ(op.prototype().at(0), Type::ref(A.id()));
+  ASSERT_EQ(op.prototype().at(1), Type::Int);
+  ASSERT_EQ(op.prototype().at(2), Type::Int);
+  ASSERT_EQ(op.prototype().at(3), Type::Int);
 }
 
 TEST(CompilerTests, calling_functor) {
@@ -954,8 +954,8 @@ TEST(CompilerTests, default_argument) {
   Function true_random = s.rootNamespace().functions().front();
   ASSERT_EQ(true_random.name(), "true_random");
   ASSERT_EQ(true_random.returnType(), Type::Int);
-  ASSERT_EQ(true_random.prototype().argc(), 1);
-  ASSERT_EQ(true_random.prototype().argv(0), Type::Int);
+  ASSERT_EQ(true_random.prototype().count(), 1);
+  ASSERT_EQ(true_random.prototype().at(0), Type::Int);
   ASSERT_TRUE(true_random.accepts(0));
   ASSERT_TRUE(true_random.accepts(1));
 

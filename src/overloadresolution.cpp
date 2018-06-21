@@ -238,7 +238,7 @@ diagnostic::Message OverloadResolution::emitDiagnostic() const
     auto status = getViabilityStatus(f, &convs);
     write_prototype(diag, f);
     if (status == IncorrectParameterCount)
-      diag << "\n" << "Incorrect argument count, expects " << f.prototype().argc() << " but " << d->arguments.size() << " were provided";
+      diag << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << d->arguments.size() << " were provided";
     else if(status == CouldNotConvertArgument)
       diag << "\n" << "Could not convert argument " << convs.size();
     diag << "\n";
@@ -279,10 +279,10 @@ void OverloadResolution::write_prototype(diagnostic::MessageBuilder & diag, cons
   }
 
   diag << "(";
-  for (int i(0); i < f.prototype().argc(); ++i)
+  for (int i(0); i < f.prototype().count(); ++i)
   {
     diag << dtype(f.parameter(i));
-    if (i < f.prototype().argc() - 1)
+    if (i < f.prototype().count() - 1)
       diag << ", ";
   }
   diag << ")";

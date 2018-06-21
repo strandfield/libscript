@@ -105,13 +105,13 @@ static ConversionSequence select_converting_constructor(const Type & src, const 
   // this would result in an ambiguous conversion sequence I believe
   for (const auto & c : ctors)
   {
-    if (c.prototype().argc() != 1)
+    if (c.prototype().count() != 1)
       continue;
 
     if (c.isExplicit())
       continue;
 
-    StandardConversion first_conversion = StandardConversion::compute(src, c.prototype().argv(0), engine);
+    StandardConversion first_conversion = StandardConversion::compute(src, c.prototype().at(0), engine);
     if (first_conversion == StandardConversion::NotConvertible())
       continue;
 
@@ -519,12 +519,12 @@ ConversionSequence ConversionSequence::compute(const std::shared_ptr<program::Ex
 
   for (const auto & c : dest_class.constructors())
   {
-    if (c.prototype().argc() != init_list.elements.size())
+    if (c.prototype().count() != init_list.elements.size())
       continue;
 
     for (size_t i(0); i < init_list.elements.size(); ++i)
     {
-      ConversionSequence conv = ConversionSequence::compute(init_list.elements.at(i), c.prototype().argv(i), engine);
+      ConversionSequence conv = ConversionSequence::compute(init_list.elements.at(i), c.prototype().at(i), engine);
       if (conv == ConversionSequence::NotConvertible())
         break;
     }

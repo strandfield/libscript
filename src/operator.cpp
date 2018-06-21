@@ -38,7 +38,7 @@ Operator::BuiltInOperator Operator::operatorId() const
 
 bool Operator::isBinary() const
 {
-  return d->prototype.argc() == 2;
+  return d->prototype.count() == 2;
 }
 
 bool Operator::isBuiltin() const
@@ -133,12 +133,12 @@ Operator::Associativity Operator::associativity(int group)
 
 Type Operator::firstOperand() const
 {
-  return d->prototype.argv(0);
+  return d->prototype.at(0);
 }
 
 Type Operator::secondOperand() const
 {
-  return d->prototype.argv(1);
+  return d->prototype.at(1);
 }
 
 const std::string & Operator::getSymbol(BuiltInOperator op)

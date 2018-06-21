@@ -455,8 +455,8 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(foo.memberOf(), A);
   ASSERT_EQ(A.memberFunctions().size(), 1);
   ASSERT_EQ(foo.returnType(), Type::Void);
-  ASSERT_EQ(foo.prototype().argc(), 1);
-  ASSERT_TRUE(foo.prototype().argv(0).testFlag(Type::ThisFlag));
+  ASSERT_EQ(foo.prototype().count(), 1);
+  ASSERT_TRUE(foo.prototype().at(0).testFlag(Type::ThisFlag));
 
   Function bar = A.Method("bar").setConst().create();
   ASSERT_EQ(bar.name(), "bar");
@@ -468,9 +468,9 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_FALSE(foo.isMemberFunction());
   ASSERT_EQ(root.functions().size(), 1);
   ASSERT_EQ(foo.returnType(), Type::Int);
-  ASSERT_EQ(foo.prototype().argc(), 2);
-  ASSERT_EQ(foo.prototype().argv(0), Type::Int);
-  ASSERT_EQ(foo.prototype().argv(1), Type::Boolean);
+  ASSERT_EQ(foo.prototype().count(), 2);
+  ASSERT_EQ(foo.prototype().at(0), Type::Int);
+  ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
 
   Operator assign = A.Operation(Operator::AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().create().toOperator();
   ASSERT_EQ(assign.operatorId(), Operator::AssignmentOperator);
@@ -478,9 +478,9 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(assign.memberOf(), A);
   ASSERT_EQ(A.operators().size(), 1);
   ASSERT_EQ(assign.returnType(), Type::ref(A.id()));
-  ASSERT_EQ(assign.prototype().argc(), 2);
-  ASSERT_EQ(assign.prototype().argv(0), Type::ref(A.id()));
-  ASSERT_EQ(assign.prototype().argv(1), Type::cref(A.id()));
+  ASSERT_EQ(assign.prototype().count(), 2);
+  ASSERT_EQ(assign.prototype().at(0), Type::ref(A.id()));
+  ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
   ASSERT_TRUE(assign.isDeleted());
 
   Namespace ops = root.newNamespace("ops");
@@ -489,9 +489,9 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_FALSE(assign.isMemberFunction());
   ASSERT_EQ(ops.operators().size(), 1);
   ASSERT_EQ(assign.returnType(), A.id());
-  ASSERT_EQ(assign.prototype().argc(), 2);
-  ASSERT_EQ(assign.prototype().argv(0), Type::cref(A.id()));
-  ASSERT_EQ(assign.prototype().argv(1), Type::cref(A.id()));
+  ASSERT_EQ(assign.prototype().count(), 2);
+  ASSERT_EQ(assign.prototype().at(0), Type::cref(A.id()));
+  ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
 
   Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
   ASSERT_EQ(to_int.destType(), Type::Int);

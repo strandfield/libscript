@@ -22,7 +22,7 @@ Cast::Cast(const std::shared_ptr<CastImpl> & impl)
 
 Type Cast::sourceType() const
 {
-  return d->prototype.argv(0);
+  return d->prototype.at(0);
 }
 
 Type Cast::destType() const

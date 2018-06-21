@@ -684,25 +684,25 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   
   const bool is_member = currentScope().isClass();
   
-  auto arity = builder.proto.argc() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
+  auto arity = builder.proto.count() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
   builder.operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
   if (builder.operation == Operator::Null)
   {
     // operator++(int) and operator++() trick
     if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
-      && (builder.proto.argc() == 2 && builder.proto.argv(1) == Type::Int))
+      && (builder.proto.count() == 2 && builder.proto.at(1) == Type::Int))
     {
-      builder.proto.popArgument();
+      builder.proto.popParameter();
       builder.operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
     }
     else
       throw CouldNotResolveOperatorName{ dpos(over_decl) };
   }
 
-  if (Operator::isBinary(builder.operation) && builder.proto.argc() != 2)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(builder.proto.argc()) };
-  else if (Operator::isUnary(builder.operation) && builder.proto.argc() != 1)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(builder.proto.argc()) };
+  if (Operator::isBinary(builder.operation) && builder.proto.count() != 2)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(builder.proto.count()) };
+  else if (Operator::isUnary(builder.operation) && builder.proto.count() != 1)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(builder.proto.count()) };
 
   
   if (Operator::onlyAsMember(builder.operation) && !is_member)
@@ -940,11 +940,11 @@ void ScriptCompiler::reprocess(IncompleteFunction & func)
   if (proto.returnType().testFlag(Type::UnknownFlag))
     proto.setReturnType(resolve(decl->returnType));
 
-  const int offset = proto.argc() > 0 && proto.argv(0).testFlag(Type::ThisFlag) ? 1 : 0;
+  const int offset = proto.count() > 0 && proto.at(0).testFlag(Type::ThisFlag) ? 1 : 0;
 
-  for (int i(offset); i < proto.argc(); ++i)
+  for (int i(offset); i < proto.count(); ++i)
   {
-    if (proto.argv(i).testFlag(Type::UnknownFlag))
+    if (proto.at(i).testFlag(Type::UnknownFlag))
       proto.setParameter(i, resolve(decl->params.at(i-offset).type));
   }
 

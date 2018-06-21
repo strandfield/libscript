@@ -273,7 +273,7 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Conversion
   {
     const auto & c = convs.at(i);
     if (c.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dstr(args.at(i)->type()), dstr(proto.argv(i)) };
+      throw NarrowingConversionInBraceInitialization{ dstr(args.at(i)->type()), dstr(proto.at(i)) };
   }
 }
 

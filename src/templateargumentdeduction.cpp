@@ -235,9 +235,9 @@ void TemplateArgumentDeductionEngine::deduce(const ast::FunctionType & param, co
 
   deduce(param.returnType, ft.prototype().returnType());
 
-  size_t s = std::min(param.params.size(), (size_t)ft.prototype().argc());
+  size_t s = std::min(param.params.size(), (size_t)ft.prototype().count());
   for (size_t i(0); i < s; ++i)
-    deduce(param.params.at(i), ft.prototype().argv(i));
+    deduce(param.params.at(i), ft.prototype().at(i));
 }
 
 void TemplateArgumentDeductionEngine::deduce(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
@@ -343,11 +343,11 @@ bool TemplatePatternMatching::match(const std::shared_ptr<ast::FunctionDecl> & p
 
   match_(pattern->returnType, input.returnType());
 
-  size_t s = std::min((size_t) input.argumentCount(), pattern->params.size());
+  size_t s = std::min((size_t) input.parameterCount(), pattern->params.size());
 
   for (size_t i(0); i < s; ++i)
   {
-    match_(pattern->params.at(i).type, input.argv(i));
+    match_(pattern->params.at(i).type, input.at(i));
   }
 
   if (!result_)
@@ -428,11 +428,11 @@ void TemplatePatternMatching::match_(const ast::FunctionType & pattern, const Ty
 
   match_(pattern.returnType, ft.prototype().returnType());
 
-  if (pattern.params.size() != (size_t)ft.prototype().argc())
+  if (pattern.params.size() != (size_t)ft.prototype().count())
     return fail();
 
   for (size_t i(0); i < pattern.params.size(); ++i)
-    match_(pattern.params.at(i), ft.prototype().argv(i));
+    match_(pattern.params.at(i), ft.prototype().at(i));
 }
 
 void TemplatePatternMatching::match_(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)

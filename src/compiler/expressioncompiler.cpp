@@ -433,9 +433,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
   for (size_t i(0); i < args.size(); ++i)
   {
     const auto & a = args.at(i);
-    ConversionSequence conv = ConversionSequence::compute(a, proto.argv(i), engine());
+    ConversionSequence conv = ConversionSequence::compute(a, proto.at(i), engine());
     if (conv == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(call->arguments.at(i)), dstr(a->type()), dstr(proto.argv(i)) };
+      throw CouldNotConvert{ dpos(call->arguments.at(i)), dstr(a->type()), dstr(proto.at(i)) };
     conversions.push_back(conv);
   }
 
@@ -529,7 +529,7 @@ NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & 
 
 void ExpressionCompiler::complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  size_t diff = size_t(f.prototype().argc()) - args.size();
+  size_t diff = size_t(f.prototype().count()) - args.size();
   if (diff == 0)
     return;
 

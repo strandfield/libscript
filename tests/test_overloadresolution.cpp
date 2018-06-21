@@ -56,8 +56,8 @@ TEST(OverloadResolution, builtin_operators) {
   OverloadResolution resol = OverloadResolution::New(&e);
   ASSERT_TRUE(resol.process(overloads, std::vector<Type>{Type::Int, Type::Float}));
   auto selected = resol.selectedOverload();
-  ASSERT_TRUE(selected.prototype().argv(0).baseType() == Type::Float);
-  ASSERT_TRUE(selected.prototype().argv(1).baseType() == Type::Float);
+  ASSERT_TRUE(selected.prototype().at(0).baseType() == Type::Float);
+  ASSERT_TRUE(selected.prototype().at(1).baseType() == Type::Float);
 }
 
 TEST(OverloadResolution, failure_indistinguishable) {

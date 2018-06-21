@@ -377,8 +377,8 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
   EnterScope guard{ this, FunctionScope::FunctionArguments };
 
-  for (int i(0); i < proto.argc(); ++i)
-    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(argumentName(i), proto.argv(i));
+  for (int i(0); i < proto.count(); ++i)
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(argumentName(i), proto.at(i));
 
   std::shared_ptr<program::CompoundStatement> body = generateBody();
   /// TODO : add implicit return statement in void functions
@@ -524,8 +524,8 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
   {
     Operator op = mFunction.toOperator();
     if (op.returnType() == Type::ref(op.memberOf().id())
-      && op.prototype().argv(0) == Type::ref(op.memberOf().id())
-      && op.prototype().argv(1) == Type::cref(op.memberOf().id()))
+      && op.prototype().at(0) == Type::ref(op.memberOf().id())
+      && op.prototype().at(1) == Type::cref(op.memberOf().id()))
       return AssignmentCompiler{ this }.generateAssignmentOperator();
   }
 

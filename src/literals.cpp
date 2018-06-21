@@ -24,7 +24,7 @@ LiteralOperator::LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & im
 
 Type LiteralOperator::input() const
 {
-  return d->prototype.argv(0);
+  return d->prototype.at(0);
 }
 
 Type LiteralOperator::output() const

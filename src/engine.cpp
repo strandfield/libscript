@@ -132,7 +132,7 @@ static Value apply_conversion(const Value & arg, const Type &dest, const Convers
     assert(conv.function.isConstructor());
 
     auto ctor = conv.function;
-    ret = apply_standard_conversion(arg, ctor.prototype().argv(0), conv.conv1, engine);
+    ret = apply_standard_conversion(arg, ctor.prototype().at(0), conv.conv1, engine);
     ret = engine->invoke(ctor, { ret }); /// TODO : define behavior of invoking a constructor
   }
 
@@ -807,8 +807,8 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
 
   Prototype assign_proto;
   assign_proto.setReturnType(Type::ref(type));
-  assign_proto.addArgument(Type::ref(type));
-  assign_proto.addArgument(Type::cref(type));
+  assign_proto.addParameter(Type::ref(type));
+  assign_proto.addParameter(Type::cref(type));
   auto assign_op = std::make_shared<OperatorImpl>(Operator::AssignmentOperator, assign_proto, this);
   assign_op->set_impl(callbacks::function_variable_assignment);
 

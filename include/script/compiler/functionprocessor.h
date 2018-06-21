@@ -47,13 +47,13 @@ public:
       if (fundecl->constQualifier.isValid())
         thisType.setFlag(Type::ConstFlag);
 
-      result.addArgument(thisType);
+      result.addParameter(thisType);
     }
 
     for (size_t i(0); i < fundecl->params.size(); ++i)
     {
       Type argtype = type_.resolve(fundecl->params.at(i).type, scp);
-      result.addArgument(argtype);
+      result.addParameter(argtype);
     }
 
     return result;

@@ -34,7 +34,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
   this->proto.setReturnType(Type::Void);
 
   if (k != Function::Constructor)
-    this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+    this->proto.addParameter(Type::ref(cla.id()).withFlag(Type::ThisFlag));
   else 
     this->proto.setReturnType(Type::cref(cla.id()));
 }
@@ -48,7 +48,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)
   , operation(op)
 {
   this->proto.setReturnType(Type::Void);
-  this->proto.addArgument(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+  this->proto.addParameter(Type::ref(cla.id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Namespace ns)
@@ -130,7 +130,7 @@ FunctionBuilder FunctionBuilder::Method(const Class & cla, const std::string & n
   ret.callback = impl;
   ret.name = name;
   ret.proto.setReturnType(Type::Void);
-  ret.proto.addArgument(Type::ref(cla.id() | Type::ThisFlag));
+  ret.proto.addParameter(Type::ref(cla.id() | Type::ThisFlag));
   return ret;
 }
 
@@ -163,7 +163,7 @@ FunctionBuilder FunctionBuilder::Cast(const Type & srcType, const Type & destTyp
 
 FunctionBuilder & FunctionBuilder::setConst()
 {
-  this->proto.setParameter(0, Type::cref(this->proto.argv(0)));
+  this->proto.setParameter(0, Type::cref(this->proto.at(0)));
   return *(this);
 }
 
@@ -261,12 +261,12 @@ FunctionBuilder & FunctionBuilder::setStatic()
 {
   flags |= (Function::Static << 2);
 
-  if (proto.argc() == 0 || !proto.argv(0).testFlag(Type::ThisFlag))
+  if (proto.count() == 0 || !proto.at(0).testFlag(Type::ThisFlag))
     return *this;
 
-  for (int i(0); i < proto.argc() - 1; ++i)
-    proto.setParameter(i, proto.argv(i+1));
-  proto.popArgument();
+  for (int i(0); i < proto.count() - 1; ++i)
+    proto.setParameter(i, proto.at(i+1));
+  proto.popParameter();
 
   return *this;
 }
@@ -284,7 +284,7 @@ FunctionBuilder & FunctionBuilder::setReturnType(const Type & t)
 
 FunctionBuilder & FunctionBuilder::addParam(const Type & t)
 {
-  this->proto.addArgument(t);
+  this->proto.addParameter(t);
   return *(this);
 }
 
@@ -327,7 +327,7 @@ script::Function FunctionBuilder::create()
 
 bool FunctionBuilder::is_member_function() const
 {
-  return this->special.isNull() == false || (this->proto.argc() > 0 && this->proto.argv(0).testFlag(Type::ThisFlag));
+  return this->special.isNull() == false || (this->proto.count() > 0 && this->proto.at(0).testFlag(Type::ThisFlag));
 }
 
 Class FunctionBuilder::member_of() const
@@ -335,7 +335,7 @@ Class FunctionBuilder::member_of() const
   if (!this->special.isNull())
     return this->special;
 
-  return this->engine->getClass(this->proto.argv(0));
+  return this->engine->getClass(this->proto.at(0));
 }
 
 } // namespace script

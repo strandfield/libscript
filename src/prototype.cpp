@@ -9,29 +9,29 @@ namespace script
 
 Prototype::Prototype()
   : mCapacity(0)
-  , mBegin(mArgs)
-  , mEnd(mArgs)
+  , mBegin(mParams)
+  , mEnd(mParams)
 {
 
 }
 Prototype::Prototype(const Prototype & other)
   : mReturnType(other.mReturnType)
 {
-  if (other.argumentCount() <= 4)
+  if (other.parameterCount() <= 4)
   {
-    mBegin = mArgs;
-    mEnd = mArgs + other.argumentCount();
+    mBegin = mParams;
+    mEnd = mParams + other.parameterCount();
     for (int i(0); i < 4; ++i)
-      mArgs[i] = other.mArgs[i];
+      mParams[i] = other.mParams[i];
     mCapacity = 0;
   }
   else
   {
-    mBegin = new Type[other.argumentCount()];
+    mBegin = new Type[other.parameterCount()];
     mEnd = mBegin;
     for (Type t : other)
       *(mEnd++) = t;
-    mCapacity = other.argumentCount();
+    mCapacity = other.parameterCount();
   }
 }
 
@@ -39,12 +39,12 @@ Prototype::Prototype(Prototype && other)
   : mReturnType(other.mReturnType)
   , mCapacity(other.mCapacity)
 {
-  if (other.argumentCount() <= 4)
+  if (other.parameterCount() <= 4)
   {
-    mBegin = mArgs;
-    mEnd = mArgs + other.argumentCount();
+    mBegin = mParams;
+    mEnd = mParams + other.parameterCount();
     for (int i(0); i < 4; ++i)
-      mArgs[i] = other.mArgs[i];
+      mParams[i] = other.mParams[i];
     mCapacity = 0;
   }
   else
@@ -65,85 +65,80 @@ Prototype::~Prototype()
 Prototype::Prototype(const Type & rt)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
 
 }
 
-Prototype::Prototype(const Type & rt, const Type & arg)
+Prototype::Prototype(const Type & rt, const Type & p)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
-  *(mEnd++) = arg;
+  *(mEnd++) = p;
 }
 
-Prototype::Prototype(const Type & rt, const Type & arg1, const Type & arg2)
+Prototype::Prototype(const Type & rt, const Type & p1, const Type & p2)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
-  *(mEnd++) = arg1;
-  *(mEnd++) = arg2;
+  *(mEnd++) = p1;
+  *(mEnd++) = p2;
 }
 
-Prototype::Prototype(const Type & rt, const Type & arg1, const Type & arg2, const Type & arg3)
+Prototype::Prototype(const Type & rt, const Type & p1, const Type & p2, const Type & p3)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
-  *(mEnd++) = arg1;
-  *(mEnd++) = arg2;
-  *(mEnd++) = arg3;
+  *(mEnd++) = p1;
+  *(mEnd++) = p2;
+  *(mEnd++) = p3;
 }
 
-Prototype::Prototype(const Type & rt, const Type & arg1, const Type & arg2, const Type & arg3, const Type & arg4)
+Prototype::Prototype(const Type & rt, const Type & p1, const Type & p2, const Type & p3, const Type & p4)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
-  *(mEnd++) = arg1;
-  *(mEnd++) = arg2;
-  *(mEnd++) = arg3;
-  *(mEnd++) = arg4;
+  *(mEnd++) = p1;
+  *(mEnd++) = p2;
+  *(mEnd++) = p3;
+  *(mEnd++) = p4;
 }
 
-Prototype::Prototype(const Type & rt, std::initializer_list<Type> && args)
+Prototype::Prototype(const Type & rt, std::initializer_list<Type> && params)
   : mReturnType(rt)
   , mCapacity(0)
-  , mBegin(mArgs)
+  , mBegin(mParams)
   , mEnd(mBegin)
 {
-  if(args.size() > 4)
+  if(params.size() > 4)
   {
-    mCapacity = args.size();
-    mBegin = new Type[args.size()];
+    mCapacity = params.size();
+    mBegin = new Type[params.size()];
     mEnd = mBegin;
   }
 
-  for (auto it = args.begin(); it != args.end(); ++it)
+  for (auto it = params.begin(); it != params.end(); ++it)
     *(mEnd++) = *it;
 }
 
-const Type & Prototype::argumentType(int index) const
+void Prototype::addParameter(const Type & param)
 {
-  return *(mBegin + index);
-}
-
-void Prototype::addArgument(const Type & arg)
-{
-  if (argumentCount() < 4 || argumentCount() < mCapacity)
-    *(mEnd++) = arg;
+  if (parameterCount() < 4 || parameterCount() < mCapacity)
+    *(mEnd++) = param;
   else
   {
     const auto begin = mBegin;
     const auto end = mEnd;
-    const int count = argumentCount();
+    const int count = parameterCount();
 
     mCapacity = count == 4 ? 8 : count + 1;
     mBegin = new Type[mCapacity];
@@ -152,66 +147,46 @@ void Prototype::addArgument(const Type & arg)
     for (auto it = begin; it != end; ++it)
       *(mEnd++) = *it;
 
-    *(mEnd++) = arg;
+    *(mEnd++) = param;
 
     if(count > 4)
       delete[] begin;
   }
 }
 
-void Prototype::popArgument()
+void Prototype::popParameter()
 {
   mEnd--;
-  if (argc() == 4)
+  if (count() == 4)
   {
     for (int i(0); i < 4; ++i)
-      mArgs[i] = *(mBegin + i);
+      mParams[i] = *(mBegin + i);
 
     delete[] mBegin;
-    mBegin = mArgs;
-    mEnd = mArgs + 4;
+    mBegin = mParams;
+    mEnd = mParams + 4;
   }
-}
-
-std::vector<Type> Prototype::arguments() const
-{
-  return std::vector<Type>{mBegin, mEnd};
-}
-
-const Type * Prototype::begin() const
-{
-  return mBegin;
-}
-
-const Type * Prototype::end() const
-{
-  return mEnd;
-}
-
-void Prototype::setParameter(int index, const Type & t)
-{
-  *(mBegin + index) = t;
 }
 
 Prototype & Prototype::operator=(const Prototype & other)
 {
   mReturnType = other.returnType();
 
-  if (other.argumentCount() <= 4)
+  if (other.parameterCount() <= 4)
   {
-    mBegin = mArgs;
-    mEnd = mArgs + other.argumentCount();
+    mBegin = mParams;
+    mEnd = mParams + other.parameterCount();
     for (int i(0); i < 4; ++i)
-      mArgs[i] = other.mArgs[i];
+      mParams[i] = other.mParams[i];
     mCapacity = 0;
   }
   else
   {
-    mBegin = new Type[other.argumentCount()];
+    mBegin = new Type[other.parameterCount()];
     mEnd = mBegin;
     for (Type t : other)
       *(mEnd++) = t;
-    mCapacity = other.argumentCount();
+    mCapacity = other.parameterCount();
   }
 
   return *(this);
@@ -219,7 +194,7 @@ Prototype & Prototype::operator=(const Prototype & other)
 
 bool Prototype::operator==(const Prototype & other) const
 {
-  if (other.argc() != this->argc())
+  if (other.count() != this->count())
     return false;
 
   if (other.returnType() != mReturnType)
@@ -233,11 +208,6 @@ bool Prototype::operator==(const Prototype & other) const
   }
 
   return true;
-}
-
-bool Prototype::operator!=(const Prototype & other) const
-{
-  return !operator==(other);
 }
 
 } // namespace script

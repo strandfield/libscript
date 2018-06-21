@@ -27,7 +27,7 @@ struct MaxData : public script::UserData
     less(f)
     , conversions(convs)
   {
-    types = less.prototype().arguments();
+    types = less.prototype().parameters();
   }
   ~MaxData() = default;
 };
