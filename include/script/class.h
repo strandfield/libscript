@@ -103,8 +103,8 @@ public:
   Function newDestructor(NativeFunctionSignature func);
   Function destructor() const;
   
-  Function newMethod(const std::string & name, const Prototype & proto, NativeFunctionSignature func, uint8 flags = Function::NoFlags);
-  Function newMethod(const FunctionBuilder & builder);
+  [[deprecated("use Class::Method() instead")]] Function newMethod(const std::string & name, const Prototype & proto, NativeFunctionSignature func, uint8 flags = Function::NoFlags);
+  [[deprecated("use Class::Method() instead")]] Function newMethod(const FunctionBuilder & builder);
 
   Operator newOperator(const FunctionBuilder & builder);
   [[deprecated("use Class::Conversion instead")]] Cast newCast(const FunctionBuilder & builder);

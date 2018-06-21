@@ -398,18 +398,7 @@ Function Class::newMethod(const std::string & name, const Prototype & proto, Nat
 {
   FunctionBuilder builder = FunctionBuilder::Function(name, proto, func);
   builder.flags = flags;
-
-  /// TODO : do something about this
-  /*
-  if (builder.proto.argc() == 0 && ((builder.flags & Function::Static) == 0))
-  {
-    throw std::runtime_error{ "Invalid member function" };
-  }
-  */
-
-  auto member = engine()->newFunction(builder);
-  d->register_function(member);
-  return member;
+  return newMethod(builder);
 }
 
 Function Class::newMethod(const FunctionBuilder & builder)
