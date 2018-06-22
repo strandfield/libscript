@@ -653,3 +653,32 @@ TEST(CoreUtilsTests, test_names) {
   ASSERT_EQ(b.kind(), Name::InvalidName);
 };
 
+
+TEST(CoreUtilsTests, function_names) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.newClass(ClassBuilder::New("A"));
+
+  Function foo = A.Method("foo").create();
+  Function eq = A.Operation(Operator::EqualOperator).params(Type::Int).create();
+  Function to_int = A.Conversion(Type::Int).create();
+  Function ctor = A.Constructor().create();
+  Function a = A.Method("A").create();
+
+  Function km = e.rootNamespace().UserDefinedLiteral("km").create();
+
+  ASSERT_NE(foo.getName(), eq.getName());
+  ASSERT_NE(eq.getName(), a.getName());
+  ASSERT_NE(km.getName(), to_int.getName());
+  ASSERT_NE(to_int.getName(), eq.getName());
+
+  // Still some limitations ?
+  ASSERT_EQ(a.getName(), ctor.getName());
+  
+  /// TODO : make this work !
+  Function dtor = e.getClass(Type::String).destructor();
+  ASSERT_ANY_THROW(dtor.getName());
+};

@@ -10,6 +10,7 @@
 #include "script/class.h"
 #include "script/literals.h"
 #include "script/private/literals_p.h"
+#include "script/name.h"
 #include "script/operator.h"
 #include "script/private/operator_p.h"
 
@@ -80,6 +81,11 @@ const std::string & FunctionImpl::name() const
   throw std::runtime_error{ "This kind of function does not implement name()" };
 }
 
+Name FunctionImpl::get_name() const
+{
+  throw std::runtime_error{ "This kind of function does not implement get_name()" };
+}
+
 void FunctionImpl::force_virtual()
 {
   this->flags |= (Function::Virtual << 2);
@@ -104,6 +110,11 @@ RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototy
   , mName(name)
 {
 
+}
+
+Name RegularFunctionImpl::get_name() const
+{
+  return mName;
 }
 
 
@@ -132,6 +143,11 @@ ConstructorImpl::ConstructorImpl(const Class & name, const Prototype &p, Engine 
   , mClass(name)
 {
 
+}
+
+Name ConstructorImpl::get_name() const 
+{
+  return mClass.name();
 }
 
 bool ConstructorImpl::is_default_ctor() const
@@ -183,6 +199,11 @@ bool Function::isNull() const
 const std::string & Function::name() const
 {
   return d->name();
+}
+
+Name Function::getName() const
+{
+  return d->get_name();
 }
 
 const Prototype & Function::prototype() const

@@ -5,6 +5,8 @@
 #include "script/operator.h"
 #include "script/private/operator_p.h"
 
+#include "script/name.h"
+
 namespace script
 {
 
@@ -14,6 +16,11 @@ OperatorImpl::OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto
   , operatorId(op)
 {
 
+}
+
+Name OperatorImpl::get_name() const
+{
+  return operatorId;
 }
 
 BuiltInOperatorImpl::BuiltInOperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine)

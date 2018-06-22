@@ -19,6 +19,8 @@ public:
 public:
   OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
+
+  Name get_name() const override;
 };
 
 class BuiltInOperatorImpl : public OperatorImpl

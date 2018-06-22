@@ -18,6 +18,8 @@ class Expression;
 class Statement;
 }
 
+class Name;
+
 typedef std::shared_ptr<program::Expression> DefaultArgument;
 
 class DefaultArgumentList
@@ -49,6 +51,7 @@ public:
   virtual ~FunctionImpl();
 
   virtual const std::string & name() const;
+  virtual Name get_name() const;
 
   Prototype prototype;
   Engine *engine;
@@ -76,6 +79,8 @@ public:
   {
     return mName;
   }
+
+  Name get_name() const override;
 };
 
 class StaticMemberFunctionImpl : public RegularFunctionImpl
@@ -103,6 +108,7 @@ public:
   {
     return mClass.name();
   }
+  Name get_name() const override;
 
   bool is_default_ctor() const;
   bool is_copy_ctor() const;

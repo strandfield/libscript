@@ -5,6 +5,8 @@
 #include "script/cast.h"
 #include "script/private/cast_p.h"
 
+#include "script/name.h"
+
 namespace script
 {
 
@@ -12,6 +14,11 @@ CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : FunctionImpl(p, e, f)
 {
 
+}
+
+Name CastImpl::get_name() const
+{
+  return Name{ Name::CastTag{}, prototype.returnType() };
 }
 
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)

@@ -23,6 +23,7 @@ namespace program { class Expression; class Statement; }
 class FunctionImpl;
 class FunctionTemplate;
 class LiteralOperator;
+class Name;
 class Operator;
 class Script;
 class TemplateArgument;
@@ -70,6 +71,8 @@ public:
   bool isNull() const;
 
   const std::string & name() const;
+  Name getName() const;
+
   const Prototype & prototype() const;
   const Type & parameter(int index) const;
   const Type & returnType() const;

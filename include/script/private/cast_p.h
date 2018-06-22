@@ -15,6 +15,8 @@ class CastImpl : public FunctionImpl
 public:
   CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   ~CastImpl() = default;
+
+  Name get_name() const override;
 };
 
 } // namespace script

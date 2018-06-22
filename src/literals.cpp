@@ -5,6 +5,8 @@
 #include "script/literals.h"
 #include "script/private/literals_p.h"
 
+#include "script/name.h"
+
 namespace script
 {
 
@@ -15,6 +17,10 @@ LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype 
 
 }
 
+Name LiteralOperatorImpl::get_name() const
+{
+  return Name{ Name::LiteralOperatorTag{}, suffix };
+}
 
 LiteralOperator::LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl)
   : Function(impl)
