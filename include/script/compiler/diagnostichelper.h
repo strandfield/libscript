@@ -40,31 +40,6 @@ inline std::string dstr(const std::shared_ptr<ast::Identifier> & node)
     return dstr(node->as<ast::ScopedIdentifier>().rhs);
 }
 
-inline std::string dstr(const AccessSpecifier & as)
-{
-  if (as == AccessSpecifier::Protected)
-    return "protected";
-  else if (as == AccessSpecifier::Private)
-    return "private";
-  return "public";
-}
-
-
-class DefaultDiagnosticHelper
-{
-public:
-
-  inline static diagnostic::pos_t pos(const std::shared_ptr<ast::Node> & node)
-  {
-    return dpos(node);
-  }
-
-  inline static std::string str(const std::shared_ptr<ast::Identifier> & node)
-  {
-    return dstr(node);
-  }
-};
-
 } // namespace diagnostic
 
 using diagnostic::dpos;

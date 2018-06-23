@@ -94,8 +94,6 @@ protected:
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);
 
-  std::string dstr(const Type & t) const;
-  static std::string dstr(const AccessSpecifier & as);
   static std::string dstr(const std::shared_ptr<ast::Identifier> & id);
 
 protected:
@@ -134,6 +132,8 @@ private:
 };
 
 } // namespace compiler
+
+diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex);
 
 } // namespace script
 

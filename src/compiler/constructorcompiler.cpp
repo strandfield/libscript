@@ -101,7 +101,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
 
     const int index = lookup.dataMemberIndex() - data_members_offset;
     if (members_initialization.at(index) != nullptr)
-      throw DataMemberAlreadyHasInitializer{ dpos(minit.name), dstr(minit.name) };
+      throw DataMemberAlreadyHasInitializer{ dpos(minit.name), data_members.at(index).name };
 
     const auto & dm = data_members.at(index);
 
@@ -273,7 +273,7 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Conversion
   {
     const auto & c = convs.at(i);
     if (c.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dstr(args.at(i)->type()), dstr(proto.at(i)) };
+      throw NarrowingConversionInBraceInitialization{ args.at(i)->type(), proto.at(i) };
   }
 }
 

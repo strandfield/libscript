@@ -4,6 +4,9 @@
 
 #include "script/diagnosticmessage.h"
 
+#include "script/engine.h"
+#include "script/types.h"
+
 namespace script
 {
 
@@ -14,6 +17,17 @@ inline static bool is_digit(const char c)
 {
   return c >= '0' && c <= '9';
 }
+
+inline static bool is_letter(const char c)
+{
+  return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+}
+
+inline static bool is_alphanumeric(const char c)
+{
+  return is_letter(c) || is_digit(c);
+}
+
 
 struct placemarker_t
 {
@@ -92,6 +106,17 @@ Severity Message::severity() const
   return Info;
 }
 
+std::string Message::code() const
+{
+  size_t offset = 0;
+  read_severity(mMessage, offset);
+
+  size_t end = offset;
+  if (!read_code(mMessage, end))
+    return {};
+  return std::string(mMessage.begin() + offset + 1, mMessage.begin() + end - 1);
+}
+
 const std::string & Message::message() const
 {
   return mMessage;
@@ -99,65 +124,90 @@ const std::string & Message::message() const
 
 std::string Message::content() const
 {
-  size_t offset = mMessage.find("[warning]") == 0 ? 9 : 0;
-  offset += mMessage.find("[error]") == 0 ? 7 : 0;
-  offset += mMessage.find("[info]") == 0 ? 6 : 0;
-  while (offset < mMessage.size() && is_digit(mMessage[offset]))
-    ++offset;
-  offset += mMessage[offset] == ':' ? 1 : 0;
-  while (offset < mMessage.size() && is_digit(mMessage[offset]))
-    ++offset;
-  offset += mMessage[offset] == ':' ? 1 : 0;
-  while (offset < mMessage.size() && mMessage[offset] == ' ')
-    ++offset;
+  size_t offset = 0;
+  read_severity(mMessage, offset);
+  read_code(mMessage, offset);
+  read_pos(mMessage, offset);
+  read_pos(mMessage, offset);
   return std::string(mMessage.begin() + offset, mMessage.end());
 }
 
 int Message::line() const
 {
-  size_t offset = mMessage.find("[warning]") == 0 ? 9 : 0;
-  offset += mMessage.find("[error]") == 0 ? 7 : 0;
-  offset += mMessage.find("[info]") == 0 ? 6 : 0;
+  size_t offset = 0;
+  read_severity(mMessage, offset);
+  read_code(mMessage, offset);
 
   size_t end = offset;
-  while (end < mMessage.size() && is_digit(mMessage[end]))
-    ++end;
+  if (!read_pos(mMessage, end))
+    return -1;
 
-  if (end > offset)
-    return std::stoi(mMessage.substr(offset, end - offset));
-
-  return -1;
+  return std::stoi(mMessage.substr(offset, end - 1 - offset));
 }
 
 int Message::column() const
 {
-  size_t offset = mMessage.find("[warning]") == 0 ? 9 : 0;
-  offset += mMessage.find("[error]") == 0 ? 7 : 0;
-  offset += mMessage.find("[info]") == 0 ? 6 : 0;
+  size_t offset = 0;
+  read_severity(mMessage, offset);
+  read_code(mMessage, offset);
 
-  size_t end = offset;
-  while (end < mMessage.size() && is_digit(mMessage[end]))
-    ++end;
-
-  if (end == mMessage.size() || mMessage[end] != ':')
+  if (!read_pos(mMessage, offset))
     return -1;
 
-  offset = end + 1;
-  end = offset;
+  size_t end = offset;
+  if (!read_pos(mMessage, end))
+    return -1;
 
-  while (end < mMessage.size() && is_digit(mMessage[end]))
-    ++end;
-
-  if (end > offset)
-    return std::stoi(mMessage.substr(offset, end - offset));
-
-  return -1;
+  return std::stoi(mMessage.substr(offset, end - 1 - offset));
 }
 
 Message & Message::operator=(Message && other)
 {
   this->mMessage = std::move(other.mMessage);
   return *(this);
+}
+
+bool Message::read_severity(const std::string & message, size_t & pos)
+{
+  if (std::strncmp("[warning]", message.data(), 9) == 0)
+    pos = 9;
+  else if (std::strncmp("[error]", message.data(), 7) == 0)
+    pos = 7;
+  else if (std::strncmp("[info]", message.data(), 6) == 0)
+    pos = 6;
+  else
+    return false;
+  return true;
+}
+
+bool Message::read_code(const std::string & message, size_t & pos)
+{
+  if (message.at(pos) != '(')
+    return false;
+
+  size_t it = pos + 1;
+  while (it < message.size() && is_alphanumeric(message.at(it)))
+    it++;
+
+  if (it == message.size() || message.at(it) != ')')
+    return false;
+
+  pos = it + 1;
+  return true;
+}
+
+bool Message::read_pos(const std::string & message, size_t & pos)
+{
+  size_t it = pos;
+  while (it < message.size() && is_digit(message[it]))
+    ++it;
+
+  if (it == message.size() || message[it] != ':')
+    return false;
+
+  pos = it + 1;
+
+  return true;
 }
 
 line_t line(int l)
@@ -170,12 +220,19 @@ pos_t pos(int l, int col)
   return pos_t{ l, col };
 }
 
-MessageBuilder::MessageBuilder(Severity s)
-  : mSeverity(s)
+MessageBuilder::MessageBuilder(Severity s, Engine *e)
+  : mEngine(e)
+  , mSeverity(s)
   , mLine(-1)
   , mColumn(-1)
 {
 
+}
+
+MessageBuilder & MessageBuilder::operator<<(const Code & c)
+{
+  mCode = c;
+  return *(this);
 }
 
 MessageBuilder & MessageBuilder::operator<<(int n)
@@ -199,7 +256,7 @@ MessageBuilder & MessageBuilder::operator<<(pos_t p)
 
 MessageBuilder & MessageBuilder::operator<<(const std::string & str)
 {
-  mBuffer += std::move(str);
+  mBuffer += str;
   return *(this);
 }
 
@@ -225,6 +282,9 @@ Message MessageBuilder::build() const
     break;
   }
 
+  if (!mCode.value().empty())
+    mssg += std::string{ "(" } + mCode.value() + std::string{ ")" };
+
   if (mLine >= 0)
   {
     mssg += std::to_string(mLine);
@@ -246,19 +306,19 @@ MessageBuilder::operator Message() const
 }
 
 
-MessageBuilder info()
+MessageBuilder info(Engine *e)
 {
-  return MessageBuilder{ Info };
+  return MessageBuilder{ Info, e };
 }
 
-MessageBuilder warning()
+MessageBuilder warning(Engine *e)
 {
-  return MessageBuilder{ Warning };
+  return MessageBuilder{ Warning, e };
 }
 
-MessageBuilder error()
+MessageBuilder error(Engine *e)
 {
-  return MessageBuilder{ Error };
+  return MessageBuilder{ Error, e };
 }
 
 } // namespace diagnostic

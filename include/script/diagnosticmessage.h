@@ -12,6 +12,8 @@
 namespace script
 {
 
+class Engine;
+
 namespace diagnostic
 {
 
@@ -24,6 +26,17 @@ std::string format(std::string str, const std::string & a, const Args &... args)
   str = format(str, a);
   return format(str, args...);
 }
+
+inline std::string repr(bool b) { return std::to_string(b); }
+inline std::string repr(char c) { return std::string{ c }; }
+inline std::string repr(int n) { return std::to_string(n); }
+inline const std::string & repr(const std::string & str) { return str; }
+
+inline std::string repr(bool b, Engine *) { return repr(b); }
+inline std::string repr(char c, Engine *) { return repr(c); }
+inline std::string repr(unsigned int n, Engine *) { return repr(int(n)); }
+inline std::string repr(int n, Engine *) { return repr(n); }
+inline const std::string & repr(const std::string & str, Engine *) { return str; }
 
 enum Severity {
   Info = 1,
@@ -38,6 +51,25 @@ enum Verbosity {
   Pedantic = 4,
 };
 
+class LIBSCRIPT_API Code
+{
+public:
+  Code() = default;
+  Code(const Code &) = default;
+  ~Code() = default;
+
+  Code(const std::string & str)
+    : mValue(str) { }
+
+  const std::string & value() const { return mValue; }
+
+  Code & operator=(const Code &) = default;
+
+private:
+  std::string mValue;
+};
+
+/// Format : [Severity](Code)line:col: content
 class LIBSCRIPT_API Message
 {
 public:
@@ -49,6 +81,7 @@ public:
   ~Message() = default;
 
   Severity severity() const;
+  std::string code() const;
   const std::string & message() const;
   inline const std::string & to_string() const { return message(); }
   std::string content() const;
@@ -58,6 +91,11 @@ public:
 
   Message & operator=(const Message & other) = default;
   Message & operator=(Message && other);
+
+private:
+  static bool read_severity(const std::string & message, size_t & pos);
+  static bool read_code(const std::string & message, size_t & pos);
+  static bool read_pos(const std::string & message, size_t & pos);
 
 private:
   std::string mMessage;
@@ -73,28 +111,48 @@ pos_t pos(int l, int column);
 class MessageBuilder
 {
 public:
-  MessageBuilder(Severity s);
+  MessageBuilder(Severity s, Engine *e = nullptr);
   MessageBuilder(const MessageBuilder &) = default;
   ~MessageBuilder() = default;
+  
+  inline Engine * engine() const { return mEngine; }
 
+  template<typename...Args>
+  std::string format(const std::string & fmt, const Args &... args)
+  {
+    return diagnostic::format(fmt, repr(args)...);
+  }
+
+  MessageBuilder & operator<<(const Code & c);
   MessageBuilder & operator<<(int n);
   MessageBuilder & operator<<(line_t l);
   MessageBuilder & operator<<(pos_t p);
   MessageBuilder & operator<<(const std::string & str);
   MessageBuilder & operator<<(std::string && str);
+  inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }
+
+  inline MessageBuilder & operator<<(Engine *e) { mEngine = e; return *(this); }
+
+  template<typename T>
+  MessageBuilder & operator<<(const T & as)
+  {
+    return (*this) << repr(as, engine());
+  }
 
   Message build() const;
   operator Message() const;
 
+  Engine *mEngine;
   Severity mSeverity;
+  Code mCode;
   std::string mBuffer;
   int mLine;
   int mColumn;
 };
 
-MessageBuilder info();
-MessageBuilder warning();
-MessageBuilder error();
+MessageBuilder info(Engine *e = nullptr);
+MessageBuilder warning(Engine *e = nullptr);
+MessageBuilder error(Engine *e = nullptr);
 
 } // namespace diagnostic
 

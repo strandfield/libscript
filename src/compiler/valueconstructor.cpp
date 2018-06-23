@@ -67,9 +67,9 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   {
     Function default_ctor = e->getClass(type).defaultConstructor();
     if (default_ctor.isNull())
-      throw VariableCannotBeDefaultConstructed{ dp, dstr(e, type) };
+      throw VariableCannotBeDefaultConstructed{ dp, e->getClass(type).name() };
     else if (default_ctor.isDeleted())
-      throw ClassHasDeletedDefaultCtor{ dp, dstr(e, type) };
+      throw ClassHasDeletedDefaultCtor{ dp, e->getClass(type).name() };
 
     return program::ConstructorCall::New(default_ctor, {});
   }
@@ -92,10 +92,10 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
   {
     ConversionSequence seq = ConversionSequence::compute(args.front(), type, e);
     if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dp, dstr(e, args.front()->type()), dstr(e, type) };
+      throw CouldNotConvert{ dp, args.front()->type(), type };
 
     if (seq.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dp, dstr(e, args.front()->type()), dstr(e, type) };
+      throw NarrowingConversionInBraceInitialization{ dp, args.front()->type(), type };
 
     return ConversionProcessor::convert(e, args.front(), type, seq);
   }
@@ -112,7 +112,7 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     {
       const auto & conv = conversions.at(i);
       if (conv.isNarrowing())
-        throw NarrowingConversionInBraceInitialization{ dp, dstr(e, args.at(i)->type()), dstr(e, ctor.parameter(i)) };
+        throw NarrowingConversionInBraceInitialization{ dp, args.at(i)->type(), ctor.parameter(i) };
     }
 
     ConversionProcessor::prepare(e, args, ctor.prototype(), conversions);
@@ -137,7 +137,7 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   {
     ConversionSequence seq = ConversionSequence::compute(args.front(), type, e);
     if (seq == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dp, dstr(e, args.front()->type()), dstr(e, type) };
+      throw CouldNotConvert{ dp, args.front()->type(), type };
 
     return ConversionProcessor::convert(e, args.front(), type, seq);
   }
@@ -167,11 +167,6 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(ExpressionCompi
 {
   auto args = ec.generateExpressions(init->args);
   return brace_construct(ec.engine(), t, std::move(args), dpos(init));
-}
-
-std::string ValueConstructor::dstr(Engine *e, const Type & t)
-{
-  return e->typeName(t);
 }
 
 } // namespace compiler

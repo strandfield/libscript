@@ -87,25 +87,9 @@ void CompilerComponent::log(const diagnostic::Message & mssg)
 
 void CompilerComponent::log(const CompilerException & exception)
 {
-  auto mssg = diagnostic::error();
-  if (exception.pos.line >= 0)
-    mssg << exception.pos;
-  mssg << exception.what();
+  auto mssg = diagnostic::error(engine());
+  mssg << exception;
   log(mssg.build());
-}
-
-std::string CompilerComponent::dstr(const Type & t) const
-{ 
-  return engine()->typeName(t); 
-}
-
-std::string CompilerComponent::dstr(const AccessSpecifier & as)
-{
-  if (as == AccessSpecifier::Protected)
-    return "protected";
-  else if (as == AccessSpecifier::Private)
-    return "private";
-  return "public";
 }
 
 std::string CompilerComponent::dstr(const std::shared_ptr<ast::Identifier> & id)
@@ -243,20 +227,23 @@ void Compiler::wipe_out(CompileSession *s)
   s->generated.expression = nullptr;
 }
 
-void Compiler::log(const CompilerException & exception)
+void Compiler::log(const CompilerException & ex)
 {
-  auto mssg = diagnostic::error();
-  if (exception.pos.line >= 0)
-    mssg << exception.pos;
-  mssg << exception.what();
-
-  auto m = mssg.build();
-  mSession->messages.push_back(m);
-  if (m.severity() == diagnostic::Error)
-    mSession->error = true;
+  auto mssg = diagnostic::error(engine());
+  mssg << ex;
+  mSession->messages.push_back(mssg.build());
+  mSession->error = true;
 }
 
-
 } // namespace compiler
+
+diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex)
+{
+  builder << diagnostic::Code{ ex.code() };
+  if (ex.pos.line >= 0)
+    builder << ex.pos;
+  ex.print(builder);
+  return builder;
+}
 
 } // namespace script

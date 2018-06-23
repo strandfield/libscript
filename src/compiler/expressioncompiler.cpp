@@ -277,8 +277,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std::shared_ptr<ast::FunctionCall> & call)
 {
-  using diagnostic::dstr;
-
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(call->arguments);
   const auto & callee = call->callee;
 
@@ -354,7 +352,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName);
 
   if (lookup.resultType() == NameLookup::UnknownName)
-    throw NotImplementedError{ dpos(call), "Callee was not declared in this scope" };
+    throw NotImplementedError{ dpos(call), std::string{"Callee was not declared in this scope :"} + dstr(callee) };
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(lookup.functions(), args, object))
@@ -364,7 +362,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (selected.isDeleted())
     throw CallToDeletedFunction{ dpos(call) };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(call), dstr(callee), dstr(selected.accessibility()) };
+    throw InaccessibleMember{ dpos(call), dstr(callee), selected.accessibility() };
 
   if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
   {
@@ -399,8 +397,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVirtualCall(con
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
 {
-  using diagnostic::dstr;
-
   if (functor->type().isFunctionType())
     return generateFunctionVariableCall(call, functor, std::move(args));
   
@@ -414,7 +410,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
   if (selected.isDeleted())
     throw CallToDeletedFunction{ dpos(call) };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(call), "operator()", dstr(selected.accessibility()) };
+    throw InaccessibleMember{ dpos(call), "operator()", selected.accessibility() };
 
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
@@ -435,7 +431,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
     const auto & a = args.at(i);
     ConversionSequence conv = ConversionSequence::compute(a, proto.at(i), engine());
     if (conv == ConversionSequence::NotConvertible())
-      throw CouldNotConvert{ dpos(call->arguments.at(i)), dstr(a->type()), dstr(proto.at(i)) };
+      throw CouldNotConvert{ dpos(call->arguments.at(i)), a->type(), proto.at(i) };
     conversions.push_back(conv);
   }
 
@@ -592,8 +588,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(const std::shared_ptr<ast::Operation> & operation)
 {
-  using diagnostic::dstr;
-
   assert(operation->arg2 == nullptr);
 
   auto operand = generateExpression(operation->arg1);
@@ -613,7 +607,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
   if (selected.isDeleted())
     throw CallToDeletedFunction{ dpos(operation) };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), dstr(selected.accessibility()) };
+    throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), selected.accessibility() };
 
   const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
@@ -681,8 +675,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
 {
-  using diagnostic::dstr;
-
   Class cla = engine()->getClass(object->type());
   int relative_index = index;
   while (relative_index - int(cla.dataMembers().size()) >= 0)
@@ -694,7 +686,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
   const auto & dm = cla.dataMembers().at(relative_index);
 
   if (!Accessibility::check(caller(), cla, dm.accessibility()))
-    throw InaccessibleMember{ dpos, dm.name, dstr(dm.accessibility()) };
+    throw InaccessibleMember{ dpos, dm.name, dm.accessibility() };
 
   const Type access_type = object->type().isConst() ? Type::cref(dm.type) : Type::ref(dm.type);
   return program::MemberAccess::New(access_type, object, index);
@@ -702,13 +694,11 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
 {
-  using diagnostic::dstr;
-
   const Class c = lookup.memberOf();
   const Class::StaticDataMember & sdm = lookup.staticDataMemberResult();
 
   if (!Accessibility::check(caller(), c, sdm.accessibility()))
-    throw InaccessibleMember{ dpos(id), sdm.name, dstr(sdm.accessibility()) };
+    throw InaccessibleMember{ dpos(id), sdm.name, sdm.accessibility() };
 
   return program::VariableAccess::New(sdm.value);
 }

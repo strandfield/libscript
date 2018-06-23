@@ -700,9 +700,9 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   }
 
   if (Operator::isBinary(builder.operation) && builder.proto.count() != 2)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(2), std::to_string(builder.proto.count()) };
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 2, builder.proto.count() };
   else if (Operator::isUnary(builder.operation) && builder.proto.count() != 1)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), std::to_string(1), std::to_string(builder.proto.count()) };
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 1, builder.proto.count() };
 
   
   if (Operator::onlyAsMember(builder.operation) && !is_member)

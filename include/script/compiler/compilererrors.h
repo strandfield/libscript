@@ -8,8 +8,10 @@
 #include <string>
 #include <tuple>
 
+#include "script/accessspecifier.h"
 #include "script/diagnosticmessage.h"
 #include "script/exception.h"
+#include "script/types.h"
 
 namespace script
 {
@@ -29,7 +31,12 @@ public:
 
   CompilerException(const diagnostic::pos_t & p) : pos(p) {}
 
-  virtual std::string what() const = 0;
+  std::string code() const { return std::string{ "C" } + std::to_string(get_code()); }
+
+  virtual void print(diagnostic::MessageBuilder & builder) const = 0;
+
+protected:
+  virtual int get_code() const = 0;
 };
 
 class CCompilerExceptionBase : public CompilerException
@@ -59,15 +66,16 @@ public:
   {
 
   }
+
   template<std::size_t...I>
-  std::string what_impl(std::index_sequence<I...>) const
+  void print_impl(diagnostic::MessageBuilder & builder, std::index_sequence<I...>) const
   {
-    return diagnostic::format(this->get_format_message(), std::get<I>(items)...);
+    builder << builder.format(this->get_format_message(), std::get<I>(items)...);
   }
 
-  std::string what() const override
+  void print(diagnostic::MessageBuilder & builder) const override
   {
-    return what_impl(std::make_index_sequence<sizeof...(Args)>{});
+    print_impl(builder, std::make_index_sequence<sizeof...(Args)>{});
   }
 };
 
@@ -76,8 +84,11 @@ public:
 public: \
   using CCompilerException<__VA_ARGS__>::CCompilerException; \
   std::string get_format_message() const override { return mssg; } \
+  static const int static_code = __LINE__ + CCE_CODE_OFFSET; \
+  int get_code() const override { return static_code; } \
 };
 
+#define CCE_CODE_OFFSET (-90);
 
 DECLARE_COMPILER_ERROR(IllegalUseOfThis, "Illegal use of this");
 DECLARE_COMPILER_ERROR(ObjectHasNoDestructor, "Object has no destructor");
@@ -101,7 +112,7 @@ DECLARE_COMPILER_ERROR(ClassHasDeletedDefaultCtor, "Class '%1' has a deleted def
 DECLARE_COMPILER_ERROR(VariableCannotBeDestroyed, "Class '%1' does not provide a destructor", std::string);
 
 DECLARE_COMPILER_ERROR(CouldNotResolveOperatorName, "Could not resolve operator name based on parameter count and operator symbol.");
-DECLARE_COMPILER_ERROR(InvalidParamCountInOperatorOverload, "Invalid parameter count found in operator overload, expected %1 got %2", std::string, std::string);
+DECLARE_COMPILER_ERROR(InvalidParamCountInOperatorOverload, "Invalid parameter count found in operator overload, expected %1 got %2", int, int);
 DECLARE_COMPILER_ERROR(OpOverloadMustBeDeclaredAsMember, "This operator can only be overloaded as a member");
 
 DECLARE_COMPILER_ERROR(InvalidTypeName, "%1 does not name a type", std::string);
@@ -147,7 +158,7 @@ DECLARE_COMPILER_ERROR(TooManyArgumentInInitialization, "Too many arguments prov
 DECLARE_COMPILER_ERROR(TooManyArgumentInReferenceInitialization, "More than one argument provided in reference initialization.");
 DECLARE_COMPILER_ERROR(TooManyArgumentsInMemberInitialization, "Too many arguments in member initialization.");
 
-DECLARE_COMPILER_ERROR(CouldNotConvert, "Could not convert from %1 to %2", std::string, std::string);
+DECLARE_COMPILER_ERROR(CouldNotConvert, "Could not convert from %1 to %2", script::Type, script::Type);
 
 DECLARE_COMPILER_ERROR(CannotAccessMemberOfNonObject, "Cannot access member of non object type.");
 DECLARE_COMPILER_ERROR(NoSuchMember, "Object has no such member.");
@@ -198,7 +209,7 @@ DECLARE_COMPILER_ERROR(InvalidCharacterLiteral, "A character literal must contai
 DECLARE_COMPILER_ERROR(CouldNotFindValidLiteralOperator, "Could not find valid literal operator.");
 
 DECLARE_COMPILER_ERROR(UnknownTypeInBraceInitialization, "Unknown type %1 in brace initialization", std::string);
-DECLARE_COMPILER_ERROR(NarrowingConversionInBraceInitialization, "Narrowing conversion from %1 to %2 in brace initialization", std::string, std::string);
+DECLARE_COMPILER_ERROR(NarrowingConversionInBraceInitialization, "Narrowing conversion from %1 to %2 in brace initialization", script::Type, script::Type);
 
 DECLARE_COMPILER_ERROR(NamespaceDeclarationCannotAppearAtThisLevel, "Namespace declarations cannot appear at this level");
 DECLARE_COMPILER_ERROR(ExpectedDeclaration, "Expected a declaration.");
@@ -206,7 +217,7 @@ DECLARE_COMPILER_ERROR(GlobalVariablesCannotBeAuto, "Global variables cannot be 
 DECLARE_COMPILER_ERROR(GlobalVariablesMustBeInitialized, "Global variables must have an initializer.");
 DECLARE_COMPILER_ERROR(GlobalVariablesMustBeAssigned, "Global variables must be initialized through assignment.");
 
-DECLARE_COMPILER_ERROR(InaccessibleMember, "%1 is %2 within this context", std::string, std::string);
+DECLARE_COMPILER_ERROR(InaccessibleMember, "%1 is %2 within this context", std::string, script::AccessSpecifier);
 
 DECLARE_COMPILER_ERROR(FriendMustBeAClass, "Friend must be a class");
 
@@ -219,6 +230,7 @@ DECLARE_COMPILER_ERROR(InvalidNameInUsingDirective, "%1 does not name a namespac
 DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
 
 #undef DECLARE_COMPILER_ERROR
+#undef CCE_CODE_OFFSET
 
 } // namespace compiler
 

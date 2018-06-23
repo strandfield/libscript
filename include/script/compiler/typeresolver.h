@@ -39,19 +39,17 @@ public:
   }
 };
 
-template<typename NameResolver, typename DiagnosticHelper = diagnostic::DefaultDiagnosticHelper>
+template<typename NameResolver>
 class TypeResolver : public TypeResolverBase
 {
 private:
   NameResolver name_;
-  DiagnosticHelper dg;
 public:
   TypeResolver() = default;
   TypeResolver(const TypeResolver &) = default;
   ~TypeResolver() = default;
 
   inline NameResolver & name_resolver() { return name_; }
-  inline DiagnosticHelper & diagnostic_helper() { return dg; }
 
   Type resolve(const ast::QualifiedType & qt, const Scope & scp)
   {
@@ -60,7 +58,7 @@ public:
 
     NameLookup lookup = name_.resolve(qt.type, scp);
     if (lookup.resultType() != NameLookup::TypeName)
-      throw InvalidTypeName{ dg.pos(qt.type), dg.str(qt.type) };
+      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
 
     return complete(lookup.typeResult(), qt);
   }
@@ -72,7 +70,7 @@ public:
 
     NameLookup lookup = name_.resolve(qt.type);
     if (lookup.resultType() != NameLookup::TypeName)
-      throw InvalidTypeName{ dg.pos(qt.type), dg.str(qt.type) };
+      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
 
     return complete(lookup.typeResult(), qt);
   }
@@ -102,12 +100,11 @@ protected:
 };
 
 
-template<typename NameResolver, typename DiagnosticHelper = diagnostic::DefaultDiagnosticHelper>
+template<typename NameResolver>
 class LenientTypeResolver : public TypeResolverBase
 {
 private:
   NameResolver name_;
-  DiagnosticHelper dg;
 public:
   bool relax;
 public:
@@ -116,7 +113,6 @@ public:
   ~LenientTypeResolver() = default;
 
   inline NameResolver & name_resolver() { return name_; }
-  inline DiagnosticHelper & diagnostic_helper() { return dg; }
 
   Type resolve(const ast::QualifiedType & qt, const Scope & scp)
   {
@@ -134,7 +130,7 @@ public:
       return Type{ 1 | Type::UnknownFlag };
     }
     else if(result_type != NameLookup::TypeName)
-      throw InvalidTypeName{ dg.pos(qt.type), dg.str(qt.type) };
+      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
 
     return complete(lookup.typeResult(), qt);
   }
@@ -155,7 +151,7 @@ public:
       return Type{ 1 | Type::UnknownFlag };
     }
     else if (result_type != NameLookup::TypeName)
-      throw InvalidTypeName{ dg.pos(qt.type), dg.str(qt.type) };
+      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
 
     return complete(lookup.typeResult(), qt);
   }

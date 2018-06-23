@@ -917,7 +917,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   ConversionSequence seq = ConversionSequence::compute(value, var_type, engine());
   if (seq == ConversionSequence::NotConvertible())
-    throw CouldNotConvert{ dpos(init), dstr(value->type()), dstr(var_type) };
+    throw CouldNotConvert{ dpos(init), value->type(), var_type };
 
   /// TODO : this is not optimal I believe
   // we could add copy elision
