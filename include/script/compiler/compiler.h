@@ -48,12 +48,14 @@ class CompileSession;
 class CompileSession
 {
 public:
-  CompileSession(Compiler *c);
+  CompileSession(Engine *e);
 
   void start();
   void suspend();
   void resume();
   void abort();
+
+  inline Engine* engine() const { return mEngine; }
 
   struct {
     std::vector<Class> classes;
@@ -66,69 +68,39 @@ public:
   std::vector<diagnostic::Message> messages;
   bool error;
 
+  void clear();
+
 private:
-  Compiler *mCompiler;
   bool mPauseFlag;
   bool mAbortFlag;
-};
-
-
-class CompilerComponent
-{
-public:
-  CompilerComponent(Compiler *c, CompileSession *s);
-  virtual ~CompilerComponent() = default;
-
-  Engine * engine() const;
-  Compiler * compiler() const;
-
-  CompileSession * session() const;
-
-protected:
-  template<typename ComponentType, typename...Args>
-  ComponentType * getComponent(const Args &... args)
-  {
-    return new ComponentType{ mCompiler, mSession, args... };
-  }
-
-  void log(const diagnostic::Message & mssg);
-  void log(const CompilerException & exception);
-
-  static std::string dstr(const std::shared_ptr<ast::Identifier> & id);
-
-protected:
-  Class build(const ClassBuilder & builder);
-  Function build(const FunctionBuilder & builder);
-  Enum build(const Enum &, const std::string & name);
-  Lambda build(const Lambda &);
-
-private:
-  friend class CompileSession;
-  Compiler* mCompiler;
-  CompileSession *mSession;
+  Engine *mEngine;
 };
 
 
 class Compiler
 {
 public:
-  Compiler(Engine *e);
+  explicit Compiler(Engine *e);
+  explicit Compiler(std::shared_ptr<CompileSession> s);
   ~Compiler() = default;
 
-  Engine * engine() const;
-  CompileSession * session() const;
+  inline Engine * engine() const { return session()->engine(); }
+  inline const std::shared_ptr<CompileSession> & session() const { return mSession; }
 
-  std::shared_ptr<program::Expression> compile(const std::string & expr, Context context, Script script = Script{});
   bool compile(Script s);
 
 protected:
-  void wipe_out(CompileSession *s);
+  Lambda newLambda();
+  [[deprecated("Internal note: remove in future version")]] Class build(const ClassBuilder & builder);
+  [[deprecated("Internal note: remove in future version")]] Enum build(const Enum &, const std::string & name);
+  [[deprecated("Internal note: remove in future version")]] Function build(const FunctionBuilder & builder);
+
+protected:
+  void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);
 
-
 private:
-  Engine * mEngine;
-  std::unique_ptr<CompileSession> mSession; /// TODO : do we need a stack of sessions ?
+  std::shared_ptr<CompileSession> mSession;
 };
 
 } // namespace compiler

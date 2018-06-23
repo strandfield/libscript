@@ -98,10 +98,11 @@ public:
   Script load(const SourceFile &src);
 };
 
-class ScriptCompiler : public CompilerComponent
+class ScriptCompiler : public Compiler
 {
 public:
-  ScriptCompiler(Compiler *c, CompileSession *s);
+  ScriptCompiler(Engine *e);
+  ScriptCompiler(const std::shared_ptr<CompileSession> & s);
 
   void compile(const CompileScriptTask & task);
 

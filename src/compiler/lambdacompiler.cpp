@@ -59,8 +59,8 @@ std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member
 
 
 
-LambdaCompiler::LambdaCompiler(Compiler *c, CompileSession *s)
-  : FunctionCompiler(c, s)
+LambdaCompiler::LambdaCompiler(const std::shared_ptr<CompileSession> & s)
+  : FunctionCompiler(s)
   , mCurrentTask(nullptr)
   , variable_(mStack, this)
 {
@@ -173,7 +173,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   // we should fix that !!
   //mDeclaration = task.lexpr;
 
-  mLambda = build(Lambda{});
+  mLambda = newLambda();
 
   for (const auto & cap : task.captures)
   {

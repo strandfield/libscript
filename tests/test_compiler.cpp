@@ -9,7 +9,7 @@
 #include "script/functiontype.h"
 #include "script/enumvalue.h"
 
-#include "script/compiler/compiler.h"
+#include "script/compiler/commandcompiler.h"
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/scriptcompiler.h"
 
@@ -26,7 +26,7 @@ void test_operation(const char *source, script::Operator::BuiltInOperator op1, s
   Engine engine;
   engine.setup();
 
-  compiler::Compiler compiler{ &engine };
+  compiler::CommandCompiler compiler{ &engine };
   auto expr = compiler.compile(source, engine.currentContext());
 
   ASSERT_TRUE(expr->is<program::FunctionCall>());
@@ -81,7 +81,7 @@ TEST(CompilerTests, bind_expression) {
   Engine engine;
   engine.setup();
 
-  compiler::Compiler compiler{ &engine };
+  compiler::CommandCompiler compiler{ &engine };
   auto expr = compiler.compile(source, engine.currentContext());
 
   ASSERT_TRUE(expr->is<program::BindExpression>());

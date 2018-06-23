@@ -82,9 +82,23 @@ Script ScriptCompilerModuleLoader::load(const SourceFile &src)
   return s;
 }
 
-ScriptCompiler::ScriptCompiler(Compiler *c, CompileSession *s)
-  : CompilerComponent(c, s)
-  , variable_(c->engine())
+ScriptCompiler::ScriptCompiler(Engine *e)
+  : Compiler(e)
+  , variable_(e)
+{
+  name_resolver.compiler = this;
+  type_resolver.name_resolver() = name_resolver;
+
+  function_processor_.prototype_.type_.name_resolver() = name_resolver;
+
+  scope_statements_.scope_ = &mCurrentScope;
+
+  modules_.loader_.compiler_ = this;
+}
+
+ScriptCompiler::ScriptCompiler(const std::shared_ptr<CompileSession> & s)
+  : Compiler(s)
+  , variable_(s->engine())
 {
   name_resolver.compiler = this;
   type_resolver.name_resolver() = name_resolver;
@@ -472,12 +486,12 @@ void ScriptCompiler::processPendingDeclarations()
 
 bool ScriptCompiler::compileFunctions()
 {
-  auto fcomp = std::shared_ptr<FunctionCompiler>(getComponent<FunctionCompiler>());
+  FunctionCompiler fcomp{ session() };
 
   for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
   {
     const auto & task = this->mCompilationTasks.at(i);
-    fcomp->compile(task);
+    fcomp.compile(task);
   }
 
   return true;
@@ -967,21 +981,21 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 
 Class ScriptCompiler::build(const ClassBuilder & builder)
 {
-  Class cla = CompilerComponent::build(builder);
+  Class cla = Compiler::build(builder);
   cla.impl()->script = mCurrentScript.impl();
   return cla;
 }
 
 Function ScriptCompiler::build(const FunctionBuilder & builder)
 {
-  Function f = CompilerComponent::build(builder);
+  Function f = Compiler::build(builder);
   f.impl()->script = mCurrentScript.impl();
   return f;
 }
 
 Enum ScriptCompiler::build(const Enum &, const std::string & name)
 {
-  Enum e = CompilerComponent::build(Enum{}, name);
+  Enum e = Compiler::build(Enum{}, name);
   e.impl()->script = mCurrentScript.impl();
   return e;
 }

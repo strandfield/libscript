@@ -83,8 +83,7 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   else
   {
     Engine *e = ft.engine();
-    compiler::Compiler c{ e };
-    compiler::FunctionCompiler compiler{ &c, c.session() };
+    compiler::FunctionCompiler compiler{ std::make_shared<compiler::CompileSession>(e) };
     compiler::CompileFunctionTask task;
     task.declaration = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
     task.function = f;

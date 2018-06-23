@@ -28,21 +28,24 @@ private:
 class CapturelessLambdaProcessor : public LambdaProcessor
 {
 public:
-  CapturelessLambdaProcessor(Compiler *c, CompileSession *s);
+  CapturelessLambdaProcessor(const std::shared_ptr<CompileSession> & s);
   ~CapturelessLambdaProcessor() = default;
 
-  Compiler *compiler_;
-  CompileSession *session_;
+  std::shared_ptr<CompileSession> session_;
 
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
-class CommandCompiler : public CompilerComponent
+class CommandCompiler : public Compiler
 {
 public:
-  CommandCompiler(Compiler *c, CompileSession *s);
+  CommandCompiler(Engine *e);
+  ~CommandCompiler() = default;
 
   void setScope(const Scope & scp);
+
+  std::shared_ptr<program::Expression> compile(const std::string & expr, Context context, Script script = Script{});
+
 
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Context & context);
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp);

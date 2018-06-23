@@ -7,6 +7,8 @@
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/lambdacompiler.h"
 
+#include "script/parser/parser.h"
+
 #include "script/program/expression.h"
 
 #include "script/private/scope_p.h"
@@ -37,9 +39,8 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   return ExpressionCompiler::generateOperation(op);
 }
 
-CapturelessLambdaProcessor::CapturelessLambdaProcessor(Compiler *c, CompileSession *s)
-  : compiler_(c)
-  , session_(s)
+CapturelessLambdaProcessor::CapturelessLambdaProcessor(const std::shared_ptr<CompileSession> & s)
+  : session_(s)
 {
 
 }
@@ -53,24 +54,42 @@ std::shared_ptr<program::LambdaExpression> CapturelessLambdaProcessor::generate(
 
   CompileLambdaTask task;
   task.lexpr = le;
-  task.scope = script::Scope{ compiler_->engine()->rootNamespace() }; /// TODO : make this customizable !
+  task.scope = script::Scope{ session_->engine()->rootNamespace() }; /// TODO : make this customizable !
 
-  LambdaCompiler compiler{ compiler_, session_ };
+  LambdaCompiler compiler{ session_ };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
 }
 
-CommandCompiler::CommandCompiler(Compiler *c, CompileSession *s)
-  : CompilerComponent(c, s)
-  , lambda_(c, s)
+CommandCompiler::CommandCompiler(Engine *e)
+  : Compiler(e)
+  , lambda_(session())
 {
   expr_.setLambdaProcessor(lambda_);
 }
 
+
 void CommandCompiler::setScope(const Scope & scp)
 {
   expr_.setScope(scp);
+}
+
+std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context, Script script)
+{
+  auto source = SourceFile::fromString(expr);
+  parser::Parser parser{ source };
+  auto ast = parser.parseExpression(source);
+
+  if (ast->hasErrors())
+    return nullptr;
+
+  if (!script.isNull())
+    setScope(Scope{ script });
+  else
+    setScope(Scope{ engine()->rootNamespace() });
+
+  return compile(ast->expression(), context);
 }
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)

@@ -314,7 +314,7 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
-  LambdaCompiler compiler{ fcomp_->compiler(), fcomp_->session() };
+  LambdaCompiler compiler{ fcomp_->session() };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
@@ -344,8 +344,8 @@ Script FunctionCompilerModuleLoader::load(const SourceFile &src)
 }
 
 
-FunctionCompiler::FunctionCompiler(Compiler *c, CompileSession *s)
-  : CompilerComponent(c, s)
+FunctionCompiler::FunctionCompiler(const std::shared_ptr<CompileSession> & s)
+  : Compiler(s)
   , variable_(mStack, this)
   , lambda_(mStack, this)
 {

@@ -91,10 +91,10 @@ public:
   Script load(const SourceFile &src);
 };
 
-class FunctionCompiler : public CompilerComponent
+class FunctionCompiler : public Compiler
 {
 public:
-  FunctionCompiler(Compiler *c, CompileSession *s);
+  FunctionCompiler(const std::shared_ptr<CompileSession> & s);
 
   void compile(const CompileFunctionTask & task);
 

@@ -24,8 +24,8 @@ namespace script
 namespace compiler
 {
 
-CompileSession::CompileSession(Compiler *c)
-  : mCompiler(c)
+CompileSession::CompileSession(Engine *e)
+  : mEngine(e)
   , mPauseFlag(false)
   , mAbortFlag(false)
   , error(false)
@@ -55,111 +55,37 @@ void CompileSession::abort()
   mAbortFlag = true;
 }
 
-
-CompilerComponent::CompilerComponent(Compiler *c, CompileSession *s)
-  : mCompiler(c)
-  , mSession(s)
+void CompileSession::clear()
 {
+  for (Class c : this->generated.classes)
+    engine()->implementation()->destroyClass(c);
+  this->generated.classes.clear();
 
+  for (Function f : this->generated.functions)
+  {
+    /// TODO : find scope and remove
+  }
+  this->generated.functions.clear();
+
+  for (Enum e : this->generated.enums)
+    engine()->implementation()->destroyEnum(e);
+  this->generated.enums.clear();
+
+  /// TODO !!
+  this->generated.lambdas.clear();
+
+  this->generated.expression = nullptr;
 }
-
-Engine * CompilerComponent::engine() const
-{
-  return this->mCompiler->engine();
-}
-
-Compiler * CompilerComponent::compiler() const
-{
-  return this->mCompiler;
-}
-
-CompileSession * CompilerComponent::session() const
-{
-  return this->mSession;
-}
-
-void CompilerComponent::log(const diagnostic::Message & mssg)
-{
-  this->mSession->messages.push_back(mssg);
-  if (mssg.severity() == diagnostic::Error)
-    this->mSession->error = true;
-}
-
-void CompilerComponent::log(const CompilerException & exception)
-{
-  auto mssg = diagnostic::error(engine());
-  mssg << exception;
-  log(mssg.build());
-}
-
-std::string CompilerComponent::dstr(const std::shared_ptr<ast::Identifier> & id)
-{
-  return id->getName();
-}
-
-Class CompilerComponent::build(const ClassBuilder & builder)
-{
-  auto ret = engine()->newClass(builder);
-  session()->generated.classes.push_back(ret);
-  return ret;
-}
-
-Function CompilerComponent::build(const FunctionBuilder & builder)
-{
-  auto ret = engine()->newFunction(builder);
-  session()->generated.functions.push_back(ret);
-  return ret;
-}
-
-Enum CompilerComponent::build(const Enum &, const std::string & name)
-{
-  auto ret = engine()->newEnum(name);
-  session()->generated.enums.push_back(ret);
-  return ret;
-}
-
-Lambda CompilerComponent::build(const Lambda &)
-{
-  auto ret = engine()->implementation()->newLambda();
-  session()->generated.lambdas.push_back(ret);
-  return ret;
-}
-
 
 
 Compiler::Compiler(Engine *e)
-  : mEngine(e)
-  , mSession(nullptr)
+  : mSession(std::make_shared<CompileSession>(e))
 {
-  mSession = std::unique_ptr<CompileSession>(new CompileSession{ this });
 }
 
-Engine * Compiler::engine() const
+Compiler::Compiler(std::shared_ptr<CompileSession> s)
+  : mSession(s)
 {
-  return mEngine;
-}
-
-CompileSession * Compiler::session() const
-{
-  return mSession.get();
-}
-
-std::shared_ptr<program::Expression> Compiler::compile(const std::string & expr, Context context, Script script)
-{
-  auto source = SourceFile::fromString(expr);
-  parser::Parser parser{ source };
-  auto ast = parser.parseExpression(source);
-
-  if (ast->hasErrors())
-    return nullptr;
-
-  compiler::CommandCompiler c{ this, mSession.get() };
-  if (!script.isNull())
-    c.setScope(Scope{ script });
-  else
-    c.setScope(Scope{ engine()->rootNamespace() });
-  
-  return c.compile(ast->expression(), context);
 }
 
 bool Compiler::compile(Script s)
@@ -178,7 +104,7 @@ bool Compiler::compile(Script s)
     return false;
   }
 
-  ScriptCompiler sc(this, mSession.get());
+  ScriptCompiler sc(session());
 
   CompileScriptTask task{ s, ast };
   try
@@ -194,37 +120,49 @@ bool Compiler::compile(Script s)
   //  log(NotImplementedError{ "Unknown error" });
   //}
 
-  if (mSession.get()->error)
+  if (session()->error)
   {
-    wipe_out(mSession.get());
-    s.impl()->messages = std::move(mSession->messages);
+    session()->clear();
+    s.impl()->messages = std::move(session()->messages);
     return false;
   }
 
   return true;
 }
 
-void Compiler::wipe_out(CompileSession *s)
+Lambda Compiler::newLambda()
 {
-  for (Class c : s->generated.classes)
-    engine()->implementation()->destroyClass(c);
-  s->generated.classes.clear();
+  auto ret = engine()->implementation()->newLambda();
+  session()->generated.lambdas.push_back(ret);
+  return ret;
+}
 
-  for (Function f : s->generated.functions)
-  {
-    /// TODO : find scope and remove
-  }
-  s->generated.functions.clear();
+Class Compiler::build(const ClassBuilder & builder)
+{
+  auto ret = engine()->newClass(builder);
+  session()->generated.classes.push_back(ret);
+  return ret;
+}
 
-  for (Enum e : s->generated.enums)
-    engine()->implementation()->destroyEnum(e);
-  s->generated.enums.clear();
+Enum Compiler::build(const Enum &, const std::string & name)
+{
+  auto ret = engine()->newEnum(name);
+  session()->generated.enums.push_back(ret);
+  return ret;
+}
 
-  /// TODO !!
-  s->generated.lambdas.clear();
+Function Compiler::build(const FunctionBuilder & builder)
+{
+  auto ret = engine()->newFunction(builder);
+  session()->generated.functions.push_back(ret);
+  return ret;
+}
 
-
-  s->generated.expression = nullptr;
+void Compiler::log(const diagnostic::Message & mssg)
+{
+  this->mSession->messages.push_back(mssg);
+  if (mssg.severity() == diagnostic::Error)
+    this->mSession->error = true;
 }
 
 void Compiler::log(const CompilerException & ex)

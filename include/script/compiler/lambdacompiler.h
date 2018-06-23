@@ -73,7 +73,7 @@ class LambdaCompiler : public FunctionCompiler
 {
   friend class LambdaCompilerVariableAccessor;
 public:
-  LambdaCompiler(Compiler *c, CompileSession *s);
+  LambdaCompiler(const std::shared_ptr<CompileSession> & s);
 
   static void preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset);
 

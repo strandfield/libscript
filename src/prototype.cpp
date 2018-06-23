@@ -14,6 +14,7 @@ Prototype::Prototype()
 {
 
 }
+
 Prototype::Prototype(const Prototype & other)
   : mReturnType(other.mReturnType)
 {
