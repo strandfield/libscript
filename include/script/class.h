@@ -80,7 +80,7 @@ public:
   Class newClass(const ClassBuilder & opts);
   const std::vector<Class> & classes() const;
 
-  Enum newEnum(const std::string & src);
+  Enum newEnum(const std::string & name);
   const std::vector<Enum> & enums() const;
 
   void addTemplate(const Template & t);

@@ -176,10 +176,10 @@ const std::vector<Class> & Class::classes() const
   return d->classes;
 }
 
-Enum Class::newEnum(const std::string & src)
+Enum Class::newEnum(const std::string & name)
 {
   Engine *e = d->engine;
-  Enum enm = e->newEnum(src);
+  Enum enm = e->newEnum(name);
   if (!enm.isNull())
   {
     d->enums.push_back(enm);
