@@ -35,3 +35,4 @@ target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
 
 add_subdirectory(tests)
 add_subdirectory(examples)
+add_subdirectory(benchmarks)
