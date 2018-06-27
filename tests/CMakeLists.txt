@@ -14,6 +14,8 @@ target_include_directories(libscript_tests PUBLIC "${GTEST_DIR}/include")
 target_include_directories(libscript_tests PRIVATE "${GTEST_DIR}")
 target_include_directories(libscript_tests PUBLIC "../include")
 target_link_libraries(libscript_tests libscript)
+target_compile_definitions(libscript_tests PRIVATE -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
+
 
 file(GLOB MODULES_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/*.m")
 file(COPY ${MODULES_TEST_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
