@@ -71,7 +71,7 @@ int main()
 
 Some more examples are provided in the `examples` folder.
 
-## Built in features
+## Features
 
 The language is statically typed and has a C++ like syntax.
 The idea is to have a good type system that can catch a good number of errors 
@@ -89,14 +89,37 @@ It also provides an `Array` type and a `String` type.
 Array<int> a = [1, 2, 3, 4, 5];
 String str = "Hello " + "World !";
 ```
-There is no "pointer" semantic so, unlike in C++, string can be concatenated using `+`. 
+There is no "pointer" semantic so, unlike in C++, strings can be concatenated using `+`. 
 
-Here is a non-exhaustive list of features supported by the language:
-- variable, function, enumeration and classes declarations;
-- operator overloading, literal operators;
-- constructors, destructor, virtual member functions, abstract classes;
-- arrays, lambdas.
+The language supports both object-oriented programming and generic programming 
+with classes and templates. 
+Functional programming can be achieved partially with lambdas. 
 
+```cpp
+class Point
+{
+public:
+  int x; int y;
+  Point() = default;
+  ~Point() = default;
+  /* ... */
+};
+
+template<typename T>
+const & T max(const T & a, const T & b)
+{
+  return a > b ? a : b;
+}
+
+auto func = [](int a){ return a + 2; };
+```
+
+Operator overloading, user-defined conversions and literal operators are also supported.
+
+All theses features are still under development and have some restrictions (compared to C++).
+No exhaustive feature-list is available yet. 
+Please have a look at the tests to get a better taste of what's in there and what isn't - and 
+do not hesitate to suggest improvements.
 
 ## How it works
 
