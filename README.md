@@ -116,6 +116,19 @@ auto func = [](int a){ return a + 2; };
 
 Operator overloading, user-defined conversions and literal operators are also supported.
 
+Unlike C++, libscript does not rely on a preprocessor and has no `#include` mechanism.
+Instead, a very basic module system allows the importation of modules written in C++ 
+or user-defined scripts.
+
+```cpp
+// file: a
+int foo() { return 42; }
+
+// file: b
+import a;
+int n = foo();
+```
+
 All theses features are still under development and have some restrictions (compared to C++).
 No exhaustive feature-list is available yet. 
 Please have a look at the tests to get a better taste of what's in there and what isn't - and 
