@@ -41,6 +41,8 @@ public:
 
   const std::string & name() const;
 
+  Namespace getNamespace(const std::string & name);
+
   Enum newEnum(const std::string & name);
   Function newFunction(const FunctionBuilder & opts);
   Class newClass(const ClassBuilder & opts);

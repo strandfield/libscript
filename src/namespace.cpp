@@ -60,6 +60,15 @@ const std::string & Namespace::name() const
   return d->name;
 }
 
+Namespace Namespace::getNamespace(const std::string & name)
+{
+  auto ret = findNamespace(name);
+  if (!ret.isNull())
+    return ret;
+
+  return newNamespace(name);
+}
+
 Enum Namespace::newEnum(const std::string & name)
 {
   Enum e = engine()->newEnum(name);

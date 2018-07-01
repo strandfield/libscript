@@ -198,6 +198,21 @@ TEST(CoreUtilsTests, diagnostic) {
 }
 
 
+TEST(CoreUtilsTests, namespaces) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace foo = e.rootNamespace().getNamespace("foo");
+
+  Namespace foo_2 = e.rootNamespace().getNamespace("foo");
+  ASSERT_EQ(foo, foo_2);
+
+  Namespace foo_3 = e.rootNamespace().newNamespace("foo");
+  ASSERT_NE(foo, foo_3);
+}
+
 TEST(CoreUtilsTests, scopes) {
   using namespace script;
 
