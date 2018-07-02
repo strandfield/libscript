@@ -75,7 +75,7 @@ void CommandCompiler::setScope(const Scope & scp)
   expr_.setScope(scp);
 }
 
-std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context, Script script)
+std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context, Scope scp)
 {
   auto source = SourceFile::fromString(expr);
   parser::Parser parser{ source };
@@ -84,8 +84,8 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
   if (ast->hasErrors())
     return nullptr;
 
-  if (!script.isNull())
-    setScope(Scope{ script });
+  if (!scp.isNull())
+    setScope(scp);
   else
     setScope(Scope{ engine()->rootNamespace() });
 
@@ -96,13 +96,6 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_
 {
   expr_.context_ = context;
   expr_.setScope(Scope{ std::make_shared<ContextScope>(expr_.context_, expr_.scope().impl()) });
-  return expr_.generateExpression(expr);
-}
-
-std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp)
-{
-  expr_.context_ = Context{};
-  expr_.setScope(scp);
   return expr_.generateExpression(expr);
 }
 

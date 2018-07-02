@@ -131,7 +131,7 @@ public:
   void setContext(Context con);
 
   /// TODO : add a way to get error messages on failure
-  Value eval(const std::string & command, const Script & s = Script{});
+  Value eval(const std::string & command, const Scope & scp = Scope{});
 
   Value call(const Function & f, std::initializer_list<Value> && args);
   Value call(const Function & f, const std::vector<Value> & args);

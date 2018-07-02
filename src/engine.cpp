@@ -1056,10 +1056,10 @@ void Engine::setContext(Context con)
   d->context = con;
 }
 
-Value Engine::eval(const std::string & command, const Script & s)
+Value Engine::eval(const std::string & command, const Scope & scp)
 {
   compiler::CommandCompiler cc{ this };
-  auto expr = cc.compile(command, d->context, s);
+  auto expr = cc.compile(command, d->context, scp);
   if (expr == nullptr)
     throw std::runtime_error{ "Could not compile expression" };
   return d->interpreter->eval(expr);

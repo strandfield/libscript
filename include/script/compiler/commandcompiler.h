@@ -44,11 +44,10 @@ public:
 
   void setScope(const Scope & scp);
 
-  std::shared_ptr<program::Expression> compile(const std::string & expr, Context context, Script script = Script{});
+  std::shared_ptr<program::Expression> compile(const std::string & expr, Context context, Scope scp = Scope{});
 
 
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Context & context);
-  std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Scope & scp);
 
 protected:
 
