@@ -242,7 +242,7 @@ ConditionalExpression::ConditionalExpression(const std::shared_ptr<Expression> &
 
 Type ConditionalExpression::type() const
 {
-  return this->cond->type();
+  return this->onTrue->type();
 }
 
 std::shared_ptr<ConditionalExpression> ConditionalExpression::New(const std::shared_ptr<Expression> & condi, const std::shared_ptr<Expression> & ifTrue, const std::shared_ptr<Expression> & ifFalse)

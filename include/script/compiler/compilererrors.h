@@ -159,6 +159,7 @@ DECLARE_COMPILER_ERROR(TooManyArgumentInReferenceInitialization, "More than one 
 DECLARE_COMPILER_ERROR(TooManyArgumentsInMemberInitialization, "Too many arguments in member initialization.");
 
 DECLARE_COMPILER_ERROR(CouldNotConvert, "Could not convert from %1 to %2", script::Type, script::Type);
+DECLARE_COMPILER_ERROR(CouldNotFindCommonType, "Could not find common type of %1 and %2 in conditionnal expression", script::Type, script::Type);
 
 DECLARE_COMPILER_ERROR(CannotAccessMemberOfNonObject, "Cannot access member of non object type.");
 DECLARE_COMPILER_ERROR(NoSuchMember, "Object has no such member.");

@@ -617,9 +617,19 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpression(const std::shared_ptr<ast::ConditionalExpression> & ce)
 {
+  auto con = generateExpression(ce->condition);
+  if (con->type().baseType() != Type::Boolean)
+    throw NotImplementedError{ dpos(ce->condition), "Condition of ?: must be of type bool" };
+
   auto tru = generateExpression(ce->onTrue);
   auto fal = generateExpression(ce->onFalse);
-  auto con = generateExpression(ce->condition);
+  script::Type common_type = ConversionProcessor::common_type(engine(), tru, fal);
+  if (common_type.isNull())
+    throw CouldNotFindCommonType{ dpos(ce), tru->type(), fal->type() };
+
+  tru = ConversionProcessor::convert(engine(), tru, common_type, ConversionSequence::compute(tru, common_type, engine()));
+  fal = ConversionProcessor::convert(engine(), fal, common_type, ConversionSequence::compute(fal, common_type, engine()));
+
   return program::ConditionalExpression::New(con, tru, fal);
 }
 

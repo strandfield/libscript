@@ -58,3 +58,18 @@ TEST(Eval, failure1) {
 
   ASSERT_ANY_THROW(engine.eval("this"));
 }
+
+TEST(Eval, conditional_expression) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  Value x = engine.eval("3 + 3 != 6 ? 66 : -66");
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), -66);
+
+  x = engine.eval("true ? true : 2");
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 1);
+}

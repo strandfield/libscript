@@ -75,7 +75,19 @@ void ConversionProcessor::prepare(Engine *e, std::vector<std::shared_ptr<program
   }
 }
 
+script::Type ConversionProcessor::common_type(Engine *e, const std::shared_ptr<program::Expression> & a, const std::shared_ptr<program::Expression> & b)
+{
+  ConversionSequence conv_a = ConversionSequence::compute(a, b->type(), e);
+  ConversionSequence conv_b = ConversionSequence::compute(b, a->type(), e);
 
+  if (conv_a == ConversionSequence::NotConvertible() && conv_b == ConversionSequence::NotConvertible())
+    return Type::Null;
+
+  if(ConversionSequence::comp(conv_a, conv_b) < 0)
+    return b->type();
+  
+  return a->type();
+}
 
 } // namespace compiler
 
