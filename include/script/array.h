@@ -19,7 +19,7 @@ public:
   Array(const Array &) = default;
   ~Array();
 
-  Array(const std::shared_ptr<ArrayImpl> & impl);
+  explicit Array(const std::shared_ptr<ArrayImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
 

@@ -29,7 +29,7 @@ public:
   ClassTemplate(const ClassTemplate & other) = default;
   ~ClassTemplate() = default;
 
-  ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl);
+  explicit ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl);
 
   bool is_native() const;
   NativeClassTemplateInstantiationFunction native_callback() const;

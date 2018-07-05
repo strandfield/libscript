@@ -27,7 +27,7 @@ public:
   Namespace(const Namespace & other) = default;
   ~Namespace() = default;
 
-  Namespace(const std::shared_ptr<NamespaceImpl> & impl);
+  explicit Namespace(const std::shared_ptr<NamespaceImpl> & impl);
 
   bool isNull() const;
   bool isRoot() const;

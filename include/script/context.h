@@ -23,7 +23,7 @@ public:
   Context(const Context & other) = default;
   ~Context() = default;
 
-  Context(const std::shared_ptr<ContextImpl> & impl);
+  explicit Context(const std::shared_ptr<ContextImpl> & impl);
 
   int id() const;
   bool isNull() const;

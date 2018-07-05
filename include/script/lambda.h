@@ -20,7 +20,7 @@ public:
   Lambda(const Lambda &) = default;
   ~Lambda() = default;
 
-  Lambda(const std::shared_ptr<LambdaImpl> & impl);
+  explicit Lambda(const std::shared_ptr<LambdaImpl> & impl);
 
   struct Capture {
     Type type;

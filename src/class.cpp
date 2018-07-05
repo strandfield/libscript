@@ -297,7 +297,7 @@ void ClassImpl::update_vtable(Function f)
   }
   else
   {
-    Class b = this->parent.lock();
+    Class b{ this->parent.lock() };
     const auto & vt = b.vtable();
 
     // first, we retrieve virtual members from base class.

@@ -33,7 +33,7 @@ public:
   Scope(const Class & cla, const Scope & parent = Scope());
   Scope(const Namespace & na, const Scope & parent = Scope());
   Scope(const Script & s, const Scope & parent = Scope());
-  Scope(const std::shared_ptr<ScopeImpl> & impl);
+  explicit Scope(const std::shared_ptr<ScopeImpl> & impl);
 
   enum Type {
     InvalidScope,

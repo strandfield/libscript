@@ -33,7 +33,7 @@ public:
   Class(const Class & other) = default;
   ~Class() = default;
   
-  Class(const std::shared_ptr<ClassImpl> & impl);
+  explicit Class(const std::shared_ptr<ClassImpl> & impl);
 
   bool isNull() const;
   int id() const;

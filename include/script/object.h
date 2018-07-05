@@ -20,7 +20,7 @@ public:
   Object(const Object & other) = default;
   ~Object() = default;
 
-  Object(const std::shared_ptr<ObjectImpl> & impl);
+  explicit Object(const std::shared_ptr<ObjectImpl> & impl);
 
   bool isNull() const;
   Class instanceOf() const;

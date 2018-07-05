@@ -32,7 +32,7 @@ public:
   Template(const Template & other) = default;
   ~Template() = default;
 
-  Template(const std::shared_ptr<TemplateImpl> & impl);
+  explicit Template(const std::shared_ptr<TemplateImpl> & impl);
 
   bool isNull() const;
 

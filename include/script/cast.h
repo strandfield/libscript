@@ -19,7 +19,7 @@ public:
   Cast(const Cast & other) = default;
   ~Cast() = default;
 
-  Cast(const std::shared_ptr<CastImpl> & impl);
+  explicit Cast(const std::shared_ptr<CastImpl> & impl);
 
   Type sourceType() const;
   Type destType() const;

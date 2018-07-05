@@ -25,7 +25,7 @@ public:
   Script(const Script &) = default;
   ~Script() = default;
 
-  Script(const std::shared_ptr<ScriptImpl> & impl);
+  explicit Script(const std::shared_ptr<ScriptImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
 

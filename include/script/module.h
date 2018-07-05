@@ -26,7 +26,7 @@ public:
   Module(const Module & other) = default;
   ~Module() = default;
 
-  Module(const std::shared_ptr<ModuleImpl> & impl);
+  explicit Module(const std::shared_ptr<ModuleImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
   Engine * engine() const;

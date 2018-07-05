@@ -32,7 +32,7 @@ public:
   Value(const Value & other);
   ~Value();
 
-  Value(ValueImpl * impl);
+  explicit Value(ValueImpl * impl);
 
   enum ParameterPolicy {
     Copy,

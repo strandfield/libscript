@@ -27,7 +27,7 @@ public:
   Enum(const Enum & other) = default;
   ~Enum() = default;
 
-  Enum(const std::shared_ptr<EnumImpl> & impl);
+  explicit Enum(const std::shared_ptr<EnumImpl> & impl);
 
   int id() const;
   bool isNull() const;

@@ -38,7 +38,7 @@ public:
   NameLookup(const NameLookup &) = default;
   ~NameLookup() = default;
 
-  NameLookup(const std::shared_ptr<NameLookupImpl> & impl);
+  explicit NameLookup(const std::shared_ptr<NameLookupImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
 

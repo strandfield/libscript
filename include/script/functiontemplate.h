@@ -45,7 +45,7 @@ public:
   FunctionTemplate(const FunctionTemplate & other) = default;
   ~FunctionTemplate() = default;
 
-  FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl);
+  explicit FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl);
 
   bool is_native() const;
   const FunctionTemplateCallbacks & native_callbacks() const;

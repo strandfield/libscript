@@ -19,7 +19,7 @@ public:
   LiteralOperator(const LiteralOperator & other) = default;
   ~LiteralOperator() = default;
 
-  LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl);
+  explicit LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl);
 
   Type input() const;
   Type output() const;

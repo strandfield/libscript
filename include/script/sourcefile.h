@@ -18,7 +18,7 @@ public:
   SourceFile(const SourceFile &) = default;
   ~SourceFile() = default;
   explicit SourceFile(const std::string & path);
-  SourceFile(const std::shared_ptr<SourceFileImpl> & impl);
+  explicit SourceFile(const std::shared_ptr<SourceFileImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
 

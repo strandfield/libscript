@@ -38,7 +38,7 @@ public:
   Function(const Function & other) = default;
   ~Function() = default;
 
-  Function(const std::shared_ptr<FunctionImpl> & impl);
+  explicit Function(const std::shared_ptr<FunctionImpl> & impl);
 
   enum Kind {
     StandardFunction = 0,
