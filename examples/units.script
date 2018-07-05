@@ -34,3 +34,6 @@ Distance operator""km(const double & val)
 
 auto d = 1km;
 const bool eq = (d == 1000m);
+
+print("1km = 1000m ?");
+print(eq ? "true" : "false");
