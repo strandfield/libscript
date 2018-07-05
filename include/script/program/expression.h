@@ -56,16 +56,17 @@ public:
 
 struct LIBSCRIPT_API FetchGlobal : public Expression
 {
-  Type value_type;
+  int script_index;
   int global_index;
+  Type value_type;
 
 public:
-  FetchGlobal(const Type & t, int gi);
+  FetchGlobal(int si, int gi, const Type & t);
   ~FetchGlobal() = default;
 
   Type type() const override;
 
-  static std::shared_ptr<FetchGlobal> New(const Type & t, int gi);
+  static std::shared_ptr<FetchGlobal> New(int si, int gi, const Type & t);
 
   Value accept(ExpressionVisitor &) override;
 };

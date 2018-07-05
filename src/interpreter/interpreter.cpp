@@ -293,7 +293,7 @@ void Interpreter::visit(const program::ReturnStatement & rs)
 void Interpreter::visit(const program::PushGlobal & push)
 {
   auto val = mExecutionContext->stack[push.global_index + mExecutionContext->callstack.top()->stackOffset()];
-  Script s = mExecutionContext->callstack.top()->callee().script();
+  Script s = mExecutionContext->engine->implementation()->scripts.at(push.script_index);
   s.impl()->globals.push_back(val);
 }
 
@@ -410,7 +410,7 @@ Value Interpreter::visit(const program::Copy & copy)
 
 Value Interpreter::visit(const program::FetchGlobal & fetch)
 {
-  const Script & script = mExecutionContext->callstack.top()->callee().script();
+  const Script & script = mExecutionContext->engine->implementation()->scripts.at(fetch.script_index);
   auto impl = script.impl();
   return impl->globals[fetch.global_index];
 }

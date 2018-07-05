@@ -916,7 +916,7 @@ Function Engine::newFunction(const FunctionBuilder & opts)
 
 Script Engine::newScript(const SourceFile & source)
 {
-  Script ret{ std::make_shared<ScriptImpl>(this, source) };
+  Script ret{ std::make_shared<ScriptImpl>(d->scripts.size(), this, source) };
   d->scripts.push_back(ret);
   return ret;
 }

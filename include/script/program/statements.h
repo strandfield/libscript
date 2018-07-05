@@ -35,13 +35,14 @@ public:
 
 struct LIBSCRIPT_API PushGlobal : public Statement
 {
+  int script_index;
   int global_index;
 
 public:
-  PushGlobal(int si);
+  PushGlobal(int si, int gi);
   ~PushGlobal() = default;
 
-  static std::shared_ptr<PushGlobal> New(int si);
+  static std::shared_ptr<PushGlobal> New(int si, int gi);
 
   void accept(StatementVisitor &) override;
 };

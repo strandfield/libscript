@@ -289,7 +289,7 @@ std::shared_ptr<program::Expression> StackVariableAccessor::global_name(Expressi
   auto simpl = s.impl();
   const Type & gtype = simpl->global_types[offset];
 
-  return program::FetchGlobal::New(gtype, offset);
+  return program::FetchGlobal::New(s.id(), offset, gtype);
 }
 
 std::shared_ptr<program::Expression> StackVariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
@@ -938,7 +938,7 @@ void FunctionCompiler::processVariableCreation(const Type & type, const std::str
     auto simpl = mScript.impl();
     simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
 
-    write(program::PushGlobal::New(stack_index));
+    write(program::PushGlobal::New(script().id(), stack_index));
   }
 }
 

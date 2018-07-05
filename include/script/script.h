@@ -30,8 +30,6 @@ public:
   inline bool isNull() const { return d == nullptr; }
 
   int id() const;
-  const std::string & name() const;
-  void setName(const std::string & name);
 
   bool compile();
   bool isReady() const;

@@ -104,15 +104,16 @@ std::shared_ptr<PushValue> PushValue::New(const Type & t, const std::string & na
 
 
 
-PushGlobal::PushGlobal(int si)
-  : global_index(si)
+PushGlobal::PushGlobal(int si, int gi)
+  : script_index(si)
+  , global_index(gi)
 {
 
 }
 
-std::shared_ptr<PushGlobal> PushGlobal::New(int si)
+std::shared_ptr<PushGlobal> PushGlobal::New(int si, int gi)
 {
-  return std::make_shared<PushGlobal>(si);
+  return std::make_shared<PushGlobal>(si, gi);
 }
 
 

@@ -16,9 +16,10 @@ namespace script
 class ScriptImpl : public NamespaceImpl
 {
 public:
-  ScriptImpl(Engine *e, const SourceFile & src);
+  ScriptImpl(int id, Engine *e, const SourceFile & src);
   ~ScriptImpl() = default;
 
+  int id;
   bool loaded;
   SourceFile source;
   Function program;

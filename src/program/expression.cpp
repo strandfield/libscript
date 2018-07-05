@@ -132,9 +132,10 @@ std::shared_ptr<StackValue> StackValue::New(int si, const Type & t)
 
 
 
-FetchGlobal::FetchGlobal(const Type & t, int si)
-  : value_type(t)
-  , global_index(si)
+FetchGlobal::FetchGlobal(int si, int gi, const Type & t)
+  : script_index(si)
+  , global_index(gi)
+  , value_type(t)
 {
 
 }
@@ -144,9 +145,9 @@ Type FetchGlobal::type() const
   return value_type;
 }
 
-std::shared_ptr<FetchGlobal> FetchGlobal::New(const Type & t, int si)
+std::shared_ptr<FetchGlobal> FetchGlobal::New(int si, int gi, const Type & t)
 {
-  return std::make_shared<FetchGlobal>(t, si);
+  return std::make_shared<FetchGlobal>(si, gi, t);
 }
 
 

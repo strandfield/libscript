@@ -10,8 +10,9 @@
 namespace script
 {
 
-ScriptImpl::ScriptImpl(Engine *e, const SourceFile & src)
+ScriptImpl::ScriptImpl(int index, Engine *e, const SourceFile & src)
   : NamespaceImpl("", e)
+  , id(index)
   , loaded(false)
   , source(src)
 {
@@ -33,17 +34,7 @@ Script::Script(const std::shared_ptr<ScriptImpl> & impl)
 
 int Script::id() const
 {
-  throw std::runtime_error{ "Not implemented" };
-}
-
-const std::string & Script::name() const
-{
-  throw std::runtime_error{ "Not implemented" };
-}
-
-void Script::setName(const std::string & name)
-{
-  throw std::runtime_error{ "Not implemented" };
+  return d->id;
 }
 
 const std::string & Script::path() const
