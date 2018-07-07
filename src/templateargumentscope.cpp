@@ -80,36 +80,6 @@ bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl)
   return false;
 }
 
-void TemplateArgumentScope::add_cast(const Cast & c)
-{
-  parent->add_cast(c);
-}
-
-void TemplateArgumentScope::add_class(const Class & c)
-{
-  parent->add_class(c);
-}
-
-void TemplateArgumentScope::add_function(const Function & f)
-{
-  parent->add_function(f);
-}
-
-void TemplateArgumentScope::add_operator(const Operator & op)
-{
-  parent->add_operator(op);
-}
-
-void TemplateArgumentScope::add_literal_operator(const LiteralOperator & lo)
-{
-  parent->add_literal_operator(lo);
-}
-
-void TemplateArgumentScope::add_enum(const Enum & e)
-{
-  parent->add_enum(e);
-}
-
 void TemplateArgumentScope::add_template(const Template & t)
 {
   parent->add_template(t);
@@ -128,21 +98,6 @@ void TemplateArgumentScope::remove_class(const Class & c)
 void TemplateArgumentScope::remove_enum(const Enum & e)
 {
   parent->remove_enum(e);
-}
-
-void TemplateArgumentScope::remove_function(const Function & f)
-{
-  parent->remove_function(f);
-}
-
-void TemplateArgumentScope::remove_operator(const Operator & op)
-{
-  parent->remove_operator(op);
-}
-
-void TemplateArgumentScope::remove_cast(const Cast & c)
-{
-  parent->remove_cast(c);
 }
 
 

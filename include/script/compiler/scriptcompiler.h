@@ -195,6 +195,7 @@ protected:
 
   std::vector<IncompleteFunction> mIncompleteFunctions;
 
+  /// TODO : also store the scripts in the CompileSession to be able to destroy them if needed
   std::vector<CompileScriptTask> mTasks; // we need to store the tasks to maintain the ASTs alive.
 
   ScriptCompilerNameResolver name_resolver;

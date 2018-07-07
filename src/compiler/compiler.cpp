@@ -57,20 +57,6 @@ void CompileSession::abort()
 
 void CompileSession::clear()
 {
-  for (Class c : this->generated.classes)
-    engine()->implementation()->destroyClass(c);
-  this->generated.classes.clear();
-
-  for (Function f : this->generated.functions)
-  {
-    /// TODO : find scope and remove
-  }
-  this->generated.functions.clear();
-
-  for (Enum e : this->generated.enums)
-    engine()->implementation()->destroyEnum(e);
-  this->generated.enums.clear();
-
   /// TODO !!
   this->generated.lambdas.clear();
 
@@ -134,27 +120,6 @@ ClosureType Compiler::newLambda()
 {
   auto ret = engine()->implementation()->newLambda();
   session()->generated.lambdas.push_back(ret);
-  return ret;
-}
-
-Class Compiler::build(const ClassBuilder & builder)
-{
-  auto ret = engine()->newClass(builder);
-  session()->generated.classes.push_back(ret);
-  return ret;
-}
-
-Enum Compiler::build(const Enum &, const std::string & name)
-{
-  auto ret = engine()->newEnum(name);
-  session()->generated.enums.push_back(ret);
-  return ret;
-}
-
-Function Compiler::build(const FunctionBuilder & builder)
-{
-  auto ret = engine()->newFunction(builder);
-  session()->generated.functions.push_back(ret);
   return ret;
 }
 

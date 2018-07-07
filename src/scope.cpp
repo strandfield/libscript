@@ -569,41 +569,6 @@ const std::map<std::string, Value> & NamespaceScope::values() const
   return mValues;
 }
 
-void NamespaceScope::add_class(const Class & c)
-{
-  mNamespace.impl()->classes.push_back(c);
-  c.impl()->enclosing_symbol = mNamespace.impl();
-  mClasses.clear();
-}
-
-void NamespaceScope::add_function(const Function & f)
-{
-  mNamespace.impl()->functions.push_back(f);
-  f.impl()->enclosing_symbol = mNamespace.impl();
-  mFunctions.clear();
-}
-
-void NamespaceScope::add_operator(const Operator & op)
-{
-  mNamespace.impl()->operators.push_back(op);
-  op.Function::impl()->enclosing_symbol = mNamespace.impl();
-  mOperators.clear();
-}
-
-void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
-{
-  mNamespace.impl()->literal_operators.push_back(lo);
-  lo.Function::impl()->enclosing_symbol = mNamespace.impl();
-  mLiteralOperators.clear();
-}
-
-void NamespaceScope::add_enum(const Enum & e)
-{
-  mNamespace.impl()->enums.push_back(e);
-  e.impl()->enclosing_symbol = mNamespace.impl();
-  mEnums.clear();
-}
-
 void NamespaceScope::add_template(const Template & t)
 {
   mNamespace.impl()->templates.push_back(t);
@@ -734,36 +699,6 @@ const std::vector<Template> & ClassScope::templates() const
 const std::vector<Typedef> & ClassScope::typedefs() const
 {
   return mClass.typedefs();
-}
-
-void ClassScope::add_class(const Class & c)
-{
-  mClass.impl()->classes.push_back(c);
-  c.impl()->enclosing_symbol = mClass.impl();
-}
-
-void ClassScope::add_function(const Function & f)
-{
-  mClass.impl()->register_function(f);
-  f.impl()->enclosing_symbol = mClass.impl();
-}
-
-void ClassScope::add_operator(const Operator & op)
-{
-  mClass.impl()->operators.push_back(op);
-  op.Function::impl()->enclosing_symbol = mClass.impl();
-}
-
-void ClassScope::add_cast(const Cast & c)
-{
-  mClass.impl()->casts.push_back(c);
-  c.Function::impl()->enclosing_symbol = mClass.impl();
-}
-
-void ClassScope::add_enum(const Enum & e)
-{
-  mClass.impl()->enums.push_back(e);
-  e.impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_template(const Template & t)

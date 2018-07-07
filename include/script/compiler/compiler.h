@@ -58,9 +58,7 @@ public:
   inline Engine* engine() const { return mEngine; }
 
   struct {
-    std::vector<Class> classes;
-    std::vector<Enum> enums;
-    std::vector<Function> functions;
+    /// TODO : store a list of generated scripts
     std::vector<ClosureType> lambdas;
     std::shared_ptr<program::Expression> expression;
   } generated;
@@ -91,9 +89,6 @@ public:
 
 protected:
   ClosureType newLambda();
-  [[deprecated("Internal note: remove in future version")]] Class build(const ClassBuilder & builder);
-  [[deprecated("Internal note: remove in future version")]] Enum build(const Enum &, const std::string & name);
-  [[deprecated("Internal note: remove in future version")]] Function build(const FunctionBuilder & builder);
 
 protected:
   void log(const diagnostic::Message & mssg);

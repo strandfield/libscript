@@ -56,20 +56,10 @@ public:
   virtual const std::map<std::string, Value> & values() const;
   virtual const std::vector<Typedef> & typedefs() const;
 
-
-  virtual void add_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_class()" }; }
-  virtual void add_function(const Function & f) { throw std::runtime_error{ "Bad call to ScopeImpl::add_function()" }; }
-  virtual void add_operator(const Operator & op) { throw std::runtime_error{ "Bad call to ScopeImpl::add_operator()" }; }
-  virtual void add_literal_operator(const LiteralOperator & lo) { throw std::runtime_error{ "Bad call to ScopeImpl::add_literal_operator()" }; }
-  virtual void add_cast(const Cast & c) { throw std::runtime_error{ "Bad call to ScopeImpl::add_cast()" }; }
-  virtual void add_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::add_enum()" }; }
   virtual void add_template(const Template & t) { throw std::runtime_error{ "Bad call to ScopeImpl::add_template()" }; }
   virtual void add_typedef(const Typedef & td) { throw std::runtime_error{ "Bad call to ScopeImpl::add_typedef()" }; }
 
   virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
-  virtual void remove_function(const Function & f) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_function()" }; }
-  virtual void remove_operator(const Operator & op) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_operator()" }; }
-  virtual void remove_cast(const Cast & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_cast()" }; }
   virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
 
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
@@ -137,11 +127,6 @@ public:
   const std::map<std::string, Value> & values() const override;
   const std::vector<Typedef> & typedefs() const override;
 
-  void add_class(const Class & c) override;
-  void add_function(const Function & f) override;
-  void add_operator(const Operator & op) override;
-  void add_literal_operator(const LiteralOperator & lo) override;
-  void add_enum(const Enum & e) override;
   void add_template(const Template & t) override;
   void add_typedef(const Typedef & td) override;
 
@@ -178,11 +163,6 @@ public:
   const std::vector<Template> & templates() const override;
   const std::vector<Typedef> & typedefs() const override;
 
-  void add_class(const Class & c) override;
-  void add_function(const Function & f) override;
-  void add_operator(const Operator & op) override;
-  void add_cast(const Cast & c) override;
-  void add_enum(const Enum & e) override;
   void add_template(const Template & t) override;
   void add_typedef(const Typedef & td) override;
 
