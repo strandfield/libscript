@@ -8,19 +8,18 @@
 #include "script/lambda.h"
 
 #include "script/operator.h"
+#include "script/private/class_p.h"
 
 namespace script
 {
 
-class ClosureTypeImpl
+class ClosureTypeImpl : public ClassImpl
 {
 public:
-  int id;
   std::vector<ClosureType::Capture> captures;
-  Operator function;
 
 public:
-  ClosureTypeImpl(int id);
+  ClosureTypeImpl(int id, Engine *e);
 };
 
 class LambdaImpl

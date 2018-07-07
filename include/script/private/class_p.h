@@ -5,11 +5,13 @@
 #ifndef LIBSCRIPT_CLASS_P_H
 #define LIBSCRIPT_CLASS_P_H
 
+#include "script/private/symbol_p.h"
+
 #include "script/class.h"
 #include "script/classtemplate.h"
+#include "script/enum.h"
 #include "script/function.h"
 #include "script/cast.h"
-#include "script/private/symbol_p.h"
 #include "script/typedefs.h"
 
 #include <map>

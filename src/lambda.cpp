@@ -8,8 +8,8 @@
 namespace script
 {
 
-ClosureTypeImpl::ClosureTypeImpl(int i)
-  : id(i)
+ClosureTypeImpl::ClosureTypeImpl(int i, Engine *e)
+  : ClassImpl(i, std::string{}, e)
 {
 
 }
@@ -43,17 +43,17 @@ const std::vector<ClosureType::Capture> ClosureType::captures() const
 
 const Prototype & ClosureType::prototype() const
 {
-  return d->function.prototype();
+  return d->operators.front().prototype();
 }
 
 Operator ClosureType::function() const
 {
-  return d->function;
+  return d->operators.front();
 }
 
 Engine* ClosureType::engine() const
 {
-  return d->function.engine();
+  return d->engine;
 }
 
 const std::shared_ptr<ClosureTypeImpl> & ClosureType::impl() const

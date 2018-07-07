@@ -224,7 +224,7 @@ ClosureType EngineImpl::newLambda()
 {
   const int id = static_cast<int>(this->lambdas.size()) | Type::LambdaFlag;
   // const int index = id & 0xFFFF;
-  ClosureType l{ std::make_shared<ClosureTypeImpl>(id) };
+  ClosureType l{ std::make_shared<ClosureTypeImpl>(id, this->engine) };
   this->lambdas.push_back(l);
   return l;
 }

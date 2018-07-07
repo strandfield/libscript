@@ -15,6 +15,7 @@ namespace script
 {
 
 class ClassImpl;
+class ClosureType;
 class Enum;
 class Script;
 class UserData;
@@ -45,6 +46,8 @@ public:
   int inheritanceLevel(const Class & type) const;
   bool isFinal() const;
 
+  bool isClosure() const;
+  ClosureType toClosure() const;
 
   class DataMember
   {

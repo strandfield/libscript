@@ -186,7 +186,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   FunctionBuilder builder = FunctionBuilder::Operator(Operator::FunctionCallOperator, proto);
   Operator function = build(builder).toOperator();
 
-  mLambda.impl()->function = function;
+  mLambda.impl()->operators.push_back(function);
+  function.impl()->enclosing_symbol = mLambda.impl();
   mFunction = function;
 
   /// TODO : where is the return value ?

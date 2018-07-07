@@ -5,6 +5,7 @@
 #include "script/class.h"
 
 #include "script/private/class_p.h"
+#include "script/private/lambda_p.h"
 #include "script/functionbuilder.h"
 #include "script/private/function_p.h"
 #include "script/engine.h"
@@ -96,6 +97,16 @@ int Class::inheritanceLevel(const Class & type) const
 bool Class::isFinal() const
 {
   return d->isFinal;
+}
+
+bool Class::isClosure() const
+{
+  return dynamic_cast<ClosureTypeImpl*>(d.get()) != nullptr;
+}
+
+ClosureType Class::toClosure() const
+{
+  return ClosureType{ std::dynamic_pointer_cast<ClosureTypeImpl>(d) };
 }
 
 Class::DataMember::DataMember(const Type & t, const std::string & n, AccessSpecifier aspec)
