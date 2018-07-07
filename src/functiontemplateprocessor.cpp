@@ -174,6 +174,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, *template_args, builder.name, builder.proto, ft.engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;
+  impl->enclosing_symbol = ft.impl()->enclosing_symbol;
   return Function{ impl };
 }
 

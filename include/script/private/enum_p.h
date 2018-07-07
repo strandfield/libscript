@@ -16,14 +16,12 @@ class EnumImpl
 {
 public:
   Engine *engine;
-  std::weak_ptr<ScriptImpl> script;
   int id;
   std::string name;
   bool enumClass;
   std::map<std::string, int> values;
   Operator assignment;
-  std::weak_ptr<ClassImpl> enclosing_class;
-  std::weak_ptr<NamespaceImpl> enclosing_namespace;
+  std::weak_ptr<SymbolImpl> enclosing_symbol;
 
   EnumImpl(int i, const std::string & n, Engine *e);
 };

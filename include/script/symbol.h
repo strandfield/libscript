@@ -36,6 +36,8 @@ public:
 
   Symbol & operator=(const Symbol &) = default;
 
+  inline const std::shared_ptr<SymbolImpl> & impl() const { return d; }
+
 private:
   std::shared_ptr<SymbolImpl> d;
 };

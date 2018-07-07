@@ -146,7 +146,8 @@ int Class::attributeIndex(const std::string & attrName) const
 
 Script Class::script() const
 {
-  return Script{ d->script.lock() };
+  auto enclosing_symbol = d->enclosing_symbol.lock();
+  return SymbolImpl::getScript(enclosing_symbol);
 }
 
 const std::shared_ptr<UserData> & Class::data() const
@@ -166,7 +167,7 @@ Class Class::newClass(const ClassBuilder & opts)
   if (!c.isNull())
   {
     d->classes.push_back(c);
-    c.impl()->enclosing_class = d;
+    c.impl()->enclosing_symbol = d;
   }
   return c;
 }
@@ -183,7 +184,7 @@ Enum Class::newEnum(const std::string & name)
   if (!enm.isNull())
   {
     d->enums.push_back(enm);
-    enm.impl()->enclosing_class = d;
+    enm.impl()->enclosing_symbol = d;
   }
   return enm;
 }
@@ -500,14 +501,15 @@ const std::vector<Class> & Class::friends(const Class &) const
 
 Class Class::memberOf() const
 {
-  return Class{ d->enclosing_class.lock() };
+  auto enclosing_symbol = d->enclosing_symbol.lock();
+  return Class{ std::dynamic_pointer_cast<ClassImpl>(enclosing_symbol) };
 }
 
 Namespace Class::enclosingNamespace() const
 {
   Class c = memberOf();
   if (c.isNull())
-    return Namespace{ d->enclosing_namespace.lock() };
+    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d->enclosing_symbol.lock()) };
   return c.enclosingNamespace();
 }
 

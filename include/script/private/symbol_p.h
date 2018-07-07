@@ -10,10 +10,14 @@
 namespace script
 {
 
+class Script;
+
 class SymbolImpl
 {
 public:
   virtual ~SymbolImpl() = default;
+
+  static Script getScript(const std::shared_ptr<SymbolImpl> & symbol);
 };
 
 } // namespace script

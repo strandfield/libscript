@@ -7,6 +7,7 @@
 #include "script/class.h"
 #include "script/private/class_p.h"
 #include "script/engine.h"
+#include "script/private/function_p.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
 
@@ -297,6 +298,7 @@ script::Function FunctionBuilder::create()
   {
     Class cla = member_of();
     script::Function f = this->engine->newFunction(*this);
+    f.impl()->enclosing_symbol = cla.impl();
     if (f.isOperator())
       cla.impl()->operators.push_back(f.toOperator());
     else if (f.isCast())
@@ -313,6 +315,7 @@ script::Function FunctionBuilder::create()
   {
     Namespace ns = this->namespace_scope;
     script::Function f = this->engine->newFunction(*this);
+    f.impl()->enclosing_symbol = ns.impl();
     if (f.isOperator())
       ns.impl()->operators.push_back(f.toOperator());
     else if (f.isLiteralOperator())

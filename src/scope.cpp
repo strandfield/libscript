@@ -9,9 +9,12 @@
 #include "script/private/class_p.h"
 #include "script/private/enum_p.h"
 #include "script/enumvalue.h"
+#include "script/private/function_p.h"
 #include "script/private/namespace_p.h"
 #include "script/operator.h"
 #include "script/private/script_p.h"
+#include "script/private/template_p.h"
+#include "script/symbol.h"
 
 #include "script/namelookup.h"
 #include "script/private/namelookup_p.h"
@@ -564,39 +567,42 @@ const std::map<std::string, Value> & NamespaceScope::values() const
 void NamespaceScope::add_class(const Class & c)
 {
   mNamespace.impl()->classes.push_back(c);
-  c.impl()->enclosing_namespace = mNamespace.impl();
+  c.impl()->enclosing_symbol = mNamespace.impl();
   mClasses.clear();
 }
 
 void NamespaceScope::add_function(const Function & f)
 {
   mNamespace.impl()->functions.push_back(f);
+  f.impl()->enclosing_symbol = mNamespace.impl();
   mFunctions.clear();
 }
 
 void NamespaceScope::add_operator(const Operator & op)
 {
   mNamespace.impl()->operators.push_back(op);
+  op.Function::impl()->enclosing_symbol = mNamespace.impl();
   mOperators.clear();
 }
 
 void NamespaceScope::add_literal_operator(const LiteralOperator & lo)
 {
   mNamespace.impl()->literal_operators.push_back(lo);
+  lo.Function::impl()->enclosing_symbol = mNamespace.impl();
   mLiteralOperators.clear();
 }
 
 void NamespaceScope::add_enum(const Enum & e)
 {
   mNamespace.impl()->enums.push_back(e);
-  e.impl()->enclosing_namespace = mNamespace.impl();
+  e.impl()->enclosing_symbol = mNamespace.impl();
   mEnums.clear();
 }
 
 void NamespaceScope::add_template(const Template & t)
 {
   mNamespace.impl()->templates.push_back(t);
-  //t.impl()->enclosing_namespace = mNamespace.weakref();
+  t.impl()->enclosing_symbol = mNamespace.impl();
   mTemplates.clear();
 }
 
@@ -723,33 +729,37 @@ const std::vector<Typedef> & ClassScope::typedefs() const
 void ClassScope::add_class(const Class & c)
 {
   mClass.impl()->classes.push_back(c);
-  c.impl()->enclosing_class = mClass.impl();
+  c.impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_function(const Function & f)
 {
   mClass.impl()->register_function(f);
+  f.impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_operator(const Operator & op)
 {
   mClass.impl()->operators.push_back(op);
+  op.Function::impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_cast(const Cast & c)
 {
   mClass.impl()->casts.push_back(c);
+  c.Function::impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_enum(const Enum & e)
 {
   mClass.impl()->enums.push_back(e);
-  e.impl()->enclosing_class = mClass.impl();
+  e.impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_template(const Template & t)
 {
   mClass.impl()->templates.push_back(t);
+  t.impl()->enclosing_symbol = mClass.impl();
 }
 
 void ClassScope::add_typedef(const Typedef & td)
@@ -1135,6 +1145,17 @@ Enum Scope::asEnum() const
 Script Scope::asScript() const
 {
   return std::dynamic_pointer_cast<script::NamespaceScope>(d)->mNamespace.asScript();
+}
+
+Symbol Scope::symbol() const
+{
+  if (isNull())
+    return Symbol{};
+  else if (isClass())
+    return Symbol{ asClass() };
+  else if (isNamespace())
+    return Symbol{ asNamespace() };
+  return parent().symbol();
 }
 
 

@@ -14,18 +14,18 @@
 namespace script
 {
 
-class ScriptImpl;
+class SymbolImpl;
 
 class TemplateImpl
 {
 public:
-  TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s);
+  TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es);
   virtual ~TemplateImpl() {}
 
   std::string name;
   std::vector<TemplateParameter> parameters;
   Scope scope;
-  std::weak_ptr<ScriptImpl> script;
+  std::weak_ptr<SymbolImpl> enclosing_symbol;
   Engine *engine;
   compiler::TemplateDefinition definition;
 };
@@ -35,7 +35,7 @@ class FunctionTemplateImpl : public TemplateImpl
 public:
   FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
     NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback callback,
-    Engine *e, std::shared_ptr<ScriptImpl> s);
+    Engine *e, std::shared_ptr<SymbolImpl> es);
   ~FunctionTemplateImpl();
 
   std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> instances;
@@ -46,7 +46,7 @@ class ClassTemplateImpl : public TemplateImpl
 {
 public:
   ClassTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeClassTemplateInstantiationFunction inst,
-    Engine *e, std::shared_ptr<ScriptImpl> s);
+    Engine *e, std::shared_ptr<SymbolImpl> es);
   ~ClassTemplateImpl();
 
   std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> instances;
@@ -57,7 +57,7 @@ public:
 class PartialTemplateSpecializationImpl : public TemplateImpl
 {
 public:
-  PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s);
+  PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es);
   ~PartialTemplateSpecializationImpl() = default;
 
   std::weak_ptr<ClassTemplateImpl> class_template;

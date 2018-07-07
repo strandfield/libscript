@@ -2,16 +2,26 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
+#include "script/symbol.h"
+
 #include "script/class.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
-#include "script/symbol.h"
-
+#include "script/script.h"
 
 namespace script
 {
+
+Script SymbolImpl::getScript(const std::shared_ptr<SymbolImpl> & sym)
+{
+  if (dynamic_cast<NamespaceImpl*>(sym.get()) != nullptr)
+    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(sym) }.script();
+  else if (dynamic_cast<ClassImpl*>(sym.get()) != nullptr)
+    return Class{ std::dynamic_pointer_cast<ClassImpl>(sym) }.script();
+  return Script{};
+}
 
 Symbol::Symbol(const Class & c)
   : Symbol(c.impl())

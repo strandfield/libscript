@@ -35,6 +35,7 @@ public:
 
   bool isScriptNamespace() const;
   Script asScript() const;
+  Script script() const;
 
   bool isModuleNamespace() const;
   Module asModule() const;

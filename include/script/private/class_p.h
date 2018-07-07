@@ -30,7 +30,6 @@ public:
   bool isFinal;
   bool isAbstract;
   Engine *engine;
-  std::weak_ptr<ScriptImpl> script;
   Function defaultConstructor;
   Function copyConstructor;
   Function moveConstructor;
@@ -49,8 +48,7 @@ public:
   std::shared_ptr<UserData> data;
   std::vector<Function> friend_functions;
   std::vector<Class> friend_classes;
-  std::weak_ptr<ClassImpl> enclosing_class;
-  std::weak_ptr<NamespaceImpl> enclosing_namespace;
+  std::weak_ptr<SymbolImpl> enclosing_symbol;
 
   ClassImpl(int i, const std::string & n, Engine *e)
     : id(i)

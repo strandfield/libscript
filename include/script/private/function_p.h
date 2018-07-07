@@ -19,6 +19,7 @@ class Statement;
 }
 
 class Name;
+class SymbolImpl;
 
 typedef std::shared_ptr<program::Expression> DefaultArgument;
 
@@ -56,7 +57,7 @@ public:
   Prototype prototype;
   Engine *engine;
   std::shared_ptr<UserData> data;
-  std::weak_ptr<ScriptImpl> script;
+  std::weak_ptr<SymbolImpl> enclosing_symbol;
   flag_type flags;
   struct {
     NativeFunctionSignature callback;

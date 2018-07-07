@@ -164,11 +164,6 @@ protected:
   void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
-  Class build(const ClassBuilder & builder);
-  Function build(const FunctionBuilder & builder);
-  Enum build(const Enum &, const std::string & name);
-
-protected:
   class StateGuard
   {
   private:

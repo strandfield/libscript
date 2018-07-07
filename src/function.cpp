@@ -8,11 +8,15 @@
 #include "script/cast.h"
 #include "script/private/cast_p.h"
 #include "script/class.h"
+#include "script/private/class_p.h"
 #include "script/literals.h"
 #include "script/private/literals_p.h"
 #include "script/name.h"
+#include "script/namespace.h"
+#include "script/private/namespace_p.h"
 #include "script/operator.h"
 #include "script/private/operator_p.h"
+#include "script/private/script_p.h"
 
 namespace script
 {
@@ -252,7 +256,12 @@ const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArgum
 
 Script Function::script() const
 {
-  return Script{ d->script.lock() };
+  auto enclosing_symbol = d->enclosing_symbol.lock();
+  if (dynamic_cast<NamespaceImpl*>(enclosing_symbol.get()) != nullptr)
+    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(enclosing_symbol) }.script();
+  else if (dynamic_cast<ClassImpl*>(enclosing_symbol.get()) != nullptr)
+    return Class{ std::dynamic_pointer_cast<ClassImpl>(enclosing_symbol) }.script();
+  return Script{};
 }
 
 bool Function::isConstructor() const
@@ -333,6 +342,10 @@ bool Function::isDeleted() const
 
 bool Function::isMemberFunction() const
 {
+  /* Remove this whole block, replace it by :*/
+  /// return dynamic_cast<const ClassImpl *>(d->enclosing_symbol.lock().get()) != nullptr;
+  /* Currently this causes problems with lambdas */
+
   if (isStatic())
     return true;
 
@@ -348,6 +361,10 @@ bool Function::isStatic() const
 
 Class Function::memberOf() const
 {
+  /* Remove this whole block, replace it by :*/
+  /// return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
+  /* Currently this causes problems with lambdas */
+
   if (isConstructor())
     return static_cast<const ConstructorImpl*>(d.get())->mClass;
   else if (isDestructor())
@@ -366,6 +383,14 @@ Class Function::memberOf() const
 AccessSpecifier Function::accessibility() const
 {
   return static_cast<AccessSpecifier>(3 & (d->flags >> 9));
+}
+
+Namespace Function::enclosingNamespace() const
+{
+  Class c = memberOf();
+  if (c.isNull())
+    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d->enclosing_symbol.lock()) };
+  return c.enclosingNamespace();
 }
 
 bool Function::isOperator() const

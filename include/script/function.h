@@ -24,6 +24,7 @@ class FunctionImpl;
 class FunctionTemplate;
 class LiteralOperator;
 class Name;
+class Namespace;
 class Operator;
 class Script;
 class TemplateArgument;
@@ -104,6 +105,7 @@ public:
   inline bool isNonStaticMemberFunction() const { return isMemberFunction() && !isStatic(); }
   Class memberOf() const;
   AccessSpecifier accessibility() const;
+  Namespace enclosingNamespace() const;
 
   bool isOperator() const;
   Operator toOperator() const;

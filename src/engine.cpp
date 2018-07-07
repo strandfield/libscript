@@ -317,7 +317,7 @@ void Engine::setup()
   Class string = buildClass(ClassBuilder::New(get_string_typename()), Type::String);
   register_string_type(string);
   d->rootNamespace.impl()->classes.push_back(string);
-  string.impl()->enclosing_namespace = d->rootNamespace.impl();
+  string.impl()->enclosing_symbol = d->rootNamespace.impl();
 
   d->templates.array = ArrayImpl::register_array_template(this);
 

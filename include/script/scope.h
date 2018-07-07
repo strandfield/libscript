@@ -17,6 +17,7 @@ enum class AccessSpecifier;
 class Enum;
 class Namespace;
 class NamespaceAlias;
+class Symbol;
 class Template;
 
 class NameLookup;
@@ -65,6 +66,8 @@ public:
   Namespace asNamespace() const;
   Enum asEnum() const;
   Script asScript() const;
+
+  Symbol symbol() const;
 
   const std::vector<Class> & classes() const;
   const std::vector<Enum> & enums() const;

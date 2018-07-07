@@ -7,7 +7,7 @@
 
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
-
+#include "script/private/symbol_p.h"
 #include "script/private/templateargumentscope_p.h"
 
 #include <algorithm> // std::max
@@ -15,20 +15,20 @@
 namespace script
 {
 
-TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s)
+TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
   : name(n)
   , parameters(std::move(params))
   , scope(scp)
   , engine(e)
-  , script(s)
+  , enclosing_symbol(es)
 {
 
 }
 
 FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
   NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
-  Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, std::move(params), scp, e, s)
+  Engine *e, std::shared_ptr<SymbolImpl> es)
+  : TemplateImpl(n, std::move(params), scp, e, es)
 {
   callbacks.deduction = deduc;
   callbacks.substitution = sub;
@@ -44,8 +44,8 @@ ClassTemplateImpl::ClassTemplateImpl(const std::string & n,
   std::vector<TemplateParameter> && params, 
   const Scope & scp,
   NativeClassTemplateInstantiationFunction inst,
-  Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(n, std::move(params), scp, e, s)
+  Engine *e, std::shared_ptr<SymbolImpl> es)
+  : TemplateImpl(n, std::move(params), scp, e, es)
   , instantiate(inst)
 {
 
@@ -56,8 +56,8 @@ ClassTemplateImpl::~ClassTemplateImpl()
 
 }
 
-PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<ScriptImpl> s)
-  : TemplateImpl(std::string{}, std::move(params), scp, e, s)
+PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
+  : TemplateImpl(std::string{}, std::move(params), scp, e, es)
   , class_template(ct.impl())
 {
 
@@ -163,7 +163,8 @@ bool Template::isNull() const
 
 Script Template::script() const
 {
-  return Script{ d->script.lock() };
+  auto enclosing_symbol = d->enclosing_symbol.lock();
+  return SymbolImpl::getScript(enclosing_symbol);
 }
 
 Engine * Template::engine() const

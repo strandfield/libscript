@@ -10,6 +10,8 @@
 
 #include "script/script.h"
 
+#include "script/private/class_p.h"
+#include "script/private/namespace_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/value_p.h"
 #include "script/interpreter/executioncontext.h"
@@ -117,14 +119,14 @@ Operator Enum::getAssignmentOperator() const
 
 Class Enum::memberOf() const
 {
-  return Class{ d->enclosing_class.lock() };
+  return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
 }
 
 Namespace Enum::enclosingNamespace() const
 {
   Class c = memberOf();
   if (c.isNull())
-    return Namespace{ d->enclosing_namespace.lock() };
+    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d->enclosing_symbol.lock()) };
   return c.enclosingNamespace();
 }
 
@@ -140,7 +142,8 @@ Engine * Enum::engine() const
 
 Script Enum::script() const
 {
-  return Script{ d->script.lock() };
+  auto enclosing_symbol = d->enclosing_symbol.lock();
+  return SymbolImpl::getScript(enclosing_symbol);
 }
 
 } // namespace script

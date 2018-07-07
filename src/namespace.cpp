@@ -45,6 +45,17 @@ Script Namespace::asScript() const
   return Script{ std::dynamic_pointer_cast<ScriptImpl>(d) };
 }
 
+Script Namespace::script() const
+{
+  if (isScriptNamespace())
+    return asScript();
+
+  auto enclosing_namespace = enclosingNamespace();
+  if (enclosing_namespace.isNull())
+    return Script{};
+  return enclosing_namespace.script();
+}
+
 bool Namespace::isModuleNamespace() const
 {
   return dynamic_cast<ModuleImpl*>(d.get()) != nullptr;
@@ -73,7 +84,7 @@ Enum Namespace::newEnum(const std::string & name)
 {
   Enum e = engine()->newEnum(name);
   d->enums.push_back(e);
-  e.impl()->enclosing_namespace = d;
+  e.impl()->enclosing_symbol = d;
   return e;
 }
 
@@ -94,7 +105,7 @@ Class Namespace::newClass(const ClassBuilder & opts)
 {
   Class cla = engine()->newClass(opts);
   d->classes.push_back(cla);
-  cla.impl()->enclosing_namespace = d;
+  cla.impl()->enclosing_symbol = d;
   return cla;
 }
 
