@@ -732,4 +732,26 @@ TEST(CoreUtilsTests, symbols) {
   ASSERT_TRUE(s.isNull());
   ASSERT_FALSE(s.isClass());
   ASSERT_FALSE(s.isNamespace());
+
+  /* Testing builder functions */
+
+  s = Symbol{ string };
+  Function length = s.Function("length").returns(Type::Int).setConst().create();
+  ASSERT_TRUE(length.isMemberFunction());
+  ASSERT_EQ(length.memberOf(), string);
+
+  Function assign = s.Operation(AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).create();
+  ASSERT_TRUE(assign.isMemberFunction());
+  ASSERT_EQ(assign.prototype().count(), 2);
+  ASSERT_EQ(assign.memberOf(), string);
+
+  s = Symbol{ ns };
+  Function max = s.Function("max").returns(Type::Int).params(Type::Int, Type::Int).create();
+  ASSERT_FALSE(max.isMemberFunction());
+  ASSERT_EQ(max.enclosingNamespace(), ns);
+
+  Function eq = s.Operation(EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).create();
+  ASSERT_FALSE(eq.isMemberFunction());
+  ASSERT_EQ(eq.enclosingNamespace(), ns);
+  ASSERT_EQ(eq.prototype().count(), 2);
 };

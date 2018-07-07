@@ -6,13 +6,16 @@
 #define LIBSCRIPT_SYMBOL_H
 
 #include "libscriptdefs.h"
+#include "operators.h"
 
 namespace script
 {
 
 class Class;
+class FunctionBuilder;
 class Namespace;
 class SymbolImpl;
+class Type;
 
 class LIBSCRIPT_API Symbol
 {
@@ -33,6 +36,9 @@ public:
 
   bool isNamespace() const;
   Namespace toNamespace() const;
+
+  FunctionBuilder Function(const std::string & name);
+  FunctionBuilder Operation(OperatorName op);
 
   Symbol & operator=(const Symbol &) = default;
 

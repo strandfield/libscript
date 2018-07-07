@@ -5,6 +5,7 @@
 #include "script/symbol.h"
 
 #include "script/class.h"
+#include "script/functionbuilder.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
@@ -61,5 +62,22 @@ Namespace Symbol::toNamespace() const
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
 }
 
+FunctionBuilder Symbol::Function(const std::string & name)
+{
+  if (isClass())
+    return toClass().Method(name);
+  else if (isNamespace())
+    return toNamespace().Function(name);
+  throw std::runtime_error{ "Cannot add function on null symbol" };
+}
+
+FunctionBuilder Symbol::Operation(OperatorName op)
+{
+  if (isClass())
+    return toClass().Operation(op);
+  else if (isNamespace())
+    return toNamespace().Operation(op);
+  throw std::runtime_error{ "Cannot add operator on null symbol" };
+}
 
 } // namespace script
