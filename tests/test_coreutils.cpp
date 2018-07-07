@@ -19,6 +19,7 @@
 #include "script/namelookup.h"
 #include "script/namespacealias.h"
 #include "script/sourcefile.h"
+#include "script/symbol.h"
 #include "script/types.h"
 
 
@@ -701,4 +702,34 @@ TEST(CoreUtilsTests, function_names) {
   /// TODO : make this work !
   Function dtor = e.getClass(Type::String).destructor();
   ASSERT_ANY_THROW(dtor.getName());
+};
+
+
+TEST(CoreUtilsTests, symbols) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class string = e.getClass(Type::String);
+  Namespace ns = e.rootNamespace();
+
+  Symbol s{ string };
+  ASSERT_FALSE(s.isNull());
+  ASSERT_TRUE(s.isClass());
+  ASSERT_FALSE(s.isNamespace());
+
+  ASSERT_EQ(s.toClass(), string);
+
+  s = Symbol{ ns };
+  ASSERT_FALSE(s.isNull());
+  ASSERT_FALSE(s.isClass());
+  ASSERT_TRUE(s.isNamespace());
+
+  ASSERT_EQ(s.toNamespace(), ns);
+
+  s = Symbol{};
+  ASSERT_TRUE(s.isNull());
+  ASSERT_FALSE(s.isClass());
+  ASSERT_FALSE(s.isNamespace());
 };

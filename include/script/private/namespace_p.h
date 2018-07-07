@@ -12,6 +12,7 @@
 #include "script/class.h"
 #include "script/literals.h"
 #include "script/namespace.h"
+#include "script/private/symbol_p.h"
 #include "script/template.h"
 #include "script/value.h"
 #include "script/typedefs.h"
@@ -19,7 +20,7 @@
 namespace script
 {
 
-class NamespaceImpl
+class NamespaceImpl : public SymbolImpl
 {
 public:
   Engine *engine;

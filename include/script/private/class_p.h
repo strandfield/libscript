@@ -9,6 +9,7 @@
 #include "script/classtemplate.h"
 #include "script/function.h"
 #include "script/cast.h"
+#include "script/private/symbol_p.h"
 #include "script/typedefs.h"
 
 #include <map>
@@ -20,7 +21,7 @@ class NamespaceImpl;
 class ScriptImpl;
 class UserData;
 
-class ClassImpl
+class ClassImpl : public SymbolImpl
 {
 public:
   int id;
