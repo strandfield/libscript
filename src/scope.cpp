@@ -878,7 +878,7 @@ bool ClassScope::lookup(const std::string & name, const Class & c, NameLookupImp
 }
 
 
-LambdaScope::LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p)
+LambdaScope::LambdaScope(const ClosureType & l, std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
   , mClosure(l)
 {

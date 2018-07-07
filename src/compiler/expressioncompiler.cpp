@@ -148,7 +148,7 @@ std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_t
   }
   else if (functor_type.isClosureType())
   {
-    Lambda closure = engine()->getLambda(functor_type);
+    ClosureType closure = engine()->getLambda(functor_type);
     return { closure.function() };
   }
 

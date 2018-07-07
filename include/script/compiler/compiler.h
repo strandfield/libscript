@@ -61,7 +61,7 @@ public:
     std::vector<Class> classes;
     std::vector<Enum> enums;
     std::vector<Function> functions;
-    std::vector<Lambda> lambdas;
+    std::vector<ClosureType> lambdas;
     std::shared_ptr<program::Expression> expression;
   } generated;
 
@@ -90,7 +90,7 @@ public:
   bool compile(Script s);
 
 protected:
-  Lambda newLambda();
+  ClosureType newLambda();
   [[deprecated("Internal note: remove in future version")]] Class build(const ClassBuilder & builder);
   [[deprecated("Internal note: remove in future version")]] Enum build(const Enum &, const std::string & name);
   [[deprecated("Internal note: remove in future version")]] Function build(const FunctionBuilder & builder);

@@ -20,7 +20,7 @@ class Array;
 class Engine;
 class EnumValue;
 class Function;
-class LambdaObject;
+class Lambda;
 class Object;
 
 struct ValueImpl;
@@ -67,11 +67,11 @@ public:
   Object toObject() const;
   Array toArray() const;
   EnumValue toEnumValue() const;
-  LambdaObject toLambda() const;
+  Lambda toLambda() const;
 
   static Value fromEnumValue(const EnumValue & ev);
   static Value fromFunction(const Function & f, const Type & ft);
-  static Value fromLambda(const LambdaObject & obj);
+  static Value fromLambda(const Lambda & obj);
   static Value fromArray(const Array & a);
 
   Engine* engine() const;

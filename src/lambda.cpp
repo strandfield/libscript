@@ -8,10 +8,67 @@
 namespace script
 {
 
-LambdaImpl::LambdaImpl(int i)
+ClosureTypeImpl::ClosureTypeImpl(int i)
   : id(i)
 {
 
+}
+
+
+ClosureType::ClosureType(const std::shared_ptr<ClosureTypeImpl> & impl)
+  : d(impl)
+{
+
+}
+
+int ClosureType::id() const
+{
+  return d->id;
+}
+
+int ClosureType::captureCount() const
+{
+  return d->captures.size();
+}
+
+bool ClosureType::isCaptureless() const
+{
+  return d->captures.size() == 0;
+}
+
+const std::vector<ClosureType::Capture> ClosureType::captures() const
+{
+  return d->captures;
+}
+
+const Prototype & ClosureType::prototype() const
+{
+  return d->function.prototype();
+}
+
+Operator ClosureType::function() const
+{
+  return d->function;
+}
+
+Engine* ClosureType::engine() const
+{
+  return d->function.engine();
+}
+
+const std::shared_ptr<ClosureTypeImpl> & ClosureType::impl() const
+{
+  return d;
+}
+
+bool ClosureType::operator==(const ClosureType & other) const
+{
+  return d == other.d;
+}
+
+bool ClosureType::operator!=(const ClosureType & other) const
+{
+  return d != other.d;
 }
 
 
@@ -21,9 +78,14 @@ Lambda::Lambda(const std::shared_ptr<LambdaImpl> & impl)
 
 }
 
-int Lambda::id() const
+bool Lambda::isNull() const
 {
-  return d->id;
+  return d == nullptr;
+}
+
+ClosureType Lambda::closureType() const
+{
+  return d->closureType;
 }
 
 int Lambda::captureCount() const
@@ -31,29 +93,19 @@ int Lambda::captureCount() const
   return d->captures.size();
 }
 
-bool Lambda::isCaptureless() const
+Value Lambda::getCapture(int index) const
 {
-  return d->captures.size() == 0;
+  return d->captures.at(index);
 }
 
-const std::vector<Lambda::Capture> Lambda::captures() const
+const std::vector<Value> & Lambda::captures() const
 {
   return d->captures;
 }
 
-const Prototype & Lambda::prototype() const
-{
-  return d->function.prototype();
-}
-
-Operator Lambda::function() const
-{
-  return d->function;
-}
-
 Engine* Lambda::engine() const
 {
-  return d->function.engine();
+  return d->closureType.engine();
 }
 
 const std::shared_ptr<LambdaImpl> & Lambda::impl() const
@@ -62,58 +114,6 @@ const std::shared_ptr<LambdaImpl> & Lambda::impl() const
 }
 
 bool Lambda::operator==(const Lambda & other) const
-{
-  return d == other.d;
-}
-
-bool Lambda::operator!=(const Lambda & other) const
-{
-  return d != other.d;
-}
-
-
-LambdaObject::LambdaObject(const std::shared_ptr<LambdaObjectImpl> & impl)
-  : d(impl)
-{
-
-}
-
-bool LambdaObject::isNull() const
-{
-  return d == nullptr;
-}
-
-Lambda LambdaObject::closureType() const
-{
-  return d->closureType;
-}
-
-int LambdaObject::captureCount() const
-{
-  return d->captures.size();
-}
-
-Value LambdaObject::getCapture(int index) const
-{
-  return d->captures.at(index);
-}
-
-const std::vector<Value> & LambdaObject::captures() const
-{
-  return d->captures;
-}
-
-Engine* LambdaObject::engine() const
-{
-  return d->closureType.engine();
-}
-
-const std::shared_ptr<LambdaObjectImpl> & LambdaObject::impl() const
-{
-  return d;
-}
-
-bool LambdaObject::operator==(const LambdaObject & other) const
 {
   return d == other.d;
 }

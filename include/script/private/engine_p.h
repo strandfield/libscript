@@ -47,7 +47,7 @@ public:
   std::vector<FunctionType> prototypes;
   std::vector<Class> classes;
   std::vector<Enum> enums;
-  std::vector<Lambda> lambdas;
+  std::vector<ClosureType> lambdas;
   std::vector<Script> scripts;
   std::vector<Module> modules;
   
@@ -79,7 +79,7 @@ public:
 
   void placement(const Function & ctor, Value object, const std::vector<Value> & args);
 
-  Lambda newLambda();
+  ClosureType newLambda();
 
   void register_class(Class & c);
 

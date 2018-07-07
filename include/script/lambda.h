@@ -11,16 +11,16 @@
 namespace script
 {
 
-class LambdaImpl;
+class ClosureTypeImpl;
 
-class LIBSCRIPT_API Lambda
+class LIBSCRIPT_API ClosureType
 {
 public:
-  Lambda() = default;
-  Lambda(const Lambda &) = default;
-  ~Lambda() = default;
+  ClosureType() = default;
+  ClosureType(const ClosureType &) = default;
+  ~ClosureType() = default;
 
-  explicit Lambda(const std::shared_ptr<LambdaImpl> & impl);
+  explicit ClosureType(const std::shared_ptr<ClosureTypeImpl> & impl);
 
   struct Capture {
     Type type;
@@ -38,30 +38,30 @@ public:
 
   Engine* engine() const;
 
-  const std::shared_ptr<LambdaImpl> & impl() const;
+  const std::shared_ptr<ClosureTypeImpl> & impl() const;
 
-  Lambda & operator=(const Lambda &) = default;
-  bool operator==(const Lambda & other) const;
-  bool operator!=(const Lambda & other) const;
+  ClosureType & operator=(const ClosureType &) = default;
+  bool operator==(const ClosureType & other) const;
+  bool operator!=(const ClosureType & other) const;
 
 private:
-  std::shared_ptr<LambdaImpl> d;
+  std::shared_ptr<ClosureTypeImpl> d;
 };
 
 
-class LambdaObjectImpl;
+class LambdaImpl;
 
-class LIBSCRIPT_API LambdaObject
+class LIBSCRIPT_API Lambda
 {
 public:
-  LambdaObject() = default;
-  LambdaObject(const LambdaObject &) = default;
-  ~LambdaObject() = default;
+  Lambda() = default;
+  Lambda(const Lambda &) = default;
+  ~Lambda() = default;
 
-  LambdaObject(const std::shared_ptr<LambdaObjectImpl> & impl);
+  Lambda(const std::shared_ptr<LambdaImpl> & impl);
 
   bool isNull() const;
-  Lambda closureType() const;
+  ClosureType closureType() const;
 
   int captureCount() const;
   Value getCapture(int index) const;
@@ -69,14 +69,14 @@ public:
 
   Engine* engine() const;
 
-  const std::shared_ptr<LambdaObjectImpl> & impl() const;
+  const std::shared_ptr<LambdaImpl> & impl() const;
 
-  LambdaObject & operator=(const LambdaObject & ) = default;
-  bool operator==(const LambdaObject & other) const;
-  inline bool operator!=(const LambdaObject & other) const { return !operator==(other); }
+  Lambda & operator=(const Lambda & ) = default;
+  bool operator==(const Lambda & other) const;
+  inline bool operator!=(const Lambda & other) const { return !operator==(other); }
 
 private:
-  std::shared_ptr<LambdaObjectImpl> d;
+  std::shared_ptr<LambdaImpl> d;
 };
 
 } // namespace script

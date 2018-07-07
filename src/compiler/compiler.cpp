@@ -130,7 +130,7 @@ bool Compiler::compile(Script s)
   return true;
 }
 
-Lambda Compiler::newLambda()
+ClosureType Compiler::newLambda()
 {
   auto ret = engine()->implementation()->newLambda();
   session()->generated.lambdas.push_back(ret);

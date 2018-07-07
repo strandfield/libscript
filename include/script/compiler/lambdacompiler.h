@@ -50,7 +50,7 @@ struct CompileLambdaTask
 struct LambdaCompilationResult
 {
   std::shared_ptr<program::LambdaExpression> expression;
-  Lambda closure_type;
+  ClosureType closure_type;
 };
 
 class LambdaCompiler;
@@ -103,7 +103,7 @@ protected:
 
 private:
   std::vector<Capture> mCaptures;
-  Lambda mLambda;
+  ClosureType mLambda;
   LambdaCompilerVariableAccessor variable_;
 };
 

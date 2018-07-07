@@ -177,7 +177,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   for (const auto & cap : task.captures)
   {
-    mLambda.impl()->captures.push_back(Lambda::Capture{ cap.type, cap.name });
+    mLambda.impl()->captures.push_back(ClosureType::Capture{ cap.type, cap.name });
   }
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };

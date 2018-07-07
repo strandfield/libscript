@@ -82,12 +82,12 @@ bool ValueImpl::is_lambda() const
   return !data.lambda.isNull();
 }
 
-const LambdaObject & ValueImpl::get_lambda() const
+const Lambda & ValueImpl::get_lambda() const
 {
   return data.lambda;
 }
 
-void ValueImpl::set_lambda(const LambdaObject & lval)
+void ValueImpl::set_lambda(const Lambda & lval)
 {
   data.lambda = lval;
 }
@@ -284,7 +284,7 @@ EnumValue Value::toEnumValue() const
   return d->get_enum_value();
 }
 
-LambdaObject Value::toLambda() const
+Lambda Value::toLambda() const
 {
   return d->get_lambda();
 }
@@ -319,7 +319,7 @@ Value Value::fromArray(const Array & a)
   return ret;
 }
 
-Value Value::fromLambda(const LambdaObject & obj)
+Value Value::fromLambda(const Lambda & obj)
 {
   if (obj.isNull())
     return Value{};

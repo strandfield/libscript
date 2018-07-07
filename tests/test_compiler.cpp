@@ -379,7 +379,7 @@ TEST(CompilerTests, lambda) {
 
   Value f = s.globals().front();
   ASSERT_TRUE(f.type().isClosureType());
-  LambdaObject lambda = f.toLambda();
+  Lambda lambda = f.toLambda();
   ASSERT_EQ(lambda.closureType().function().returnType(), Type::Int);
 
 

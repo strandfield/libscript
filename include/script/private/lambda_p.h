@@ -12,25 +12,25 @@
 namespace script
 {
 
-class LambdaImpl
+class ClosureTypeImpl
 {
 public:
   int id;
-  std::vector<Lambda::Capture> captures;
+  std::vector<ClosureType::Capture> captures;
   Operator function;
 
 public:
-  LambdaImpl(int id);
+  ClosureTypeImpl(int id);
 };
 
-class LambdaObjectImpl
+class LambdaImpl
 {
 public:
-  Lambda closureType;
+  ClosureType closureType;
   std::vector<Value> captures;
 
 public:
-  LambdaObjectImpl(const Lambda & l)
+  LambdaImpl(const ClosureType & l)
     : closureType(l)
   {
     captures.reserve(closureType.captureCount());

@@ -220,11 +220,11 @@ void EngineImpl::placement(const Function & ctor, Value object, const std::vecto
   this->interpreter->placement(ctor, object, args.begin(), args.end());
 }
 
-Lambda EngineImpl::newLambda()
+ClosureType EngineImpl::newLambda()
 {
   const int id = static_cast<int>(this->lambdas.size()) | Type::LambdaFlag;
   // const int index = id & 0xFFFF;
-  Lambda l{ std::make_shared<LambdaImpl>(id) };
+  ClosureType l{ std::make_shared<ClosureTypeImpl>(id) };
   this->lambdas.push_back(l);
   return l;
 }
@@ -665,10 +665,10 @@ static Value copy_enumvalue(const Value & val, Engine *e)
   return Value::fromEnumValue(val.toEnumValue());
 }
 
-static LambdaObject copy_lambda(const LambdaObject & l, Engine *e)
+static Lambda copy_lambda(const Lambda & l, Engine *e)
 {
-  auto ret = std::make_shared<LambdaObjectImpl>(l.closureType());
-  Lambda closure_type = l.closureType();
+  auto ret = std::make_shared<LambdaImpl>(l.closureType());
+  ClosureType closure_type = l.closureType();
   for (size_t i(0); i < l.captures().size(); ++i)
   {
     if (closure_type.captures().at(i).type.isReference())
@@ -676,7 +676,7 @@ static LambdaObject copy_lambda(const LambdaObject & l, Engine *e)
     else
       ret->captures.push_back(e->copy(l.captures().at(i)));
   }
-  return LambdaObject{ ret };
+  return Lambda{ ret };
 }
 
 Value Engine::copy(const Value & val)
@@ -792,10 +792,10 @@ Enum Engine::getEnum(Type id) const
   return d->enums[index];
 }
 
-Lambda Engine::getLambda(Type id) const
+ClosureType Engine::getLambda(Type id) const
 {
   if (!id.isClosureType())
-    return Lambda{};
+    return ClosureType{};
 
   int index = id.data() & 0xFFFF;
   return d->lambdas[index];

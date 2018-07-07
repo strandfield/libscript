@@ -363,7 +363,7 @@ Value Interpreter::visit(const program::BindExpression & bind)
 Value Interpreter::visit(const program::CaptureAccess & ca)
 {
   Value value = eval(ca.lambda);
-  LambdaObject lambda = value.toLambda();
+  Lambda lambda = value.toLambda();
   return lambda.captures().at(ca.offset);
 }
 
@@ -462,13 +462,13 @@ Value Interpreter::visit(const program::FundamentalConversion & conv)
 
 Value Interpreter::visit(const program::LambdaExpression & lexpr)
 {
-  Lambda closure_type = mEngine->getLambda(lexpr.closureType);
-  auto limpl = std::make_shared<LambdaObjectImpl>(closure_type);
+  ClosureType closure_type = mEngine->getLambda(lexpr.closureType);
+  auto limpl = std::make_shared<LambdaImpl>(closure_type);
 
   for (const auto & cap : lexpr.captures)
     limpl->captures.push_back(eval(cap));
 
-  auto ret = Value::fromLambda(LambdaObject{ limpl });
+  auto ret = Value::fromLambda(Lambda{ limpl });
   mEngine->manage(ret);
   return ret;
 }

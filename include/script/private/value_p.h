@@ -47,12 +47,12 @@ struct LIBSCRIPT_API ValueImpl
       void *data;
     }builtin;
 
-    /// TODO : we could try to merge LambdaObject and Object
-    // a LambdaObject is an object (and its members are captures)
+    /// TODO : we could try to merge Lambda and Object
+    // a Lambda is an object (and its members are captures)
     Object object;
     Array array;
     Function function;
-    LambdaObject lambda;
+    Lambda lambda;
   };
   Storage data;
 
@@ -89,8 +89,8 @@ struct LIBSCRIPT_API ValueImpl
   const Function & get_function() const;
   void set_function(const Function & fval);
   bool is_lambda() const;
-  const LambdaObject & get_lambda() const;
-  void set_lambda(const LambdaObject & lval);
+  const Lambda & get_lambda() const;
+  void set_lambda(const Lambda & lval);
   const EnumValue & get_enum_value() const;
   void set_enum_value(const EnumValue & evval);
 

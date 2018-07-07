@@ -190,11 +190,11 @@ public:
 class LambdaScope : public ScopeImpl
 {
 public:
-  LambdaScope(const Lambda & l, std::shared_ptr<ScopeImpl> p = nullptr);
+  LambdaScope(const ClosureType & l, std::shared_ptr<ScopeImpl> p = nullptr);
   LambdaScope(const LambdaScope & other);
   ~LambdaScope() = default;
 
-  Lambda mClosure;
+  ClosureType mClosure;
 
   Engine * engine() const override;
   int kind() const override;

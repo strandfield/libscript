@@ -100,7 +100,7 @@ public:
   bool hasType(const Type & t) const;
   Class getClass(Type id) const;
   Enum getEnum(Type id) const;
-  Lambda getLambda(Type id) const;
+  ClosureType getLambda(Type id) const;
 
   FunctionType newFunctionType(const Prototype & proto);
   Enum newEnum(const std::string & name);
