@@ -177,7 +177,7 @@ OverloadResolution::ViabilityStatus OverloadResolution::getViabilityStatus(const
 
   conversions->clear();
 
-  const int implicit_object_offset = (f.isNonStaticMemberFunction() && d->implicit_object != nullptr) ? 1 : 0;
+  const int implicit_object_offset = (f.hasImplicitObject() && d->implicit_object != nullptr) ? 1 : 0;
   const int argc = d->arguments.size() + implicit_object_offset;
 
   if (!f.accepts(argc))
@@ -353,12 +353,12 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
   for (const auto & func : candidates)
   {
     conversions.clear();
-    const int actual_argc = func.isNonStaticMemberFunction() ? argc + 1 : argc;
+    const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
 
     if (!func.accepts(actual_argc))
       continue;
 
-    if (func.isNonStaticMemberFunction())
+    if (func.hasImplicitObject())
     {
       ConversionSequence conv = ConversionSequence::compute(object->type(), func.parameter(0), d->engine);
       conversions.push_back(conv);
@@ -366,7 +366,7 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
         continue;
     }
 
-    const int parameter_offset = func.isNonStaticMemberFunction() ? 1 : 0;
+    const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
 
     bool ok = true;
     for (int i(0); i < argc; ++i)

@@ -102,7 +102,9 @@ public:
 
   bool isMemberFunction() const;
   bool isStatic() const;
+  bool isSpecial() const;
   inline bool isNonStaticMemberFunction() const { return isMemberFunction() && !isStatic(); }
+  bool hasImplicitObject() const;
   Class memberOf() const;
   AccessSpecifier accessibility() const;
   Namespace enclosingNamespace() const;

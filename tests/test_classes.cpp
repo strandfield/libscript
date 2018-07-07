@@ -162,6 +162,7 @@ TEST(ClassTest, static_member_functions) {
 
   ASSERT_TRUE(foo.isMemberFunction());
   ASSERT_FALSE(foo.isNonStaticMemberFunction());
+  ASSERT_FALSE(foo.hasImplicitObject());
   ASSERT_TRUE(foo.isStatic());
 
   ASSERT_EQ(foo.prototype().count(), 1);

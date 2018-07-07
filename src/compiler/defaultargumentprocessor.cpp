@@ -19,7 +19,7 @@ namespace compiler
 
 void DefaultArgumentProcessor::process(const std::vector<ast::FunctionParameter> & params, Function & f, const Scope & scp)
 {
-  const int param_offset = f.isNonStaticMemberFunction() ? 1 : 0;
+  const int param_offset = f.hasImplicitObject() ? 1 : 0;
 
   size_t i = 0;
   while (i < params.size() && params.at(i).defaultValue == nullptr)

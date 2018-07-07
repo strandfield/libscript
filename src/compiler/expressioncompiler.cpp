@@ -163,7 +163,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::implicit_object() const
     return nullptr;
   if (caller().isDestructor() || caller().isConstructor())
     return program::StackValue::New(0, Type::ref(caller().memberOf().id()));
-  else if(caller().isNonStaticMemberFunction())
+  else if(caller().hasImplicitObject())
     return program::StackValue::New(1, Type::ref(caller().memberOf().id()));
   return nullptr;
 }
@@ -369,7 +369,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     templateProcessor().instantiate(selected);
   }
 
-  if (selected.isNonStaticMemberFunction() && !selected.isConstructor() && object != nullptr)
+  if (selected.hasImplicitObject() && object != nullptr)
     args.insert(args.begin(), object);
 
   const auto & convs = resol.conversionSequence();

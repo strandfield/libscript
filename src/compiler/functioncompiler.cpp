@@ -415,7 +415,7 @@ std::string FunctionCompiler::argumentName(int index)
 {
   auto funcdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(declaration());
 
-  if (mFunction.isNonStaticMemberFunction())
+  if (mFunction.hasImplicitObject())
   {
     if (index == 0)
       return "this";
@@ -435,7 +435,7 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 
 bool FunctionCompiler::canUseThis() const
 {
-  return mFunction.isNonStaticMemberFunction() || mFunction.isConstructor() || mFunction.isDestructor();
+  return mFunction.hasImplicitObject() || mFunction.isConstructor() || mFunction.isDestructor();
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)

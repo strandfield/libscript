@@ -382,6 +382,10 @@ TEST(CompilerTests, lambda) {
   Lambda lambda = f.toLambda();
   ASSERT_EQ(lambda.closureType().function().returnType(), Type::Int);
 
+  Function call = lambda.closureType().function();
+  ASSERT_TRUE(call.isNonStaticMemberFunction());
+  ASSERT_TRUE(call.memberOf().isClosure());
+  ASSERT_EQ(call.memberOf().toClosure(), lambda.closureType());
 
   Value a = s.globals().back();
   ASSERT_EQ(a.type(), Type::Int);

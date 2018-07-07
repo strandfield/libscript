@@ -342,16 +342,7 @@ bool Function::isDeleted() const
 
 bool Function::isMemberFunction() const
 {
-  /* Remove this whole block, replace it by :*/
-  /// return dynamic_cast<const ClassImpl *>(d->enclosing_symbol.lock().get()) != nullptr;
-  /* Currently this causes problems with lambdas */
-
-  if (isStatic())
-    return true;
-
-  if (d->prototype.count() == 0)
-    return false;
-  return d->prototype.at(0).testFlag(Type::ThisFlag);
+  return dynamic_cast<const ClassImpl *>(d->enclosing_symbol.lock().get()) != nullptr;
 }
 
 bool Function::isStatic() const
@@ -359,25 +350,19 @@ bool Function::isStatic() const
   return dynamic_cast<StaticMemberFunctionImpl*>(d.get()) != nullptr;
 }
 
+bool Function::isSpecial() const
+{
+  return isConstructor() || isDestructor();
+}
+
+bool Function::hasImplicitObject() const
+{
+  return isNonStaticMemberFunction() && !isConstructor();
+}
+
 Class Function::memberOf() const
 {
-  /* Remove this whole block, replace it by :*/
-  /// return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
-  /* Currently this causes problems with lambdas */
-
-  if (isConstructor())
-    return static_cast<const ConstructorImpl*>(d.get())->mClass;
-  else if (isDestructor())
-    return static_cast<const DestructorImpl*>(d.get())->mClass;
-  else if (isStatic())
-    return static_cast<const StaticMemberFunctionImpl*>(d.get())->mClass;
-
-  if (d->prototype.count() == 0)
-    return Class{};
-  if (!d->prototype.at(0).testFlag(Type::ThisFlag))
-    return Class{};
-  Type cla = d->prototype.at(0);
-  return d->engine->getClass(cla);
+  return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
 }
 
 AccessSpecifier Function::accessibility() const
