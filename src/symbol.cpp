@@ -42,6 +42,15 @@ Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
 
 }
 
+Engine* Symbol::engine() const
+{
+  if (isClass())
+    return toClass().engine();
+  else if (isNamespace())
+    return toNamespace().engine();
+  return nullptr;
+}
+
 bool Symbol::isClass() const
 {
   return dynamic_cast<ClassImpl*>(d.get()) != nullptr;

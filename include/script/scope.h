@@ -101,6 +101,8 @@ public:
   bool lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const;
   bool lookup(const std::string & name, NameLookupImpl *nl) const;
 
+  void invalidateCache();
+
   const std::shared_ptr<ScopeImpl> & impl() const;
 
 private:

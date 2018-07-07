@@ -27,38 +27,21 @@ public:
     return scp.isClass() ? scp.asClass() : (scp.type() == Scope::TemplateArgumentScope ? getClass(scp.parent()) : Class{});
   }
 
-  Prototype process(const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
+  void fill(Prototype & proto, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
-    Prototype result;
-
     const Class class_scope = getClass(scp);
 
     if (fundecl->is<ast::ConstructorDecl>())
-      result.setReturnType(Type{ class_scope.id(), Type::ReferenceFlag | Type::ConstFlag });
-    else if (fundecl->is<ast::DestructorDecl>())
-      result.setReturnType(Type::Void);
-    else
-      result.setReturnType(type_.resolve(fundecl->returnType, scp));
-
-    if (!class_scope.isNull() && fundecl->staticKeyword == parser::Token::Invalid
-      && fundecl->is<ast::ConstructorDecl>() == false)
-    {
-      Type thisType{ class_scope.id(), Type::ReferenceFlag | Type::ThisFlag };
-      if (fundecl->constQualifier.isValid())
-        thisType.setFlag(Type::ConstFlag);
-
-      result.addParameter(thisType);
-    }
+      proto.setReturnType(Type{ class_scope.id(), Type::ReferenceFlag | Type::ConstFlag });
+    else if (!fundecl->is<ast::DestructorDecl>())
+      proto.setReturnType(type_.resolve(fundecl->returnType, scp));
 
     for (size_t i(0); i < fundecl->params.size(); ++i)
     {
       Type argtype = type_.resolve(fundecl->params.at(i).type, scp);
-      result.addParameter(argtype);
+      proto.addParameter(argtype);
     }
-
-    return result;
   }
-
 };
 
 
@@ -73,7 +56,7 @@ public:
 
   void fill(FunctionBuilder & builder, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
-    builder.proto = prototype_.process(fundecl, scp);
+    prototype_.fill(builder.proto, fundecl, scp);
 
     if (fundecl->deleteKeyword.isValid())
       builder.setDeleted();
@@ -103,6 +86,13 @@ public:
       builder.setVirtual();
       if (fundecl->virtualPure.isValid())
         builder.setPureVirtual();
+    }
+
+    if (fundecl->constQualifier.isValid())
+    {
+      if (!scp.isClass() || fundecl->is<ast::ConstructorDecl>() || fundecl->is<ast::DestructorDecl>() || fundecl->staticKeyword.isValid())
+        throw InvalidUseOfConstKeyword{ dpos(fundecl->constQualifier) };
+      builder.setConst();
     }
 
     builder.setAccessibility(scp.accessibility());

@@ -253,6 +253,11 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
   return false;
 }
 
+void ScopeImpl::invalidate_cache()
+{
+
+}
+
 
 ExtensibleScope::ExtensibleScope(std::shared_ptr<ScopeImpl> p)
   : ScopeImpl(p)
@@ -635,14 +640,7 @@ void NamespaceScope::import_namespace(const NamespaceScope & other)
   for (const auto & ns : other.mImportedNamespaces)
     mImportedNamespaces.push_back(ns);
 
-  mClasses.clear();
-  mEnums.clear();
-  mFunctions.clear();
-  mLiteralOperators.clear();
-  mOperators.clear();
-  mTemplates.clear();
-  mValues.clear();
-  mTypedefs.clear();
+  invalidate_cache();
 }
 
 bool NamespaceScope::lookup(const std::string & name, NameLookupImpl *nl) const
@@ -654,6 +652,18 @@ bool NamespaceScope::lookup(const std::string & name, NameLookupImpl *nl) const
   }
 
   return ExtensibleScope::lookup(name, nl);
+}
+
+void NamespaceScope::invalidate_cache()
+{
+  mClasses.clear();
+  mEnums.clear();
+  mFunctions.clear();
+  mLiteralOperators.clear();
+  mOperators.clear();
+  mTemplates.clear();
+  mValues.clear();
+  mTypedefs.clear();
 }
 
 
@@ -1475,6 +1485,11 @@ bool Scope::lookup(const std::string & name, NameLookupImpl *nl) const
     return false;
 
   return Scope{ d->parent }.lookup(name, nl);
+}
+
+void Scope::invalidateCache()
+{
+  d->invalidate_cache();
 }
 
 const std::shared_ptr<ScopeImpl> & Scope::impl() const

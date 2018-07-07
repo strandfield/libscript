@@ -147,7 +147,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   if (ft.hasInstance(*template_args, &f))
     return f;
   
-  FunctionBuilder builder = FunctionBuilder::Function(std::string{}, Prototype{});
+  FunctionBuilder builder = Symbol{ ft.impl()->enclosing_symbol.lock() }.Function(std::string{});
 
   if (is_native)
   {
@@ -171,6 +171,8 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
     fp.fill(builder, fundecl, tparamscope);
   }
 
+  // We construct the function manually.
+  // We don't use create() to avoid adding the function to the namespace or class.
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, *template_args, builder.name, builder.proto, ft.engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;

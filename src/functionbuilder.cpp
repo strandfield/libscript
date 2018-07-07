@@ -292,6 +292,9 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
 script::Function FunctionBuilder::create()
 {
   if (this->engine == nullptr)
+    this->engine = this->symbol.engine();
+
+  if (this->engine == nullptr)
     throw std::runtime_error{ "FunctionBuilder::create() : null engine" };
 
   if (is_member_function())

@@ -12,6 +12,7 @@ namespace script
 {
 
 class Class;
+class Engine;
 class FunctionBuilder;
 class Namespace;
 class SymbolImpl;
@@ -30,6 +31,8 @@ public:
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
+
+  Engine* engine() const;
 
   bool isClass() const;
   Class toClass() const;

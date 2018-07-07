@@ -10,6 +10,7 @@
 #include "script/private/enum_p.h"
 #include "script/functionbuilder.h"
 #include "script/private/module_p.h"
+#include "script/private/template_p.h"
 
 namespace script
 {
@@ -141,6 +142,7 @@ void Namespace::addOperator(const Operator & op)
 void Namespace::addTemplate(const Template & t)
 {
   d->templates.push_back(t);
+  t.impl()->enclosing_symbol = d;
 }
 
 const std::map<std::string, Value> & Namespace::vars() const

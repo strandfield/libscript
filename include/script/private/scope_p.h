@@ -73,6 +73,8 @@ public:
   virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
 
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
+
+  virtual void invalidate_cache();
 };
 
 class ExtensibleScope : public ScopeImpl
@@ -149,6 +151,8 @@ public:
   void import_namespace(const NamespaceScope & other);
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
+
+  void invalidate_cache() override;
 };
 
 class ClassScope : public ExtensibleScope

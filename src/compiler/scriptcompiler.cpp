@@ -512,8 +512,9 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
   ClassBuilder builder{ std::string{} };
   fill(builder, class_decl);
 
-  Class cla = build(builder);
-  currentScope().impl()->add_class(cla);
+  Symbol symbol = currentScope().symbol();
+  Class cla = symbol.isClass() ? symbol.toClass().newClass(builder) : symbol.toNamespace().newClass(builder);
+  mCurrentScope.invalidateCache();
 
   readClassContent(cla, class_decl);
 }
@@ -556,8 +557,10 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
   const Scope scp = currentScope();
   const ast::EnumDeclaration & enum_decl = *decl;
 
-  Enum e = build(Enum{}, enum_decl.name->getName());
-  scp.impl()->add_enum(e);
+  Symbol symbol = scp.symbol();
+
+  Enum e = symbol.isClass() ? symbol.toClass().newEnum(enum_decl.name->getName()) : symbol.toNamespace().newEnum(enum_decl.name->getName());
+  mCurrentScope.invalidateCache();
 
   for (size_t i(0); i < enum_decl.values.size(); ++i)
   {
@@ -615,11 +618,9 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   const Scope scp = currentScope();
-  FunctionBuilder builder = FunctionBuilder::Function(fundecl->name->getName(), Prototype{});
+  FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
   function_processor_.fill(builder, fundecl, scp);
-  Function function = build(builder);
-
-  scp.impl()->add_function(function);
+  Function function = builder.create();
 
   if (function.isVirtual() && !fundecl->virtualKeyword.isValid())
     log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
@@ -635,11 +636,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   FunctionBuilder b = current_class.Constructor();
   function_processor_.fill(b, decl, scp);
-  Function ctor = build(b);
-
-  /// TODO : be careful not to add the constructor twice
-  // for now this is okay since the FunctionBuilder never adds anything to the class.
-  current_class.impl()->registerConstructor(ctor);
+  Function ctor = b.create();
 
   schedule(ctor, decl, scp);
 }
@@ -661,8 +658,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   }
 
   /// TODO : check if a destructor already exists
-  Function dtor = build(b);
-  current_class.impl()->destructor = dtor;
+  Function dtor = b.create();
   
   schedule(dtor, decl, scp);
 }
@@ -692,7 +688,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (over_decl.name->is<ast::LiteralOperatorName>())
     return processLiteralOperatorDecl(decl);
 
-  FunctionBuilder builder = FunctionBuilder::Operator(Operator::Null, Prototype{});
+  FunctionBuilder builder = scp.symbol().Operation(Operator::Null);
   function_processor_.fill(builder, decl, scp);
   
   const bool is_member = currentScope().isClass();
@@ -721,9 +717,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (Operator::onlyAsMember(builder.operation) && !is_member)
     throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
 
-  Operator function = build(builder).toOperator();
+  Function function = builder.create();
 
-  scp.impl()->add_operator(function);
   schedule(function, decl, scp);
 }
 
@@ -735,12 +730,10 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  FunctionBuilder builder{ Function::CastFunction };
+  FunctionBuilder builder = scp.symbol().toClass().Conversion(Type::Null);
   function_processor_.fill(builder, decl, scp);
 
-  Cast cast = build(builder).toCast();
-
-  scp.impl()->add_cast(cast);
+  Function cast = builder.create();
   
   schedule(cast, decl, scp);
 }
