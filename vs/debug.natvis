@@ -25,6 +25,7 @@
       <Item Name="[FloatingPointConversion]" ExcludeView="simple">bool(d &amp; 16)</Item>
       <Item Name="[BooleanConversion]" ExcludeView="simple">bool(d &amp; 32)</Item>
       <Item Name="[ReferenceInit]" ExcludeView="simple">bool(d &amp; (3 &lt;&lt; 24))</Item>
+      <Item Name="[NotConvertible]" ExcludeView="simple">bool(d &amp; (4 &lt;&lt; 24))</Item>
     </Expand>
   </Type>
   <Type Name="script::interpreter::Stack">
