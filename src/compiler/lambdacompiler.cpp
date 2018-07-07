@@ -183,11 +183,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
   const Prototype proto = computePrototype();
-  FunctionBuilder builder = FunctionBuilder::Operator(FunctionCallOperator, proto);
-  Operator function = build(builder).toOperator();
+  Function function = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto).create();
 
-  mLambda.impl()->operators.push_back(function);
-  function.impl()->enclosing_symbol = mLambda.impl();
   mFunction = function;
 
   /// TODO : where is the return value ?
