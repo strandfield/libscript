@@ -834,23 +834,25 @@ Class Engine::newClass(const ClassBuilder &opts)
 
 Function EngineImpl::newConstructor(const FunctionBuilder & opts)
 {
-  if (opts.special.isNull())
+  if (!opts.symbol.isClass())
     throw std::runtime_error{ "Cannot create a constructor with invalid class" };
 
-  auto impl = std::make_shared<ConstructorImpl>(opts.special, opts.proto, engine, opts.flags);
+  auto impl = std::make_shared<ConstructorImpl>(opts.symbol.toClass(), opts.proto, engine, opts.flags);
   impl->implementation.callback = opts.callback;
   impl->data = opts.data;
+  impl->enclosing_symbol = opts.symbol.impl();
   return Function{ impl };
 }
 
 Function EngineImpl::newDestructor(const FunctionBuilder & opts)
 {
-  if (opts.special.isNull())
+  if (!opts.symbol.isClass())
     throw std::runtime_error{ "Cannot create a constructor with invalid class" };
 
-  auto impl = std::make_shared<DestructorImpl>(opts.special, opts.proto, engine, opts.flags);
+  auto impl = std::make_shared<DestructorImpl>(opts.symbol.toClass(), opts.proto, engine, opts.flags);
   impl->implementation.callback = opts.callback;
   impl->data = opts.data;
+  impl->enclosing_symbol = opts.symbol.impl();
   return Function{ impl };
 }
 
@@ -858,7 +860,7 @@ Function EngineImpl::newFunction(const FunctionBuilder & opts)
 {
   auto impl = [&opts](Engine *e) -> std::shared_ptr<RegularFunctionImpl> {
     if(opts.isStatic())
-      return std::make_shared<StaticMemberFunctionImpl>(opts.special, opts.name, opts.proto, e, opts.flags);
+      return std::make_shared<StaticMemberFunctionImpl>(opts.symbol.toClass(), opts.name, opts.proto, e, opts.flags);
     else
       return std::make_shared<RegularFunctionImpl>(opts.name, opts.proto, e, opts.flags);
   }(engine);

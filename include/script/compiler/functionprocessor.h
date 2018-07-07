@@ -92,7 +92,7 @@ public:
       if (!scp.isClass())
         throw InvalidUseOfStaticKeyword{ dpos(fundecl->staticKeyword) };
 
-      builder.special = scp.asClass();
+      builder.symbol = Symbol{ scp.asClass() };
       builder.setStatic();
     }
     else if (fundecl->virtualKeyword.isValid())

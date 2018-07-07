@@ -636,7 +636,6 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   FunctionBuilder b = current_class.Constructor();
   function_processor_.fill(b, decl, scp);
   Function ctor = build(b);
-  ctor.impl()->enclosing_symbol = current_class.impl();
 
   /// TODO : be careful not to add the constructor twice
   // for now this is okay since the FunctionBuilder never adds anything to the class.
@@ -663,7 +662,6 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
 
   /// TODO : check if a destructor already exists
   Function dtor = build(b);
-  dtor.impl()->enclosing_symbol = current_class.impl();
   current_class.impl()->destructor = dtor;
   
   schedule(dtor, decl, scp);

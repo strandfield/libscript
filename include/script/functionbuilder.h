@@ -10,6 +10,7 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/namespace.h"
+#include "script/symbol.h"
 
 namespace script
 {
@@ -23,8 +24,7 @@ public:
   std::string name;
   Prototype proto;
   int flags;
-  Namespace namespace_scope;
-  Class special;
+  Symbol symbol;
   Operator::BuiltInOperator operation;
   std::shared_ptr<UserData> data;
 

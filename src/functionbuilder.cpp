@@ -27,7 +27,7 @@ FunctionBuilder::FunctionBuilder(Function::Kind k)
 FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
   : callback(nullptr)
   , engine(cla.engine())
-  , special(cla)
+  , symbol(cla)
   , kind(k)
   , flags(0)
   , operation(Operator::Null)
@@ -43,7 +43,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
 FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)
   : callback(nullptr)
   , engine(cla.engine())
-  , special(cla)
+  , symbol(cla)
   , kind(Function::OperatorFunction)
   , flags(0)
   , operation(op)
@@ -55,7 +55,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)
 FunctionBuilder::FunctionBuilder(Namespace ns)
   : callback(nullptr)
   , engine(ns.engine())
-  , namespace_scope(ns)
+  , symbol(ns)
   , kind(Function::StandardFunction)
   , flags(0)
   , operation(Operator::Null)
@@ -66,7 +66,7 @@ FunctionBuilder::FunctionBuilder(Namespace ns)
 FunctionBuilder::FunctionBuilder(Namespace ns, Operator::BuiltInOperator op)
   : callback(nullptr)
   , engine(ns.engine())
-  , namespace_scope(ns)
+  , symbol(ns)
   , kind(Function::OperatorFunction)
   , flags(0)
   , operation(op)
@@ -77,7 +77,7 @@ FunctionBuilder::FunctionBuilder(Namespace ns, Operator::BuiltInOperator op)
 FunctionBuilder::FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix)
   : callback(nullptr)
   , engine(ns.engine())
-  , namespace_scope(ns)
+  , symbol(ns)
   , kind(Function::LiteralOperatorFunction)
   , flags(0)
   , name(suffix)
@@ -101,7 +101,7 @@ FunctionBuilder FunctionBuilder::Constructor(const Class & cla, Prototype proto,
 {
   FunctionBuilder ret{ Function::Constructor };
   ret.callback = impl;
-  ret.special = cla;
+  ret.symbol = Symbol{ cla };
   proto.setReturnType(Type::cref(cla.id()));
   ret.proto = std::move(proto);
   return ret;
@@ -111,7 +111,7 @@ FunctionBuilder FunctionBuilder::Constructor(const Class & cla, NativeFunctionSi
 {
   FunctionBuilder ret{ Function::Constructor };
   ret.callback = impl;
-  ret.special = cla;
+  ret.symbol = Symbol{ cla };
   ret.proto.setReturnType(Type::cref(cla.id()));
   return ret;
 }
@@ -120,7 +120,7 @@ FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSig
 {
   FunctionBuilder ret{ Function::Destructor };
   ret.callback = impl;
-  ret.special = cla;
+  ret.symbol = Symbol{ cla };
   ret.proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
   return ret;
 }
@@ -311,9 +311,9 @@ script::Function FunctionBuilder::create()
       cla.impl()->register_function(f);
     return f;
   }
-  else if (!this->namespace_scope.isNull())
+  else if (this->symbol.isNamespace())
   {
-    Namespace ns = this->namespace_scope;
+    Namespace ns = this->symbol.toNamespace();
     script::Function f = this->engine->newFunction(*this);
     f.impl()->enclosing_symbol = ns.impl();
     if (f.isOperator())
@@ -330,13 +330,13 @@ script::Function FunctionBuilder::create()
 
 bool FunctionBuilder::is_member_function() const
 {
-  return this->special.isNull() == false || (this->proto.count() > 0 && this->proto.at(0).testFlag(Type::ThisFlag));
+  return this->symbol.isClass() || (this->proto.count() > 0 && this->proto.at(0).testFlag(Type::ThisFlag));
 }
 
 Class FunctionBuilder::member_of() const
 {
-  if (!this->special.isNull())
-    return this->special;
+  if (this->symbol.isClass())
+    return this->symbol.toClass();
 
   return this->engine->getClass(this->proto.at(0));
 }
