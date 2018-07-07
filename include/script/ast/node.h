@@ -11,7 +11,7 @@
 #include "script/parser/token.h"
 #include "script/parser/lexer.h"
 
-#include "script/operator.h"
+#include "script/operators.h"
 
 namespace script
 {
@@ -274,7 +274,7 @@ public:
     UnaryOp = PrefixOp | PostFixOp,
   };
 
-  static Operator::BuiltInOperator getOperatorId(const parser::Token & tok, OperatorName::BuiltInOpResol options);
+  static script::OperatorName getOperatorId(const parser::Token & tok, OperatorName::BuiltInOpResol options);
 
   static const NodeType type_code = NodeType::OperatorName;
   inline NodeType type() const override { return type_code; }

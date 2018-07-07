@@ -50,7 +50,7 @@ TEST(OverloadResolution, builtin_operators) {
   std::vector<Function> overloads;
   for (const auto & op : operators)
   {
-    if (op.operatorId() == Operator::AdditionOperator)
+    if (op.operatorId() == AdditionOperator)
       overloads.push_back(op);
   }
   OverloadResolution resol = OverloadResolution::New(&e);

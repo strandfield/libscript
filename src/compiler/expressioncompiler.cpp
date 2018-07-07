@@ -136,7 +136,7 @@ std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_t
     const auto & operators = cla.operators();
     for (const auto & op : operators)
     {
-      if (op.operatorId() == Operator::FunctionCallOperator)
+      if (op.operatorId() == FunctionCallOperator)
         result.push_back(op);
     }
 
@@ -254,7 +254,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
 
   const Type & argType = index->type();
 
-  std::vector<Function> candidates = this->getBinaryOperators(Operator::SubscriptOperator, objType, argType);
+  std::vector<Function> candidates = this->getBinaryOperators(SubscriptOperator, objType, argType);
   if (candidates.empty())
     throw CouldNotFindValidSubscriptOperator{ dpos(as) };
 
@@ -571,7 +571,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
   auto lhs = generateExpression(operation->arg1);
   auto rhs = generateExpression(operation->arg2);
 
-  Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(operation->operatorToken, ast::OperatorName::BuiltInOpResol::InfixOp);
+  OperatorName op = ast::OperatorName::getOperatorId(operation->operatorToken, ast::OperatorName::BuiltInOpResol::InfixOp);
 
   const std::vector<Function> operators = getBinaryOperators(op, lhs->type(), rhs->type());
 
@@ -594,7 +594,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
 
   const bool postfix = operation->arg1->pos().pos < operation->operatorToken.pos;
   const auto opts = postfix ? ast::OperatorName::BuiltInOpResol::PostFixOp : ast::OperatorName::BuiltInOpResol::PrefixOp;
-  Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(operation->operatorToken, opts);
+  OperatorName op = ast::OperatorName::getOperatorId(operation->operatorToken, opts);
 
   const std::vector<Function> operators = getUnaryOperators(op, operand->type());
 

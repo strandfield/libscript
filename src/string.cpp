@@ -347,7 +347,7 @@ Type register_charref_type(Engine *e)
 
   charref.newDestructor(callbacks::charref::dtor);
 
-  charref.Operation(Operator::AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
+  charref.Operation(AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
 
   charref.Conversion(Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char).setConst().create();
 
@@ -373,21 +373,21 @@ void register_string_type(Class string)
   string.Method("replace", callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
   string.Method("swap", callbacks::string::swap).params(Type::ref(string.id())).create();
 
-  string.Operation(Operator::EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(Operator::InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(Operator::GreaterOperator, callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(Operator::GreaterEqualOperator, callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(Operator::LessOperator, callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(Operator::LessEqualOperator, callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(GreaterOperator, callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(GreaterEqualOperator, callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(LessOperator, callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.Operation(LessEqualOperator, callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
 
-  string.Operation(Operator::AssignmentOperator, callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
+  string.Operation(AssignmentOperator, callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
 
-  string.Operation(Operator::AdditionOperator, callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
+  string.Operation(AdditionOperator, callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
 
-  string.Operation(Operator::SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  string.Operation(SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
 
   const Type charref = register_charref_type(string.engine());
-  string.Operation(Operator::SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
+  string.Operation(SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
 }
 
 } // namespace script

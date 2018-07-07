@@ -899,7 +899,7 @@ void register_builtin_operators(Namespace root)
   struct OperatorBuilder
   {
     Engine *engine;
-    Operator::BuiltInOperator operation;
+    OperatorName operation;
 
     inline Operator operator()(const Prototype & p, NativeFunctionSignature impl)
     {
@@ -909,193 +909,193 @@ void register_builtin_operators(Namespace root)
     }
   };
 
-  OperatorBuilder gen{ root.engine(), Operator::PreIncrementOperator};
+  OperatorBuilder gen{ root.engine(), PreIncrementOperator};
   root.addOperator(gen(proto<char&, char&>(), char_preincrement));
   root.addOperator(gen(proto<int&, int&>(), int_preincrement));
   root.addOperator(gen(proto<float&, float&>(), float_preincrement));
   root.addOperator(gen(proto<double&, double&>(), double_preincrement));
 
-  gen.operation = Operator::PreDecrementOperator;
+  gen.operation = PreDecrementOperator;
   root.addOperator(gen(proto<char&, char&>(), char_predecrement));
   root.addOperator(gen(proto<int&, int&>(), int_predecrement));
   root.addOperator(gen(proto<float&, float&>(), float_predecrement));
   root.addOperator(gen(proto<double&, double&>(), double_predecrement));
 
-  gen.operation = Operator::PostIncrementOperator;
+  gen.operation = PostIncrementOperator;
   root.addOperator(gen(proto<char, char&>(), char_postincrement));
   root.addOperator(gen(proto<int, int&>(), int_postincrement));
   root.addOperator(gen(proto<float, float&>(), float_postincrement));
   root.addOperator(gen(proto<double, double&>(), double_postincrement));
 
-  gen.operation = Operator::PostDecrementOperator;
+  gen.operation = PostDecrementOperator;
   root.addOperator(gen(proto<char, char&>(), char_postdecrement));
   root.addOperator(gen(proto<int, int&>(), int_postdecrement));
   root.addOperator(gen(proto<float, float&>(), float_postdecrement));
   root.addOperator(gen(proto<double, double&>(), double_postdecrement));
 
-  gen.operation = Operator::UnaryPlusOperator;
+  gen.operation = UnaryPlusOperator;
   root.addOperator(gen(proto<char, const char &>(), char_unary_plus));
   root.addOperator(gen(proto<int, const int &>(), int_unary_plus));
   root.addOperator(gen(proto<float, const float &>(), float_unary_plus));
   root.addOperator(gen(proto<double, const double &>(), double_unary_plus));
 
-  gen.operation = Operator::UnaryMinusOperator;
+  gen.operation = UnaryMinusOperator;
   root.addOperator(gen(proto<char, const char &>(), char_unary_minus));
   root.addOperator(gen(proto<int, const int &>(), int_unary_minus));
   root.addOperator(gen(proto<float, const float &>(), float_unary_minus));
   root.addOperator(gen(proto<double, const double &>(), double_unary_minus));
 
-  gen.operation = Operator::AssignmentOperator;
+  gen.operation = AssignmentOperator;
   root.addOperator(gen(proto<bool&, bool&, const bool&>(), bool_assign));
   root.addOperator(gen(proto<char&, char&, const char&>(), char_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_assign));
   root.addOperator(gen(proto<float&, float&, const float&>(), float_assign));
   root.addOperator(gen(proto<double&, double&, const double&>(), double_assign));
 
-  gen.operation = Operator::EqualOperator;
+  gen.operation = EqualOperator;
   root.addOperator(gen(proto<bool, const bool&, const bool&>(), bool_equal));
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_equal));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_equal));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_equal));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_equal));
 
-  gen.operation = Operator::InequalOperator;
+  gen.operation = InequalOperator;
   root.addOperator(gen(proto<bool, const bool&, const bool&>(), bool_inequal));
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_inequal));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_inequal));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_inequal));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_inequal));
 
-  gen.operation = Operator::LessOperator;
+  gen.operation = LessOperator;
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_less));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_less));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_less));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_less));
 
-  gen.operation = Operator::GreaterOperator;
+  gen.operation = GreaterOperator;
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_greater));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_greater));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_greater));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_greater));
 
-  gen.operation = Operator::LessEqualOperator;
+  gen.operation = LessEqualOperator;
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_leq));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_leq));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_leq));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_leq));
 
-  gen.operation = Operator::GreaterEqualOperator;
+  gen.operation = GreaterEqualOperator;
   root.addOperator(gen(proto<bool, const char&, const char&>(), char_geq));
   root.addOperator(gen(proto<bool, const int&, const int&>(), int_geq));
   root.addOperator(gen(proto<bool, const float&, const float&>(), float_geq));
   root.addOperator(gen(proto<bool, const double&, const double&>(), double_geq));
 
-  gen.operation = Operator::AdditionOperator;
+  gen.operation = AdditionOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_add));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_add));
   root.addOperator(gen(proto<float, const float&, const float&>(), float_add));
   root.addOperator(gen(proto<double, const double&, const double&>(), double_add));
 
-  gen.operation = Operator::SubstractionOperator;
+  gen.operation = SubstractionOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_sub));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_sub));
   root.addOperator(gen(proto<float, const float&, const float&>(), float_sub));
   root.addOperator(gen(proto<double, const double&, const double&>(), double_sub));
 
-  gen.operation = Operator::MultiplicationOperator;
+  gen.operation = MultiplicationOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_mul));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_mul));
   root.addOperator(gen(proto<float, const float&, const float&>(), float_mul));
   root.addOperator(gen(proto<double, const double&, const double&>(), double_mul));
 
-  gen.operation = Operator::DivisionOperator;
+  gen.operation = DivisionOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_div));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_div));
   root.addOperator(gen(proto<float, const float&, const float&>(), float_div));
   root.addOperator(gen(proto<double, const double&, const double&>(), double_div));
 
-  gen.operation = Operator::RemainderOperator;
+  gen.operation = RemainderOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_mod));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_mod));
 
-  gen.operation = Operator::AdditionAssignmentOperator;
+  gen.operation = AdditionAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_add_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_add_assign));
   root.addOperator(gen(proto<float&, float&, const float&>(), float_add_assign));
   root.addOperator(gen(proto<double&, double&, const double&>(), double_add_assign));
 
-  gen.operation = Operator::SubstractionAssignmentOperator;
+  gen.operation = SubstractionAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_sub_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_sub_assign));
   root.addOperator(gen(proto<float&, float&, const float&>(), float_sub_assign));
   root.addOperator(gen(proto<double&, double&, const double&>(), double_sub_assign));
 
-  gen.operation = Operator::MultiplicationAssignmentOperator;
+  gen.operation = MultiplicationAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_mul_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_mul_assign));
   root.addOperator(gen(proto<float&, float&, const float&>(), float_mul_assign));
   root.addOperator(gen(proto<double&, double&, const double&>(), double_mul_assign));
 
-  gen.operation = Operator::DivisionAssignmentOperator;
+  gen.operation = DivisionAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_div_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_div_assign));
   root.addOperator(gen(proto<float&, float&, const float&>(), float_div_assign));
   root.addOperator(gen(proto<double&, double&, const double&>(), double_div_assign));
 
-  gen.operation = Operator::RemainderAssignmentOperator;
+  gen.operation = RemainderAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_mod_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_mod_assign));
 
-  gen.operation = Operator::LeftShiftAssignmentOperator;
+  gen.operation = LeftShiftAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_leftshift_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_leftshift_assign));
 
-  gen.operation = Operator::RightShiftAssignmentOperator;
+  gen.operation = RightShiftAssignmentOperator;
   root.addOperator(gen(proto<char&, char&, const char&>(), char_rightshift_assign));
   root.addOperator(gen(proto<int&, int&, const int&>(), int_rightshift_assign));
 
-  gen.operation = Operator::LeftShiftOperator;
+  gen.operation = LeftShiftOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_shiftleft));
   root.addOperator(gen(proto<int,  const int&, const int&>(), int_shiftleft));
 
-  gen.operation = Operator::RightShiftOperator;
+  gen.operation = RightShiftOperator;
   root.addOperator(gen(proto<char, const char&, const char&>(), char_shiftright));
   root.addOperator(gen(proto<int, const int&, const int&>(), int_shiftright));
 
-  gen.operation = Operator::LogicalNotOperator;
+  gen.operation = LogicalNotOperator;
   root.addOperator(gen(proto<bool, const bool&>(), bool_negate));
 
-  gen.operation = Operator::LogicalAndOperator;
+  gen.operation = LogicalAndOperator;
   root.addOperator(gen(proto<bool, const bool &, const bool&>(), bool_logical_and));
 
-  gen.operation = Operator::LogicalOrOperator;
+  gen.operation = LogicalOrOperator;
   root.addOperator(gen(proto<bool, const bool &, const bool&>(), bool_logical_or));
 
-  gen.operation = Operator::BitwiseAndOperator;
+  gen.operation = BitwiseAndOperator;
   root.addOperator(gen(proto<char, const char &, const char&>(), char_bitand));
   root.addOperator(gen(proto<int, const int &, const int&>(), int_bitand));
 
-  gen.operation = Operator::BitwiseOrOperator;
+  gen.operation = BitwiseOrOperator;
   root.addOperator(gen(proto<char, const char &, const char&>(), char_bitor));
   root.addOperator(gen(proto<int, const int &, const int&>(), int_bitor));
 
-  gen.operation = Operator::BitwiseXorOperator;
+  gen.operation = BitwiseXorOperator;
   root.addOperator(gen(proto<char, const char &, const char&>(), char_bitxor));
   root.addOperator(gen(proto<int, const int &, const int&>(), int_bitxor));
 
-  gen.operation = Operator::BitwiseNot;
+  gen.operation = BitwiseNot;
   root.addOperator(gen(proto<char, const char &, const char&>(), char_bitnot));
   root.addOperator(gen(proto<int, const int &, const int&>(), int_bitnot));
 
-  gen.operation = Operator::BitwiseAndAssignmentOperator;
+  gen.operation = BitwiseAndAssignmentOperator;
   root.addOperator(gen(proto<char&, char &, const char&>(), char_bitand_assign));
   root.addOperator(gen(proto<int&, int &, const int&>(), int_bitand_assign));
 
-  gen.operation = Operator::BitwiseOrAssignmentOperator;
+  gen.operation = BitwiseOrAssignmentOperator;
   root.addOperator(gen(proto<char&, char &, const char&>(), char_bitor_assign));
   root.addOperator(gen(proto<int&, int &, const int&>(), int_bitor_assign));
 
-  gen.operation = Operator::BitwiseXorAssignmentOperator;
+  gen.operation = BitwiseXorAssignmentOperator;
   root.addOperator(gen(proto<char&, char &, const char&>(), char_bitxor_assign));
   root.addOperator(gen(proto<int&, int &, const int&>(), int_bitxor_assign));
 }

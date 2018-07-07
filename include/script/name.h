@@ -5,7 +5,8 @@
 #ifndef LIBSCRIPT_NAME_H
 #define LIBSCRIPT_NAME_H
 
-#include "script/operator.h"
+#include "script/operators.h"
+#include "script/types.h"
 
 namespace script
 {
@@ -28,7 +29,7 @@ public:
   ~Name();
 
   Name(const std::string & str);
-  Name(Operator::BuiltInOperator op);
+  Name(script::OperatorName op);
   struct LiteralOperatorTag {};
   Name(LiteralOperatorTag, const std::string & suffix);
   struct CastTag {};
@@ -49,7 +50,7 @@ private:
     Storage();
     ~Storage();
     std::string string;
-    Operator::BuiltInOperator operation;
+    script::OperatorName operation;
     Type type;
   };
   Storage data_;

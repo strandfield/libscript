@@ -486,12 +486,12 @@ static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOp
   if (type.isClosureType() || type.isFunctionType())
   {
     // these two don't have a definition scope, so we must process them separatly
-    if (type.isFunctionType() && op == Operator::AssignmentOperator)
+    if (type.isFunctionType() && op == AssignmentOperator)
     {
       result.push_back(engine->getFunctionType(type).assignment());
       return;
     }
-    else if (type.isClosureType() && op == Operator::FunctionCallOperator)
+    else if (type.isClosureType() && op == FunctionCallOperator)
     {
       result.push_back(engine->getLambda(type).function());
       return;
@@ -500,7 +500,7 @@ static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOp
     return;
   }
 
-  if (type.isEnumType() && op == Operator::AssignmentOperator)
+  if (type.isEnumType() && op == AssignmentOperator)
   {
     result.push_back(engine->getEnum(type).getAssignmentOperator());
     return;

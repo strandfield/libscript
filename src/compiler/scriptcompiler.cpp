@@ -706,7 +706,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
       && (builder.proto.count() == 2 && builder.proto.at(1) == Type::Int))
     {
       builder.proto.popParameter();
-      builder.operation = over_decl.name->name == parser::Token::PlusPlus ? Operator::PostIncrementOperator : Operator::PostDecrementOperator;
+      builder.operation = over_decl.name->name == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
     }
     else
       throw CouldNotResolveOperatorName{ dpos(over_decl) };

@@ -810,7 +810,7 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   assign_proto.setReturnType(Type::ref(type));
   assign_proto.addParameter(Type::ref(type));
   assign_proto.addParameter(Type::cref(type));
-  auto assign_op = std::make_shared<OperatorImpl>(Operator::AssignmentOperator, assign_proto, this);
+  auto assign_op = std::make_shared<OperatorImpl>(AssignmentOperator, assign_proto, this);
   assign_op->set_impl(callbacks::function_variable_assignment);
 
   FunctionType ret{ type, proto, Operator{ assign_op } };

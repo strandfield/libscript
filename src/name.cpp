@@ -90,7 +90,7 @@ Name::Name(const std::string & str)
   new (&data_.string) std::string{ str };
 }
 
-Name::Name(Operator::BuiltInOperator op)
+Name::Name(script::OperatorName op)
   : kind_(Name::OperatorName)
 {
   data_.operation = op;

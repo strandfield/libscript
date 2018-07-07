@@ -19,7 +19,7 @@
 #include "script/parser/parser.h"
 
 
-void test_operation(const char *source, script::Operator::BuiltInOperator op1, script::Operator::BuiltInOperator op2, script::Operator::BuiltInOperator op3)
+void test_operation(const char *source, script::OperatorName op1, script::OperatorName op2, script::OperatorName op3)
 {
   using namespace script;
 
@@ -63,12 +63,12 @@ TEST(CompilerTests, expressions) {
 
   auto None = Operator::Null;
 
-  test_operation(" 2+3*5 ", Operator::AdditionOperator, None, Operator::MultiplicationOperator);
-  test_operation(" 3*5 + 2 ", Operator::AdditionOperator, Operator::MultiplicationOperator, None);
-  test_operation(" 1 << 2 + 3  ", Operator::LeftShiftOperator, None, Operator::AdditionOperator);
-  test_operation(" true && false || true ", Operator::LogicalOrOperator, Operator::LogicalAndOperator, None);
-  test_operation(" true || false && true ", Operator::LogicalOrOperator, None, Operator::LogicalAndOperator);
-  test_operation(" 1 ^ 3 | 1 & 3 ", Operator::BitwiseOrOperator, Operator::BitwiseXorOperator, Operator::BitwiseAndOperator);
+  test_operation(" 2+3*5 ", AdditionOperator, None, MultiplicationOperator);
+  test_operation(" 3*5 + 2 ", AdditionOperator, MultiplicationOperator, None);
+  test_operation(" 1 << 2 + 3  ", LeftShiftOperator, None, AdditionOperator);
+  test_operation(" true && false || true ", LogicalOrOperator, LogicalAndOperator, None);
+  test_operation(" true || false && true ", LogicalOrOperator, None, LogicalAndOperator);
+  test_operation(" 1 ^ 3 | 1 & 3 ", BitwiseOrOperator, BitwiseXorOperator, BitwiseAndOperator);
 
 }
 
@@ -544,7 +544,7 @@ TEST(CompilerTests, operator_overload) {
   ASSERT_EQ(s.operators().size(), 1);
 
   Operator op = s.operators().front();
-  ASSERT_EQ(op.operatorId(), Operator::AdditionOperator);
+  ASSERT_EQ(op.operatorId(), AdditionOperator);
   ASSERT_EQ(op.returnType(), Type::Int);
   ASSERT_EQ(op.firstOperand(), Type::cref(A.id()));
   ASSERT_EQ(op.secondOperand(), Type::Int);
@@ -576,7 +576,7 @@ TEST(CompilerTests, operator_overload_2) {
   ASSERT_EQ(A.operators().size(), 1);
 
   Operator op = A.operators().front();
-  ASSERT_EQ(op.operatorId(), Operator::FunctionCallOperator);
+  ASSERT_EQ(op.operatorId(), FunctionCallOperator);
   ASSERT_EQ(op.returnType(), Type::Int);
   ASSERT_EQ(op.prototype().count(), 4);
   ASSERT_EQ(op.prototype().at(0), Type::ref(A.id()));
@@ -927,7 +927,7 @@ TEST(CompilerTests, generated_assignment) {
   Class A = s.classes().front();
   ASSERT_EQ(A.operators().size(), 1);
   Operator op = A.operators().front();
-  ASSERT_EQ(op.operatorId(), Operator::AssignmentOperator);
+  ASSERT_EQ(op.operatorId(), AssignmentOperator);
   ASSERT_TRUE(!op.isNull() && op.isDefaulted());
 
   s.run();

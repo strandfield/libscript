@@ -147,7 +147,7 @@ TEST(NameLookup, operators) {
   Engine e;
   e.setup();
 
-  NameLookup lookup = NameLookup::resolve(Operator::AssignmentOperator, e.rootNamespace());
+  NameLookup lookup = NameLookup::resolve(AssignmentOperator, e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
   ASSERT_EQ(lookup.functions().size(), 5);
 }

@@ -78,7 +78,7 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
 
 bool AssignmentCompiler::isAssignmentOperator(const Operator & op, const Type & t)
 {
-  if (op.operatorId() != Operator::AssignmentOperator)
+  if (op.operatorId() != AssignmentOperator)
     return false;
 
   if (op.returnType() != Type::ref(t.baseType()))

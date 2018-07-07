@@ -81,56 +81,56 @@ std::string Identifier::getName() const
 }
 
 
-Operator::BuiltInOperator OperatorName::getOperatorId(const parser::Token & tok, BuiltInOpResol options)
+script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, BuiltInOpResol options)
 {
   using parser::Token;
 
-  static std::map<Token::Type, Operator::BuiltInOperator> prefixOps = {
-    { Token::PlusPlus, Operator::PreIncrementOperator },
-  { Token::MinusMinus, Operator::PreDecrementOperator },
-  { Token::LogicalNot, Operator::LogicalNotOperator },
-  { Token::BitwiseNot, Operator::BitwiseNot },
-  { Token::Plus, Operator::UnaryPlusOperator },
-  { Token::Minus, Operator::UnaryMinusOperator },
+  static std::map<Token::Type, script::OperatorName> prefixOps = {
+    { Token::PlusPlus, PreIncrementOperator },
+    { Token::MinusMinus, PreDecrementOperator },
+    { Token::LogicalNot, LogicalNotOperator },
+    { Token::BitwiseNot, BitwiseNot },
+    { Token::Plus, UnaryPlusOperator },
+    { Token::Minus, UnaryMinusOperator },
   };
 
-  static std::map<Token::Type, Operator::BuiltInOperator> postFixOps = {
-    { Token::PlusPlus, Operator::PostIncrementOperator },
-  { Token::MinusMinus, Operator::PostDecrementOperator },
+  static std::map<Token::Type, script::OperatorName> postFixOps = {
+    { Token::PlusPlus, PostIncrementOperator },
+    { Token::MinusMinus, PostDecrementOperator },
   };
 
-  static std::map<Token::Type, Operator::BuiltInOperator> infixOps = {
-    { Token::ScopeResolution, Operator::ScopeResolutionOperator },
-  { Token::Plus, Operator::AdditionOperator },
-  { Token::Minus, Operator::SubstractionOperator },
-  { Token::Mul, Operator::MultiplicationOperator },
-  { Token::Div, Operator::DivisionOperator },
-  { Token::Remainder, Operator::RemainderOperator },
-  { Token::LeftShift, Operator::LeftShiftOperator },
-  { Token::RightShift, Operator::RightShiftOperator },
-  { Token::Less, Operator::LessOperator },
-  { Token::GreaterThan, Operator::GreaterOperator },
-  { Token::LessEqual, Operator::LessEqualOperator },
-  { Token::GreaterThanEqual, Operator::GreaterEqualOperator },
-  { Token::EqEq, Operator::EqualOperator },
-  { Token::Neq, Operator::InequalOperator },
-  { Token::BitwiseAnd, Operator::BitwiseAndOperator },
-  { Token::BitwiseOr, Operator::BitwiseOrOperator },
-  { Token::BitwiseXor, Operator::BitwiseXorOperator },
-  { Token::LogicalAnd, Operator::LogicalAndOperator },
-  { Token::LogicalOr, Operator::LogicalOrOperator },
-  { Token::Eq, Operator::AssignmentOperator },
-  { Token::MulEq, Operator::MultiplicationAssignmentOperator },
-  { Token::DivEq, Operator::DivisionAssignmentOperator },
-  { Token::AddEq, Operator::AdditionAssignmentOperator },
-  { Token::SubEq, Operator::SubstractionAssignmentOperator },
-  { Token::RemainderEq, Operator::RemainderAssignmentOperator },
-  { Token::LeftShiftEq, Operator::LeftShiftAssignmentOperator },
-  { Token::RightShiftEq, Operator::RightShiftAssignmentOperator },
-  { Token::BitAndEq, Operator::BitwiseAndAssignmentOperator },
-  { Token::BitOrEq, Operator::BitwiseOrAssignmentOperator },
-  { Token::BitXorEq, Operator::BitwiseXorAssignmentOperator },
-  { Token::Comma, Operator::CommaOperator },
+  static std::map<Token::Type, script::OperatorName> infixOps = {
+    { Token::ScopeResolution, ScopeResolutionOperator },
+    { Token::Plus, AdditionOperator },
+    { Token::Minus, SubstractionOperator },
+    { Token::Mul, MultiplicationOperator },
+    { Token::Div, DivisionOperator },
+    { Token::Remainder, RemainderOperator },
+    { Token::LeftShift, LeftShiftOperator },
+    { Token::RightShift, RightShiftOperator },
+    { Token::Less, LessOperator },
+    { Token::GreaterThan, GreaterOperator },
+    { Token::LessEqual, LessEqualOperator },
+    { Token::GreaterThanEqual, GreaterEqualOperator },
+    { Token::EqEq, EqualOperator },
+    { Token::Neq, InequalOperator },
+    { Token::BitwiseAnd, BitwiseAndOperator },
+    { Token::BitwiseOr, BitwiseOrOperator },
+    { Token::BitwiseXor, BitwiseXorOperator },
+    { Token::LogicalAnd, LogicalAndOperator },
+    { Token::LogicalOr, LogicalOrOperator },
+    { Token::Eq, AssignmentOperator },
+    { Token::MulEq, MultiplicationAssignmentOperator },
+    { Token::DivEq, DivisionAssignmentOperator },
+    { Token::AddEq, AdditionAssignmentOperator },
+    { Token::SubEq, SubstractionAssignmentOperator },
+    { Token::RemainderEq, RemainderAssignmentOperator },
+    { Token::LeftShiftEq, LeftShiftAssignmentOperator },
+    { Token::RightShiftEq, RightShiftAssignmentOperator },
+    { Token::BitAndEq, BitwiseAndAssignmentOperator },
+    { Token::BitOrEq, BitwiseOrAssignmentOperator },
+    { Token::BitXorEq, BitwiseXorAssignmentOperator },
+    { Token::Comma, CommaOperator },
   };
 
   if (options & BuiltInOpResol::PrefixOp) {
@@ -152,11 +152,11 @@ Operator::BuiltInOperator OperatorName::getOperatorId(const parser::Token & tok,
   }
 
   if (tok == Token::LeftRightBracket)
-    return Operator::SubscriptOperator;
+    return SubscriptOperator;
   else if (tok == Token::LeftRightPar)
-    return Operator::FunctionCallOperator;
+    return FunctionCallOperator;
 
-  return Operator::Null;
+  return InvalidOperator;
 }
 
 std::string LiteralOperatorName::suffix_string() const

@@ -117,7 +117,7 @@ std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> ma
 
   const std::vector<TemplateArgument> & targs = f.arguments();
 
-  NameLookup lookup = NameLookup::resolve(Operator::LessOperator, e->rootNamespace());
+  NameLookup lookup = NameLookup::resolve(LessOperator, e->rootNamespace());
   OverloadResolution resol = OverloadResolution::New(e);
   const Type param_type = f.parameter(0);
   if (!resol.process(lookup.functions(), { param_type , param_type }))

@@ -214,15 +214,15 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   array_class.Method("resize", callbacks::array::resize)
     .params(Type::cref(Type::Int)).create();
 
-  array_class.Operation(Operator::AssignmentOperator, callbacks::array::assign)
+  array_class.Operation(AssignmentOperator, callbacks::array::assign)
     .returns(Type::ref(array_type))
     .params(Type::cref(array_type)).create();
 
-  array_class.Operation(Operator::SubscriptOperator, callbacks::array::subscript)
+  array_class.Operation(SubscriptOperator, callbacks::array::subscript)
     .returns(Type::ref(element_type))
     .params(Type::cref(Type::Int)).create();
 
-  array_class.Operation(Operator::SubscriptOperator, callbacks::array::subscript)
+  array_class.Operation(SubscriptOperator, callbacks::array::subscript)
     .setConst()
     .returns(Type::cref(element_type))
     .params(Type::cref(Type::Int)).create();

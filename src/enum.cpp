@@ -37,7 +37,7 @@ EnumImpl::EnumImpl(int i, const std::string & n, Engine *e)
   , enumClass(false)
 {
   Prototype proto{ Type::ref(id), Type::ref(id), Type::cref(id) };
-  auto op = std::make_shared<OperatorImpl>(Operator::AssignmentOperator, proto, e);
+  auto op = std::make_shared<OperatorImpl>(AssignmentOperator, proto, e);
   op->implementation.callback = callbacks::enum_assignment;
   this->assignment = Operator{ op };
 }

@@ -493,8 +493,8 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(foo.prototype().at(0), Type::Int);
   ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
 
-  Operator assign = A.Operation(Operator::AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().create().toOperator();
-  ASSERT_EQ(assign.operatorId(), Operator::AssignmentOperator);
+  Operator assign = A.Operation(AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().create().toOperator();
+  ASSERT_EQ(assign.operatorId(), AssignmentOperator);
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.memberOf(), A);
   ASSERT_EQ(A.operators().size(), 1);
@@ -505,8 +505,8 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_TRUE(assign.isDeleted());
 
   Namespace ops = root.newNamespace("ops");
-  assign = ops.Operation(Operator::AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).create().toOperator();
-  ASSERT_EQ(assign.operatorId(), Operator::AdditionOperator);
+  assign = ops.Operation(AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).create().toOperator();
+  ASSERT_EQ(assign.operatorId(), AdditionOperator);
   ASSERT_FALSE(assign.isMemberFunction());
   ASSERT_EQ(ops.operators().size(), 1);
   ASSERT_EQ(assign.returnType(), A.id());
@@ -550,27 +550,27 @@ TEST(CoreUtilsTests, uninitialized) {
 TEST(CoreUtilsTests, operator_names) {
   using namespace script;
 
-  ASSERT_EQ(Operator::getFullName(Operator::PostIncrementOperator), "operator++");
-  ASSERT_EQ(Operator::getFullName(Operator::PreIncrementOperator), "operator++");
-  ASSERT_EQ(Operator::getFullName(Operator::LogicalNotOperator), "operator!");
-  ASSERT_EQ(Operator::getFullName(Operator::BitwiseNot), "operator~");
-  ASSERT_EQ(Operator::getFullName(Operator::MultiplicationOperator), "operator*");
-  ASSERT_EQ(Operator::getFullName(Operator::DivisionOperator), "operator/");
-  ASSERT_EQ(Operator::getFullName(Operator::AdditionOperator), "operator+");
-  ASSERT_EQ(Operator::getFullName(Operator::SubstractionOperator), "operator-");
-  ASSERT_EQ(Operator::getFullName(Operator::LeftShiftOperator), "operator<<");
-  ASSERT_EQ(Operator::getFullName(Operator::RightShiftOperator), "operator>>");
-  ASSERT_EQ(Operator::getFullName(Operator::LessOperator), "operator<");
-  ASSERT_EQ(Operator::getFullName(Operator::LessEqualOperator), "operator<=");
-  ASSERT_EQ(Operator::getFullName(Operator::GreaterOperator), "operator>");
-  ASSERT_EQ(Operator::getFullName(Operator::GreaterEqualOperator), "operator>=");
-  ASSERT_EQ(Operator::getFullName(Operator::EqualOperator), "operator==");
-  ASSERT_EQ(Operator::getFullName(Operator::InequalOperator), "operator!=");
-  ASSERT_EQ(Operator::getFullName(Operator::AssignmentOperator), "operator=");
-  ASSERT_EQ(Operator::getFullName(Operator::MultiplicationAssignmentOperator), "operator*=");
-  ASSERT_EQ(Operator::getFullName(Operator::DivisionAssignmentOperator), "operator/=");
-  ASSERT_EQ(Operator::getFullName(Operator::AdditionAssignmentOperator), "operator+=");
-  ASSERT_EQ(Operator::getFullName(Operator::SubstractionAssignmentOperator), "operator-=");
+  ASSERT_EQ(Operator::getFullName(PostIncrementOperator), "operator++");
+  ASSERT_EQ(Operator::getFullName(PreIncrementOperator), "operator++");
+  ASSERT_EQ(Operator::getFullName(LogicalNotOperator), "operator!");
+  ASSERT_EQ(Operator::getFullName(BitwiseNot), "operator~");
+  ASSERT_EQ(Operator::getFullName(MultiplicationOperator), "operator*");
+  ASSERT_EQ(Operator::getFullName(DivisionOperator), "operator/");
+  ASSERT_EQ(Operator::getFullName(AdditionOperator), "operator+");
+  ASSERT_EQ(Operator::getFullName(SubstractionOperator), "operator-");
+  ASSERT_EQ(Operator::getFullName(LeftShiftOperator), "operator<<");
+  ASSERT_EQ(Operator::getFullName(RightShiftOperator), "operator>>");
+  ASSERT_EQ(Operator::getFullName(LessOperator), "operator<");
+  ASSERT_EQ(Operator::getFullName(LessEqualOperator), "operator<=");
+  ASSERT_EQ(Operator::getFullName(GreaterOperator), "operator>");
+  ASSERT_EQ(Operator::getFullName(GreaterEqualOperator), "operator>=");
+  ASSERT_EQ(Operator::getFullName(EqualOperator), "operator==");
+  ASSERT_EQ(Operator::getFullName(InequalOperator), "operator!=");
+  ASSERT_EQ(Operator::getFullName(AssignmentOperator), "operator=");
+  ASSERT_EQ(Operator::getFullName(MultiplicationAssignmentOperator), "operator*=");
+  ASSERT_EQ(Operator::getFullName(DivisionAssignmentOperator), "operator/=");
+  ASSERT_EQ(Operator::getFullName(AdditionAssignmentOperator), "operator+=");
+  ASSERT_EQ(Operator::getFullName(SubstractionAssignmentOperator), "operator-=");
 };
 
 TEST(CoreUtilsTests, access_specifiers) {
@@ -648,11 +648,11 @@ TEST(CoreUtilsTests, test_names) {
   ASSERT_EQ(a.kind(), Name::StringName);
   ASSERT_FALSE(a == b);
 
-  a = Operator::AssignmentOperator; // operator=
+  a = AssignmentOperator; // operator=
   ASSERT_EQ(a.kind(), Name::OperatorName);
   ASSERT_FALSE(a == b);
 
-  ASSERT_TRUE(a == Operator::AssignmentOperator);
+  ASSERT_TRUE(a == AssignmentOperator);
 
   a = "foo";
   b = Name{ Name::LiteralOperatorTag{}, "foo" }; // operator"" foo;
@@ -684,7 +684,7 @@ TEST(CoreUtilsTests, function_names) {
   Class A = e.newClass(ClassBuilder::New("A"));
 
   Function foo = A.Method("foo").create();
-  Function eq = A.Operation(Operator::EqualOperator).params(Type::Int).create();
+  Function eq = A.Operation(EqualOperator).params(Type::Int).create();
   Function to_int = A.Conversion(Type::Int).create();
   Function ctor = A.Constructor().create();
   Function a = A.Method("A").create();

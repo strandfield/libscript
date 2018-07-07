@@ -731,7 +731,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
     if (tok.type == Token::Colon)
       return -66;
     else if (tok.type == Token::QuestionMark)
-      return Operator::precedence(Operator::ConditionalOperator);
+      return Operator::precedence(ConditionalOperator);
     else
       return Operator::precedence(ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp));
   };
