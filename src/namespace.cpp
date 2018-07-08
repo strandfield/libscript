@@ -81,9 +81,9 @@ Namespace Namespace::getNamespace(const std::string & name)
   return newNamespace(name);
 }
 
-Enum Namespace::newEnum(const std::string & name)
+Enum Namespace::newEnum(const std::string & name, int id)
 {
-  Enum e = engine()->newEnum(name);
+  Enum e = engine()->newEnum(name, id);
   d->enums.push_back(e);
   e.impl()->enclosing_symbol = d;
   return e;

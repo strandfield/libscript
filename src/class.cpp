@@ -12,6 +12,7 @@
 #include "script/private/engine_p.h"
 #include "script/private/enum_p.h"
 #include "script/object.h"
+#include "script/private/template_p.h"
 #include "script/userdata.h"
 #include "script/private/value_p.h"
 
@@ -188,10 +189,10 @@ const std::vector<Class> & Class::classes() const
   return d->classes;
 }
 
-Enum Class::newEnum(const std::string & name)
+Enum Class::newEnum(const std::string & name, int id)
 {
   Engine *e = d->engine;
-  Enum enm = e->newEnum(name);
+  Enum enm = e->newEnum(name, id);
   if (!enm.isNull())
   {
     d->enums.push_back(enm);
@@ -564,6 +565,7 @@ ClassBuilder::ClassBuilder(const std::string & n, const Class & p)
   : name(n)
   , parent(p)
   , isFinal(false)
+  , id(0)
 {
 
 }
@@ -595,6 +597,12 @@ ClassBuilder & ClassBuilder::addMember(const Class::DataMember & dm)
 ClassBuilder & ClassBuilder::setData(const std::shared_ptr<UserData> & data)
 {
   this->userdata = data;
+  return *this;
+}
+
+ClassBuilder & ClassBuilder::setId(int n)
+{
+  this->id = n;
   return *this;
 }
 

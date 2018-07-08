@@ -102,8 +102,10 @@ public:
   Enum getEnum(Type id) const;
   ClosureType getLambda(Type id) const;
 
+  void reserveTypeRange(int begin, int end);
+
   FunctionType newFunctionType(const Prototype & proto);
-  Enum newEnum(const std::string & name);
+  Enum newEnum(const std::string & name, int id = -1);
   Class newClass(const ClassBuilder &opts);
   Function newFunction(const FunctionBuilder & opts);
 
@@ -158,7 +160,6 @@ public:
 
 protected:
   Value buildValue(Type t);
-  Class buildClass(const ClassBuilder & opts, int id = -1);
 
 protected:
   std::unique_ptr<EngineImpl> d;

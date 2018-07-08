@@ -229,19 +229,47 @@ ClosureType EngineImpl::newLambda()
   return l;
 }
 
-void EngineImpl::register_class(Class & c)
+script::Class EngineImpl::new_class(const ClassBuilder & opts)
 {
-  auto impl = c.impl();
-  if (impl->id != -1)
-    throw std::runtime_error{ "Class already registered" };
+  Class ret{ std::make_shared<ClassImpl>(-1, opts.name, this->engine) };
+  fill_class(ret.impl(), opts);
+  register_class(ret, opts.id);
+  return ret;
+}
 
-  int id = static_cast<int>(this->classes.size()) | Type::ObjectFlag;
-  impl->id = id;
-  impl->engine = this->engine;
+void EngineImpl::fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilder & opts)
+{
+  impl->set_parent(opts.parent);
+  impl->dataMembers = opts.dataMembers;
+  impl->isFinal = opts.isFinal;
+  impl->data = opts.userdata;
+}
 
-  int index = id & 0xFFFF;
+void EngineImpl::register_class(Class & c, int id)
+{
+  if (id < 1)
+  {
+    id = static_cast<int>(this->classes.size()) | Type::ObjectFlag;
+  }
+  else
+  {
+    if ((id & Type::ObjectFlag) == 0)
+      throw std::runtime_error{ "Invalid requested type id for class" };
+  }
+  
+  const int index = id & 0xFFFF;
   if (static_cast<int>(this->classes.size()) <= index)
+  {
     this->classes.resize(index + 1);
+  }
+  else
+  {
+    if (!this->classes[index].isNull() && this->classes[index] != this->reservations.class_type)
+      throw std::runtime_error{ "Engine::newClass() : Class id already used" };
+  }
+
+  c.impl()->id = id;
+  c.impl()->engine = this->engine;
 
   this->classes[index] = c;
 }
@@ -314,7 +342,12 @@ void Engine::setup()
 
   register_builtin_operators(d->rootNamespace);
 
-  Class string = buildClass(ClassBuilder::New(get_string_typename()), Type::String);
+  d->reservations.class_type = Class{ std::make_shared<ClassImpl>(0, "__reserved_class__", nullptr) };
+  d->classes.push_back(d->reservations.class_type);
+  d->reservations.enum_type = Enum{ std::make_shared<EnumImpl>(0, "__reserved_enum__", nullptr) };
+  d->enums.push_back(d->reservations.enum_type);
+
+  Class string = d->new_class(ClassBuilder::New(get_string_typename()).setId(Type::String));
   register_string_type(string);
   d->rootNamespace.impl()->classes.push_back(string);
   string.impl()->enclosing_symbol = d->rootNamespace.impl();
@@ -801,6 +834,42 @@ ClosureType Engine::getLambda(Type id) const
   return d->lambdas[index];
 }
 
+template<typename T>
+void reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t end)
+{
+  if (list.size() < end)
+    list.resize(end);
+
+  for (size_t i(begin); i < end; ++i)
+  {
+    if (!list.at(i).isNull() && list.at(i) != value)
+      throw std::runtime_error{ "Failed to reserve type range" };
+    list[i] = value;
+  }
+}
+
+void Engine::reserveTypeRange(int begin, int end)
+{
+  const Type begin_type{ begin };
+  const Type end_type{ end };
+
+  if (!begin_type.isValid() || !end_type.isValid() || begin_type.category() != end_type.category())
+    throw std::runtime_error{ "Invalid type range" };
+
+  if (begin_type.isFunctionType() || begin_type.isClosureType())
+    throw std::runtime_error{ "Closure types and function types cannot be reserved yet" };
+
+  const int index_mask = Type::EnumFlag - 1;
+
+  begin = begin & index_mask;
+  end = end & index_mask;
+
+  if (begin_type.isEnumType())
+    reserve_range(d->enums, d->reservations.enum_type, begin, end);
+  else if (begin_type.isObjectType())
+    reserve_range(d->classes, d->reservations.class_type, begin, end);
+}
+
 FunctionType Engine::newFunctionType(const Prototype & proto)
 {
   const int id = d->prototypes.size();
@@ -818,18 +887,35 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   return ret;
 }
 
-Enum Engine::newEnum(const std::string & name)
+Enum Engine::newEnum(const std::string & name, int id)
 {
-  const int id = d->enums.size();
-  auto impl = std::make_shared<EnumImpl>(id | Type::EnumFlag, name, this);
+  if (id > 0)
+  {
+    if ((id & Type::EnumFlag) == 0)
+      throw std::runtime_error{ "Invalid requested type id for enum" };
+  }
+
+  if (id <= 0)
+    id = static_cast<int>(d->enums.size()) | Type::EnumFlag;
+
+  int index = id & 0xFFFF;
+  if (static_cast<int>(d->enums.size()) <= index)
+    d->enums.resize(index + 1);
+  else
+  {
+    if (!d->enums[index].isNull() && d->enums[index] != d->reservations.enum_type)
+      throw std::runtime_error{ "Engine::newEnum() : Enum id already used" };
+  }
+
+  auto impl = std::make_shared<EnumImpl>(id, name, this);
   Enum ret{ impl };
-  d->enums.push_back(ret);
+  d->enums[index] = ret;
   return ret;
 }
 
 Class Engine::newClass(const ClassBuilder &opts)
 {
-  return buildClass(opts);
+  return d->new_class(opts);
 }
 
 Function EngineImpl::newConstructor(const FunctionBuilder & opts)
@@ -1125,31 +1211,6 @@ Value EngineImpl::buildValue(Type t)
 Value Engine::buildValue(Type t)
 {
   return d->buildValue(t);
-}
-
-Class Engine::buildClass(const ClassBuilder & opts, int id)
-{
-  if (id == -1)
-    id = static_cast<int>(d->classes.size()) | Type::ObjectFlag;
-
-  int index = id & 0xFFFF;
-  if (static_cast<int>(d->classes.size()) <= index)
-    d->classes.resize(index + 1);
-  else
-  {
-    if (!d->classes[index].isNull())
-      throw std::runtime_error{ "Engine::buildClass() : Class id already used" };
-  }
-
-  Class ret{ std::make_shared<ClassImpl>(id, opts.name, this) };
-  ret.impl()->set_parent(opts.parent);
-  ret.impl()->dataMembers = opts.dataMembers;
-  ret.impl()->isFinal = opts.isFinal;
-  ret.impl()->data = opts.userdata;
-
-  d->classes[index] = ret;
-
-  return ret;
 }
 
 namespace diagnostic

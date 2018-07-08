@@ -83,7 +83,7 @@ public:
   Class newClass(const ClassBuilder & opts);
   const std::vector<Class> & classes() const;
 
-  Enum newEnum(const std::string & name);
+  Enum newEnum(const std::string & name, int id = -1);
   const std::vector<Enum> & enums() const;
 
   void addTemplate(const Template & t);
@@ -176,6 +176,7 @@ public:
   std::vector<Class::DataMember> dataMembers;
   bool isFinal;
   std::shared_ptr<UserData> userdata;
+  int id;
 
 public:
   ClassBuilder(const std::string & n, const Class & p = Class{});
@@ -186,6 +187,7 @@ public:
   ClassBuilder & setFinal(bool f = true);
   ClassBuilder & addMember(const Class::DataMember & dm);
   ClassBuilder & setData(const std::shared_ptr<UserData> & data);
+  ClassBuilder & setId(int n);
 };
 
 } // namespace script

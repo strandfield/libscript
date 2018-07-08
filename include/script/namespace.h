@@ -44,7 +44,7 @@ public:
 
   Namespace getNamespace(const std::string & name);
 
-  Enum newEnum(const std::string & name);
+  Enum newEnum(const std::string & name, int id = -1);
   Function newFunction(const FunctionBuilder & opts);
   Class newClass(const ClassBuilder & opts);
   Namespace newNamespace(const std::string & name);

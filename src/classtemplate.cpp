@@ -69,15 +69,10 @@ Class ClassTemplate::addSpecialization(const std::vector<TemplateArgument> & arg
 Class ClassTemplate::build(const ClassBuilder & builder, const std::vector<TemplateArgument> & args) const
 {
   auto ret = std::make_shared<ClassTemplateInstance>(*this, args, -1, builder.name, engine());
-  ret->set_parent(builder.parent);
-  ret->dataMembers = builder.dataMembers;
-  ret->isFinal = builder.isFinal;
-  ret->data = builder.userdata;
-  ret->instance_of = *this;
-  ret->template_arguments = args;
+  engine()->implementation()->fill_class(ret, builder);
 
   Class result{ ret };
-  engine()->implementation()->register_class(result);
+  engine()->implementation()->register_class(result, builder.id);
 
   return result;
 }

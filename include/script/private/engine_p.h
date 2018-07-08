@@ -54,6 +54,11 @@ public:
   std::string script_extension;
   support::filesystem::path search_dir;
 
+  struct {
+    Enum enum_type;
+    Class class_type;
+  } reservations;
+
   struct
   {
     ClassTemplate array;
@@ -81,7 +86,9 @@ public:
 
   ClosureType newLambda();
 
-  void register_class(Class & c);
+  script::Class new_class(const ClassBuilder & opts);
+  void fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilder & opts);
+  void register_class(Class & c, int id = 0);
 
   void destroyClass(Class c);
   void destroyEnum(Enum e);

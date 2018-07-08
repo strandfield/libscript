@@ -114,6 +114,20 @@ TEST(CoreUtilsTests, Types) {
   ASSERT_TRUE(e.hasType(function_type));
 }
 
+TEST(CoreUtilsTests, TypeReservation) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  const int begin = Type::ObjectFlag | 10;
+  const int end = Type::ObjectFlag | 11;
+
+  e.reserveTypeRange(begin, end);
+
+  Class A = e.newClass(ClassBuilder::New("A").setId(Type::ObjectFlag | 10));
+  ASSERT_EQ(A.id(), Type::ObjectFlag | 10);
+}
 
 TEST(CoreUtilsTests, ClassConstruction) {
   using namespace script;
