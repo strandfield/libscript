@@ -87,6 +87,7 @@ TEST(CoreUtilsTests, Types) {
   ASSERT_FALSE(str.isEnumType());
   ASSERT_FALSE(str.isClosureType());
   ASSERT_FALSE(str.isFundamentalType());
+  ASSERT_EQ(str.category(), Type::ObjectFlag);
 
   ASSERT_NE(Type{ Type::String }, Type{ Type::Int });
   ASSERT_NE(Type{ Type::Int }, Type{ Type::Boolean });
@@ -95,13 +96,22 @@ TEST(CoreUtilsTests, Types) {
   ASSERT_EQ(Type(Type::Int).withConst(), Type(Type::Int, Type::ConstFlag));
   ASSERT_EQ(Type(Type::Int).withConst().withoutConst(), Type::Int);
 
+  const Type invalid_type = Type::ObjectFlag | Type::EnumFlag | 1;
+  ASSERT_FALSE(invalid_type.isValid());
+  ASSERT_TRUE(Type{ Type::Int }.isValid());
+  ASSERT_TRUE(str.isValid());
+
   Engine e;
   e.setup();
+
+  Type function_type = e.newFunctionType(Prototype{ Type::Void }).type();
+  ASSERT_EQ(function_type.category(), Type::PrototypeFlag);
+
   ASSERT_TRUE(e.hasType(Type::Int));
   ASSERT_TRUE(e.hasType(Type::String));
   ASSERT_FALSE(e.hasType(Type::Auto));
   ASSERT_FALSE(e.hasType(Type::String + 66));
-  ASSERT_TRUE(e.hasType(e.newFunctionType(Prototype{ Type::Void }).type()));
+  ASSERT_TRUE(e.hasType(function_type));
 }
 
 

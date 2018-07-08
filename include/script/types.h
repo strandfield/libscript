@@ -55,6 +55,7 @@ public:
   };
 
   inline bool isNull() const { return d == 0; }
+  bool isValid() const;
 
   Type baseType() const;
 
@@ -76,6 +77,8 @@ public:
   bool isEnumType() const;
   bool isClosureType() const;
   bool isFunctionType() const;
+  inline int categoryMask() const { return Type::EnumFlag | Type::ObjectFlag | Type::LambdaFlag | Type::PrototypeFlag; }
+  inline TypeFlag category() const { return static_cast<TypeFlag>(d & categoryMask()); }
 
   bool testFlag(TypeFlag flag) const;
   void setFlag(TypeFlag flag);

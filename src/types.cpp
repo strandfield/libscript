@@ -20,6 +20,12 @@ Type::Type(int baseType, int flags)
 
 }
 
+bool Type::isValid() const
+{
+  const int masked = d & categoryMask();
+  return !isNull() && (masked & (masked - 1)) == 0;
+}
+
 Type Type::baseType() const
 {
   return Type{ d & 0xFFFFF };
