@@ -120,7 +120,7 @@ public:
   template<typename...Args>
   std::string format(const std::string & fmt, const Args &... args)
   {
-    return diagnostic::format(fmt, repr(args)...);
+    return diagnostic::format(fmt, repr(args, engine())...);
   }
 
   MessageBuilder & operator<<(const Code & c);
