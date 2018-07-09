@@ -19,6 +19,11 @@
 
 #include "script/support/filesystem.h"
 
+#if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS)
+#include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS
+#endif // defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS)
+
+
 namespace script
 {
 
@@ -92,6 +97,10 @@ public:
 
   void destroyClass(Class c);
   void destroyEnum(Enum e);
+
+#if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
+#include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS
+#endif // defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
 
 };
 
