@@ -17,6 +17,10 @@
 
 #include "script/support/filesystem.h"
 
+#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS)
+#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS
+#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS)
+
 namespace script
 {
 
