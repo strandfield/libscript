@@ -6,7 +6,8 @@
 #define LIBSCRIPT_SYMBOL_H
 
 #include "libscriptdefs.h"
-#include "operators.h"
+#include "script/operators.h"
+#include "script/types.h"
 
 namespace script
 {
@@ -16,7 +17,7 @@ class Engine;
 class FunctionBuilder;
 class Namespace;
 class SymbolImpl;
-class Type;
+class TypedefBuilder;
 
 class LIBSCRIPT_API Symbol
 {
@@ -42,6 +43,8 @@ public:
 
   FunctionBuilder Function(const std::string & name);
   FunctionBuilder Operation(OperatorName op);
+  TypedefBuilder Typedef(const Type & t, const std::string & name);
+  TypedefBuilder Typedef(const Type & t, std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 
@@ -51,7 +54,27 @@ private:
   std::shared_ptr<SymbolImpl> d;
 };
 
-} // namespace script
 
+
+class LIBSCRIPT_API TypedefBuilder
+{
+public:
+  Symbol symbol_;
+  std::string name_;
+  Type type_;
+public:
+  TypedefBuilder(const Symbol & s, const std::string & name, const Type & type) 
+    : symbol_(s), name_(name), type_(type) {}
+
+  TypedefBuilder(const Symbol & s, std::string && name, const Type & type)
+    : symbol_(s), name_(std::move(name)), type_(type) {}
+
+  TypedefBuilder(const TypedefBuilder &) = default;
+  ~TypedefBuilder() = default;
+
+  void create();
+};
+
+} // namespace script
 
 #endif // LIBSCRIPT_SYMBOL_H

@@ -26,7 +26,6 @@ public:
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
   void add_template(const Template & t) override;
-  void add_typedef(const Typedef & td) override;
 
   void remove_class(const Class & c) override;
   void remove_enum(const Enum & e) override;

@@ -85,11 +85,6 @@ void TemplateArgumentScope::add_template(const Template & t)
   parent->add_template(t);
 }
 
-void TemplateArgumentScope::add_typedef(const Typedef & td)
-{
-  parent->add_typedef(td);
-}
-
 void TemplateArgumentScope::remove_class(const Class & c)
 {
   parent->remove_class(c);

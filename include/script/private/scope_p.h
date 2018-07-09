@@ -57,7 +57,6 @@ public:
   virtual const std::vector<Typedef> & typedefs() const;
 
   virtual void add_template(const Template & t) { throw std::runtime_error{ "Bad call to ScopeImpl::add_template()" }; }
-  virtual void add_typedef(const Typedef & td) { throw std::runtime_error{ "Bad call to ScopeImpl::add_typedef()" }; }
 
   virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
   virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
@@ -128,7 +127,6 @@ public:
   const std::vector<Typedef> & typedefs() const override;
 
   void add_template(const Template & t) override;
-  void add_typedef(const Typedef & td) override;
 
   void remove_class(const Class & c) override;
   void remove_enum(const Enum & e) override;
@@ -164,7 +162,6 @@ public:
   const std::vector<Typedef> & typedefs() const override;
 
   void add_template(const Template & t) override;
-  void add_typedef(const Typedef & td) override;
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 

@@ -576,12 +576,6 @@ void NamespaceScope::add_template(const Template & t)
   mTemplates.clear();
 }
 
-void NamespaceScope::add_typedef(const Typedef & td)
-{
-  mNamespace.impl()->typedefs.push_back(td);
-  mTypedefs.clear();
-}
-
 void NamespaceScope::remove_class(const Class & c)
 {
   auto & container = mNamespace.impl()->classes;
@@ -707,10 +701,6 @@ void ClassScope::add_template(const Template & t)
   t.impl()->enclosing_symbol = mClass.impl();
 }
 
-void ClassScope::add_typedef(const Typedef & td)
-{
-  mClass.impl()->typedefs.push_back(td);
-}
 
 
 bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const

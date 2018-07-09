@@ -578,7 +578,10 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   const Type t = resolve(tdef.qualified_type);
   const std::string & name = tdef.name->getName();
 
-  currentScope().impl()->add_typedef(Typedef{ name, t });
+  Symbol s = currentScope().symbol();
+  s.Typedef(t, name).create();
+
+  mCurrentScope.invalidateCache();
 }
 
 void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl)
