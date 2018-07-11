@@ -37,6 +37,10 @@ public:
 
   inline Kind kind() const { return kind_; }
 
+  inline const std::string & string() const { return data_.string; }
+  inline const script::OperatorName operatorName() const { return data_.operation; }
+  inline const Type asType() const { return data_.type; }
+
   Name & operator=(const Name & other);
   Name & operator=(Name && other);
 
