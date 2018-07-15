@@ -136,24 +136,6 @@ FunctionBuilder FunctionBuilder::Method(const Class & cla, const std::string & n
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Operator(OperatorName op, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::OperatorFunction };
-  ret.operation = op;
-  ret.callback = impl;
-  return ret;
-}
-
-FunctionBuilder FunctionBuilder::Operator(OperatorName op, const Prototype & proto, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::OperatorFunction };
-  ret.operation = op;
-  ret.proto = proto;
-  ret.callback = impl;
-  return ret;
-}
-
-
 FunctionBuilder FunctionBuilder::Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::CastFunction };
