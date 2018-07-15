@@ -84,14 +84,6 @@ public:
   Name get_name() const override;
 };
 
-class StaticMemberFunctionImpl : public RegularFunctionImpl
-{
-public:
-  StaticMemberFunctionImpl(const Class & c, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
-  ~StaticMemberFunctionImpl();
-  Class mClass;
-};
-
 class ScriptFunctionImpl : public FunctionImpl
 {
 public:

@@ -122,19 +122,6 @@ Name RegularFunctionImpl::get_name() const
 }
 
 
-StaticMemberFunctionImpl::StaticMemberFunctionImpl(const Class & c, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : RegularFunctionImpl(name, p, e, f)
-  , mClass(c)
-{
-
-}
-
-StaticMemberFunctionImpl::~StaticMemberFunctionImpl()
-{
-
-}
-
-
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
   : FunctionImpl(Prototype{ Type::Void }, e)
 {
@@ -347,7 +334,7 @@ bool Function::isMemberFunction() const
 
 bool Function::isStatic() const
 {
-  return dynamic_cast<StaticMemberFunctionImpl*>(d.get()) != nullptr;
+  return d->flags & (Static << 2);
 }
 
 bool Function::isSpecial() const
