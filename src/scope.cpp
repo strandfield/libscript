@@ -1137,7 +1137,7 @@ AccessSpecifier Scope::accessibility() const
   return std::static_pointer_cast<script::ClassScope>(impl())->mAccessibility;
 }
 
-std::vector<Function> Scope::operators(Operator::BuiltInOperator op) const
+std::vector<Function> Scope::operators(OperatorName op) const
 {
   const std::vector<Operator> & candidates = operators();
   std::vector<Function> ret;
@@ -1368,7 +1368,7 @@ std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string &
   return ret;
 }
 
-std::vector<Function> Scope::lookup(Operator::BuiltInOperator op) const
+std::vector<Function> Scope::lookup(OperatorName op) const
 {
   std::vector<Function> ret;
   for (const auto & candidate : operators())

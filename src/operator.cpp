@@ -11,7 +11,7 @@ namespace script
 {
 
 
-OperatorImpl::OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+OperatorImpl::OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
   : FunctionImpl(proto, engine, flags)
   , operatorId(op)
 {
@@ -23,7 +23,7 @@ Name OperatorImpl::get_name() const
   return operatorId;
 }
 
-BuiltInOperatorImpl::BuiltInOperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine)
+BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine)
   : OperatorImpl(op, proto, engine)
 {
 
@@ -36,7 +36,7 @@ Operator::Operator(const std::shared_ptr<OperatorImpl> & impl)
 
 }
 
-Operator::BuiltInOperator Operator::operatorId() const
+OperatorName Operator::operatorId() const
 {
   if (d == nullptr)
     return Null;

@@ -7,7 +7,8 @@
 
 #include "script/accessspecifier.h"
 #include "script/function.h"
-#include "script/operator.h"
+#include "script/operators.h"
+#include "script/value.h"
 
 #include <map>
 
@@ -114,7 +115,7 @@ public:
 
   FunctionBuilder Constructor(NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
   const std::vector<Function> & memberFunctions() const;

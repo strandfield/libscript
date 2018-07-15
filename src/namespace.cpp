@@ -237,7 +237,7 @@ FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSign
   return builder;
 }
 
-FunctionBuilder Namespace::Operation(Operator::BuiltInOperator op, NativeFunctionSignature func) const
+FunctionBuilder Namespace::Operation(OperatorName op, NativeFunctionSignature func) const
 {
   FunctionBuilder builder{ *this, op };
   builder.callback = func;

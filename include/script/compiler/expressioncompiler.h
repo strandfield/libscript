@@ -124,8 +124,8 @@ protected:
 protected:
   Type resolve(const ast::QualifiedType & qt);
 
-  std::vector<Function> getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b);
-  std::vector<Function> getUnaryOperators(Operator::BuiltInOperator op, Type a);
+  std::vector<Function> getBinaryOperators(OperatorName op, Type a, Type b);
+  std::vector<Function> getUnaryOperators(OperatorName op, Type a);
   std::vector<Function> getCallOperator(const Type & functor_type);
   std::vector<Function> getLiteralOperators(const std::string & suffix);
 

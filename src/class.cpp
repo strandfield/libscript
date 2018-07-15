@@ -452,7 +452,7 @@ FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature 
   return builder;
 }
 
-FunctionBuilder Class::Operation(Operator::BuiltInOperator op, NativeFunctionSignature func) const
+FunctionBuilder Class::Operation(OperatorName op, NativeFunctionSignature func) const
 {
   FunctionBuilder builder{ *this, op };
   builder.callback = func;

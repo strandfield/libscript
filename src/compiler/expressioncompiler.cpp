@@ -15,9 +15,7 @@
 #include "script/ast/node.h"
 
 #include "script/program/expression.h"
-#include "script/program/statements.h"
 
-#include "script/cast.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
@@ -94,12 +92,12 @@ Type ExpressionCompiler::resolve(const ast::QualifiedType & qt)
   return type_resolver.resolve(qt, scope());
 }
 
-std::vector<Function> ExpressionCompiler::getBinaryOperators(Operator::BuiltInOperator op, Type a, Type b)
+std::vector<Function> ExpressionCompiler::getBinaryOperators(OperatorName op, Type a, Type b)
 {
   return NameLookup::resolve(op, a, b, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }
 
-std::vector<Function> ExpressionCompiler::getUnaryOperators(Operator::BuiltInOperator op, Type a)
+std::vector<Function> ExpressionCompiler::getUnaryOperators(OperatorName op, Type a)
 {
   return NameLookup::resolve(op, a, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
 }

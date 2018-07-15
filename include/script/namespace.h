@@ -5,20 +5,32 @@
 #ifndef LIBSCRIPT_NAMESPACE_H
 #define LIBSCRIPT_NAMESPACE_H
 
-#include <map>
+#include "libscriptdefs.h"
+#include "script/callbacks.h"
+#include "script/operators.h"
 
-#include "script/class.h"
-#include "script/operator.h"
+#include <map>
+#include <vector>
 
 namespace script
 {
 
 class NamespaceImpl;
 
+class Class;
+class ClassBuilder;
+class Engine;
+class Enum;
+class Function;
 class FunctionBuilder;
+class LiteralOperator;
 class Module;
+class Operator;
+class Script;
 class Template;
+class Type;
 class Typedef;
+class Value;
 
 class LIBSCRIPT_API Namespace
 {
@@ -70,7 +82,7 @@ public:
   std::vector<Function> findFunctions(const std::string & name) const;
 
   FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Operation(Operator::BuiltInOperator op, NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 

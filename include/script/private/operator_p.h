@@ -15,9 +15,9 @@ namespace script
 class OperatorImpl : public FunctionImpl
 {
 public:
-  Operator::BuiltInOperator operatorId;
+  OperatorName operatorId;
 public:
-  OperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
 
   Name get_name() const override;
@@ -26,7 +26,7 @@ public:
 class BuiltInOperatorImpl : public OperatorImpl
 {
 public:
-  BuiltInOperatorImpl(Operator::BuiltInOperator op, const Prototype & proto, Engine *engine);
+  BuiltInOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine);
   ~BuiltInOperatorImpl() = default;
 };
 

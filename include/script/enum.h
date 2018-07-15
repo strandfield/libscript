@@ -5,9 +5,9 @@
 #ifndef LIBSCRIPT_ENUM_H
 #define LIBSCRIPT_ENUM_H
 
-#include <map>
-
 #include "libscriptdefs.h"
+
+#include <map>
 
 namespace script
 {

@@ -81,14 +81,14 @@ public:
 
   static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
   static NameLookup resolve(const std::string & name, const Scope & scope);
-  static NameLookup resolve(Operator::BuiltInOperator op, const Scope & scope);
+  static NameLookup resolve(OperatorName op, const Scope & scope);
 
   static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, compiler::TemplateNameProcessor & tnp);
   
   static NameLookup member(const std::string & name, const Class & cla);
 
-  static std::vector<Function> resolve(Operator::BuiltInOperator op, const Type & arg, const Scope & scp, int opts);
-  static std::vector<Function> resolve(Operator::BuiltInOperator op, const Type & lhs, const Type & rhs, const Scope & scp, int opts);
+  static std::vector<Function> resolve(OperatorName op, const Type & arg, const Scope & scp, int opts);
+  static std::vector<Function> resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp, int opts);
 
   NameLookup & operator=(const NameLookup &) = default;
 

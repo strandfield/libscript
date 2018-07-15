@@ -6,10 +6,6 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/function.h"
-#include "script/operator.h"
-#include "script/cast.h"
-#include "script/class.h"
-#include "script/namespace.h"
 #include "script/symbol.h"
 
 namespace script
@@ -25,7 +21,7 @@ public:
   Prototype proto;
   int flags;
   Symbol symbol;
-  Operator::BuiltInOperator operation;
+  OperatorName operation;
   std::shared_ptr<UserData> data;
 
 public:
@@ -34,9 +30,9 @@ public:
 public:
   FunctionBuilder(Function::Kind k);
   FunctionBuilder(Class cla, Function::Kind k);
-  FunctionBuilder(Class cla, Operator::BuiltInOperator op);
+  FunctionBuilder(Class cla, OperatorName op);
   FunctionBuilder(Namespace ns);
-  FunctionBuilder(Namespace ns, Operator::BuiltInOperator op);
+  FunctionBuilder(Namespace ns, OperatorName op);
   FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix);
 
   static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
@@ -45,8 +41,8 @@ public:
   static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
   [[deprecated("use builder functions in Class instead")]] static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
 
-  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(OperatorName op, NativeFunctionSignature impl = nullptr);
+  [[deprecated("use builder functions in Namespace and Class instead")]] static FunctionBuilder Operator(OperatorName op, const Prototype & proto, NativeFunctionSignature impl = nullptr);
 
   static FunctionBuilder Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl = nullptr);
 

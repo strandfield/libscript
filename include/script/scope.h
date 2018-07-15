@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_SCOPE_H
 #define LIBSCRIPT_SCOPE_H
 
-#include "script/function.h"
-#include "script/operator.h"
+#include "script/function.h" /// TODO : forward declare
+#include "script/operators.h"
 
 namespace script
 {
@@ -74,7 +74,7 @@ public:
   const std::vector<Function> & functions() const;
   const std::vector<Namespace> & namespaces() const;
   const std::vector<Operator> & operators() const;
-  std::vector<Function> operators(Operator::BuiltInOperator op) const;
+  std::vector<Function> operators(OperatorName op) const;
   const std::vector<LiteralOperator> & literalOperators() const;
   const std::vector<Template> & templates() const;
 
@@ -95,7 +95,7 @@ public:
   void inject(const NamespaceAlias & alias);
 
   std::vector<Function> lookup(const LiteralOperator &, const std::string & suffix) const;
-  std::vector<Function> lookup(Operator::BuiltInOperator op) const;
+  std::vector<Function> lookup(OperatorName op) const;
 
   NameLookup lookup(const std::string & name) const;
   bool lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const;

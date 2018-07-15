@@ -5,9 +5,9 @@
 #ifndef LIBSCRIPT_CONTEXT_P_H
 #define LIBSCRIPT_CONTEXT_P_H
 
-#include <map>
-
 #include "script/value.h"
+
+#include <map>
 
 namespace script
 {

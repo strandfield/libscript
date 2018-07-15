@@ -5,6 +5,7 @@
 #include "script/overloadresolution.h"
 
 #include "script/engine.h"
+#include "script/operator.h"
 
 #include "script/program/expression.h"
 

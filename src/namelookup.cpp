@@ -245,7 +245,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
   return NameLookup{ result };
 }
 
-NameLookup NameLookup::resolve(Operator::BuiltInOperator op, const Scope & scope)
+NameLookup NameLookup::resolve(OperatorName op, const Scope & scope)
 {
   std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
   result->scope = scope;
@@ -424,7 +424,7 @@ static void remove_duplicated_operators(std::vector<Function> & list)
   // we need to check if that is faster to remove the duplicates or not
 }
 
-static void get_scope_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const script::Scope & scp, int opts)
+static void get_scope_operators(std::vector<Function> & list, OperatorName op, const script::Scope & scp, int opts)
 {
   const auto & candidates = scp.operators();
   for (const auto & c : candidates)
@@ -441,7 +441,7 @@ static void get_scope_operators(std::vector<Function> & list, Operator::BuiltInO
     return remove_duplicated_operators(list);
 }
 
-static void get_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const Namespace & ns)
+static void get_operators(std::vector<Function> & list, OperatorName op, const Namespace & ns)
 {
   if (ns.isNull())
     return;
@@ -456,7 +456,7 @@ static void get_operators(std::vector<Function> & list, Operator::BuiltInOperato
 }
 
 
-static void get_operators(std::vector<Function> & list, Operator::BuiltInOperator op, const Class & c)
+static void get_operators(std::vector<Function> & list, OperatorName op, const Class & c)
 {
   const auto & candidates = c.operators();
   for (const auto & c : candidates)
@@ -467,7 +467,7 @@ static void get_operators(std::vector<Function> & list, Operator::BuiltInOperato
   }
 }
 
-static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOperator op, const Class & type)
+static void resolve_operators(std::vector<Function> &result, OperatorName op, const Class & type)
 {
   get_operators(result, op, type);
 
@@ -479,7 +479,7 @@ static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOp
     resolve_operators(result, op, type.parent());
 }
 
-static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOperator op, const Type & type, const Scope & scp, int opts)
+static void resolve_operators(std::vector<Function> &result, OperatorName op, const Type & type, const Scope & scp, int opts)
 {
   Engine *engine = scp.engine();
 
@@ -524,14 +524,14 @@ static void resolve_operators(std::vector<Function> &result, Operator::BuiltInOp
     remove_duplicated_operators(result);
 }
 
-std::vector<Function> NameLookup::resolve(Operator::BuiltInOperator op, const Type & type, const Scope & scp, int opts)
+std::vector<Function> NameLookup::resolve(OperatorName op, const Type & type, const Scope & scp, int opts)
 {
   std::vector<Function> result;
   resolve_operators(result, op, type, scp, opts);
   return result;
 }
 
-std::vector<Function> NameLookup::resolve(Operator::BuiltInOperator op, const Type & lhs, const Type & rhs, const Scope & scp, int opts)
+std::vector<Function> NameLookup::resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp, int opts)
 {
   /// TODO : this needs some optimization !!
   std::vector<Function> result;
@@ -589,7 +589,7 @@ void NameLookup::process()
   }
   else if (name->is<ast::OperatorName>())
   {
-    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
     const auto & ops = scope.lookup(op);
     d->functions.insert(d->functions.end(), ops.begin(), ops.end());
   }
@@ -633,7 +633,7 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
   }
   else if (name->is<ast::OperatorName>())
   {
-    Operator::BuiltInOperator op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
     const auto & ops = s.lookup(op);
     d->functions.insert(d->functions.end(), ops.begin(), ops.end());
   }

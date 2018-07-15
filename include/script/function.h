@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_FUNCTION_H
 #define LIBSCRIPT_FUNCTION_H
 
+#include "script/callbacks.h"
 #include "script/prototype.h"
-#include "script/value.h"
 
 #include <string>
 
@@ -17,8 +17,6 @@ enum class AccessSpecifier;
 class Cast;
 class Class;
 class Engine;
-namespace interpreter { class FunctionCall; }
-typedef interpreter::FunctionCall FunctionCall;
 namespace program { class Expression; class Statement; }
 class FunctionImpl;
 class FunctionTemplate;
@@ -29,8 +27,6 @@ class Operator;
 class Script;
 class TemplateArgument;
 class UserData;
-
-typedef Value (*NativeFunctionSignature) (FunctionCall *);
 
 class LIBSCRIPT_API Function
 {

@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "script/cast.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"

@@ -4,6 +4,8 @@
 
 #include "script/interpreter/executioncontext.h"
 
+#include "script/value.h"
+
 namespace script
 {
 

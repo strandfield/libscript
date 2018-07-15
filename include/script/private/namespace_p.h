@@ -5,17 +5,19 @@
 #ifndef LIBSCRIPT_NAMESPACE_P_H
 #define LIBSCRIPT_NAMESPACE_P_H
 
-#include <map>
-#include <vector>
+#include "script/private/symbol_p.h"
 
 #include "script/enum.h"
 #include "script/class.h"
 #include "script/literals.h"
 #include "script/namespace.h"
-#include "script/private/symbol_p.h"
+#include "script/operator.h"
 #include "script/template.h"
 #include "script/value.h"
 #include "script/typedefs.h"
+
+#include <map>
+#include <vector>
 
 namespace script
 {

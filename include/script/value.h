@@ -5,7 +5,6 @@
 #ifndef LIBSCRIPT_VALUE_H
 #define LIBSCRIPT_VALUE_H
 
-#include "libscriptdefs.h"
 #include "script/types.h"
 #include "script/string.h"
 

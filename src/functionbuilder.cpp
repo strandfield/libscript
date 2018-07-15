@@ -10,6 +10,7 @@
 #include "script/private/function_p.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
+#include "script/operator.h"
 
 namespace script
 {
@@ -40,7 +41,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
     this->proto.setReturnType(Type::cref(cla.id()));
 }
 
-FunctionBuilder::FunctionBuilder(Class cla, Operator::BuiltInOperator op)
+FunctionBuilder::FunctionBuilder(Class cla, OperatorName op)
   : callback(nullptr)
   , engine(cla.engine())
   , symbol(cla)
@@ -63,7 +64,7 @@ FunctionBuilder::FunctionBuilder(Namespace ns)
 
 }
 
-FunctionBuilder::FunctionBuilder(Namespace ns, Operator::BuiltInOperator op)
+FunctionBuilder::FunctionBuilder(Namespace ns, OperatorName op)
   : callback(nullptr)
   , engine(ns.engine())
   , symbol(ns)
@@ -135,7 +136,7 @@ FunctionBuilder FunctionBuilder::Method(const Class & cla, const std::string & n
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, NativeFunctionSignature impl)
+FunctionBuilder FunctionBuilder::Operator(OperatorName op, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::OperatorFunction };
   ret.operation = op;
@@ -143,7 +144,7 @@ FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, NativeFu
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Operator(Operator::BuiltInOperator op, const Prototype & proto, NativeFunctionSignature impl)
+FunctionBuilder FunctionBuilder::Operator(OperatorName op, const Prototype & proto, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::OperatorFunction };
   ret.operation = op;
