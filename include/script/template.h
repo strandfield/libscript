@@ -19,6 +19,7 @@ class FunctionTemplate;
 class Scope;
 class Script;
 class Template;
+class Symbol;
 
 struct TemplateInstantiationError : public std::runtime_error
 {
@@ -52,6 +53,8 @@ public:
   Scope parameterScope() const;
 
   TemplateArgument get(const std::string & name, const std::vector<TemplateArgument> & args) const;
+
+  Symbol enclosingSymbol() const;
 
   std::weak_ptr<TemplateImpl> weakref() const;
   inline const std::shared_ptr<TemplateImpl> & impl() const { return d; }

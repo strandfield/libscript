@@ -9,6 +9,7 @@
 #include "script/functiontemplate.h"
 #include "script/private/symbol_p.h"
 #include "script/private/templateargumentscope_p.h"
+#include "script/symbol.h"
 
 #include <algorithm> // std::max
 
@@ -234,6 +235,11 @@ TemplateArgument Template::get(const std::string & name, const std::vector<Templ
   }
 
   throw std::runtime_error{ "Template::get() : no such argument" };
+}
+
+Symbol Template::enclosingSymbol() const
+{
+  return Symbol{ d->enclosing_symbol.lock() };
 }
 
 std::weak_ptr<TemplateImpl> Template::weakref() const
