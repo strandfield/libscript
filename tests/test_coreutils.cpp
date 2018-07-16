@@ -10,6 +10,7 @@
 #include "script/engine.h"
 
 #include "script/array.h"
+#include "script/cast.h"
 #include "script/class.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"

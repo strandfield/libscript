@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_TEMPLATE_H
 #define LIBSCRIPT_TEMPLATE_H
 
+#include "script/templatecallbacks.h"
 #include "script/templateargument.h"
 #include "script/templateparameter.h"
 
@@ -13,12 +14,9 @@ namespace script
 
 class TemplateImpl;
 
-class ClassTemplate;
 class Engine;
-class FunctionTemplate;
 class Scope;
 class Script;
-class Template;
 class Symbol;
 
 struct TemplateInstantiationError : public std::runtime_error

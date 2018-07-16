@@ -11,6 +11,7 @@
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
 #include "script/script.h"
+#include "script/templatebuilder.h"
 
 namespace script
 {
@@ -78,6 +79,16 @@ FunctionBuilder Symbol::Function(const std::string & name)
   else if (isNamespace())
     return toNamespace().Function(name);
   throw std::runtime_error{ "Cannot add function on null symbol" };
+}
+
+FunctionTemplateBuilder Symbol::FunctionTemplate(const std::string & name)
+{
+  return FunctionTemplateBuilder{ *this, name };
+}
+
+FunctionTemplateBuilder Symbol::FunctionTemplate(std::string && name)
+{
+  return FunctionTemplateBuilder{ *this, std::move(name) };
 }
 
 FunctionBuilder Symbol::Operation(OperatorName op)

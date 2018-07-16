@@ -15,6 +15,7 @@ namespace script
 class Class;
 class Engine;
 class FunctionBuilder;
+class FunctionTemplateBuilder;
 class Namespace;
 class SymbolImpl;
 class TypedefBuilder;
@@ -42,6 +43,8 @@ public:
   Namespace toNamespace() const;
 
   FunctionBuilder Function(const std::string & name);
+  FunctionTemplateBuilder FunctionTemplate(const std::string & name);
+  FunctionTemplateBuilder FunctionTemplate(std::string && name);
   FunctionBuilder Operation(OperatorName op);
   TypedefBuilder Typedef(const Type & t, const std::string & name);
   TypedefBuilder Typedef(const Type & t, std::string && name);

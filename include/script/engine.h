@@ -13,6 +13,7 @@
 #include "script/scope.h"
 #include "script/script.h"
 #include "script/string.h"
+#include "script/templatecallbacks.h"
 #include "script/value.h"
 
 #include "script/support/filesystem.h"
@@ -36,12 +37,6 @@ class Namespace;
 class TemplateArgument;
 class TemplateArgumentDeduction;
 class TemplateParameter;
-
-typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplate, const std::vector<TemplateArgument> &);
-
-typedef void(*NativeFunctionTemplateDeductionCallback)(TemplateArgumentDeduction &, const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
-typedef void(*NativeFunctionTemplateSubstitutionCallback)(FunctionBuilder &, FunctionTemplate, const std::vector<TemplateArgument> &);
-typedef std::pair<NativeFunctionSignature, std::shared_ptr<UserData>>(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
 
 namespace program
 {
@@ -144,7 +139,7 @@ public:
   Value invoke(const Function & f, std::initializer_list<Value> && args);
   Value invoke(const Function & f, const std::vector<Value> & args);
 
-  FunctionTemplate newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeFunctionTemplateDeductionCallback deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
+  [[deprecated("Use FunctionTemplateBuilder instead")]] FunctionTemplate newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeFunctionTemplateDeductionCallback deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
 
   ClassTemplate newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeClassTemplateInstantiationFunction callback);
   struct array_template_t {};

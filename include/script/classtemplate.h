@@ -13,14 +13,11 @@ namespace script
 {
 
 class Class;
-class ClassTemplate;
 class ClassTemplateImpl;
 class PartialTemplateSpecialization;
 class PartialTemplateSpecializationImpl;
 
 class ClassBuilder;
-
-typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplate, const std::vector<TemplateArgument> &);
 
 class LIBSCRIPT_API ClassTemplate : public Template
 {

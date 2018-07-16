@@ -10,33 +10,17 @@
 #include "script/function.h"
 
 #include <map>
-#include <utility> // std::pair
 
 namespace script
 {
 
-class FunctionTemplate;
 class FunctionTemplateImpl;
-
-class FunctionBuilder;
-class TemplateArgumentDeduction;
-class UserData;
-
-typedef void(*NativeFunctionTemplateDeductionCallback)(TemplateArgumentDeduction &, const FunctionTemplate &, const std::vector<TemplateArgument> &, const std::vector<Type> &);
-typedef void(*NativeFunctionTemplateSubstitutionCallback)(FunctionBuilder &, FunctionTemplate, const std::vector<TemplateArgument> &);
-typedef std::pair<NativeFunctionSignature, std::shared_ptr<UserData>>(*NativeFunctionTemplateInstantiationCallback)(FunctionTemplate, Function);
+struct TemplateArgumentComparison;
 
 namespace program
 {
 class Expression;
 } // namespace program
-
-struct LIBSCRIPT_API FunctionTemplateCallbacks
-{
-  NativeFunctionTemplateDeductionCallback deduction;
-  NativeFunctionTemplateSubstitutionCallback substitution;
-  NativeFunctionTemplateInstantiationCallback instantiation;
-};
 
 class LIBSCRIPT_API FunctionTemplate : public Template
 {
