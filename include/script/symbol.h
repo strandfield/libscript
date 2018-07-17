@@ -13,6 +13,7 @@ namespace script
 {
 
 class Class;
+class ClassTemplateBuilder;
 class Engine;
 class FunctionBuilder;
 class FunctionTemplateBuilder;
@@ -42,6 +43,8 @@ public:
   bool isNamespace() const;
   Namespace toNamespace() const;
 
+  ClassTemplateBuilder ClassTemplate(const std::string & name);
+  ClassTemplateBuilder ClassTemplate(std::string && name);
   FunctionBuilder Function(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(std::string && name);

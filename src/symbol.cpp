@@ -72,6 +72,16 @@ Namespace Symbol::toNamespace() const
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
 }
 
+ClassTemplateBuilder Symbol::ClassTemplate(const std::string & name)
+{
+  return ClassTemplateBuilder{ *this, name };
+}
+
+ClassTemplateBuilder Symbol::ClassTemplate(std::string && name)
+{
+  return ClassTemplateBuilder{ *this, std::move(name) };
+}
+
 FunctionBuilder Symbol::Function(const std::string & name)
 {
   if (isClass())

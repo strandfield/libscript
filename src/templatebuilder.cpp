@@ -12,15 +12,13 @@ namespace script
 {
 
 FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, const std::string & n)
-  : symbol(s)
-  , name(n)
+  : Base(s, n)
 {
 
 }
 
 FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, std::string && n)
-  : symbol(s)
-  , name(std::move(n))
+  : Base(s, std::move(n))
 {
 
 }
@@ -49,18 +47,6 @@ FunctionTemplateBuilder & FunctionTemplateBuilder::instantiate(NativeFunctionTem
   return (*this);
 }
 
-FunctionTemplateBuilder & FunctionTemplateBuilder::setScope(const Scope & scp)
-{
-  this->scope = scp;
-  return (*this);
-}
-
-FunctionTemplateBuilder & FunctionTemplateBuilder::setParams(std::vector<TemplateParameter> && p)
-{
-  this->parameters = std::move(p);
-  return (*this);
-}
-
 FunctionTemplate FunctionTemplateBuilder::get()
 {
   /// TODO: perform checks
@@ -76,6 +62,44 @@ FunctionTemplate FunctionTemplateBuilder::get()
 }
 
 void FunctionTemplateBuilder::create()
+{
+  get();
+}
+
+
+ClassTemplateBuilder::ClassTemplateBuilder(const Symbol & s, const std::string & name)
+  : Base(s, name)
+{
+
+}
+
+ClassTemplateBuilder::ClassTemplateBuilder(const Symbol & s, std::string && name)
+  : Base(s, std::move(name))
+{
+
+}
+
+ClassTemplateBuilder & ClassTemplateBuilder::setCallback(NativeClassTemplateInstantiationFunction val)
+{
+  this->callback = val;
+  return (*this);
+}
+
+ClassTemplate ClassTemplateBuilder::get()
+{
+  /// TODO: perform checks
+  ClassTemplate ret{ std::make_shared<ClassTemplateImpl>(std::move(this->name), 
+    std::move(this->parameters), this->scope, this->callback, this->symbol.engine(), this->symbol.impl()) };
+
+  if (symbol.isClass())
+    symbol.toClass().impl()->templates.push_back(ret);
+  else if (symbol.isNamespace())
+    symbol.toNamespace().impl()->templates.push_back(ret);
+
+  return ret;
+}
+
+void ClassTemplateBuilder::create()
 {
   get();
 }

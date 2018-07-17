@@ -13,16 +13,61 @@
 namespace script
 {
 
-class FunctionTemplate;
-
-class FunctionTemplateBuilder
+template<typename Derived>
+class LIBSCRIPT_API TemplateBuilder
 {
 public:
   Symbol symbol;
   std::string name;
-  FunctionTemplateCallbacks callbacks;
   std::vector<TemplateParameter> parameters;
   Scope scope;
+
+public:
+  TemplateBuilder(const Symbol & s, const std::string & n)
+    : symbol(s)
+    , name(n)
+  {
+
+  }
+
+  TemplateBuilder(const Symbol & s, std::string && n)
+    : symbol(s)
+    , name(std::move(n))
+  {
+
+  }
+
+  Derived & setScope(const Scope & scp)
+  {
+    this->scope = scp;
+    return *(static_cast<Derived*>(this));
+  }
+
+  Derived & setParams(std::vector<TemplateParameter> && p)
+  {
+    this->parameters = std::move(p);
+    return *(static_cast<Derived*>(this));
+  }
+
+  inline Derived & params(const TemplateParameter & p) { this->parameters.push_back(p); return *(static_cast<Derived*>(this)); }
+
+  template<typename...Args>
+  Derived & params(const TemplateParameter & p, const Args &... rest)
+  {
+    params(p);
+    return params(rest...);
+  }
+};
+
+class FunctionTemplate;
+
+class LIBSCRIPT_API FunctionTemplateBuilder : public TemplateBuilder<FunctionTemplateBuilder>
+{
+private:
+  typedef TemplateBuilder<FunctionTemplateBuilder> Base;
+
+public:
+  FunctionTemplateCallbacks callbacks;
 
 public:
   FunctionTemplateBuilder() = delete;
@@ -37,19 +82,32 @@ public:
   FunctionTemplateBuilder & substitute(NativeFunctionTemplateSubstitutionCallback callback);
   FunctionTemplateBuilder & instantiate(NativeFunctionTemplateInstantiationCallback callback);
 
-  FunctionTemplateBuilder & setScope(const Scope & scp);
-
-  FunctionTemplateBuilder & setParams(std::vector<TemplateParameter> && p);
-  inline FunctionTemplateBuilder & params(const TemplateParameter & p) { this->parameters.push_back(p); return (*this); }
-
-  template<typename...Args>
-  FunctionTemplateBuilder & params(const TemplateParameter & p, const Args &... rest)
-  {
-    params(p);
-    return params(rest...);
-  }
-
   FunctionTemplate get();
+  void create();
+};
+
+
+class ClassTemplate;
+
+class LIBSCRIPT_API ClassTemplateBuilder : public TemplateBuilder<ClassTemplateBuilder>
+{
+private:
+  typedef TemplateBuilder<ClassTemplateBuilder> Base;
+
+public:
+  NativeClassTemplateInstantiationFunction callback;
+
+public:
+  ClassTemplateBuilder() = delete;
+  ClassTemplateBuilder(const ClassTemplateBuilder &) = default;
+  ~ClassTemplateBuilder() = default;
+
+  ClassTemplateBuilder(const Symbol & s, const std::string & name);
+  ClassTemplateBuilder(const Symbol & s, std::string && name);
+
+  ClassTemplateBuilder & setCallback(NativeClassTemplateInstantiationFunction val);
+
+  ClassTemplate get();
   void create();
 };
 

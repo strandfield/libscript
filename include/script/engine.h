@@ -141,7 +141,7 @@ public:
 
   [[deprecated("Use FunctionTemplateBuilder instead")]] FunctionTemplate newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeFunctionTemplateDeductionCallback deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
 
-  ClassTemplate newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeClassTemplateInstantiationFunction callback);
+  [[deprecated("Use ClassTemplateBuilder instead")]] ClassTemplate newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeClassTemplateInstantiationFunction callback);
   struct array_template_t {};
   static const array_template_t ArrayTemplate;
   ClassTemplate getTemplate(array_template_t) const;
