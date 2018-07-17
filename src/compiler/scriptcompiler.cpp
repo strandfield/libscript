@@ -28,6 +28,7 @@
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 #include "script/symbol.h"
+#include "script/templatebuilder.h"
 
 namespace script
 {
@@ -792,26 +793,32 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  const std::string name = classdecl->name->getName();
+  std::string name = classdecl->name->getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  ClassTemplate ct = engine()->newClassTemplate(name, std::move(params), scp, nullptr);
-  TemplateDefinition tdef = TemplateDefinition::make(decl);
-  ct.impl()->definition = tdef;
-  scp.impl()->add_template(ct);
+  ClassTemplate ct = scp.symbol().ClassTemplate(std::move(name))
+    .setParams(std::move(params))
+    .setScope(scp)
+    .setCallback(nullptr)
+    .get();
+
+  ct.impl()->definition = TemplateDefinition::make(decl);
 }
 
 void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
 
-  const std::string name = fundecl->name->getName();
+  std::string name = fundecl->name->getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  FunctionTemplate ft = engine()->newFunctionTemplate(name, std::move(params), scp, nullptr, nullptr, nullptr);
-  TemplateDefinition tdef = TemplateDefinition::make(decl);
-  ft.impl()->definition = tdef;
-  scp.impl()->add_template(ft);
+  FunctionTemplate ft = scp.symbol().FunctionTemplate(std::move(name))
+    .setParams(std::move(params))
+    .setScope(scp)
+    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .get();
+
+  ft.impl()->definition = TemplateDefinition::make(decl);
 }
 
 Namespace ScriptCompiler::findEnclosingNamespace(const Scope & scp) const

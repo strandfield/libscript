@@ -11,6 +11,7 @@
 #include "script/functiontype.h"
 #include "script/private/template_p.h"
 #include "script/templateargumentdeduction.h"
+#include "script/templatebuilder.h"
 
 #include "script/userdata.h"
 #include "script/namelookup.h"
@@ -142,7 +143,11 @@ TEST(TemplateTests, call_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -165,7 +170,11 @@ TEST(TemplateTests, call_to_template_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -187,7 +196,11 @@ TEST(TemplateTests, call_to_template_with_one_arg) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -209,7 +222,11 @@ TEST(TemplateTests, call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -231,7 +248,11 @@ TEST(TemplateTests, invalid_call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  engine.rootNamespace().addTemplate(engine.newFunctionTemplate("max", std::move(params), Scope{}, max_function_template_deduce, max_function_template_substitution, max_function_template_instantiation));
+  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
@@ -259,7 +280,11 @@ TEST(TemplateTests, argument_deduction_1) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("abs", std::move(params), Scope{}, nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("abs")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .get();
 
   std::vector<TemplateArgument> arguments;
   std::vector<Type> types{ Type::Int };
@@ -298,7 +323,11 @@ TEST(TemplateTests, argument_deduction_2) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("swap", std::move(params), Scope{}, nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("swap")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .get();
 
   std::vector<TemplateArgument> arguments;
   std::vector<Type> types{ Type::Int, Type::Int };
@@ -336,7 +365,11 @@ TEST(TemplateTests, argument_deduction_3) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("max", std::move(params), Scope{}, nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .get();
 
   std::vector<TemplateArgument> arguments;
   Type array_int = engine.newArray(Engine::ElementType{ Type::Int }).typeId();
@@ -376,7 +409,11 @@ TEST(TemplateTests, argument_deduction_4) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "A" },
   };
 
-  FunctionTemplate function_template = engine.newFunctionTemplate("apply", std::move(params), Scope{}, nullptr, nullptr, nullptr);
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("apply")
+    .setParams(std::move(params))
+    .setScope(Scope{})
+    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .get();
 
   Prototype proto{ Type::Boolean, Type::Int };
   FunctionType function_type = engine.getFunctionType(proto);

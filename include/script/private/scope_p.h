@@ -56,7 +56,7 @@ public:
   virtual const std::map<std::string, Value> & values() const;
   virtual const std::vector<Typedef> & typedefs() const;
 
-  virtual void add_template(const Template & t) { throw std::runtime_error{ "Bad call to ScopeImpl::add_template()" }; }
+  [[deprecated("Use TemplateBuilder instead")]] virtual void add_template(const Template & t) { throw std::runtime_error{ "Bad call to ScopeImpl::add_template()" }; }
 
   virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
   virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }

@@ -10,6 +10,7 @@
 #include "script/functionbuilder.h"
 #include "script/template.h"
 #include "script/private/value_p.h"
+#include "script/templatebuilder.h"
 
 
 namespace script
@@ -238,8 +239,12 @@ ClassTemplate ArrayImpl::register_array_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate array_template = e->newClassTemplate("Array", std::move(params), Scope{ root }, instantiate_array_class);
-  root.addTemplate(array_template);
+  ClassTemplate array_template = Symbol{ root }.ClassTemplate("Array")
+    .setParams(std::move(params))
+    .setScope(Scope{ root })
+    .setCallback(instantiate_array_class)
+    .get();
+
   return array_template;
 }
 
