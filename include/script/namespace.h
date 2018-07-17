@@ -63,7 +63,6 @@ public:
   Operator newOperator(const FunctionBuilder & opts);
   void addValue(const std::string & name, const Value & val);
   void addOperator(const Operator & op);
-  [[deprecated("Use TemplateBuilder instead")]] void addTemplate(const Template & t);
 
   const std::map<std::string, Value> & vars() const;
   const std::vector<Enum> & enums() const;

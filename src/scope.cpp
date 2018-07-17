@@ -569,13 +569,6 @@ const std::map<std::string, Value> & NamespaceScope::values() const
   return mValues;
 }
 
-void NamespaceScope::add_template(const Template & t)
-{
-  mNamespace.impl()->templates.push_back(t);
-  t.impl()->enclosing_symbol = mNamespace.impl();
-  mTemplates.clear();
-}
-
 void NamespaceScope::remove_class(const Class & c)
 {
   auto & container = mNamespace.impl()->classes;
@@ -694,14 +687,6 @@ const std::vector<Typedef> & ClassScope::typedefs() const
 {
   return mClass.typedefs();
 }
-
-void ClassScope::add_template(const Template & t)
-{
-  mClass.impl()->templates.push_back(t);
-  t.impl()->enclosing_symbol = mClass.impl();
-}
-
-
 
 bool ClassScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {

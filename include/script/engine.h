@@ -32,9 +32,7 @@ class EngineImpl;
 class Enum;
 class FunctionBuilder;
 class FunctionType;
-class FunctionTemplate;
 class Namespace;
-class TemplateArgument;
 class TemplateArgumentDeduction;
 class TemplateParameter;
 
@@ -139,9 +137,7 @@ public:
   Value invoke(const Function & f, std::initializer_list<Value> && args);
   Value invoke(const Function & f, const std::vector<Value> & args);
 
-  [[deprecated("Use FunctionTemplateBuilder instead")]] FunctionTemplate newFunctionTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeFunctionTemplateDeductionCallback deduc, NativeFunctionTemplateSubstitutionCallback substitute, NativeFunctionTemplateInstantiationCallback inst);
 
-  [[deprecated("Use ClassTemplateBuilder instead")]] ClassTemplate newClassTemplate(const std::string & name, std::vector<TemplateParameter> && params, const Scope &scp, NativeClassTemplateInstantiationFunction callback);
   struct array_template_t {};
   static const array_template_t ArrayTemplate;
   ClassTemplate getTemplate(array_template_t) const;

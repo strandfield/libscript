@@ -87,7 +87,6 @@ public:
   Enum newEnum(const std::string & name, int id = -1);
   const std::vector<Enum> & enums() const;
 
-  [[deprecated("use TemplateBuilder instead")]] void addTemplate(const Template & t);
   const std::vector<Template> & templates() const;
   const std::vector<Typedef> & typedefs() const;
 

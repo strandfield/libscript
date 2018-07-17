@@ -206,12 +206,6 @@ const std::vector<Enum> & Class::enums() const
   return d->enums;
 }
 
-void Class::addTemplate(const Template & t)
-{
-  d->templates.push_back(t);
-  t.impl()->enclosing_symbol = d;
-}
-
 const std::vector<Template> & Class::templates() const
 {
   return d->templates;

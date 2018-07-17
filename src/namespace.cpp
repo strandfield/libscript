@@ -139,12 +139,6 @@ void Namespace::addOperator(const Operator & op)
   d->operators.push_back(op);
 }
 
-void Namespace::addTemplate(const Template & t)
-{
-  d->templates.push_back(t);
-  t.impl()->enclosing_symbol = d;
-}
-
 const std::map<std::string, Value> & Namespace::vars() const
 {
   return d->variables;
