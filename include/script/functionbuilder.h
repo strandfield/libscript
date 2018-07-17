@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_FUNCTION_BUILDER_H
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
-#include "script/function.h"
+#include "script/function.h" /// TODO: remove this include
 #include "script/symbol.h"
 
 namespace script

@@ -5,7 +5,7 @@
 #ifndef LIBSCRIP_USERDATA_H
 #define LIBSCRIP_USERDATA_H
 
-#include "script/function.h"
+#include "script/function.h" /// TODO: remove
 
 namespace script
 {

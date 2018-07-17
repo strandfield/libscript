@@ -37,6 +37,8 @@ public:
 
   explicit Function(const std::shared_ptr<FunctionImpl> & impl);
 
+  /// TODO: move outside of this file
+  // maybe rename to enum class FunctionCategory
   enum Kind {
     StandardFunction = 0,
     Constructor = 1,
@@ -47,6 +49,8 @@ public:
     LiteralOperatorFunction = 6,
   };
 
+  /// TODO: move outside this file
+  // maybe rename to enum class FunctionFlag or FunctionSpecifier
   enum Flag {
     NoFlags = 0,
     Static = 1,

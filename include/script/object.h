@@ -6,7 +6,7 @@
 #define LIBSCRIPT_OBJECT_H
 
 #include "script/value.h"
-#include "script/class.h"
+#include "script/class.h" /// TODO: replace by forward declaration
 
 namespace script
 {

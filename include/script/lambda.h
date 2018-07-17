@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_LAMBDA_H
 #define LIBSCRIPT_LAMBDA_H
 
-#include "script/value.h"
+#include "script/value.h" /// TODO: remove this include
 #include "script/class.h"
 
 namespace script

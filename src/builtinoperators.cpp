@@ -896,6 +896,8 @@ void register_builtin_operators(Namespace root)
   using namespace callbacks;
   using namespace operators;
 
+  /// TODO: do not use addOperator()
+
   struct OperatorBuilder
   {
     Engine *engine;

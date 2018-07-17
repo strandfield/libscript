@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_OVERLOAD_RESOLUTION_H
 #define LIBSCRIPT_OVERLOAD_RESOLUTION_H
 
-#include "script/engine.h"
+#include "script/engine.h" /// TODO: forward declare
 #include "script/function.h"
 
 namespace script
@@ -111,6 +111,7 @@ public:
 
   static OverloadComparison compare(const Function & a, const std::vector<ConversionSequence> & conv_a, const Function & b, const std::vector<ConversionSequence> & conv_b);
 
+  /// TODO: is passing an Engine* here absolutely necessary ?
   static OverloadResolution New(Engine *engine, int options = 0);
 
   static Function select(const std::vector<Function> & candidates, const std::vector<Type> & types)

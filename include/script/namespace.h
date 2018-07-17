@@ -57,12 +57,12 @@ public:
   Namespace getNamespace(const std::string & name);
 
   Enum newEnum(const std::string & name, int id = -1);
-  Function newFunction(const FunctionBuilder & opts);
+  [[deprecated("Use Function() instead")]] Function newFunction(const FunctionBuilder & opts);
   Class newClass(const ClassBuilder & opts);
   Namespace newNamespace(const std::string & name);
-  Operator newOperator(const FunctionBuilder & opts);
+  [[deprecated("Use Operation() instead")]] Operator newOperator(const FunctionBuilder & opts);
   void addValue(const std::string & name, const Value & val);
-  void addOperator(const Operator & op);
+  [[deprecated("Use Operation() instead")]] void addOperator(const Operator & op);
 
   const std::map<std::string, Value> & vars() const;
   const std::vector<Enum> & enums() const;

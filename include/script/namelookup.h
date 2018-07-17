@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_H
 #define LIBSCRIPT_NAMELOOKUP_H
 
+/// TODO: replace all includes by forward declarations
 #include "script/scope.h"
 
 #include "script/class.h"

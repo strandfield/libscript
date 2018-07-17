@@ -10,6 +10,7 @@
 namespace script
 {
 
+/// TODO: rename to Enumerator
 class LIBSCRIPT_API EnumValue
 {
 public:

@@ -4,6 +4,8 @@
 
 #include "script/templatebuilder.h"
 
+#include "script/classtemplate.h"
+#include "script/functiontemplate.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/template_p.h"

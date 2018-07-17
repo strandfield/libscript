@@ -5,11 +5,16 @@
 #ifndef LIBSCRIPT_TEMPLATE_P_H
 #define LIBSCRIPT_TEMPLATE_P_H
 
-#include "script/classtemplate.h"
-#include "script/functiontemplate.h"
+#include "script/classtemplate.h" // for PartialTemplateSpecialization, try remove
 #include "script/scope.h"
+#include "script/symbol.h"
+#include "script/templatecallbacks.h"
+#include "script/templateparameter.h"
 
 #include "script/compiler/templatedefinition.h"
+
+#include <map>
+#include <vector>
 
 namespace script
 {

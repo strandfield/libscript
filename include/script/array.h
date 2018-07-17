@@ -12,6 +12,7 @@ namespace script
 
 class ArrayImpl;
 
+/// TODO: add a resize() function
 class LIBSCRIPT_API Array
 {
 public:

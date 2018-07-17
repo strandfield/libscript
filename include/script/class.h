@@ -81,9 +81,11 @@ public:
 
   Value instantiate(const std::vector<Value> & args);
 
+  /// TODO: provide alternative and depreciate this
   Class newClass(const ClassBuilder & opts);
   const std::vector<Class> & classes() const;
 
+  /// TODO: provide alternative and depreciate this
   Enum newEnum(const std::string & name, int id = -1);
   const std::vector<Enum> & enums() const;
 
@@ -167,7 +169,8 @@ private:
   std::shared_ptr<ClassImpl> d;
 };
 
-
+/// TODO: move to another file
+/// TODO: add get() and create() functions
 class LIBSCRIPT_API ClassBuilder
 {
 public:

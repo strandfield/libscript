@@ -7,9 +7,9 @@
 
 #include <string>
 
-#include "script/diagnosticmessage.h"
-#include "script/sourcefile.h"
-#include "script/namespace.h"
+#include "script/diagnosticmessage.h" /// TODO: forward declare
+#include "script/sourcefile.h" /// TODO: forward declare
+#include "script/namespace.h" /// TODO: forward declare
 
 namespace script
 {

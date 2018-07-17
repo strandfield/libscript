@@ -36,6 +36,9 @@ public:
 
   Class addSpecialization(const std::vector<TemplateArgument> & args, const ClassBuilder & opts);
 
+  /// TODO: maybe provide an specific method in ClassBuilder
+  // like get(const classTemplate &, const std::vector<TempalteArgument>&)
+  // or use 2-step instantiation 1) fill ClassBuilder 2) fill Class
   Class build(const ClassBuilder & builder, const std::vector<TemplateArgument> & args) const;
 
   const std::vector<PartialTemplateSpecialization> & partialSpecializations() const;
@@ -47,6 +50,7 @@ public:
   ClassTemplate & operator=(const ClassTemplate & other) = default;
 };
 
+/// TODO: try move outside of this file
 class LIBSCRIPT_API PartialTemplateSpecialization : public Template
 {
 public:

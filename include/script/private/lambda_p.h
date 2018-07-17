@@ -7,7 +7,6 @@
 
 #include "script/lambda.h"
 
-#include "script/operator.h"
 #include "script/private/class_p.h"
 
 namespace script

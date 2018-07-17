@@ -56,8 +56,8 @@ public:
   virtual const std::map<std::string, Value> & values() const;
   virtual const std::vector<Typedef> & typedefs() const;
 
-  virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
-  virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
+  [[deprecated("Remove in future version")]] virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
+  [[deprecated("Remove in future version")]] virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
 
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
 

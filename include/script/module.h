@@ -6,7 +6,7 @@
 #define LIBSCRIPT_MODULE_H
 
 #include "libscriptdefs.h"
-#include "script/namespace.h"
+#include "script/namespace.h" /// TODO: remove this include
 
 namespace script
 {

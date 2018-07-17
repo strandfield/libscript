@@ -7,13 +7,13 @@
 
 #include <vector>
 
+/// TODO: review and remove useless includes
 #include "script/conversions.h"
 #include "script/lambda.h"
 #include "script/module.h"
 #include "script/scope.h"
 #include "script/script.h"
 #include "script/string.h"
-#include "script/templatecallbacks.h"
 #include "script/value.h"
 
 #include "script/support/filesystem.h"
@@ -104,6 +104,7 @@ public:
   FunctionType newFunctionType(const Prototype & proto);
   Enum newEnum(const std::string & name, int id = -1);
   Class newClass(const ClassBuilder &opts);
+  /// TODO: move to FunctionBuilder
   Function newFunction(const FunctionBuilder & opts);
 
   Script newScript(const SourceFile & source);
