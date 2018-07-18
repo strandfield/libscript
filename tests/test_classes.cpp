@@ -117,9 +117,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
 
-  auto fb = FunctionBuilder::Method(A, "foo")
-    .setPureVirtual();
-  Function foo = A.newMethod(fb);
+  Function foo = A.Method("foo").setPureVirtual().create();
 
   ASSERT_TRUE(foo.isVirtual());
   ASSERT_TRUE(foo.isPureVirtual());
@@ -137,8 +135,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo);
 
-  fb = FunctionBuilder::Method(B, "foo");
-  Function foo_B = B.newMethod(fb);
+  Function foo_B = B.Method("foo").create();
 
   ASSERT_TRUE(foo_B.isVirtual());
   ASSERT_FALSE(foo_B.isPureVirtual());

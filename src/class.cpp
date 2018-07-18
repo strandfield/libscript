@@ -342,19 +342,6 @@ void ClassImpl::register_function(const Function & f)
     this->isAbstract = true;
 }
 
-Function Class::newConstructor(const Prototype & proto, NativeFunctionSignature func, uint8 flags)
-{
-  auto builder = FunctionBuilder::Constructor(*this, proto, func);
-  return newConstructor(builder);
-}
-
-Function Class::newConstructor(const FunctionBuilder & builder)
-{
-  Function ctor = engine()->newFunction(builder);
-  d->registerConstructor(ctor);
-  return ctor;
-}
-
 const std::vector<Function> & Class::constructors() const
 {
   return d->constructors;
@@ -400,35 +387,6 @@ Function Class::newDestructor(NativeFunctionSignature func)
 Function Class::destructor() const
 {
   return d->destructor;
-}
-
-Function Class::newMethod(const std::string & name, const Prototype & proto, NativeFunctionSignature func, uint8 flags)
-{
-  FunctionBuilder builder = FunctionBuilder::Function(name, proto, func);
-  builder.flags = flags;
-  return newMethod(builder);
-}
-
-Function Class::newMethod(const FunctionBuilder & builder)
-{
-  auto member = engine()->newFunction(builder);
-  d->register_function(member);
-  return member;
-}
-
-Operator Class::newOperator(const FunctionBuilder & builder)
-{
-  assert(builder.kind == Function::OperatorFunction);
-  auto member = engine()->newFunction(builder).toOperator();
-  d->operators.push_back(member);
-  return member;
-}
-
-Cast Class::newCast(const FunctionBuilder & builder)
-{
-  Cast cast = engine()->newFunction(builder).toCast();
-  d->casts.push_back(cast);
-  return cast;
 }
 
 FunctionBuilder Class::Constructor(NativeFunctionSignature func) const
