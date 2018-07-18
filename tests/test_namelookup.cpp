@@ -16,8 +16,7 @@ TEST(NameLookup, simple_function) {
   Engine e;
   e.setup();
 
-  auto fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Void);
-  e.rootNamespace().newFunction(fb);
+  Symbol{ e.rootNamespace() }.Function("foo").create();
 
   NameLookup lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -26,8 +25,7 @@ TEST(NameLookup, simple_function) {
   lookup = NameLookup::resolve("bar", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::UnknownName);
 
-  fb = FunctionBuilder::Function("foo", Prototype{}, nullptr).setReturnType(Type::Void).addParam(Type::Int);
-  e.rootNamespace().newFunction(fb);
+  Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).create();
 
   lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);

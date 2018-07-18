@@ -89,19 +89,6 @@ Enum Namespace::newEnum(const std::string & name, int id)
   return e;
 }
 
-Function Namespace::newFunction(const FunctionBuilder & opts)
-{
-  script::Function f = engine()->newFunction(opts);
-  if (f.isOperator())
-    d->operators.push_back(f.toOperator());
-  else if (f.isCast() || f.isMemberFunction() || f.isConstructor() || f.isDestructor())
-    throw std::runtime_error{ "Invalid function at namespace scope" };
-  else
-    d->functions.push_back(f);
-
-  return f;
-}
-
 Class Namespace::newClass(const ClassBuilder & opts)
 {
   Class cla = engine()->newClass(opts);
@@ -119,24 +106,9 @@ Namespace Namespace::newNamespace(const std::string & name)
   return ret;
 }
 
-Operator Namespace::newOperator(const FunctionBuilder & opts)
-{
-  if (opts.kind != Function::OperatorFunction)
-    throw std::runtime_error{ "Provided FunctionBuilder cannot be used to build an Operator" };
-
-  Operator op = engine()->newFunction(opts).toOperator();
-  d->operators.push_back(op);
-  return op;
-}
-
 void Namespace::addValue(const std::string & name, const Value & val)
 {
   d->variables[name] = val;
-}
-
-void Namespace::addOperator(const Operator & op)
-{
-  d->operators.push_back(op);
 }
 
 const std::map<std::string, Value> & Namespace::vars() const
