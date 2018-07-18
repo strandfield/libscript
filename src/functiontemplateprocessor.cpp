@@ -173,10 +173,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
 
   // We construct the function manually.
   // We don't use create() to avoid adding the function to the namespace or class.
-  auto impl = std::make_shared<FunctionTemplateInstance>(ft, *template_args, builder.name, builder.proto, ft.engine(), builder.flags);
-  impl->implementation.callback = builder.callback;
-  impl->data = builder.data;
-  impl->enclosing_symbol = ft.impl()->enclosing_symbol;
+  auto impl = FunctionTemplateInstance::create(ft, *template_args, builder);
   return Function{ impl };
 }
 

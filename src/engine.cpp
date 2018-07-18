@@ -9,7 +9,6 @@
 #include "script/private/array_p.h"
 #include "script/private/builtinoperators.h"
 #include "script/cast.h"
-#include "script/private/cast_p.h"
 #include "script/class.h"
 #include "script/private/class_p.h"
 #include "script/context.h"
@@ -23,7 +22,6 @@
 #include "script/functiontype.h"
 #include "script/lambda.h"
 #include "script/private/lambda_p.h"
-#include "script/private/literals_p.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
@@ -916,85 +914,6 @@ Enum Engine::newEnum(const std::string & name, int id)
 Class Engine::newClass(const ClassBuilder &opts)
 {
   return d->new_class(opts);
-}
-
-Function EngineImpl::newConstructor(const FunctionBuilder & opts)
-{
-  if (!opts.symbol.isClass())
-    throw std::runtime_error{ "Cannot create a constructor with invalid class" };
-
-  auto impl = std::make_shared<ConstructorImpl>(opts.symbol.toClass(), opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  impl->enclosing_symbol = opts.symbol.impl();
-  return Function{ impl };
-}
-
-Function EngineImpl::newDestructor(const FunctionBuilder & opts)
-{
-  if (!opts.symbol.isClass())
-    throw std::runtime_error{ "Cannot create a constructor with invalid class" };
-
-  auto impl = std::make_shared<DestructorImpl>(opts.symbol.toClass(), opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  impl->enclosing_symbol = opts.symbol.impl();
-  return Function{ impl };
-}
-
-Function EngineImpl::newFunction(const FunctionBuilder & opts)
-{
-  auto impl = std::make_shared<RegularFunctionImpl>(opts.name, opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  return Function{ impl };
-}
-
-Function EngineImpl::newLiteralOperator(const FunctionBuilder & opts)
-{
-  auto impl = std::make_shared<LiteralOperatorImpl>(std::string{ opts.name }, opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  return Function{ impl };
-}
-
-Function EngineImpl::newOperator(const FunctionBuilder & opts)
-{
-  auto impl = std::make_shared<OperatorImpl>(opts.operation, opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  return Function{ impl };
-}
-
-Function EngineImpl::newCast(const FunctionBuilder & opts)
-{
-  auto impl = std::make_shared<CastImpl>(opts.proto, engine, opts.flags);
-  impl->implementation.callback = opts.callback;
-  impl->data = opts.data;
-  return Function{ impl };
-}
-
-Function Engine::newFunction(const FunctionBuilder & opts)
-{
-  switch (opts.kind)
-  {
-  case Function::Constructor:
-    return d->newConstructor(opts);
-  case Function::Destructor:
-    return d->newDestructor(opts);
-  case Function::CastFunction:
-    return d->newCast(opts);
-  case Function::StandardFunction:
-    return d->newFunction(opts);
-  case Function::OperatorFunction:
-    return d->newOperator(opts);
-  case Function::LiteralOperatorFunction:
-    return d->newLiteralOperator(opts);
-  default:
-    break;
-  }
-
-  throw std::runtime_error{ "Engine::newFunction() missing function kind" };
 }
 
 Script Engine::newScript(const SourceFile & source)

@@ -380,7 +380,7 @@ bool Class::isMoveConstructible() const
 Function Class::newDestructor(NativeFunctionSignature func)
 {
   auto builder = FunctionBuilder::Destructor(*this, func);
-  d->destructor = engine()->newFunction(builder);
+  d->destructor = builder.create();
   return d->destructor;
 }
 

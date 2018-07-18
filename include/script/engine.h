@@ -104,8 +104,6 @@ public:
   FunctionType newFunctionType(const Prototype & proto);
   Enum newEnum(const std::string & name, int id = -1);
   Class newClass(const ClassBuilder &opts);
-  /// TODO: move to FunctionBuilder
-  Function newFunction(const FunctionBuilder & opts);
 
   Script newScript(const SourceFile & source);
   bool compile(Script s);

@@ -7,13 +7,95 @@
 #include "script/class.h"
 #include "script/private/class_p.h"
 #include "script/engine.h"
+#include "script/private/cast_p.h"
 #include "script/private/function_p.h"
+#include "script/private/operator_p.h"
+#include "script/private/literals_p.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
 #include "script/operator.h"
 
 namespace script
 {
+
+static void fill(const std::shared_ptr<FunctionImpl> & impl, const FunctionBuilder & opts)
+{
+  impl->implementation.callback = opts.callback;
+  impl->data = opts.data;
+  impl->enclosing_symbol = opts.symbol.impl();
+}
+
+static Function build_constructor(const FunctionBuilder & opts)
+{
+  if (!opts.symbol.isClass())
+    throw std::runtime_error{ "Cannot create a constructor with invalid class" };
+
+  auto impl = std::make_shared<ConstructorImpl>(opts.symbol.toClass(), opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_destructor(const FunctionBuilder & opts)
+{
+  if (!opts.symbol.isClass())
+    throw std::runtime_error{ "Cannot create a constructor with invalid class" };
+
+  auto impl = std::make_shared<DestructorImpl>(opts.symbol.toClass(), opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_basic_function(const FunctionBuilder & opts)
+{
+  auto impl = std::make_shared<RegularFunctionImpl>(opts.name, opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_literal_operator(const FunctionBuilder & opts)
+{
+  auto impl = std::make_shared<LiteralOperatorImpl>(std::string{ opts.name }, opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_operator(const FunctionBuilder & opts)
+{
+  auto impl = std::make_shared<OperatorImpl>(opts.operation, opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_cast(const FunctionBuilder & opts)
+{
+  auto impl = std::make_shared<CastImpl>(opts.proto, opts.engine, opts.flags);
+  fill(impl, opts);
+  return Function{ impl };
+}
+
+static Function build_function(const FunctionBuilder & opts)
+{
+  switch (opts.kind)
+  {
+  case Function::Constructor:
+    return build_constructor(opts);
+  case Function::Destructor:
+    return build_destructor(opts);
+  case Function::CastFunction:
+    return build_cast(opts);
+  case Function::StandardFunction:
+    return build_basic_function(opts);
+  case Function::OperatorFunction:
+    return build_operator(opts);
+  case Function::LiteralOperatorFunction:
+    return build_literal_operator(opts);
+  default:
+    break;
+  }
+
+  throw std::runtime_error{ "FunctionBuilder::get() missing function kind" };
+}
+
 
 FunctionBuilder::FunctionBuilder(Function::Kind k)
   : callback(nullptr)
@@ -283,7 +365,7 @@ script::Function FunctionBuilder::create()
   if (is_member_function())
   {
     Class cla = member_of();
-    script::Function f = this->engine->newFunction(*this);
+    script::Function f = build_function(*this);
     f.impl()->enclosing_symbol = cla.impl();
     if (f.isOperator())
       cla.impl()->operators.push_back(f.toOperator());
@@ -300,7 +382,7 @@ script::Function FunctionBuilder::create()
   else if (this->symbol.isNamespace())
   {
     Namespace ns = this->symbol.toNamespace();
-    script::Function f = this->engine->newFunction(*this);
+    script::Function f = build_function(*this);
     f.impl()->enclosing_symbol = ns.impl();
     if (f.isOperator())
       ns.impl()->operators.push_back(f.toOperator());

@@ -9,6 +9,7 @@
 #include "script/private/cast_p.h"
 #include "script/class.h"
 #include "script/private/class_p.h"
+#include "script/functionbuilder.h"
 #include "script/literals.h"
 #include "script/private/literals_p.h"
 #include "script/name.h"
@@ -175,6 +176,15 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 
 }
 
+/// TODO: maybe move this to functionbuilder.cpp
+std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
+{
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name, builder.proto, ft.engine(), builder.flags);
+  impl->implementation.callback = builder.callback;
+  impl->data = builder.data;
+  impl->enclosing_symbol = ft.enclosingSymbol().impl();
+  return impl;
+}
 
 Function::Function(const std::shared_ptr<FunctionImpl> & impl)
   : d(impl)

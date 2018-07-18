@@ -60,7 +60,8 @@ Function FunctionTemplate::getInstance(const std::vector<TemplateArgument> & arg
 Function FunctionTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBuilder & opts)
 {
   auto d = impl();
-  Function ret = d->engine->newFunction(opts);
+  auto impl = FunctionTemplateInstance::create(*this, args, opts);
+  Function ret{ impl };
   if (ret.isNull())
     return ret;
   d->instances[args] = ret;
