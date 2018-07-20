@@ -17,11 +17,11 @@ namespace script
 {
 
 TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
-  : name(n)
+  : SymbolImpl(es)
+  , name(n)
   , parameters(std::move(params))
   , scope(scp)
   , engine(e)
-  , enclosing_symbol(es)
 {
 
 }

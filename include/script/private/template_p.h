@@ -13,6 +13,8 @@
 
 #include "script/compiler/templatedefinition.h"
 
+#include "script/private/symbol_p.h"
+
 #include <map>
 #include <vector>
 
@@ -21,7 +23,7 @@ namespace script
 
 class SymbolImpl;
 
-class TemplateImpl
+class TemplateImpl : public SymbolImpl
 {
 public:
   TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es);
@@ -30,7 +32,6 @@ public:
   std::string name;
   std::vector<TemplateParameter> parameters;
   Scope scope;
-  std::weak_ptr<SymbolImpl> enclosing_symbol;
   Engine *engine;
   compiler::TemplateDefinition definition;
 };

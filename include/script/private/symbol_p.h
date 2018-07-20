@@ -20,6 +20,8 @@ public:
   std::weak_ptr<SymbolImpl> enclosing_symbol;
 
 public:
+  SymbolImpl() = default;
+  explicit SymbolImpl(const std::shared_ptr<SymbolImpl> & parent) : enclosing_symbol(parent) { }
   virtual ~SymbolImpl() = default;
 };
 
