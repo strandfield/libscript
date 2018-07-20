@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "script/script.h"
+#include "script/symbol.h"
 
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
@@ -142,8 +143,7 @@ Engine * Enum::engine() const
 
 Script Enum::script() const
 {
-  auto enclosing_symbol = d->enclosing_symbol.lock();
-  return SymbolImpl::getScript(enclosing_symbol);
+  return Symbol{ d->enclosing_symbol.lock() }.script();
 }
 
 } // namespace script

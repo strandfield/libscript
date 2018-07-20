@@ -164,8 +164,7 @@ bool Template::isNull() const
 
 Script Template::script() const
 {
-  auto enclosing_symbol = d->enclosing_symbol.lock();
-  return SymbolImpl::getScript(enclosing_symbol);
+  return Symbol{ d->enclosing_symbol.lock() }.script();
 }
 
 Engine * Template::engine() const

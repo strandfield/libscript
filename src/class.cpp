@@ -158,8 +158,7 @@ int Class::attributeIndex(const std::string & attrName) const
 
 Script Class::script() const
 {
-  auto enclosing_symbol = d->enclosing_symbol.lock();
-  return SymbolImpl::getScript(enclosing_symbol);
+  return Symbol{ *this }.script();
 }
 
 const std::shared_ptr<UserData> & Class::data() const

@@ -18,6 +18,7 @@ class Engine;
 class FunctionBuilder;
 class FunctionTemplateBuilder;
 class Namespace;
+class Script;
 class SymbolImpl;
 class TypedefBuilder;
 
@@ -42,6 +43,9 @@ public:
 
   bool isNamespace() const;
   Namespace toNamespace() const;
+
+  Symbol parent() const;
+  Script script() const;
 
   ClassTemplateBuilder ClassTemplate(const std::string & name);
   ClassTemplateBuilder ClassTemplate(std::string && name);

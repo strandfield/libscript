@@ -48,13 +48,7 @@ Script Namespace::asScript() const
 
 Script Namespace::script() const
 {
-  if (isScriptNamespace())
-    return asScript();
-
-  auto enclosing_namespace = enclosingNamespace();
-  if (enclosing_namespace.isNull())
-    return Script{};
-  return enclosing_namespace.script();
+  return Symbol{ *this }.script();
 }
 
 bool Namespace::isModuleNamespace() const
@@ -100,7 +94,7 @@ Class Namespace::newClass(const ClassBuilder & opts)
 Namespace Namespace::newNamespace(const std::string & name)
 {
   auto impl = std::make_shared<NamespaceImpl>(name, engine());
-  impl->parent = d;
+  impl->enclosing_symbol = d;
   Namespace ret{ impl };
   d->namespaces.push_back(ret);
   return ret;
@@ -158,7 +152,7 @@ const std::vector<Typedef> & Namespace::typedefs() const
 
 Namespace Namespace::enclosingNamespace() const
 {
-  return Namespace{ d->parent.lock() };
+  return Namespace{ std::static_pointer_cast<NamespaceImpl>(d->enclosing_symbol.lock()) };
 }
 
 Class Namespace::findClass(const std::string & name) const

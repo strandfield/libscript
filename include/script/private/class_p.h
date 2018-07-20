@@ -51,7 +51,6 @@ public:
   std::shared_ptr<UserData> data;
   std::vector<Function> friend_functions;
   std::vector<Class> friend_classes;
-  std::weak_ptr<SymbolImpl> enclosing_symbol;
 
   ClassImpl(int i, const std::string & n, Engine *e)
     : id(i)

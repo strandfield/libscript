@@ -16,15 +16,6 @@
 namespace script
 {
 
-Script SymbolImpl::getScript(const std::shared_ptr<SymbolImpl> & sym)
-{
-  if (dynamic_cast<NamespaceImpl*>(sym.get()) != nullptr)
-    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(sym) }.script();
-  else if (dynamic_cast<ClassImpl*>(sym.get()) != nullptr)
-    return Class{ std::dynamic_pointer_cast<ClassImpl>(sym) }.script();
-  return Script{};
-}
-
 Symbol::Symbol(const Class & c)
   : Symbol(c.impl())
 {
@@ -70,6 +61,22 @@ bool Symbol::isNamespace() const
 Namespace Symbol::toNamespace() const
 {
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
+}
+
+Symbol Symbol::parent() const
+{
+  return Symbol{ d->enclosing_symbol.lock() };
+}
+
+Script Symbol::script() const
+{
+  if (isNull())
+    return Script{};
+
+  if (dynamic_cast<ScriptImpl*>(d.get()) != nullptr)
+    return Script{ std::static_pointer_cast<ScriptImpl>(d) };
+
+  return parent().script();
 }
 
 ClassTemplateBuilder Symbol::ClassTemplate(const std::string & name)

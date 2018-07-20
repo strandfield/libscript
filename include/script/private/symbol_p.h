@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include <memory>
+
 namespace script
 {
 
@@ -15,9 +17,10 @@ class Script;
 class SymbolImpl
 {
 public:
-  virtual ~SymbolImpl() = default;
+  std::weak_ptr<SymbolImpl> enclosing_symbol;
 
-  static Script getScript(const std::shared_ptr<SymbolImpl> & symbol);
+public:
+  virtual ~SymbolImpl() = default;
 };
 
 } // namespace script
