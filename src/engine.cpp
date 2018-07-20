@@ -10,6 +10,7 @@
 #include "script/private/builtinoperators.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/classbuilder.h"
 #include "script/private/class_p.h"
 #include "script/context.h"
 #include "script/private/context_p.h"
@@ -227,22 +228,6 @@ ClosureType EngineImpl::newLambda()
   return l;
 }
 
-script::Class EngineImpl::new_class(const ClassBuilder & opts)
-{
-  Class ret{ std::make_shared<ClassImpl>(-1, opts.name, this->engine) };
-  fill_class(ret.impl(), opts);
-  register_class(ret, opts.id);
-  return ret;
-}
-
-void EngineImpl::fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilder & opts)
-{
-  impl->set_parent(opts.parent);
-  impl->dataMembers = opts.dataMembers;
-  impl->isFinal = opts.isFinal;
-  impl->data = opts.userdata;
-}
-
 void EngineImpl::register_class(Class & c, int id)
 {
   if (id < 1)
@@ -345,10 +330,8 @@ void Engine::setup()
   d->reservations.enum_type = Enum{ std::make_shared<EnumImpl>(0, "__reserved_enum__", nullptr) };
   d->enums.push_back(d->reservations.enum_type);
 
-  Class string = d->new_class(ClassBuilder::New(get_string_typename()).setId(Type::String));
+  Class string = Symbol{ d->rootNamespace }.Class(get_string_typename()).setId(Type::String).get();
   register_string_type(string);
-  d->rootNamespace.impl()->classes.push_back(string);
-  string.impl()->enclosing_symbol = d->rootNamespace.impl();
 
   d->templates.array = ArrayImpl::register_array_template(this);
 
@@ -909,11 +892,6 @@ Enum Engine::newEnum(const std::string & name, int id)
   Enum ret{ impl };
   d->enums[index] = ret;
   return ret;
-}
-
-Class Engine::newClass(const ClassBuilder &opts)
-{
-  return d->new_class(opts);
 }
 
 Script Engine::newScript(const SourceFile & source)
