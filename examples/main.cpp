@@ -11,6 +11,7 @@
 #include <iostream>
 
 DECLARE_EXAMPLE(io);
+DECLARE_EXAMPLE(polymorphism);
 DECLARE_EXAMPLE(units);
 
 script::Value print_callback(script::FunctionCall *c)

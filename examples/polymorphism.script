@@ -1,0 +1,34 @@
+
+class Base 
+{
+public:
+  Base() = default;
+  virtual ~Base() { }
+  
+  virtual String text() const
+  {
+	return "Base";
+  }
+};
+
+class Derived : Base
+{
+public:
+  Derived() = default;
+  ~Derived() = default;
+  
+  String text() const
+  {
+    return "Derived";
+  }
+};
+
+void foo(Base & b)
+{
+  print(b.text());
+}
+
+Base b;
+Derived d;
+foo(b);
+foo(d);
