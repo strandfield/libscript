@@ -85,6 +85,7 @@ public:
   ClosureType newLambda();
 
   void register_class(Class & c, int id = 0);
+  void register_enum(Enum & e, int id = 0);
 
   void destroyClass(Class c);
   void destroyEnum(Enum e);

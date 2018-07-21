@@ -19,8 +19,8 @@
 #include "script/program/expression.h"
 
 #include "script/classbuilder.h"
-#include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
+#include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "script/private/class_p.h"
@@ -564,7 +564,8 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   Symbol symbol = scp.symbol();
 
-  Enum e = symbol.isClass() ? symbol.toClass().newEnum(enum_decl.name->getName()) : symbol.toNamespace().newEnum(enum_decl.name->getName());
+  Enum e = symbol.Enum(enum_decl.name->getName()).get();
+
   mCurrentScope.invalidateCache();
 
   for (size_t i(0); i < enum_decl.values.size(); ++i)

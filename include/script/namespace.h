@@ -21,6 +21,7 @@ class Class;
 class ClassBuilder;
 class Engine;
 class Enum;
+class EnumBuilder;
 class Function;
 class FunctionBuilder;
 class LiteralOperator;
@@ -56,7 +57,6 @@ public:
 
   Namespace getNamespace(const std::string & name);
 
-  Enum newEnum(const std::string & name, int id = -1);
   Namespace newNamespace(const std::string & name);
   void addValue(const std::string & name, const Value & val);
 
@@ -76,6 +76,7 @@ public:
   Namespace findNamespace(const std::string & name) const;
   std::vector<Function> findFunctions(const std::string & name) const;
 
+  EnumBuilder Enum(const std::string & name) const;
   FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;

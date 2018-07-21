@@ -7,6 +7,7 @@
 #include "script/classbuilder.h"
 #include "script/datamember.h"
 #include "script/engine.h"
+#include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/object.h"
 #include "script/staticdatamember.h"
@@ -176,16 +177,9 @@ const std::vector<Class> & Class::classes() const
   return d->classes;
 }
 
-Enum Class::newEnum(const std::string & name, int id)
+EnumBuilder Class::Enum(const std::string & name)
 {
-  Engine *e = d->engine;
-  Enum enm = e->newEnum(name, id);
-  if (!enm.isNull())
-  {
-    d->enums.push_back(enm);
-    enm.impl()->enclosing_symbol = d;
-  }
-  return enm;
+  return EnumBuilder{ Symbol{*this}, name };
 }
 
 const std::vector<Enum> & Class::enums() const

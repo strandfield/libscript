@@ -23,6 +23,7 @@ class ClosureType;
 class DataMember;
 class Engine;
 class Enum;
+class EnumBuilder;
 class Function;
 class FunctionBuilder;
 class Namespace;
@@ -76,9 +77,8 @@ public:
 
   const std::vector<Class> & classes() const;
 
-  /// TODO: provide alternative and depreciate this
-  Enum newEnum(const std::string & name, int id = -1);
-  const std::vector<Enum> & enums() const;
+  EnumBuilder Enum(const std::string & name);
+  const std::vector<script::Enum> & enums() const;
 
   const std::vector<Template> & templates() const;
   const std::vector<Typedef> & typedefs() const;

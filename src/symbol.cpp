@@ -6,6 +6,7 @@
 
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
@@ -98,6 +99,11 @@ ClassTemplateBuilder Symbol::ClassTemplate(const std::string & name)
 ClassTemplateBuilder Symbol::ClassTemplate(std::string && name)
 {
   return ClassTemplateBuilder{ *this, std::move(name) };
+}
+
+EnumBuilder Symbol::Enum(std::string && name)
+{
+  return EnumBuilder{ *this, std::move(name) };
 }
 
 FunctionBuilder Symbol::Function(const std::string & name)

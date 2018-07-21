@@ -7,6 +7,7 @@
 
 #include "script/private/class_p.h"
 #include "script/engine.h"
+#include "script/enumbuilder.h"
 #include "script/private/enum_p.h"
 #include "script/functionbuilder.h"
 #include "script/private/module_p.h"
@@ -73,14 +74,6 @@ Namespace Namespace::getNamespace(const std::string & name)
     return ret;
 
   return newNamespace(name);
-}
-
-Enum Namespace::newEnum(const std::string & name, int id)
-{
-  Enum e = engine()->newEnum(name, id);
-  d->enums.push_back(e);
-  e.impl()->enclosing_symbol = d;
-  return e;
 }
 
 Namespace Namespace::newNamespace(const std::string & name)
@@ -179,6 +172,11 @@ std::vector<script::Function> Namespace::findFunctions(const std::string & name)
   }
 
   return ret;
+}
+
+EnumBuilder Namespace::Enum(const std::string & name) const
+{
+  return EnumBuilder{ Symbol{*this}, name };
 }
 
 FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSignature func) const

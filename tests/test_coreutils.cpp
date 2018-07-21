@@ -16,6 +16,7 @@
 #include "script/datamember.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
+#include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/name.h"
@@ -252,7 +253,7 @@ TEST(CoreUtilsTests, scopes) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Enum E = e.rootNamespace().newEnum("E");
+  Enum E = e.rootNamespace().Enum("E").get();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
   Namespace bar = e.rootNamespace().newNamespace("bar");

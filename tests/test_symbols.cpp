@@ -7,6 +7,31 @@
 #include "script/engine.h"
 #include "script/symbol.h"
 
+/****************************************************************
+Testing enum creation
+****************************************************************/
+
+#include "script/enum.h"
+#include "script/enumbuilder.h"
+
+TEST(Symbols, enum_create) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace() };
+
+  const auto nb_enums = e.rootNamespace().enums().size();
+
+  Enum Foo = s.Enum("Foo").setEnumClass(true).setId(15 | Type::EnumFlag).get();
+
+  ASSERT_EQ(Foo.name(), "Foo");
+  ASSERT_TRUE(Foo.isEnumClass());
+  ASSERT_EQ(Foo.id(), 15 | Type::EnumFlag);
+
+  ASSERT_EQ(e.rootNamespace().enums().size(), nb_enums + 1);
+}
 
 /****************************************************************
 Testing function template creation

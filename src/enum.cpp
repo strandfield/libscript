@@ -13,23 +13,9 @@
 
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
-#include "script/private/operator_p.h"
-#include "script/private/value_p.h"
-#include "script/interpreter/executioncontext.h"
 
 namespace script
 {
-
-namespace callbacks
-{
-
-Value enum_assignment(interpreter::FunctionCall *c)
-{
-  c->arg(0).impl()->set_enum_value(c->arg(1).toEnumValue());
-  return c->arg(0);
-}
-
-} // namespace callbacks
 
 EnumImpl::EnumImpl(int i, const std::string & n, Engine *e)
   : engine(e)
@@ -37,10 +23,7 @@ EnumImpl::EnumImpl(int i, const std::string & n, Engine *e)
   , name(n)
   , enumClass(false)
 {
-  Prototype proto{ Type::ref(id), Type::ref(id), Type::cref(id) };
-  auto op = std::make_shared<OperatorImpl>(AssignmentOperator, proto, e);
-  op->implementation.callback = callbacks::enum_assignment;
-  this->assignment = Operator{ op };
+
 }
 
 Enum::Enum(const std::shared_ptr<EnumImpl> & impl)

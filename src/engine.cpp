@@ -257,6 +257,35 @@ void EngineImpl::register_class(Class & c, int id)
   this->classes[index] = c;
 }
 
+void EngineImpl::register_enum(Enum & e, int id)
+{
+  if (id < 1)
+  {
+    id = static_cast<int>(this->enums.size()) | Type::EnumFlag;
+  }
+  else
+  {
+    if ((id & Type::EnumFlag) == 0)
+      throw std::runtime_error{ "Invalid requested type id for enum" };
+  }
+
+  const int index = id & 0xFFFF;
+  if (static_cast<int>(this->enums.size()) <= index)
+  {
+    this->enums.resize(index + 1);
+  }
+  else
+  {
+    if (!this->enums[index].isNull() && this->enums[index] != this->reservations.enum_type)
+      throw std::runtime_error{ "Enum id already used" };
+  }
+
+  e.impl()->id = id;
+  e.impl()->engine = this->engine;
+
+  this->enums[index] = e;
+}
+
 void EngineImpl::destroyClass(Class c)
 {
   /// TODO : we need to redesign script destruction 
@@ -865,32 +894,6 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
 
   FunctionType ret{ type, proto, Operator{ assign_op } };
   d->prototypes.push_back(ret);
-  return ret;
-}
-
-Enum Engine::newEnum(const std::string & name, int id)
-{
-  if (id > 0)
-  {
-    if ((id & Type::EnumFlag) == 0)
-      throw std::runtime_error{ "Invalid requested type id for enum" };
-  }
-
-  if (id <= 0)
-    id = static_cast<int>(d->enums.size()) | Type::EnumFlag;
-
-  int index = id & 0xFFFF;
-  if (static_cast<int>(d->enums.size()) <= index)
-    d->enums.resize(index + 1);
-  else
-  {
-    if (!d->enums[index].isNull() && d->enums[index] != d->reservations.enum_type)
-      throw std::runtime_error{ "Engine::newEnum() : Enum id already used" };
-  }
-
-  auto impl = std::make_shared<EnumImpl>(id, name, this);
-  Enum ret{ impl };
-  d->enums[index] = ret;
   return ret;
 }
 

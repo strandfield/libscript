@@ -102,7 +102,6 @@ public:
   void reserveTypeRange(int begin, int end);
 
   FunctionType newFunctionType(const Prototype & proto);
-  Enum newEnum(const std::string & name, int id = -1);
 
   Script newScript(const SourceFile & source);
   bool compile(Script s);

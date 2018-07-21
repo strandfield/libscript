@@ -9,6 +9,7 @@
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
+#include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 
@@ -75,7 +76,7 @@ TEST(Conversions, enum_to_int) {
   Engine e;
   e.setup();
 
-  Enum A = e.rootNamespace().newEnum("A");
+  Enum A = e.rootNamespace().Enum("A").get();
   A.addValue("AA", 0);
   A.addValue("AB", 1);
   A.addValue("AC", 2);

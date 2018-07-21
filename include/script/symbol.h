@@ -16,6 +16,7 @@ class Class;
 class ClassBuilder;
 class ClassTemplateBuilder;
 class Engine;
+class EnumBuilder;
 class FunctionBuilder;
 class FunctionTemplateBuilder;
 class Namespace;
@@ -52,6 +53,7 @@ public:
   ClassBuilder Class(std::string && name);
   ClassTemplateBuilder ClassTemplate(const std::string & name);
   ClassTemplateBuilder ClassTemplate(std::string && name);
+  EnumBuilder Enum(std::string && name);
   FunctionBuilder Function(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(std::string && name);
