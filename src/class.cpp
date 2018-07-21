@@ -9,6 +9,7 @@
 #include "script/engine.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
+#include "script/name.h"
 #include "script/object.h"
 #include "script/staticdatamember.h"
 #include "script/userdata.h"
@@ -23,6 +24,11 @@
 
 namespace script
 {
+
+Name ClassImpl::get_name() const
+{
+  return Name{ this->name };
+}
 
 Value ClassImpl::add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)
 {

@@ -8,6 +8,7 @@
 #include "script/classbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
+#include "script/name.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
@@ -63,6 +64,11 @@ bool Symbol::isNamespace() const
 Namespace Symbol::toNamespace() const
 {
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
+}
+
+Name Symbol::name() const
+{
+  return d->get_name();
 }
 
 Symbol Symbol::parent() const

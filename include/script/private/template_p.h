@@ -34,6 +34,8 @@ public:
   Scope scope;
   Engine *engine;
   compiler::TemplateDefinition definition;
+
+  Name get_name() const override;
 };
 
 class FunctionTemplateImpl : public TemplateImpl

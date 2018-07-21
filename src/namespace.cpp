@@ -9,6 +9,7 @@
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
 #include "script/functionbuilder.h"
+#include "script/name.h"
 
 #include "script/private/class_p.h"
 #include "script/private/enum_p.h"
@@ -17,6 +18,11 @@
 
 namespace script
 {
+
+Name NamespaceImpl::get_name() const
+{
+  return Name{ this->name };
+}
 
 Namespace::Namespace(const std::shared_ptr<NamespaceImpl> & impl)
   : d(impl)

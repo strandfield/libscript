@@ -46,6 +46,8 @@ public:
   }
   NamespaceImpl(const NamespaceImpl &) = delete;
   virtual ~NamespaceImpl() = default;
+
+  Name get_name() const override;
 };
 
 } // namespace script

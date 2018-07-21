@@ -19,6 +19,7 @@ class Engine;
 class EnumBuilder;
 class FunctionBuilder;
 class FunctionTemplateBuilder;
+class Name;
 class Namespace;
 class Script;
 class SymbolImpl;
@@ -46,6 +47,7 @@ public:
   bool isNamespace() const;
   Namespace toNamespace() const;
 
+  Name name() const;
   Symbol parent() const;
   Script script() const;
 
@@ -70,7 +72,7 @@ private:
 };
 
 
-
+/// TODO: move to typedef.h
 class LIBSCRIPT_API TypedefBuilder
 {
 public:

@@ -12,6 +12,7 @@
 namespace script
 {
 
+class Name;
 class Script;
 
 class SymbolImpl
@@ -23,6 +24,8 @@ public:
   SymbolImpl() = default;
   explicit SymbolImpl(const std::shared_ptr<SymbolImpl> & parent) : enclosing_symbol(parent) { }
   virtual ~SymbolImpl() = default;
+
+  virtual Name get_name() const = 0;
 };
 
 } // namespace script

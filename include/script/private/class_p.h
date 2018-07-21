@@ -75,6 +75,9 @@ public:
   void check_still_abstract();
   void update_vtable(Function f);
   void register_function(const Function & f);
+
+protected:
+  Name get_name() const override;
 };
 
 class ClassTemplateInstance : public ClassImpl

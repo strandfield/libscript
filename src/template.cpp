@@ -7,6 +7,7 @@
 
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
+#include "script/name.h"
 #include "script/private/symbol_p.h"
 #include "script/private/templateargumentscope_p.h"
 #include "script/symbol.h"
@@ -26,6 +27,12 @@ TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter>
 
 }
 
+Name TemplateImpl::get_name() const
+{
+  return Name{ this->name };
+}
+
+
 FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
   NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
   Engine *e, std::shared_ptr<SymbolImpl> es)
@@ -40,6 +47,7 @@ FunctionTemplateImpl::~FunctionTemplateImpl()
 {
 
 }
+
 
 ClassTemplateImpl::ClassTemplateImpl(const std::string & n, 
   std::vector<TemplateParameter> && params, 

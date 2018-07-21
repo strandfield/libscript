@@ -122,3 +122,26 @@ TEST(Symbols, class_template_get) {
   ASSERT_EQ(Bar.parameters().at(0).name(), "T");
   ASSERT_EQ(Bar.parameters().at(1).name(), "U");
 }
+
+
+/****************************************************************
+Testing symbols name
+****************************************************************/
+
+#include "script/name.h"
+
+TEST(Symbols, name) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace().getNamespace("bar") };
+  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().string(), "bar");
+
+  s = Symbol{ e.getClass(Type::String) };
+  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().string(), "String");
+
+}
