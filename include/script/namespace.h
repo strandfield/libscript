@@ -76,6 +76,7 @@ public:
   Namespace findNamespace(const std::string & name) const;
   std::vector<Function> findFunctions(const std::string & name) const;
 
+  ClassBuilder Class(const std::string & name) const;
   EnumBuilder Enum(const std::string & name) const;
   FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;

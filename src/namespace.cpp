@@ -5,11 +5,13 @@
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
 
-#include "script/private/class_p.h"
 #include "script/engine.h"
 #include "script/enumbuilder.h"
-#include "script/private/enum_p.h"
+#include "script/classbuilder.h"
 #include "script/functionbuilder.h"
+
+#include "script/private/class_p.h"
+#include "script/private/enum_p.h"
 #include "script/private/module_p.h"
 #include "script/private/template_p.h"
 
@@ -148,7 +150,7 @@ Class Namespace::findClass(const std::string & name) const
       return c;
   }
 
-  return Class{};
+  return {};
 }
 
 Namespace Namespace::findNamespace(const std::string & name) const
@@ -172,6 +174,11 @@ std::vector<script::Function> Namespace::findFunctions(const std::string & name)
   }
 
   return ret;
+}
+
+ClassBuilder Namespace::Class(const std::string & name) const
+{
+  return ClassBuilder{ Symbol{ *this }, name };
 }
 
 EnumBuilder Namespace::Enum(const std::string & name) const
