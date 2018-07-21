@@ -88,7 +88,7 @@ Class ClassTemplateInstanceBuilder::get()
   ret->enclosing_symbol = symbol.impl();
 
   Class class_result{ ret };
-  template_.engine()->implementation()->register_class(class_result);
+  template_.engine()->implementation()->register_class(class_result, this->id);
 
   return class_result;
 }
@@ -110,7 +110,7 @@ Class ClassTemplateSpecializationBuilder::get()
   ret->enclosing_symbol = symbol.impl();
 
   Class class_result{ ret };
-  template_.engine()->implementation()->register_class(class_result);
+  template_.engine()->implementation()->register_class(class_result, this->id);
 
   template_.impl()->instances[class_result.arguments()] = class_result;
 
