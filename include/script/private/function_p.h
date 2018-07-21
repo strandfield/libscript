@@ -18,6 +18,7 @@ class Expression;
 class Statement;
 }
 
+class Class;
 class Name;
 class SymbolImpl;
 
@@ -94,13 +95,12 @@ public:
 class ConstructorImpl : public FunctionImpl
 {
 public:
-  ConstructorImpl(const Class & cla, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
-  Class mClass;
+  ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
 public:
-  const std::string & name() const override
-  {
-    return mClass.name();
-  }
+  
+  Class getClass() const;
+
+  const std::string & name() const override;
   Name get_name() const override;
 
   bool is_default_ctor() const;
@@ -112,8 +112,7 @@ public:
 class DestructorImpl : public FunctionImpl
 {
 public:
-  DestructorImpl(const Class & cla, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
-  Class mClass;
+  DestructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
 };
 
 

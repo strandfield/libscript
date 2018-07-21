@@ -130,16 +130,25 @@ ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
 }
 
 
-ConstructorImpl::ConstructorImpl(const Class & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+ConstructorImpl::ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : FunctionImpl(p, e, f)
-  , mClass(name)
 {
 
 }
 
+Class ConstructorImpl::getClass() const
+{
+  return Symbol{ enclosing_symbol.lock() }.toClass();
+}
+
+const std::string & ConstructorImpl::name() const
+{
+  return getClass().name();
+}
+
 Name ConstructorImpl::get_name() const 
 {
-  return mClass.name();
+  return name();
 }
 
 bool ConstructorImpl::is_default_ctor() const
@@ -151,19 +160,18 @@ bool ConstructorImpl::is_copy_ctor() const
 {
   if (this->prototype.count() != 1)
     return false;
-  return this->prototype.at(0) == Type::cref(this->mClass.id());
+  return this->prototype.at(0) == Type::cref(getClass().id());
 }
 
 bool ConstructorImpl::is_move_ctor() const
 {
   if (this->prototype.count() != 1)
     return false;
-  return this->prototype.at(0) == Type::rref(this->mClass.id());
+  return this->prototype.at(0) == Type::rref(getClass().id());
 }
 
-DestructorImpl::DestructorImpl(const Class & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionImpl::flag_type f)
   : FunctionImpl(p, e, f)
-  , mClass(name)
 {
 
 }

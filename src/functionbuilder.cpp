@@ -30,7 +30,7 @@ static Function build_constructor(const FunctionBuilder & opts)
   if (!opts.symbol.isClass())
     throw std::runtime_error{ "Cannot create a constructor with invalid class" };
 
-  auto impl = std::make_shared<ConstructorImpl>(opts.symbol.toClass(), opts.proto, opts.engine, opts.flags);
+  auto impl = std::make_shared<ConstructorImpl>(opts.proto, opts.engine, opts.flags);
   fill(impl, opts);
   return Function{ impl };
 }
@@ -40,7 +40,7 @@ static Function build_destructor(const FunctionBuilder & opts)
   if (!opts.symbol.isClass())
     throw std::runtime_error{ "Cannot create a constructor with invalid class" };
 
-  auto impl = std::make_shared<DestructorImpl>(opts.symbol.toClass(), opts.proto, opts.engine, opts.flags);
+  auto impl = std::make_shared<DestructorImpl>(opts.proto, opts.engine, opts.flags);
   fill(impl, opts);
   return Function{ impl };
 }
