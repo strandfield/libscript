@@ -5,6 +5,7 @@
 #include <benchmark/benchmark.h>
 
 #include "script/engine.h"
+#include "script/script.h"
 
 static void BM_Engine_Setup(benchmark::State &state) {
   using namespace script;

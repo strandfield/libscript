@@ -6,6 +6,7 @@
 
 #include "script/engine.h"
 #include "script/cast.h"
+#include "script/class.h"
 
 #include "script/program/expression.h"
 

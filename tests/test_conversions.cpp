@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/conversions.h"
 #include "script/engine.h"
@@ -12,6 +13,7 @@
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/namespace.h"
 
 TEST(Conversions, standard) {
   using namespace script;

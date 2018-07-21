@@ -5,8 +5,12 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/conversions.h"
+#include "script/diagnosticmessage.h"
 #include "script/engine.h"
+#include "script/namespace.h"
 #include "script/operator.h"
 #include "script/overloadresolution.h"
 

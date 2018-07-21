@@ -9,6 +9,7 @@
 #include "script/classbuilder.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
+#include "script/namespace.h"
 
 
 TEST(ClassTest, builder_functions) {

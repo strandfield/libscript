@@ -10,10 +10,12 @@
 #include "script/classbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/name.h"
+#include "script/script.h"
 
 #include "script/private/class_p.h"
 #include "script/private/enum_p.h"
 #include "script/private/module_p.h"
+#include "script/private/script_p.h"
 #include "script/private/template_p.h"
 
 namespace script

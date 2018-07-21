@@ -5,19 +5,19 @@
 #ifndef LIBSCRIPT_MODULE_H
 #define LIBSCRIPT_MODULE_H
 
-#include "libscriptdefs.h"
-#include "script/namespace.h" /// TODO: remove this include
+#include "script/modulecallbacks.h"
+
+#include <string>
+#include <vector>
 
 namespace script
 {
 
+class Engine;
+class Namespace;
 class Scope;
 
-class Module;
 class ModuleImpl;
-
-typedef void(*ModuleLoadFunction)(Module);
-typedef void(*ModuleCleanupFunction)(Module);
 
 class LIBSCRIPT_API Module
 {

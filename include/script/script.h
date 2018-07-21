@@ -8,8 +8,8 @@
 #include <string>
 
 #include "script/diagnosticmessage.h" /// TODO: forward declare
-#include "script/sourcefile.h" /// TODO: forward declare
-#include "script/namespace.h" /// TODO: forward declare
+#include "script/sourcefile.h"
+#include "script/namespace.h"
 
 namespace script
 {

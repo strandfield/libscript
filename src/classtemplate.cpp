@@ -7,9 +7,6 @@
 
 #include "script/class.h"
 #include "script/classtemplatespecializationbuilder.h"
-#include "script/private/class_p.h"
-#include "script/engine.h"
-#include "script/private/engine_p.h"
 #include "script/compiler/templatenameprocessor.h"
 
 namespace script

@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILER_IMPORT_PROCESSOR_H
 #define LIBSCRIPT_COMPILER_IMPORT_PROCESSOR_H
 
+#include "script/module.h"
 #include "script/scope.h"
 
 #include "script/compiler/expressioncompiler.h"

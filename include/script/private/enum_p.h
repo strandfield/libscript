@@ -5,9 +5,11 @@
 #ifndef LIBSCRIPT_ENUM_P_H
 #define LIBSCRIPT_ENUM_P_H
 
-#include "script/private/script_p.h"
+#include "script/private/symbol_p.h"
 
 #include "script/operator.h"
+
+#include <map>
 
 namespace script
 {

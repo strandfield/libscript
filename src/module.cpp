@@ -5,7 +5,6 @@
 #include "script/module.h"
 #include "script/private/module_p.h"
 
-#include "script/engine.h"
 #include "script/scope.h"
 
 #include "script/private/namespace_p.h"

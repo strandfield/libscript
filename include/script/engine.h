@@ -8,13 +8,10 @@
 #include <vector>
 
 /// TODO: review and remove useless includes
-#include "script/conversions.h"
-#include "script/lambda.h"
-#include "script/module.h"
 #include "script/scope.h"
-#include "script/script.h"
 #include "script/string.h"
-#include "script/value.h"
+
+#include "script/modulecallbacks.h"
 
 #include "script/support/filesystem.h"
 
@@ -25,16 +22,22 @@
 namespace script
 {
 
+class Array;
 class Class;
 class ClassTemplate;
+class ClosureType;
 class Context;
+class ConversionSequence;
 class EngineImpl;
 class Enum;
 class FunctionBuilder;
 class FunctionType;
 class Namespace;
+class Script;
+class SourceFile;
 class TemplateArgumentDeduction;
 class TemplateParameter;
+class Value;
 
 namespace program
 {

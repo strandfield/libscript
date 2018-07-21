@@ -4,6 +4,9 @@
 
 #include "script/overloadresolution.h"
 
+#include "script/diagnosticmessage.h"
+#include "script/class.h"
+#include "script/conversions.h"
 #include "script/engine.h"
 #include "script/operator.h"
 

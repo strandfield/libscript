@@ -11,6 +11,12 @@
 namespace script
 {
 
+namespace diagnostic
+{
+class Message;
+class MessageBuilder;
+} // namespace diagnostic
+
 struct OverloadResolutionImpl;
 
 // see http://en.cppreference.com/w/cpp/language/overload_resolution

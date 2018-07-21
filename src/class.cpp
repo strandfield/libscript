@@ -11,14 +11,16 @@
 #include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/object.h"
+#include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/userdata.h"
 
 #include "script/private/class_p.h"
-#include "script/private/lambda_p.h"
-#include "script/private/function_p.h"
 #include "script/private/engine_p.h"
 #include "script/private/enum_p.h"
+#include "script/private/function_p.h"
+#include "script/private/lambda_p.h"
+#include "script/private/namespace_p.h"
 #include "script/private/template_p.h"
 #include "script/private/value_p.h"
 

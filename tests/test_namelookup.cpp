@@ -7,9 +7,9 @@
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
 #include "script/engine.h"
-#include "script/namelookup.h"
-
 #include "script/functionbuilder.h"
+#include "script/namelookup.h"
+#include "script/value.h"
 
 TEST(NameLookup, simple_function) {
   using namespace script;

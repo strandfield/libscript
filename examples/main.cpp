@@ -6,6 +6,9 @@
 
 #include "script/engine.h"
 #include "script/functionbuilder.h"
+#include "script/script.h"
+#include "script/value.h"
+
 #include "script/interpreter/executioncontext.h"
 
 #include <iostream>

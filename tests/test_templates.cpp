@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "script/array.h"
+#include "script/conversions.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"

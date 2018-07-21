@@ -5,6 +5,9 @@
 #include <gtest/gtest.h>
 
 #include "script/engine.h"
+#include "script/namespace.h"
+#include "script/script.h"
+#include "script/value.h"
 
 TEST(StringTests, construction) {
   using namespace script;

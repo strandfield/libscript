@@ -24,7 +24,7 @@ public:
 class LambdaImpl
 {
 public:
-  ClosureType closureType;
+  ClosureType closureType; /// TODO: replace by a weak_ref ?
   std::vector<Value> captures;
 
 public:

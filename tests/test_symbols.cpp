@@ -4,7 +4,9 @@
 
 #include <gtest/gtest.h>
 
+#include "script/class.h"
 #include "script/engine.h"
+#include "script/namespace.h"
 #include "script/symbol.h"
 
 /****************************************************************

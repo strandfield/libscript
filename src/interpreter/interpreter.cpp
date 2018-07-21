@@ -7,11 +7,13 @@
 #include "script/engine.h"
 #include "script/private/engine_p.h"
 
-#include "script/private/array_p.h"
 #include "script/context.h"
+#include "script/object.h"
+#include "script/script.h"
+
+#include "script/private/array_p.h"
 #include "script/private/function_p.h"
 #include "script/private/lambda_p.h"
-#include "script/object.h"
 #include "script/private/object_p.h"
 #include "script/private/script_p.h"
 #include "script/private/value_p.h"

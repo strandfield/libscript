@@ -11,6 +11,8 @@
 #include "script/functionbuilder.h"
 #include "script/interpreter/executioncontext.h"
 #include "script/module.h"
+#include "script/script.h"
+#include "script/value.h"
 
 namespace callbacks
 {

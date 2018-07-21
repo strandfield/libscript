@@ -6,16 +6,18 @@
 #include "script/private/function_p.h"
 
 #include "script/cast.h"
-#include "script/private/cast_p.h"
 #include "script/class.h"
-#include "script/private/class_p.h"
 #include "script/functionbuilder.h"
 #include "script/literals.h"
-#include "script/private/literals_p.h"
 #include "script/name.h"
 #include "script/namespace.h"
-#include "script/private/namespace_p.h"
 #include "script/operator.h"
+#include "script/script.h"
+
+#include "script/private/cast_p.h"
+#include "script/private/class_p.h"
+#include "script/private/literals_p.h"
+#include "script/private/namespace_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/script_p.h"
 
