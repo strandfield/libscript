@@ -87,8 +87,15 @@ public:
   void register_class(Class & c, int id = 0);
   void register_enum(Enum & e, int id = 0);
 
-  void destroyClass(Class c);
-  void destroyEnum(Enum e);
+  void destroy(Enum e);
+  void destroy(Class c);
+  void destroy(Namespace ns);
+  void destroy(Script s);
+
+  void unregister_class(Class &c);
+  void squeeze_classes();
+  void unregister_enum(Enum &e);
+  void squeeze_enums();
 
 #if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
 #include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS

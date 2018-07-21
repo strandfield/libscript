@@ -80,15 +80,6 @@ bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl)
   return false;
 }
 
-void TemplateArgumentScope::remove_class(const Class & c)
-{
-  parent->remove_class(c);
-}
-
-void TemplateArgumentScope::remove_enum(const Enum & e)
-{
-  parent->remove_enum(e);
-}
 
 
 TemplateParameterScope::TemplateParameterScope(const Template & t)

@@ -8,7 +8,8 @@ namespace script
 {
 
 Prototype::Prototype()
-  : mCapacity(0)
+  : mReturnType(Type::Void)
+  , mCapacity(0)
   , mBegin(mParams)
   , mEnd(mParams)
 {

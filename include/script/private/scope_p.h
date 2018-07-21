@@ -56,9 +56,6 @@ public:
   virtual const std::map<std::string, Value> & values() const;
   virtual const std::vector<Typedef> & typedefs() const;
 
-  [[deprecated("Remove in future version")]] virtual void remove_class(const Class & c) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_class()" }; }
-  [[deprecated("Remove in future version")]] virtual void remove_enum(const Enum & e) { throw std::runtime_error{ "Bad call to ScopeImpl::remove_enum()" }; }
-
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
 
   virtual void invalidate_cache();
@@ -123,9 +120,6 @@ public:
   const std::vector<Template> & templates() const override;
   const std::map<std::string, Value> & values() const override;
   const std::vector<Typedef> & typedefs() const override;
-
-  void remove_class(const Class & c) override;
-  void remove_enum(const Enum & e) override;
 
   void import_namespace(const NamespaceScope & other);
 

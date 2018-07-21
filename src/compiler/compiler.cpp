@@ -110,6 +110,7 @@ bool Compiler::compile(Script s)
   {
     session()->clear();
     s.impl()->messages = std::move(session()->messages);
+    engine()->implementation()->destroy(Namespace{ s.impl() });
     return false;
   }
 
