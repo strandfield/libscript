@@ -5,6 +5,7 @@
 #include "script/compiler/templatenameprocessor.h"
 
 #include "script/classtemplate.h"
+#include "script/classtemplateinstancebuilder.h"
 #include "script/private/template_p.h"
 
 #include "script/compiler/compilererrors.h"
@@ -67,7 +68,8 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
   if (ct.is_native())
   {
     auto instantiate = ct.native_callback();
-    Class ret = instantiate(ct, args);
+    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
+    Class ret = instantiate(builder);
     ct.impl()->instances[args] = ret;
     return ret;
   }

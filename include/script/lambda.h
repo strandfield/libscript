@@ -12,6 +12,7 @@ namespace script
 {
 
 class ClosureTypeImpl;
+class Prototype;
 
 class LIBSCRIPT_API ClosureType
 {

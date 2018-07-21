@@ -75,13 +75,6 @@ public:
   Object createObject(Type t);
   Object createObject(Class cla);
 
-  Function newConstructor(const FunctionBuilder & opts);
-  Function newDestructor(const FunctionBuilder & opts);
-  Function newFunction(const FunctionBuilder & opts);
-  Function newLiteralOperator(const FunctionBuilder & opts);
-  Function newOperator(const FunctionBuilder & opts);
-  Function newCast(const FunctionBuilder & opts);
-
   /// TODO: move elsewhere, perhaps a namespace 'optimisation'
   Value default_construct(const Type & t, const Function & ctor);
   Value copy(const Value & val, const Function & copyctor);
@@ -91,8 +84,6 @@ public:
 
   ClosureType newLambda();
 
-  script::Class new_class(const ClassBuilder & opts);
-  void fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilder & opts);
   void register_class(Class & c, int id = 0);
 
   void destroyClass(Class c);

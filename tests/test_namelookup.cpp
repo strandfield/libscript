@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "script/classbuilder.h"
 #include "script/classtemplate.h"
 #include "script/engine.h"
 #include "script/namelookup.h"
@@ -185,10 +186,12 @@ TEST(NameLookup, member_lookup) {
   Engine e;
   e.setup();
 
-  Class foo = e.newClass(ClassBuilder::New("foo"));
+  Symbol gns{ e.rootNamespace() };
+
+  Class foo = gns.Class("foo").get();
   foo.Method("f").create();
 
-  Class bar = e.newClass(ClassBuilder::New("bar").setParent(foo));
+  Class bar = gns.Class("bar").setBase(foo).get();
   bar.Method("g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);

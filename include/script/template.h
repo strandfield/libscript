@@ -14,6 +14,8 @@ namespace script
 
 class TemplateImpl;
 
+class ClassTemplate;
+class FunctionTemplate;
 class Engine;
 class Scope;
 class Script;

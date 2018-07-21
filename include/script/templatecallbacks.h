@@ -36,9 +36,9 @@ struct LIBSCRIPT_API FunctionTemplateCallbacks
 };
 
 class Class;
-class ClassTemplate;
+class ClassTemplateInstanceBuilder;
 
-typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplate, const std::vector<TemplateArgument> &);
+typedef Class(*NativeClassTemplateInstantiationFunction)(ClassTemplateInstanceBuilder &);
 
 } // namespace script
 

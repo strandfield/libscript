@@ -4,13 +4,15 @@
 
 #include "script/array.h"
 
-#include "script/private/array_p.h"
 #include "script/engine.h"
-#include "script/private/engine_p.h"
+#include "script/classtemplateinstancebuilder.h"
 #include "script/functionbuilder.h"
 #include "script/template.h"
-#include "script/private/value_p.h"
 #include "script/templatebuilder.h"
+
+#include "script/private/array_p.h"
+#include "script/private/engine_p.h"
+#include "script/private/value_p.h"
 
 
 namespace script
@@ -161,8 +163,10 @@ Value assign(FunctionCall *c)
 } // namespace callbacks
 
 
-Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgument> & arguments)
+Class instantiate_array_class(ClassTemplateInstanceBuilder & builder)
 {
+  const auto & arguments = builder.arguments();
+
   if (arguments.size() != 1)
     throw TemplateInstantiationError{"Invalid argument count"};
 
@@ -174,7 +178,7 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   if(element_type.isEnumType())
     throw TemplateInstantiationError{ "Argument cannot be an enumeration" };
 
-  Engine *e = tplt.engine();
+  Engine *e = builder.getTemplate().engine();
   ArrayData data;
   data.elementType = element_type;
 
@@ -194,10 +198,12 @@ Class instantiate_array_class(ClassTemplate tplt, const std::vector<TemplateArgu
   }
   
 
-  ClassBuilder class_builder = ClassBuilder::New(std::string("Array<") + e->typeName(element_type) + std::string(">"));
+  builder.name = std::string("Array<") + e->typeName(element_type) + std::string(">");
+
   auto shared_data = std::make_shared<SharedArrayData>(data);
-  class_builder.setData(shared_data);
-  Class array_class = tplt.build(class_builder, arguments);
+  builder.setData(shared_data);
+
+  Class array_class = builder.get();
   shared_data->data.typeId = array_class.id();
   Type array_type = array_class.id();
 

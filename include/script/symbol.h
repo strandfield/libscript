@@ -13,6 +13,7 @@ namespace script
 {
 
 class Class;
+class ClassBuilder;
 class ClassTemplateBuilder;
 class Engine;
 class FunctionBuilder;
@@ -29,7 +30,7 @@ public:
   Symbol(const Symbol &) = default;
   ~Symbol() = default;
 
-  explicit Symbol(const Class & c);
+  explicit Symbol(const script::Class & c);
   explicit Symbol(const Namespace & n);
 
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
@@ -39,7 +40,7 @@ public:
   Engine* engine() const;
 
   bool isClass() const;
-  Class toClass() const;
+  script::Class toClass() const;
 
   bool isNamespace() const;
   Namespace toNamespace() const;
@@ -47,6 +48,8 @@ public:
   Symbol parent() const;
   Script script() const;
 
+  ClassBuilder Class(const std::string & name);
+  ClassBuilder Class(std::string && name);
   ClassTemplateBuilder ClassTemplate(const std::string & name);
   ClassTemplateBuilder ClassTemplate(std::string && name);
   FunctionBuilder Function(const std::string & name);

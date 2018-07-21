@@ -4,16 +4,20 @@
 
 #include "script/class.h"
 
+#include "script/classbuilder.h"
+#include "script/datamember.h"
+#include "script/engine.h"
+#include "script/functionbuilder.h"
+#include "script/object.h"
+#include "script/staticdatamember.h"
+#include "script/userdata.h"
+
 #include "script/private/class_p.h"
 #include "script/private/lambda_p.h"
-#include "script/functionbuilder.h"
 #include "script/private/function_p.h"
-#include "script/engine.h"
 #include "script/private/engine_p.h"
 #include "script/private/enum_p.h"
-#include "script/object.h"
 #include "script/private/template_p.h"
-#include "script/userdata.h"
 #include "script/private/value_p.h"
 
 namespace script
@@ -34,21 +38,28 @@ ClassTemplateInstance::ClassTemplateInstance(ClassTemplate t, const std::vector<
 
 }
 
-
-std::shared_ptr<ClassTemplateInstance> ClassTemplateInstance::make(const ClassBuilder & builder, const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+DataMember::DataMember(const Type & t, const std::string & n, AccessSpecifier aspec)
+  :name(n)
 {
-  auto ret = std::make_shared<ClassTemplateInstance>(ct, args, -1, builder.name, ct.engine());
-  ret->set_parent(builder.parent);
-  ret->dataMembers = builder.dataMembers;
-  ret->isFinal = builder.isFinal;
-  ret->data = builder.userdata;
-  ret->instance_of = ct;
-  ret->template_arguments = args;
+  this->type = Type{ t.data() | (static_cast<int>(aspec) << 26) };
+}
 
-  Class class_result{ ret };
-  ct.engine()->implementation()->register_class(class_result);
+AccessSpecifier DataMember::accessibility() const
+{
+  return static_cast<AccessSpecifier>((this->type.data() >> 26) & 3);
+}
 
-  return ret;
+
+StaticDataMember::StaticDataMember(const std::string &n, const Value & val, AccessSpecifier aspec)
+  : name(n)
+  , value(val)
+{
+  val.impl()->type = Type{ val.type().data() | (static_cast<int>(aspec) << 26) };
+}
+
+AccessSpecifier StaticDataMember::accessibility() const
+{
+  return static_cast<AccessSpecifier>((this->value.type().data() >> 26) & 3);
 }
 
 
@@ -110,17 +121,6 @@ ClosureType Class::toClosure() const
   return ClosureType{ std::dynamic_pointer_cast<ClosureTypeImpl>(d) };
 }
 
-Class::DataMember::DataMember(const Type & t, const std::string & n, AccessSpecifier aspec)
-  :name(n)
-{
-  this->type = Type{ t.data() | (static_cast<int>(aspec) << 26) };
-}
-
-AccessSpecifier Class::DataMember::accessibility() const
-{
-  return static_cast<AccessSpecifier>((this->type.data() >> 26) & 3);
-}
-
 const std::vector<Class::DataMember> & Class::dataMembers() const
 {
   return d->dataMembers;
@@ -169,18 +169,6 @@ const std::shared_ptr<UserData> & Class::data() const
 Value Class::instantiate(const std::vector<Value> & args)
 {
   return d->engine->construct(id(), args);
-}
-
-Class Class::newClass(const ClassBuilder & opts)
-{
-  Engine *e = d->engine;
-  Class c = e->newClass(opts);
-  if (!c.isNull())
-  {
-    d->classes.push_back(c);
-    c.impl()->enclosing_symbol = d;
-  }
-  return c;
 }
 
 const std::vector<Class> & Class::classes() const
@@ -418,19 +406,10 @@ FunctionBuilder Class::Conversion(const Type & dest, NativeFunctionSignature fun
   return builder;
 }
 
-
-Class::StaticDataMember::StaticDataMember(const std::string &n, const Value & val, AccessSpecifier aspec)
-  : name(n)
-  , value(val)
+ClassBuilder Class::NestedClass(const std::string & name) const
 {
-  val.impl()->type = Type{ val.type().data() | (static_cast<int>(aspec) << 26) };
+  return Symbol{ *this }.Class(name);
 }
-
-AccessSpecifier Class::StaticDataMember::accessibility() const
-{
-  return static_cast<AccessSpecifier>((this->value.type().data() >> 26) & 3);
-}
-
 
 void Class::addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec)
 {
@@ -510,51 +489,6 @@ bool Class::operator!=(const Class & other) const
 bool Class::operator<(const Class & other) const
 {
   return d < other.d;
-}
-
-ClassBuilder::ClassBuilder(const std::string & n, const Class & p)
-  : name(n)
-  , parent(p)
-  , isFinal(false)
-  , id(0)
-{
-
-}
-
-ClassBuilder ClassBuilder::New(const std::string & n)
-{
-  ClassBuilder ret{ n };
-  return ret;
-}
-
-ClassBuilder & ClassBuilder::setParent(const Class & p)
-{
-  this->parent = p;
-  return *this;
-}
-
-ClassBuilder & ClassBuilder::setFinal(bool f)
-{
-  this->isFinal = f;
-  return *this;
-}
-
-ClassBuilder & ClassBuilder::addMember(const Class::DataMember & dm)
-{
-  this->dataMembers.push_back(dm);
-  return *this;
-}
-
-ClassBuilder & ClassBuilder::setData(const std::shared_ptr<UserData> & data)
-{
-  this->userdata = data;
-  return *this;
-}
-
-ClassBuilder & ClassBuilder::setId(int n)
-{
-  this->id = n;
-  return *this;
 }
 
 } // namespace script

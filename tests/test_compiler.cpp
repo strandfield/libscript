@@ -5,10 +5,12 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/datamember.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/enumvalue.h"
+#include "script/staticdatamember.h"
 
 #include "script/compiler/commandcompiler.h"
 #include "script/compiler/functioncompiler.h"

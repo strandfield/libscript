@@ -9,6 +9,7 @@
 
 #include "script/program/statements.h"
 
+#include "script/datamember.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
 

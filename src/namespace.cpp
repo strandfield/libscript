@@ -83,14 +83,6 @@ Enum Namespace::newEnum(const std::string & name, int id)
   return e;
 }
 
-Class Namespace::newClass(const ClassBuilder & opts)
-{
-  Class cla = engine()->newClass(opts);
-  d->classes.push_back(cla);
-  cla.impl()->enclosing_symbol = d;
-  return cla;
-}
-
 Namespace Namespace::newNamespace(const std::string & name)
 {
   auto impl = std::make_shared<NamespaceImpl>(name, engine());

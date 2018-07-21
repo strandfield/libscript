@@ -5,6 +5,7 @@
 #include "script/symbol.h"
 
 #include "script/class.h"
+#include "script/classbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
@@ -16,7 +17,7 @@
 namespace script
 {
 
-Symbol::Symbol(const Class & c)
+Symbol::Symbol(const script::Class & c)
   : Symbol(c.impl())
 {
 
@@ -50,7 +51,7 @@ bool Symbol::isClass() const
 
 Class Symbol::toClass() const
 {
-  return Class{ std::dynamic_pointer_cast<ClassImpl>(d) };
+  return script::Class{ std::dynamic_pointer_cast<ClassImpl>(d) };
 }
 
 bool Symbol::isNamespace() const
@@ -77,6 +78,16 @@ Script Symbol::script() const
     return Script{ std::static_pointer_cast<ScriptImpl>(d) };
 
   return parent().script();
+}
+
+ClassBuilder Symbol::Class(const std::string & name)
+{
+  return ClassBuilder{ *this, name };
+}
+
+ClassBuilder Symbol::Class(std::string && name)
+{
+  return ClassBuilder{ *this, std::move(name) };
 }
 
 ClassTemplateBuilder Symbol::ClassTemplate(const std::string & name)

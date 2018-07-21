@@ -9,6 +9,7 @@
 #include "script/enumvalue.h"
 #include "script/function.h"
 #include "script/functiontemplate.h"
+#include "script/staticdatamember.h"
 
 #include "script/compiler/templatenameprocessor.h"
 

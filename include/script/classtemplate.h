@@ -14,10 +14,9 @@ namespace script
 
 class Class;
 class ClassTemplateImpl;
+class ClassTemplateSpecializationBuilder;
 class PartialTemplateSpecialization;
 class PartialTemplateSpecializationImpl;
-
-class ClassBuilder;
 
 class LIBSCRIPT_API ClassTemplate : public Template
 {
@@ -34,12 +33,8 @@ public:
   bool hasInstance(const std::vector<TemplateArgument> & args, Class *value = nullptr) const;
   Class getInstance(const std::vector<TemplateArgument> & args);
 
-  Class addSpecialization(const std::vector<TemplateArgument> & args, const ClassBuilder & opts);
-
-  /// TODO: maybe provide an specific method in ClassBuilder
-  // like get(const classTemplate &, const std::vector<TempalteArgument>&)
-  // or use 2-step instantiation 1) fill ClassBuilder 2) fill Class
-  Class build(const ClassBuilder & builder, const std::vector<TemplateArgument> & args) const;
+  ClassTemplateSpecializationBuilder Specialization(const std::vector<TemplateArgument> & args);
+  ClassTemplateSpecializationBuilder Specialization(std::vector<TemplateArgument> && args);
 
   const std::vector<PartialTemplateSpecialization> & partialSpecializations() const;
 

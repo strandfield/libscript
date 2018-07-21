@@ -6,27 +6,35 @@
 #define LIBSCRIPT_CLASS_H
 
 #include "script/accessspecifier.h"
-#include "script/function.h"
+#include "script/callbacks.h"
 #include "script/operators.h"
-#include "script/value.h"
 
 #include <map>
+#include <vector>
 
 namespace script
 {
 
-class ClassImpl;
-class ClosureType;
-class Enum;
-class Script;
-class UserData;
+class Cast;
 class ClassBuilder;
+class ClassImpl;
 class ClassTemplate;
+class ClosureType;
+class DataMember;
+class Engine;
+class Enum;
+class Function;
 class FunctionBuilder;
 class Namespace;
+class Operator;
+class Script;
+class StaticDataMember;
 class Template;
 class TemplateArgument;
+class Type;
 class Typedef;
+class UserData;
+class Value;
 
 class LIBSCRIPT_API Class
 {
@@ -50,22 +58,7 @@ public:
   bool isClosure() const;
   ClosureType toClosure() const;
 
-  class DataMember
-  {
-  public:
-    Type type;
-    std::string name;
-
-    DataMember() = default;
-    DataMember(const DataMember &) = default;
-    DataMember(const Type & t, const std::string & name, AccessSpecifier aspec = AccessSpecifier::Public);
-    ~DataMember() = default;
-
-    DataMember & operator=(const DataMember &) = default;
-
-    inline bool isNull() const { return name.empty(); }
-    AccessSpecifier accessibility() const;
-  };
+  typedef script::DataMember DataMember;
 
   const std::vector<DataMember> & dataMembers() const;
   /// TODO : add cumulatedDataMembers()
@@ -81,8 +74,6 @@ public:
 
   Value instantiate(const std::vector<Value> & args);
 
-  /// TODO: provide alternative and depreciate this
-  Class newClass(const ClassBuilder & opts);
   const std::vector<Class> & classes() const;
 
   /// TODO: provide alternative and depreciate this
@@ -111,28 +102,15 @@ public:
   FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
+  ClassBuilder NestedClass(const std::string & name) const;
+
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }
 
   bool isAbstract() const;
   const std::vector<Function> & vtable() const;
 
-  class StaticDataMember
-  {
-  public:
-    std::string name;
-    Value value;
-
-    StaticDataMember() = default;
-    StaticDataMember(const StaticDataMember &) = default;
-    StaticDataMember(const std::string &n, const Value & val, AccessSpecifier aspec = AccessSpecifier::Public);
-    ~StaticDataMember() = default;
-
-    StaticDataMember & operator=(const StaticDataMember &) = default;
-
-    inline bool isNull() const { return this->value.isNull(); }
-    AccessSpecifier accessibility() const;
-  };
+  typedef script::StaticDataMember StaticDataMember;
 
   void addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec = AccessSpecifier::Public);
   const std::map<std::string, StaticDataMember> & staticDataMembers() const;
@@ -149,7 +127,7 @@ public:
   ClassTemplate instanceOf() const;
   const std::vector<TemplateArgument> & arguments() const;
 
-  Engine * engine() const;
+  Engine* engine() const;
   inline const std::shared_ptr<ClassImpl> & impl() const { return d; }
 
   Class & operator=(const Class & other) = default;
@@ -161,33 +139,6 @@ private:
   std::shared_ptr<ClassImpl> d;
 };
 
-/// TODO: move to another file
-/// TODO: add get() and create() functions
-class LIBSCRIPT_API ClassBuilder
-{
-public:
-  std::string name;
-  Class parent;
-  std::vector<Class::DataMember> dataMembers;
-  bool isFinal;
-  std::shared_ptr<UserData> userdata;
-  int id;
-
-public:
-  ClassBuilder(const std::string & n, const Class & p = Class{});
-
-  static ClassBuilder New(const std::string & n);
-
-  ClassBuilder & setParent(const Class & p);
-  ClassBuilder & setFinal(bool f = true);
-  ClassBuilder & addMember(const Class::DataMember & dm);
-  ClassBuilder & setData(const std::shared_ptr<UserData> & data);
-  ClassBuilder & setId(int n);
-};
-
 } // namespace script
-
-
-
 
 #endif // LIBSCRIPT_CLASS_H

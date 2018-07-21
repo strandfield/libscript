@@ -134,6 +134,8 @@ protected:
 
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl);
+  std::string readClassName(const std::shared_ptr<ast::ClassDecl> & decl);
+  Type readClassBase(const std::shared_ptr<ast::ClassDecl> & decl);
   void readClassContent(Class & c, const std::shared_ptr<ast::ClassDecl> & decl);
   void processEnumDeclaration(const std::shared_ptr<ast::EnumDeclaration> & decl);
   void processTypedef(const std::shared_ptr<ast::Typedef> & decl);

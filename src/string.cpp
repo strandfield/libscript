@@ -12,8 +12,10 @@
 #include "script/engine.h"
 #include "script/private/engine_p.h"
 #include "script/class.h"
+#include "script/classbuilder.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
+#include "script/symbol.h"
 
 #include "script/interpreter/executioncontext.h"
 #include "script/private/value_p.h"
@@ -336,8 +338,7 @@ std::string get_string_typename()
 
 Type register_charref_type(Engine *e)
 {
-  ClassBuilder opts = ClassBuilder::New("charref");
-  Class charref = e->newClass(opts);
+  Class charref = Symbol{ e->rootNamespace() }.Class("charref").get();
 
   charref_id = charref.id();
 

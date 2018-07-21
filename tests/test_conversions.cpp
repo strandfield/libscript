@@ -5,10 +5,10 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/classbuilder.h"
+#include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
-#include "script/conversions.h"
-
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 
@@ -97,7 +97,7 @@ TEST(Conversions, user_defined_cast) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
 
   ConversionSequence conv = ConversionSequence::compute(A.id(), Type::Int, &e);
@@ -113,7 +113,7 @@ TEST(Conversions, user_defined_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Function ctor = A.Constructor().params(Type::Float).create();
 
   ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
@@ -153,7 +153,7 @@ TEST(Conversions, no_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
 
   ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());

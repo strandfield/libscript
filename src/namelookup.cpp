@@ -5,9 +5,11 @@
 #include "script/namelookup.h"
 #include "script/private/namelookup_p.h"
 
+#include "script/datamember.h"
 #include "script/engine.h"
 #include "script/private/scope_p.h"
 #include "script/functiontype.h"
+#include "script/staticdatamember.h"
 
 #include "script/parser/parser.h"
 

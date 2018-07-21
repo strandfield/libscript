@@ -6,6 +6,7 @@
 
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/classbuilder.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 
@@ -15,8 +16,8 @@ TEST(ClassTest, builder_functions) {
 
   Engine engine;
   engine.setup();
-
-  Class A = engine.newClass(ClassBuilder::New("A"));
+  
+  Class A = Symbol{ engine.rootNamespace() }.Class("A").get();
   Type A_type = A.id();
 
   /* Constructors */
@@ -72,10 +73,10 @@ TEST(ClassTest, datamembers) {
   Engine engine;
   engine.setup();
 
-  auto b = ClassBuilder::New("A")
+  auto b = Symbol{ engine.rootNamespace() }.Class("A")
     .addMember(Class::DataMember{ Type::Int, "a" });
 
-  Class A = engine.newClass(b);
+  Class A = b.get();
 
   ASSERT_EQ(A.dataMembers().size(), 1);
   ASSERT_EQ(A.dataMembers().front().type, Type::Int);
@@ -84,12 +85,12 @@ TEST(ClassTest, datamembers) {
   ASSERT_EQ(A.cumulatedDataMemberCount(), 1);
   ASSERT_EQ(A.attributesOffset(), 0);
 
-  b = ClassBuilder::New("B")
+  b = Symbol{ engine.rootNamespace() }.Class("B")
     .setParent(A)
     .addMember(Class::DataMember{ Type::Boolean, "b" })
     .setFinal();
 
-  Class B = engine.newClass(b);
+  Class B = b.get();
 
   ASSERT_EQ(B.parent(), A);
 
@@ -110,9 +111,9 @@ TEST(ClassTest, virtual_members) {
   Engine engine;
   engine.setup();
 
-  auto b = ClassBuilder::New("A");
+  auto b = Symbol{ engine.rootNamespace() }.Class("A");
 
-  Class A = engine.newClass(b);
+  Class A = b.get();
 
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
@@ -126,10 +127,10 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(A.vtable().size(), 1);
 
 
-  b = ClassBuilder::New("B")
+  b = Symbol{ engine.rootNamespace() }.Class("B")
     .setParent(A);
 
-  Class B = engine.newClass(b);
+  Class B = b.get();
 
   ASSERT_TRUE(B.isAbstract());
   ASSERT_EQ(B.vtable().size(), 1);
@@ -152,7 +153,7 @@ TEST(ClassTest, static_member_functions) {
   Engine engine;
   engine.setup();
 
-  Class A = engine.newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ engine.rootNamespace() }.Class("A").get();
 
   Function foo = A.Method("foo")
     .setStatic()

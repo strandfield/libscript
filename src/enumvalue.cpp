@@ -17,6 +17,7 @@ EnumValue::EnumValue(Enum e, int val)
   : mEnum(e)
   , mValue(val)
 {
+  /// TODO: remove this, or throw, do something !
   if (!mEnum.hasValue(val))
   {
     mEnum = Enum{};
@@ -27,6 +28,7 @@ EnumValue::EnumValue(Enum e, int val)
 EnumValue::EnumValue(Enum e, const std::string & name)
   : mEnum(e)
 {
+  /// TODO: remove this, or throw, do something !
   if (!mEnum.hasKey(name))
   {
     mEnum = Enum{};

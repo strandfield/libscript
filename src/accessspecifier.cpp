@@ -5,6 +5,7 @@
 #include "script/accessspecifier.h"
 
 #include "script/class.h"
+#include "script/function.h"
 
 namespace script
 {

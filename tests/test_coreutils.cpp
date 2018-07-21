@@ -12,6 +12,8 @@
 #include "script/array.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/classbuilder.h"
+#include "script/datamember.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
 #include "script/functionbuilder.h"
@@ -20,6 +22,7 @@
 #include "script/namelookup.h"
 #include "script/namespacealias.h"
 #include "script/sourcefile.h"
+#include "script/staticdatamember.h"
 #include "script/symbol.h"
 #include "script/types.h"
 
@@ -126,7 +129,7 @@ TEST(CoreUtilsTests, TypeReservation) {
 
   e.reserveTypeRange(begin, end);
 
-  Class A = e.newClass(ClassBuilder::New("A").setId(Type::ObjectFlag | 10));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").setId(Type::ObjectFlag | 10).get();
   ASSERT_EQ(A.id(), Type::ObjectFlag | 10);
 }
 
@@ -134,12 +137,14 @@ TEST(CoreUtilsTests, ClassConstruction) {
   using namespace script;
 
   Engine e;
+  e.setup();
 
-  ClassBuilder builder{ "MyClass" };
+  auto builder = Symbol{ e.rootNamespace() }.Class("MyClass");
   builder.setFinal();
   builder.addMember(Class::DataMember{Type::Int, "n"});
 
-  Class my_class = e.newClass(builder);
+  Class my_class = builder.get();
+  ASSERT_EQ(my_class, e.rootNamespace().classes().back());
 
   ASSERT_EQ(my_class.name(), "MyClass");
   ASSERT_TRUE(my_class.parent().isNull());
@@ -154,11 +159,12 @@ TEST(CoreUtilsTests, ClassInheritance) {
   using namespace script;
 
   Engine e;
+  e.setup();
 
-  ClassBuilder builder{ "Base" };
+  auto builder = Symbol{ e.rootNamespace() }.Class("Base");
   builder.addMember(Class::DataMember{ Type::Int, "n" });
 
-  Class base = e.newClass(builder);
+  Class base = builder.get();
 
   ASSERT_FALSE(base.isFinal());
 
@@ -167,8 +173,8 @@ TEST(CoreUtilsTests, ClassInheritance) {
   ASSERT_EQ(base.dataMembers().front().type, Type::Int);
   ASSERT_EQ(base.attributesOffset(), 0);
 
-  builder = ClassBuilder::New("Derived").setParent(base).addMember(Class::DataMember{ Type::Boolean, "b" });
-  Class derived = e.newClass(builder);
+  builder = Symbol{ e.rootNamespace() }.Class("Derived").setBase(base).addMember(Class::DataMember{ Type::Boolean, "b" });
+  Class derived = builder.get();
 
   ASSERT_EQ(derived.parent(), base);
 
@@ -245,7 +251,7 @@ TEST(CoreUtilsTests, scopes) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Enum E = e.rootNamespace().newEnum("E");
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
@@ -316,7 +322,7 @@ TEST(CoreUtilsTests, scope_class_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_C = foo.newClass(ClassBuilder::New("C"));
+  Class foo_C = Symbol{ foo }.Class("C").get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
 
@@ -355,8 +361,8 @@ TEST(CoreUtilsTests, scope_namespace_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_A = foo.newClass(ClassBuilder::New("A"));
-  Class foo_B = foo.newClass(ClassBuilder::New("B"));
+  Class foo_A = Symbol{ foo }.Class("A").get();
+  Class foo_B = Symbol{ foo }.Class("B").get();
   Function foo_max_int = foo.Function("max").returns(Type::Int).params(Type::Int, Type::Int).create();
   Function foo_max_double = foo.Function("max").returns(Type::Double).params(Type::Double, Type::Double).create();
 
@@ -493,7 +499,7 @@ TEST(CoreUtilsTests, function_builder) {
   e.setup();
 
   Namespace root = e.rootNamespace();
-  Class A = root.newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ root }.Class("A").get();
 
   Function foo = A.Method("foo").create();
   ASSERT_EQ(foo.name(), "foo");
@@ -604,7 +610,7 @@ TEST(CoreUtilsTests, access_specifiers) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Function foo = A.Method("foo").setProtected().create();
   Function bar = A.Method("bar").setPrivate().create();
   Function qux = A.Method("qux").create();
@@ -613,7 +619,7 @@ TEST(CoreUtilsTests, access_specifiers) {
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
-  Class B = e.rootNamespace().newClass(ClassBuilder::New("B").setParent(A));
+  Class B = Symbol{ e.rootNamespace() }.Class("B").setBase(A).get();
   Function slurm = B.Method("slurm").create();
   Function bender = B.Method("bender").create();
 
@@ -637,12 +643,12 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
   Engine e;
   e.setup();
 
-  ClassBuilder builder = ClassBuilder::New("A")
+  ClassBuilder builder = Symbol{e.rootNamespace()}.Class("A")
     .addMember(Class::DataMember{ Type::Double, "x" })
     .addMember(Class::DataMember{ Type::Double, "y", AccessSpecifier::Protected })
     .addMember(Class::DataMember{ Type::Double, "z", AccessSpecifier::Private });
 
-  Class A = e.rootNamespace().newClass(builder);
+  Class A = builder.get();
 
   ASSERT_EQ(A.dataMembers().front().accessibility(), AccessSpecifier::Public);
   ASSERT_EQ(A.dataMembers().at(1).accessibility(), AccessSpecifier::Protected);
@@ -706,7 +712,7 @@ TEST(CoreUtilsTests, function_names) {
   Engine e;
   e.setup();
 
-  Class A = e.newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
 
   Function foo = A.Method("foo").create();
   Function eq = A.Operation(EqualOperator).params(Type::Int).create();

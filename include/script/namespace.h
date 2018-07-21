@@ -57,7 +57,6 @@ public:
   Namespace getNamespace(const std::string & name);
 
   Enum newEnum(const std::string & name, int id = -1);
-  Class newClass(const ClassBuilder & opts);
   Namespace newNamespace(const std::string & name);
   void addValue(const std::string & name, const Value & val);
 

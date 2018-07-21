@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/classbuilder.h"
 #include "script/engine.h"
 #include "script/operator.h"
 #include "script/overloadresolution.h"
@@ -94,7 +95,7 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
 
   overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Float).create());
 
-  Class A = e.rootNamespace().newClass(ClassBuilder::New("A"));
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Boolean, A.id()).create());
 
   auto resol = OverloadResolution::New(&e);

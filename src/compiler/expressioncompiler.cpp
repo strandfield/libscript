@@ -16,6 +16,7 @@
 
 #include "script/program/expression.h"
 
+#include "script/datamember.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
@@ -23,6 +24,7 @@
 #include "script/namelookup.h"
 #include "script/private/namelookup_p.h"
 #include "script/overloadresolution.h"
+#include "script/staticdatamember.h"
 
 namespace script
 {

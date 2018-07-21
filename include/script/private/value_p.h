@@ -10,6 +10,7 @@
 #else
 
 #include "script/array.h"
+#include "script/function.h"
 #include "script/lambda.h"
 #include "script/object.h"
 #include "script/string.h"

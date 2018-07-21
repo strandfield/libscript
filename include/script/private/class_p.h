@@ -10,9 +10,11 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/classtemplate.h"
+#include "script/datamember.h"
 #include "script/enum.h"
 #include "script/function.h"
 #include "script/operator.h"
+#include "script/staticdatamember.h"
 #include "script/typedefs.h"
 
 #include <map>
@@ -85,7 +87,7 @@ public:
   ClassTemplateInstance(ClassTemplate t, const std::vector<TemplateArgument> & args, int i, const std::string & n, Engine *e);
   ~ClassTemplateInstance() = default;
 
-  static std::shared_ptr<ClassTemplateInstance> make(const ClassBuilder & builder, const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+  static std::shared_ptr<ClassTemplateInstance> make(ClassTemplateInstanceBuilder & builder);
 };
 
 } // namespace script

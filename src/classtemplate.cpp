@@ -6,6 +6,7 @@
 #include "script/private/template_p.h"
 
 #include "script/class.h"
+#include "script/classtemplatespecializationbuilder.h"
 #include "script/private/class_p.h"
 #include "script/engine.h"
 #include "script/private/engine_p.h"
@@ -58,23 +59,15 @@ Class ClassTemplate::getInstance(const std::vector<TemplateArgument> & args)
   return ret;
 }
 
-Class ClassTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const ClassBuilder & opts)
+ClassTemplateSpecializationBuilder ClassTemplate::Specialization(const std::vector<TemplateArgument> & args)
 {
-  auto d = impl();
-  Class ret = build(opts, args);
-  d->instances[args] = ret;
-  return ret;
+  auto targs = args;
+  return ClassTemplateSpecializationBuilder{ *this, std::move(targs) };
 }
 
-Class ClassTemplate::build(const ClassBuilder & builder, const std::vector<TemplateArgument> & args) const
+ClassTemplateSpecializationBuilder ClassTemplate::Specialization(std::vector<TemplateArgument> && args)
 {
-  auto ret = std::make_shared<ClassTemplateInstance>(*this, args, -1, builder.name, engine());
-  engine()->implementation()->fill_class(ret, builder);
-
-  Class result{ ret };
-  engine()->implementation()->register_class(result, builder.id);
-
-  return result;
+  return ClassTemplateSpecializationBuilder{ *this, std::move(args) };
 }
 
 const std::vector<PartialTemplateSpecialization> & ClassTemplate::partialSpecializations() const

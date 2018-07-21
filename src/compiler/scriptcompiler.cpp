@@ -18,6 +18,9 @@
 
 #include "script/program/expression.h"
 
+#include "script/classbuilder.h"
+#include "script/classtemplateinstancebuilder.h"
+#include "script/classtemplatespecializationbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "script/private/class_p.h"
@@ -135,13 +138,13 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
   auto selected_specialization = selector.select(ct, args);
   if (!selected_specialization.first.isNull())
   {
-    ClassBuilder builder{ std::string{} };
+    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
 
     auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
-    fill(builder, class_decl);
+    builder.name = readClassName(class_decl);
+    builder.base = readClassBase(class_decl);
 
-    result = Class{ ClassTemplateInstance::make(builder, ct, args) };
-    result.impl()->enclosing_symbol = ct.impl()->enclosing_symbol;
+    result = builder.get(); /// TODO: record this generate template instance
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -150,13 +153,13 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
   }
   else
   {
-    ClassBuilder builder{ std::string{} };
+    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
 
     auto class_decl = ct.impl()->definition.get_class_decl();
-    fill(builder, class_decl);
+    builder.name = readClassName(class_decl);
+    builder.base = readClassBase(class_decl);
 
-    result = Class{ ClassTemplateInstance::make(builder, ct, args) };
-    result.impl()->enclosing_symbol = ct.impl()->enclosing_symbol;
+    result = builder.get(); /// TODO: record this generate template instance
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -201,13 +204,13 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
   auto selected_specialization = selector.select(ct, args);
   if (!selected_specialization.first.isNull())
   {
-    ClassBuilder builder{ std::string{} };
+    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
 
     auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
-    fill(builder, class_decl);
+    builder.name = readClassName(class_decl);
+    builder.base = readClassBase(class_decl);
 
-    Class result{ ClassTemplateInstance::make(builder, ct, args) };
-    result.impl()->enclosing_symbol = ct.impl()->enclosing_symbol;
+    Class result = builder.get(); /// TODO: record this generated template instance
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -218,13 +221,13 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
   }
   else
   {
-    ClassBuilder builder{ std::string{} };
+    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
 
     auto class_decl = ct.impl()->definition.get_class_decl();
-    fill(builder, class_decl);
+    builder.name = readClassName(class_decl);
+    builder.base = readClassBase(class_decl);
 
-    Class result{ ClassTemplateInstance::make(builder, ct, args) };
-    result.impl()->enclosing_symbol = ct.impl()->enclosing_symbol;
+    Class result = builder.get(); /// TODO: record this generated template instance
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -506,30 +509,35 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 {
   assert(class_decl != nullptr);
 
-  ClassBuilder builder{ std::string{} };
+  ClassBuilder builder = currentScope().symbol().Class("");
   fill(builder, class_decl);
 
-  Symbol symbol = currentScope().symbol();
-  Class cla = symbol.isClass() ? symbol.toClass().newClass(builder) : symbol.toNamespace().newClass(builder);
+  Class cla = builder.get();
   mCurrentScope.invalidateCache();
 
   readClassContent(cla, class_decl);
 }
 
+std::string ScriptCompiler::readClassName(const std::shared_ptr<ast::ClassDecl> & decl)
+{
+  return decl->name->getName();
+}
+
+Type ScriptCompiler::readClassBase(const std::shared_ptr<ast::ClassDecl> & decl)
+{
+  if (decl->parent == nullptr)
+    return Type{};
+
+  NameLookup lookup = resolve(decl->parent);
+  if (lookup.resultType() != NameLookup::TypeName || !lookup.typeResult().isObjectType())
+    throw InvalidBaseClass{ dpos(decl->parent) };
+  return lookup.typeResult();
+}
+
 void ScriptCompiler::fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl)
 {
-  Class parent_class;
-  if (decl->parent != nullptr)
-  {
-    NameLookup lookup = resolve(decl->parent);
-    if (lookup.resultType() != NameLookup::TypeName || !lookup.typeResult().isObjectType())
-      throw InvalidBaseClass{ dpos(decl->parent) };
-    parent_class = engine()->getClass(lookup.typeResult());
-    assert(!parent_class.isNull());
-  }
-
-  builder.name = decl->name->getName();
-  builder.setParent(parent_class);
+  builder.name = readClassName(decl);
+  builder.setBase(readClassBase(decl));
 }
 
 void ScriptCompiler::readClassContent(Class & c, const std::shared_ptr<ast::ClassDecl> & decl)
@@ -857,11 +865,11 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
   std::vector<TemplateArgument> args = tnp.arguments(scp, template_full_name->arguments);
 
-  ClassBuilder builder{ std::string{} };
-  fill(builder, classdecl);
+  ClassTemplateSpecializationBuilder builder = ct.Specialization(std::move(args));
+  builder.name = readClassName(classdecl);
+  builder.base = readClassBase(classdecl);
 
-  Class result{ ClassTemplateInstance::make(builder, ct, args) };
-  result.impl()->enclosing_symbol = scp.symbol().impl();
+  Class result = builder.get(); /// TODO: record this generated template instance
 
   readClassContent(result, classdecl);
 
