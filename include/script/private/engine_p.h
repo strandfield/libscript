@@ -91,11 +91,12 @@ public:
   void destroy(Class c);
   void destroy(Namespace ns);
   void destroy(Script s);
+  void destroy(ClosureType ct);
 
   void unregister_class(Class &c);
-  void squeeze_classes();
   void unregister_enum(Enum &e);
-  void squeeze_enums();
+  void unregister_closure(ClosureType &c);
+
 
 #if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
 #include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS

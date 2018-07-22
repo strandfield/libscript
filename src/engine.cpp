@@ -366,33 +366,46 @@ void EngineImpl::destroy(Script s)
     this->scripts.pop_back();
 }
 
+void EngineImpl::destroy(ClosureType ct)
+{
+  auto impl = ct.impl();
+
+  impl->operators.clear();
+  impl->templates.clear(); /// TODO: clear the template instances
+
+  unregister_closure(ct);
+
+  impl->name.insert(0, "deleted_");
+  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
+}
+
+template<typename T>
+void squeeze(std::vector<T> & list)
+{
+  while (!list.empty() && list.back().isNull())
+    list.pop_back();
+}
 
 void EngineImpl::unregister_class(Class &c)
 {
   const int index = c.id() & 0xFFFF;
   this->classes[index] = Class();
-  squeeze_classes();
-}
-
-void EngineImpl::squeeze_classes()
-{
-  while (!this->classes.empty() && this->classes.back().isNull())
-    this->classes.pop_back();
+  squeeze(this->classes);
 }
 
 void EngineImpl::unregister_enum(Enum &e)
 {
   const int index = e.id() & 0xFFFF;
   this->enums[index] = Enum();
-  squeeze_enums();
+  squeeze(this->enums);
 }
 
-void EngineImpl::squeeze_enums()
+void EngineImpl::unregister_closure(ClosureType &c)
 {
-  while (!this->enums.empty() && this->enums.back().isNull())
-    this->enums.pop_back();
+  const int index = c.id() & 0xFFFF;
+  this->lambdas[index] = ClosureType();
+  squeeze(this->lambdas);
 }
-
 
 
 Engine::Engine()

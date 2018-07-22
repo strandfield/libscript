@@ -17,6 +17,7 @@
 #include "script/private/class_p.h"
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"
+#include "script/private/template_p.h"
 
 namespace script
 {
@@ -26,41 +27,61 @@ namespace compiler
 
 CompileSession::CompileSession(Engine *e)
   : mEngine(e)
-  , mPauseFlag(false)
-  , mAbortFlag(false)
   , error(false)
 {
 
 }
 
-void CompileSession::start()
+void CompileSession::setMainScript(const Script & s)
 {
-  resume();
+  mMainScript = s;
 }
 
-void CompileSession::suspend()
+void CompileSession::setCurrentScript(const Script & s)
 {
-  mPauseFlag = true;
+  mCurrentScript = s;
 }
 
-void CompileSession::resume()
+void CompileSession::addScript(const Script & s)
 {
-  mPauseFlag = false; /// TODO : should not be necessary
-
-}
-
-void CompileSession::abort()
-{
-  mPauseFlag = true;
-  mAbortFlag = true;
+  mScripts.push_back(s);
 }
 
 void CompileSession::clear()
 {
   /// TODO !!
+  for (const auto & f : this->generated.functions)
+  {
+    if (!f.isTemplateInstance())
+      continue;
+
+    FunctionTemplate ft = f.instanceOf();
+    auto & instances = ft.impl()->instances;
+    instances.erase(f.arguments());
+  }
+  this->generated.functions.clear();
+
+  for (const auto & c : this->generated.classes)
+  {
+    if (!c.isTemplateInstance())
+      continue;
+
+    ClassTemplate ct = c.instanceOf();
+    auto & instances = ct.impl()->instances;
+    instances.erase(c.arguments());
+  }
+  this->generated.classes.clear();
+
+  for (const auto & l : this->generated.lambdas)
+    engine()->implementation()->destroy(l);
   this->generated.lambdas.clear();
 
+  for (const auto & s : mScripts)
+    engine()->destroy(s);
+
   this->generated.expression = nullptr;
+
+  this->engine()->garbageCollect();
 }
 
 
@@ -76,8 +97,8 @@ Compiler::Compiler(std::shared_ptr<CompileSession> s)
 
 bool Compiler::compile(Script s)
 {
-  mSession.get()->error = false;
-  mSession.get()->messages.clear();
+  mSession->error = false;
+  mSession->messages.clear();
 
   parser::Parser parser{ s.source() };
   auto ast = parser.parse(s.source());

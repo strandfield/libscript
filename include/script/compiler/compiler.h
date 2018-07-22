@@ -50,16 +50,18 @@ class CompileSession
 public:
   CompileSession(Engine *e);
 
-  void start();
-  void suspend();
-  void resume();
-  void abort();
-
   inline Engine* engine() const { return mEngine; }
+  inline const Script & currentScript() const { return mCurrentScript; }
+  inline const Script & mainScript() const { return mMainScript; }
+  void setMainScript(const Script & s);
+  void setCurrentScript(const Script & s);
+  void addScript(const Script & s);
 
   struct {
     /// TODO : store a list of generated scripts
     std::vector<ClosureType> lambdas;
+    std::vector<Function> functions; /// generated function template instances
+    std::vector<Class> classes; /// generated class template instances
     std::shared_ptr<program::Expression> expression;
   } generated;
 
@@ -69,9 +71,10 @@ public:
   void clear();
 
 private:
-  bool mPauseFlag;
-  bool mAbortFlag;
   Engine *mEngine;
+  Script mMainScript;
+  Script mCurrentScript;
+  std::vector<Script> mScripts;
 };
 
 
