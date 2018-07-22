@@ -37,6 +37,7 @@ namespace compiler
 {
 
 class FunctionCompiler;
+class FunctionCompilerTemplateProcessor;
 
 class EnterScope
 {
@@ -95,6 +96,7 @@ class FunctionCompiler : public Compiler
 {
 public:
   FunctionCompiler(const std::shared_ptr<CompileSession> & s);
+  ~FunctionCompiler();
 
   void compile(const CompileFunctionTask & task);
 
@@ -207,6 +209,7 @@ protected:
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
   ImportProcessor<FunctionCompilerModuleLoader> modules_;
+  std::unique_ptr<FunctionCompilerTemplateProcessor> ftp_;
 };
 
 } // namespace compiler

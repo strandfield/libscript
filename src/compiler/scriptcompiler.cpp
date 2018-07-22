@@ -19,6 +19,7 @@
 #include "script/program/expression.h"
 
 #include "script/classbuilder.h"
+#include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
@@ -39,6 +40,50 @@ namespace script
 namespace compiler
 {
 
+class ScriptCompilerTemplateNameProcessor : public TemplateNameProcessor
+{
+public:
+  ScriptCompiler* compiler_;
+public:
+  ScriptCompilerTemplateNameProcessor(ScriptCompiler *c)
+    : compiler_(c) { }
+
+  ~ScriptCompilerTemplateNameProcessor() = default;
+
+  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;
+};
+
+Class ScriptCompilerTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  if (ct.is_native())
+  {
+    auto instantiate = ct.native_callback();
+    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
+    Class ret = instantiate(builder);
+    ct.impl()->instances[args] = ret;
+    compiler_->session()->generated.classes.push_back(ret);
+    return ret;
+  }
+  else
+  {
+    Class ret = compiler_->instantiate(ct, args, ScriptCompilerComponentKey{});
+    ct.impl()->instances[args] = ret;
+    return ret;
+  }
+}
+
+
+NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name)
+{
+  return NameLookup::resolve(name, compiler->currentScope(), *tnp);
+}
+
+NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
+{
+  return NameLookup::resolve(name, compiler->currentScope(), *tnp);
+}
+
+
 static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
 {
   if (as->visibility == parser::Token::Private)
@@ -52,14 +97,12 @@ ScriptCompiler::StateGuard::StateGuard(ScriptCompiler *c)
   : compiler(c)
   , script(c->mCurrentScript)
   , scope(c->mCurrentScope)
-  , ast(c->mCurrentAst)
 {
 
 }
 
 ScriptCompiler::StateGuard::~StateGuard()
 {
-  compiler->mCurrentAst = ast;
   compiler->mCurrentScope = scope;
   compiler->mCurrentScript = script;
 }
@@ -73,12 +116,7 @@ Script ScriptCompilerModuleLoader::load(const SourceFile &src)
 {
   Script s = engine()->newScript(src);
 
-  parser::Parser parser{ s.source() };
-  auto ast = parser.parse(s.source());
-
-  assert(ast != nullptr);
-
-  compiler_->addTask(CompileScriptTask{ s, ast });
+  compiler_->load(s, ScriptCompilerComponentKey{});
 
   return s;
 }
@@ -87,7 +125,11 @@ ScriptCompiler::ScriptCompiler(Engine *e)
   : Compiler(e)
   , variable_(e)
 {
+  tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
+
   name_resolver.compiler = this;
+  name_resolver.tnp = tnp_.get();
+
   type_resolver.name_resolver() = name_resolver;
 
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
@@ -101,7 +143,11 @@ ScriptCompiler::ScriptCompiler(const std::shared_ptr<CompileSession> & s)
   : Compiler(s)
   , variable_(s->engine())
 {
+  tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
+
   name_resolver.compiler = this;
+  name_resolver.tnp = tnp_.get();
+
   type_resolver.name_resolver() = name_resolver;
 
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
@@ -111,10 +157,24 @@ ScriptCompiler::ScriptCompiler(const std::shared_ptr<CompileSession> & s)
   modules_.loader_.compiler_ = this;
 }
 
-void ScriptCompiler::compile(const CompileScriptTask & task)
+ScriptCompiler::~ScriptCompiler()
 {
-  mTasks.clear();
-  mTasks.push_back(task);
+
+}
+
+void ScriptCompiler::compile(const Script & task)
+{
+  parser::Parser parser{ task.source() };
+  auto ast = parser.parse(task.source());
+
+  if (ast->hasErrors())
+  {
+    session()->messages = ast->steal_messages();
+    session()->error = true;
+    return;
+  }
+
+  task.impl()->ast = ast;
 
   processOrCollectScriptDeclarations(task);
 
@@ -124,48 +184,13 @@ void ScriptCompiler::compile(const CompileScriptTask & task)
   //initializeStaticVariables();
   variable_.initializeVariables();
 
-  for (size_t i(1); i < mTasks.size(); ++i)
-  {
-    mTasks.at(i).script.run();
-  }
+  for (auto s : session()->generated.scripts)
+    s.run();
 }
 
-Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  Class result;
-
-  TemplateSpecializationSelector selector;
-  auto selected_specialization = selector.select(ct, args);
-  if (!selected_specialization.first.isNull())
-  {
-    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
-
-    auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
-    builder.name = readClassName(class_decl);
-    builder.base = readClassBase(class_decl);
-
-    result = builder.get(); /// TODO: record this generate template instance
-
-    StateGuard guard{ this };
-    mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
-
-    readClassContent(result, class_decl);
-  }
-  else
-  {
-    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
-
-    auto class_decl = ct.impl()->definition.get_class_decl();
-    builder.name = readClassName(class_decl);
-    builder.base = readClassBase(class_decl);
-
-    result = builder.get(); /// TODO: record this generate template instance
-
-    StateGuard guard{ this };
-    mCurrentScope = ct.argumentScope(args);
-
-    readClassContent(result, class_decl);
-  }
+  Class result = instantiate(ct, args, ScriptCompilerComponentKey{});
 
   // This is a standalone job 
   resolveIncompleteTypes();
@@ -173,32 +198,34 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
   compileFunctions();
   variable_.initializeVariables();
 
-  for (size_t i(1); i < mTasks.size(); ++i)
-  {
-    mTasks.at(i).script.run();
-  }
+  for (auto s : session()->generated.scripts)
+    s.run();
 
   return result;
 }
 
-void ScriptCompiler::addTask(const CompileScriptTask & task)
+void ScriptCompiler::load(const Script & s, ScriptCompilerComponentKey)
 {
-  if (task.ast->hasErrors())
+  parser::Parser parser{ s.source() };
+  auto ast = parser.parse(s.source());
+
+  s.impl()->ast = ast;
+
+  if (ast->hasErrors())
   {
     log(diagnostic::info() << "While loading script module:");
-    for (const auto & m : task.ast->messages())
+    for (const auto & m : ast->messages())
       log(m);
 
     /// TODO : destroy scripts
     return;
   }
 
-
-  mTasks.push_back(task);
-  processOrCollectScriptDeclarations(mTasks.back());
+  session()->generated.scripts.push_back(s);
+  processOrCollectScriptDeclarations(s);
 }
 
-Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey)
 {
   TemplateSpecializationSelector selector;
   auto selected_specialization = selector.select(ct, args);
@@ -210,7 +237,8 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
     builder.name = readClassName(class_decl);
     builder.base = readClassBase(class_decl);
 
-    Class result = builder.get(); /// TODO: record this generated template instance
+    Class result = builder.get();
+    session()->generated.classes.push_back(result);
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -227,7 +255,8 @@ Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<Templa
     builder.name = readClassName(class_decl);
     builder.base = readClassBase(class_decl);
 
-    Class result = builder.get(); /// TODO: record this generated template instance
+    Class result = builder.get();
+    session()->generated.classes.push_back(result);
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -255,7 +284,7 @@ Function ScriptCompiler::registerRootFunction()
 
   auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
   fakedecl->body = ast::CompoundStatement::New(parser::Token{ parser::Token::LeftBrace, 0, 0, 0, 0 }, parser::Token{ parser::Token::RightBrace, 0, 0, 0, 0 });
-  const auto & stmts = mCurrentAst->statements();
+  const auto & stmts = currentAst()->statements();
   for (const auto & s : stmts)
   {
     switch (s->type())
@@ -281,12 +310,11 @@ Function ScriptCompiler::registerRootFunction()
   return Function{ scriptfunc };
 }
 
-void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask & task)
+void ScriptCompiler::processOrCollectScriptDeclarations(const Script & task)
 {
   StateGuard guard{ this };
 
-  mCurrentAst = task.ast;
-  mCurrentScript = task.script;
+  mCurrentScript = task;
 
   mCurrentScope = Scope{ mCurrentScript };
   mCurrentScope.merge(engine()->rootNamespace());
@@ -298,7 +326,7 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask 
 
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
-  for (const auto & decl : mCurrentAst->declarations())
+  for (const auto & decl : currentAst()->declarations())
     processOrCollectDeclaration(decl);
 
   return true;
@@ -981,6 +1009,11 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
   if (f.isDeleted() || f.isPureVirtual())
     return;
   mCompilationTasks.push_back(CompileFunctionTask{ f, fundecl, scp });
+}
+
+const std::shared_ptr<ast::AST> & ScriptCompiler::currentAst() const
+{
+  return mCurrentScript.impl()->ast;
 }
 
 } // namespace compiler

@@ -77,7 +77,7 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
   {
     Engine *e = ct.engine();
     compiler::ScriptCompiler compiler{ e };
-    Class ret = compiler.compileClassTemplate(ct, args);
+    Class ret = compiler.instantiate(ct, args);
     ct.impl()->instances[args] = ret;
     return ret;
   }

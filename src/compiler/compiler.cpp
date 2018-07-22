@@ -32,21 +32,6 @@ CompileSession::CompileSession(Engine *e)
 
 }
 
-void CompileSession::setMainScript(const Script & s)
-{
-  mMainScript = s;
-}
-
-void CompileSession::setCurrentScript(const Script & s)
-{
-  mCurrentScript = s;
-}
-
-void CompileSession::addScript(const Script & s)
-{
-  mScripts.push_back(s);
-}
-
 void CompileSession::clear()
 {
   /// TODO !!
@@ -76,7 +61,7 @@ void CompileSession::clear()
     engine()->implementation()->destroy(l);
   this->generated.lambdas.clear();
 
-  for (const auto & s : mScripts)
+  for (const auto & s : this->generated.scripts)
     engine()->destroy(s);
 
   this->generated.expression = nullptr;
@@ -100,23 +85,11 @@ bool Compiler::compile(Script s)
   mSession->error = false;
   mSession->messages.clear();
 
-  parser::Parser parser{ s.source() };
-  auto ast = parser.parse(s.source());
-
-  assert(ast != nullptr);
-
-  if (ast->hasErrors())
-  {
-    s.impl()->messages = ast->steal_messages();
-    return false;
-  }
-
   ScriptCompiler sc(session());
 
-  CompileScriptTask task{ s, ast };
   try
   {
-    sc.compile(task);
+    sc.compile(s);
   }
   catch (const CompilerException & e)
   {

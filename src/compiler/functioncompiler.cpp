@@ -340,15 +340,69 @@ Script FunctionCompilerModuleLoader::load(const SourceFile &src)
 }
 
 
+class FunctionCompilerTemplateNameProcessor : public TemplateNameProcessor
+{
+public:
+  FunctionCompiler * compiler_;
+public:
+  FunctionCompilerTemplateNameProcessor(FunctionCompiler* c)
+    : compiler_(c) { }
+
+  ~FunctionCompilerTemplateNameProcessor() = default;
+
+  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;
+};
+
+Class FunctionCompilerTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  Class result = TemplateNameProcessor::instantiate(ct, args);
+  compiler_->session()->generated.classes.push_back(result);
+  return result;
+}
+
+
+
+class FunctionCompilerTemplateProcessor : public FunctionTemplateProcessor
+{
+public:
+  FunctionCompiler* compiler_;
+  FunctionCompilerTemplateNameProcessor tnp_;
+public:
+  FunctionCompilerTemplateProcessor(FunctionCompiler* c)
+    : compiler_(c), tnp_(c) 
+  { 
+    set_name_processor(tnp_);
+  }
+
+  ~FunctionCompilerTemplateProcessor() = default;
+
+  void instantiate(Function & f) override;
+};
+
+void FunctionCompilerTemplateProcessor::instantiate(Function & f)
+{
+  FunctionTemplateProcessor::instantiate(f);
+  compiler_->session()->generated.functions.push_back(f);
+}
+
+
+
 FunctionCompiler::FunctionCompiler(const std::shared_ptr<CompileSession> & s)
   : Compiler(s)
   , variable_(mStack, this)
   , lambda_(mStack, this)
 {
+  ftp_ = std::make_unique<FunctionCompilerTemplateProcessor>(this);
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
+  expr_.setTemplateProcessor(*ftp_);
   scope_statements_.scope_ = &mCurrentScope;
   modules_.loader_.compiler_ = this;
+}
+
+FunctionCompiler::~FunctionCompiler()
+{
+
 }
 
 
@@ -459,7 +513,7 @@ void FunctionCompiler::leave_scope(const ScopeKey &)
 
 NameLookup FunctionCompiler::resolve(const std::shared_ptr<ast::Identifier> & name)
 {
-  return NameLookup::resolve(name, mCurrentScope);
+  return NameLookup::resolve(name, mCurrentScope, ftp_->name_processor());
 }
 
 Scope FunctionCompiler::breakScope() const

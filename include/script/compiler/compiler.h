@@ -51,11 +51,6 @@ public:
   CompileSession(Engine *e);
 
   inline Engine* engine() const { return mEngine; }
-  inline const Script & currentScript() const { return mCurrentScript; }
-  inline const Script & mainScript() const { return mMainScript; }
-  void setMainScript(const Script & s);
-  void setCurrentScript(const Script & s);
-  void addScript(const Script & s);
 
   struct {
     /// TODO : store a list of generated scripts
@@ -63,6 +58,7 @@ public:
     std::vector<Function> functions; /// generated function template instances
     std::vector<Class> classes; /// generated class template instances
     std::shared_ptr<program::Expression> expression;
+    std::vector<Script> scripts;
   } generated;
 
   std::vector<diagnostic::Message> messages;
@@ -72,9 +68,6 @@ public:
 
 private:
   Engine *mEngine;
-  Script mMainScript;
-  Script mCurrentScript;
-  std::vector<Script> mScripts;
 };
 
 

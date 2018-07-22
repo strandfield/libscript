@@ -22,7 +22,7 @@ private:
 public:
   FunctionTemplateProcessor();
   FunctionTemplateProcessor(const FunctionTemplateProcessor & ) = default;
-  ~FunctionTemplateProcessor() = default;
+  virtual ~FunctionTemplateProcessor() = default;
 
   inline compiler::TemplateNameProcessor & name_processor() { return *name_; }
   inline void set_name_processor(compiler::TemplateNameProcessor & np) { name_ = &np; }
@@ -32,7 +32,7 @@ public:
   void complete(std::vector<Function> & functions, const std::vector<FunctionTemplate> & fts, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
   
   Function deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
-  void instantiate(Function & f);
+  virtual void instantiate(Function & f);
  
   diagnostic::Message emitDiagnostic() const;
 

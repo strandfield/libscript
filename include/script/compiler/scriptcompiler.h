@@ -63,30 +63,23 @@ struct IncompleteFunction : public ScopedDeclaration
     : ScopedDeclaration(scp, decl), function(func) { }
 };
 
-struct CompileScriptTask
-{
-  Script script;
-  std::shared_ptr<ast::AST> ast;
-};
-
 class ScriptCompiler;
+class ScriptCompilerTemplateNameProcessor;
 
 class ScriptCompilerNameResolver
 {
 public:
   ScriptCompiler* compiler;
+  ScriptCompilerTemplateNameProcessor *tnp;
 public:
   ScriptCompilerNameResolver() = default;
   ScriptCompilerNameResolver(const ScriptCompilerNameResolver &) = default;
 
   inline Engine* engine() const;
 
-  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
 
-  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-  {
-    return NameLookup::resolve(name, scp);
-  }
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
 };
 
 class ScriptCompilerModuleLoader
@@ -98,28 +91,39 @@ public:
   Script load(const SourceFile &src);
 };
 
+struct ScriptCompilerComponentKey
+{
+private:
+  ScriptCompilerComponentKey() = default;
+  friend class ScriptCompiler;
+  friend class ScriptCompilerModuleLoader;
+  friend class ScriptCompilerNameResolver;
+};
+
 class ScriptCompiler : public Compiler
 {
 public:
   ScriptCompiler(Engine *e);
   ScriptCompiler(const std::shared_ptr<CompileSession> & s);
+  ~ScriptCompiler();
 
-  void compile(const CompileScriptTask & task);
+  void compile(const Script & task);
 
-  Class compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
 
-  void addTask(const CompileScriptTask & task);
-  Class addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+public:
+  void load(const Script & s, ScriptCompilerComponentKey);
+  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey);
 
 protected:
   Type resolve(const ast::QualifiedType & qt);
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & id);
 
   Function registerRootFunction();
-  void processOrCollectScriptDeclarations(const CompileScriptTask & task);
+  void processOrCollectScriptDeclarations(const Script & task);
   bool processOrCollectScriptDeclarations();
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scp);
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration);
@@ -182,8 +186,10 @@ protected:
   friend class StateGuard;
 
 protected:
+  const std::shared_ptr<ast::AST> & currentAst() const;
+
+protected:
   Script mCurrentScript;
-  std::shared_ptr<ast::AST> mCurrentAst;
 
   std::vector<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
 
@@ -197,11 +203,9 @@ protected:
 
   std::vector<IncompleteFunction> mIncompleteFunctions;
 
-  /// TODO : also store the scripts in the CompileSession to be able to destroy them if needed
-  std::vector<CompileScriptTask> mTasks; // we need to store the tasks to maintain the ASTs alive.
-
   ScriptCompilerNameResolver name_resolver;
   TypeResolver<ScriptCompilerNameResolver> type_resolver;
+  std::unique_ptr<ScriptCompilerTemplateNameProcessor> tnp_;
 
   typedef BasicPrototypeResolver<LenientTypeResolver<ScriptCompilerNameResolver>> PrototypeResolver;
   FunctionProcessor<PrototypeResolver> function_processor_;
@@ -216,11 +220,6 @@ protected:
 inline Engine* ScriptCompilerNameResolver::engine() const
 {
   return compiler->engine();
-}
-
-inline NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name)
-{
-  return NameLookup::resolve(name, compiler->currentScope());
 }
 
 } // namespace compiler

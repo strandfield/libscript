@@ -13,6 +13,11 @@
 namespace script
 {
 
+namespace ast
+{
+class AST;
+} // namespace ast
+
 class ScriptImpl : public NamespaceImpl
 {
 public:
@@ -27,6 +32,7 @@ public:
   std::vector<Type> global_types;
   std::map<std::string, int> globalNames;
   std::vector<diagnostic::Message> messages;
+  std::shared_ptr<ast::AST> ast;
 
   void register_global(const Type & t, const std::string & name);
 };
