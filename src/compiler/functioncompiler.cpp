@@ -325,6 +325,7 @@ Engine* FunctionCompilerModuleLoader::engine() const
 Script FunctionCompilerModuleLoader::load(const SourceFile &src)
 {
   Script s = engine()->newScript(src);
+  compiler_->session()->generated.scripts.push_back(s);
   bool success = engine()->compile(s);
   if (!success)
   {
@@ -334,7 +335,8 @@ Script FunctionCompilerModuleLoader::load(const SourceFile &src)
     throw ModuleImportationError{ src.filepath(), mssg };
   }
 
-  s.run();
+  /// TODO: ensure the script is run later
+  // s.run();
 
   return s;
 }

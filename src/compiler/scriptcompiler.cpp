@@ -80,7 +80,7 @@ NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identi
 
 NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
 {
-  return NameLookup::resolve(name, compiler->currentScope(), *tnp);
+  return NameLookup::resolve(name, scp, *tnp);
 }
 
 

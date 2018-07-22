@@ -89,6 +89,7 @@ void FunctionTemplateProcessor::instantiate(Function & f)
     task.function = f;
     task.scope = ft.argumentScope(f.arguments());
     compiler.compile(task);
+    /// TODO: run imported scripts
   }
 
   ft.impl()->instances[targs] = f;
