@@ -15,7 +15,7 @@
 
 #include "script/ast/node.h"
 
-#include "script/compiler/scriptcompiler.h"
+#include "script/compiler/compiler.h"
 
 namespace script
 {
@@ -76,8 +76,8 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
   else
   {
     Engine *e = ct.engine();
-    compiler::ScriptCompiler compiler{ e };
-    Class ret = compiler.instantiate(ct, args);
+    compiler::Compiler cc{ e };
+    Class ret = cc.instantiate(ct, args);
     ct.impl()->instances[args] = ret;
     return ret;
   }

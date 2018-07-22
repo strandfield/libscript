@@ -10,6 +10,14 @@
 namespace script
 {
 
+class Function;
+class Type;
+
+namespace program
+{
+class CompoundStatement;
+} // namespace program
+
 namespace compiler
 {
 

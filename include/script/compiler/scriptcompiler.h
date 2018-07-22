@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_COMPILE_SCRIPT_H
 #define LIBSCRIPT_COMPILE_SCRIPT_H
 
-#include "script/compiler/compiler.h"
+#include "script/compiler/compilercomponent.h"
 
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/defaultargumentprocessor.h"
@@ -88,11 +88,10 @@ private:
   friend class ScriptCompilerNameResolver;
 };
 
-class ScriptCompiler : public Compiler
+class ScriptCompiler : public CompilerComponent
 {
 public:
-  ScriptCompiler(Engine *e);
-  ScriptCompiler(const std::shared_ptr<CompileSession> & s);
+  ScriptCompiler(Compiler *c);
   ~ScriptCompiler();
 
   void compile(const Script & task);
@@ -120,7 +119,6 @@ protected:
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
   bool compileFunctions();
-  std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & e);
 
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl);
@@ -184,7 +182,6 @@ protected:
   std::vector<CompileFunctionTask> mCompilationTasks;
 
   VariableProcessor variable_;
-  ExpressionCompiler expr_;
 
   std::vector<IncompleteFunction> mIncompleteFunctions;
 

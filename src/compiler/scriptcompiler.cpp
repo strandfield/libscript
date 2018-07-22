@@ -5,6 +5,7 @@
 #include "script/compiler/scriptcompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/functioncompiler.h"
@@ -121,27 +122,9 @@ Script ScriptCompilerModuleLoader::load(const SourceFile &src)
   return s;
 }
 
-ScriptCompiler::ScriptCompiler(Engine *e)
-  : Compiler(e)
-  , variable_(e)
-{
-  tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
-
-  name_resolver.compiler = this;
-  name_resolver.tnp = tnp_.get();
-
-  type_resolver.name_resolver() = name_resolver;
-
-  function_processor_.prototype_.type_.name_resolver() = name_resolver;
-
-  scope_statements_.scope_ = &mCurrentScope;
-
-  modules_.loader_.compiler_ = this;
-}
-
-ScriptCompiler::ScriptCompiler(const std::shared_ptr<CompileSession> & s)
-  : Compiler(s)
-  , variable_(s->engine())
+ScriptCompiler::ScriptCompiler(Compiler *c)
+  : CompilerComponent(c)
+  , variable_(c->engine())
 {
   tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
 
@@ -441,7 +424,7 @@ void ScriptCompiler::processPendingDeclarations()
 
 bool ScriptCompiler::compileFunctions()
 {
-  FunctionCompiler fcomp{ session() };
+  FunctionCompiler fcomp{ compiler() };
 
   for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
   {
@@ -450,13 +433,6 @@ bool ScriptCompiler::compileFunctions()
   }
 
   return true;
-}
-
-
-std::shared_ptr<program::Expression> ScriptCompiler::generateExpression(const std::shared_ptr<ast::Expression> & e)
-{
-  expr_.setScope(mCurrentScope);
-  return expr_.generateExpression(e);
 }
 
 void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)

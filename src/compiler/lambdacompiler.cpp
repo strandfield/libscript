@@ -5,6 +5,7 @@
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/conversionprocessor.h"
 #include "script/compiler/defaultargumentprocessor.h"
 
@@ -59,8 +60,8 @@ std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member
 
 
 
-LambdaCompiler::LambdaCompiler(const std::shared_ptr<CompileSession> & s)
-  : FunctionCompiler(s)
+LambdaCompiler::LambdaCompiler(Compiler* c)
+  : FunctionCompiler(c)
   , mCurrentTask(nullptr)
   , variable_(mStack, this)
 {
@@ -173,7 +174,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   // we should fix that !!
   //mDeclaration = task.lexpr;
 
-  mLambda = newLambda();
+  mLambda = session()->newLambda();
 
   for (const auto & cap : task.captures)
   {

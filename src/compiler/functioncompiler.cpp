@@ -6,6 +6,7 @@
 #include "script/private/functionscope_p.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 
 #include "script/compiler/assignmentcompiler.h"
 #include "script/compiler/constructorcompiler.h"
@@ -310,7 +311,7 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
-  LambdaCompiler compiler{ fcomp_->session() };
+  LambdaCompiler compiler{ fcomp_->compiler() };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
@@ -389,8 +390,50 @@ void FunctionCompilerTemplateProcessor::instantiate(Function & f)
 
 
 
-FunctionCompiler::FunctionCompiler(const std::shared_ptr<CompileSession> & s)
-  : Compiler(s)
+Class FunctionCompilerExtension::currentClass() const 
+{ 
+  return mCompiler->classScope(); 
+}
+
+FunctionCompiler * FunctionCompilerExtension::compiler() const 
+{
+  return mCompiler; 
+}
+
+const std::shared_ptr<ast::Declaration> & FunctionCompilerExtension::declaration() const
+{ 
+  return mCompiler->declaration();
+}
+
+Engine * FunctionCompilerExtension::engine() const 
+{ 
+  return mCompiler->engine(); 
+}
+
+Stack & FunctionCompilerExtension::stack()
+{
+  return mCompiler->mStack; 
+}
+
+ExpressionCompiler & FunctionCompilerExtension::ec() 
+{ 
+  return mCompiler->expr_; 
+}
+
+std::string FunctionCompilerExtension::dstr(const std::shared_ptr<ast::Identifier> & id)
+{ 
+  return id->getName(); 
+}
+
+NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identifier> & name)
+{
+  return mCompiler->resolve(name);
+}
+
+
+
+FunctionCompiler::FunctionCompiler(Compiler *c)
+  : CompilerComponent(c)
   , variable_(mStack, this)
   , lambda_(mStack, this)
 {

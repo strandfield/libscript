@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
-#include "script/compiler/compiler.h"
+#include "script/compiler/compilercomponent.h"
 
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
@@ -92,10 +92,10 @@ public:
   Script load(const SourceFile &src);
 };
 
-class FunctionCompiler : public Compiler
+class FunctionCompiler : public CompilerComponent
 {
 public:
-  FunctionCompiler(const std::shared_ptr<CompileSession> & s);
+  FunctionCompiler(Compiler *c);
   ~FunctionCompiler();
 
   void compile(const CompileFunctionTask & task);

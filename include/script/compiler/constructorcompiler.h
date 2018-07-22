@@ -7,10 +7,23 @@
 
 #include "script/compiler/functioncompilerextension.h"
 
+#include "script/ast/forwards.h"
+
+#include <vector>
+
 namespace script
 {
 
+class ConversionSequence;
 class OverloadResolution;
+class Prototype;
+
+namespace program
+{
+class CompoundStatement;
+class Expression;
+class Statement;
+} // namespace program
 
 namespace compiler
 {

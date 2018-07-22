@@ -7,31 +7,24 @@
 
 #include "libscriptdefs.h"
 
-#include "script/context.h"
-#include "script/diagnosticmessage.h"
-#include "script/enum.h"
-#include "script/lambda.h"
-#include "script/operator.h"
-#include "script/scope.h"
-#include "script/script.h"
-#include "script/template.h"
-
-#include <queue>
+#include <vector>
 
 namespace script
 {
 
-namespace parser
-{
-class Token;
-} // namespace parser
+class Class;
+class ClassTemplate;
+class Context;
+class Engine;
+class Function;
+class Scope;
+class Script;
+class TemplateArgument;
 
 namespace ast
 {
-class Expression;
-class Identifier;
-class Node;
-} // namespace ast
+class FunctionDecl;
+}
 
 namespace program
 {
@@ -41,62 +34,29 @@ class Expression;
 namespace compiler
 {
 
-class Compiler;
 class CompilerException;
 class CompileSession;
-
-class CompileSession
-{
-public:
-  CompileSession(Engine *e);
-
-  inline Engine* engine() const { return mEngine; }
-
-  struct {
-    /// TODO : store a list of generated scripts
-    std::vector<ClosureType> lambdas;
-    std::vector<Function> functions; /// generated function template instances
-    std::vector<Class> classes; /// generated class template instances
-    std::shared_ptr<program::Expression> expression;
-    std::vector<Script> scripts;
-  } generated;
-
-  std::vector<diagnostic::Message> messages;
-  bool error;
-
-  void clear();
-
-private:
-  Engine *mEngine;
-};
-
 
 class Compiler
 {
 public:
   explicit Compiler(Engine *e);
-  explicit Compiler(std::shared_ptr<CompileSession> s);
   ~Compiler() = default;
 
-  inline Engine * engine() const { return session()->engine(); }
+  Engine* engine() const;
   inline const std::shared_ptr<CompileSession> & session() const { return mSession; }
 
   bool compile(Script s);
 
-protected:
-  ClosureType newLambda();
-
-protected:
-  void log(const diagnostic::Message & mssg);
-  void log(const CompilerException & exception);
+  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs);
+  void instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp);
+  std::shared_ptr<program::Expression> compile(const std::string & cmmd, const Context & con, const Scope & scp);
 
 private:
   std::shared_ptr<CompileSession> mSession;
 };
 
 } // namespace compiler
-
-diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex);
 
 } // namespace script
 

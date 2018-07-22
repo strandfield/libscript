@@ -38,7 +38,6 @@
 #include "script/value.h"
 #include "script/private/value_p.h"
 
-#include "script/compiler/commandcompiler.h"
 #include "script/compiler/compiler.h"
 
 #include "script/private/module_p.h"
@@ -1125,8 +1124,8 @@ void Engine::setContext(Context con)
 
 Value Engine::eval(const std::string & command, const Scope & scp)
 {
-  compiler::CommandCompiler cc{ this };
-  auto expr = cc.compile(command, d->context, scp);
+  compiler::Compiler c{ this };
+  auto expr = c.compile(command, d->context, scp);
   if (expr == nullptr)
     throw std::runtime_error{ "Could not compile expression" };
   return d->interpreter->eval(expr);

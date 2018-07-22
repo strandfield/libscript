@@ -3,9 +3,13 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/compiler/compiler.h"
+#include "script/compiler/compilercomponent.h"
+#include "script/compiler/compilesession.h"
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
+
+#include "script/classtemplate.h"
 
 #include "script/parser/parser.h"
 
@@ -21,6 +25,15 @@
 
 namespace script
 {
+
+diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex)
+{
+  builder << diagnostic::Code{ ex.code() };
+  if (ex.pos.line >= 0)
+    builder << ex.pos;
+  ex.print(builder);
+  return builder;
+}
 
 namespace compiler
 {
@@ -75,9 +88,9 @@ Compiler::Compiler(Engine *e)
 {
 }
 
-Compiler::Compiler(std::shared_ptr<CompileSession> s)
-  : mSession(s)
+Engine* Compiler::engine() const
 {
+  return mSession->engine();
 }
 
 bool Compiler::compile(Script s)
@@ -85,7 +98,7 @@ bool Compiler::compile(Script s)
   mSession->error = false;
   mSession->messages.clear();
 
-  ScriptCompiler sc(session());
+  ScriptCompiler sc(this);
 
   try
   {
@@ -93,7 +106,7 @@ bool Compiler::compile(Script s)
   }
   catch (const CompilerException & e)
   {
-    log(e);
+    session()->log(e);
   }
   //catch (...)
   //{
@@ -111,37 +124,80 @@ bool Compiler::compile(Script s)
   return true;
 }
 
-ClosureType Compiler::newLambda()
+Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs)
+{
+  ScriptCompiler sc{ this };
+  return sc.instantiate(ct, targs);
+}
+
+void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp)
+{
+  FunctionCompiler fc{ this };
+
+  CompileFunctionTask task;
+  task.declaration = decl;
+  task.function = func;
+  task.scope = scp;
+
+  fc.compile(task);
+
+  /// TODO: run imported scripts
+}
+
+std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd, const Context & con, const Scope & scp)
+{
+  CommandCompiler cc{ this };
+  return cc.compile(cmmd, con, scp);
+}
+
+ClosureType CompileSession::newLambda()
 {
   auto ret = engine()->implementation()->newLambda();
-  session()->generated.lambdas.push_back(ret);
+  this->generated.lambdas.push_back(ret);
   return ret;
 }
 
-void Compiler::log(const diagnostic::Message & mssg)
+CompilerComponent::CompilerComponent(Compiler *c)
+  : mCompiler(c)
 {
-  this->mSession->messages.push_back(mssg);
-  if (mssg.severity() == diagnostic::Error)
-    this->mSession->error = true;
+
 }
 
-void Compiler::log(const CompilerException & ex)
+Engine* CompilerComponent::engine() const
+{
+  return session()->engine();
+}
+
+std::shared_ptr<CompileSession> CompilerComponent::session() const
+{
+  return compiler()->session();
+}
+
+void CompileSession::log(const diagnostic::Message & mssg)
+{
+  this->messages.push_back(mssg);
+  if (mssg.severity() == diagnostic::Error)
+    this->error = true;
+}
+
+void CompileSession::log(const CompilerException & ex)
 {
   auto mssg = diagnostic::error(engine());
   mssg << ex;
-  mSession->messages.push_back(mssg.build());
-  mSession->error = true;
+  this->messages.push_back(mssg.build());
+  this->error = true;
+}
+
+void CompilerComponent::log(const diagnostic::Message & mssg)
+{
+  session()->log(mssg);
+}
+
+void CompilerComponent::log(const CompilerException & ex)
+{
+  session()->log(ex);
 }
 
 } // namespace compiler
-
-diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex)
-{
-  builder << diagnostic::Code{ ex.code() };
-  if (ex.pos.line >= 0)
-    builder << ex.pos;
-  ex.print(builder);
-  return builder;
-}
 
 } // namespace script
