@@ -35,18 +35,6 @@ namespace compiler
 
 class Compiler;
 
-struct StaticVariable
-{
-  StaticVariable() { }
-  StaticVariable(const Value & var, const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp) :
-    variable(var), declaration(decl), scope(scp) { }
-
-  Value variable;
-  std::shared_ptr<ast::VariableDecl> declaration;
-  Scope scope;
-};
-
-
 struct ScopedDeclaration
 {
   ScopedDeclaration() { }
@@ -129,8 +117,6 @@ protected:
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration);
   void collectDeclaration(const std::shared_ptr<ast::Declaration> & decl);
   void resolveIncompleteTypes();
-  void processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & decl);
-  void processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl);
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
   bool compileFunctions();
@@ -195,7 +181,6 @@ protected:
 
   Scope mCurrentScope;
 
-  std::vector<StaticVariable> mStaticVariables;
   std::vector<CompileFunctionTask> mCompilationTasks;
 
   VariableProcessor variable_;
