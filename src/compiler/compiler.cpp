@@ -38,8 +38,62 @@ diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, co
 namespace compiler
 {
 
+class SessionManager
+{
+private:
+  Compiler* mCompiler;
+  bool mStartedSession;
+
+public:
+  explicit SessionManager(Compiler *c);
+  SessionManager(Compiler *c, const Script &s);
+  ~SessionManager();
+
+  inline bool started_session() const { return mStartedSession; }
+};
+
+SessionManager::SessionManager(Compiler *c)
+  : mCompiler(c)
+  , mStartedSession(false)
+{
+  if (c->hasActiveSession())
+    return;
+
+  c->mSession = std::make_shared<CompileSession>(c->engine());
+  mStartedSession = true;
+}
+
+SessionManager::SessionManager(Compiler *c, const Script & s)
+  : mCompiler(c)
+  , mStartedSession(false)
+{
+  if (c->hasActiveSession())
+    return;
+
+  c->mSession = std::make_shared<CompileSession>(s);
+  mStartedSession = true;
+}
+
+SessionManager::~SessionManager()
+{
+  if (mStartedSession)
+    mCompiler->session()->set_active(false);
+}
+
+
+
 CompileSession::CompileSession(Engine *e)
   : mEngine(e)
+  , mIsActive(true)
+  , error(false)
+{
+
+}
+
+CompileSession::CompileSession(const Script & s)
+  : mEngine(s.engine())
+  , mIsActive(true)
+  , script(s)
   , error(false)
 {
 
@@ -84,25 +138,36 @@ void CompileSession::clear()
 
 
 Compiler::Compiler(Engine *e)
-  : mSession(std::make_shared<CompileSession>(e))
+  : mEngine(e)
 {
+
 }
 
-Engine* Compiler::engine() const
+Compiler::~Compiler()
 {
-  return mSession->engine();
+
+}
+
+bool Compiler::hasActiveSession() const
+{
+  return mSession != nullptr && mSession->is_active();
 }
 
 bool Compiler::compile(Script s)
 {
-  mSession->error = false;
-  mSession->messages.clear();
+  SessionManager manager{ this, s };
 
-  ScriptCompiler sc(this);
+  ScriptCompiler *sc = getScriptCompiler();
 
   try
   {
-    sc.compile(s);
+    sc->add(s);
+
+    if (manager.started_session())
+    {
+      while (!sc->done())
+        sc->processNext();
+    }
   }
   catch (const CompilerException & e)
   {
@@ -115,9 +180,12 @@ bool Compiler::compile(Script s)
 
   if (session()->error)
   {
-    session()->clear();
-    s.impl()->messages = std::move(session()->messages);
-    engine()->implementation()->destroy(Namespace{ s.impl() });
+    if (manager.started_session())
+    {
+      session()->clear();
+      s.impl()->messages = std::move(session()->messages);
+      engine()->implementation()->destroy(Namespace{ s.impl() });
+    }
     return false;
   }
 
@@ -126,12 +194,24 @@ bool Compiler::compile(Script s)
 
 Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs)
 {
-  ScriptCompiler sc{ this };
-  return sc.instantiate(ct, targs);
+  SessionManager manager{ this };
+
+  ScriptCompiler *sc = getScriptCompiler();
+
+  Class result = sc->instantiate2(ct, targs);
+  if (manager.started_session())
+  {
+    while (!sc->done())
+      sc->processNext();
+  }
+
+  return result;
 }
 
 void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp)
 {
+  SessionManager manager{ this };
+
   FunctionCompiler fc{ this };
 
   CompileFunctionTask task;
@@ -141,13 +221,45 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
   fc.compile(task);
 
-  /// TODO: run imported scripts
+  if (manager.started_session())
+  {
+    if (mScriptCompiler != nullptr)
+    {
+      while (!mScriptCompiler->done())
+        mScriptCompiler->processNext();
+    }
+
+    /// TODO: run imported scripts
+  }
 }
 
 std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd, const Context & con, const Scope & scp)
 {
+  SessionManager manager{ this };
+
   CommandCompiler cc{ this };
-  return cc.compile(cmmd, con, scp);
+  auto result = cc.compile(cmmd, con, scp);
+
+  if (manager.started_session())
+  {
+    if (mScriptCompiler != nullptr)
+    {
+      while (!mScriptCompiler->done())
+        mScriptCompiler->processNext();
+    }
+
+    /// TODO: run imported scripts
+  }
+
+  return result;
+}
+
+ScriptCompiler * Compiler::getScriptCompiler()
+{
+  if (mScriptCompiler == nullptr)
+    mScriptCompiler = std::make_unique<ScriptCompiler>(this);
+
+  return mScriptCompiler.get();
 }
 
 ClosureType CompileSession::newLambda()

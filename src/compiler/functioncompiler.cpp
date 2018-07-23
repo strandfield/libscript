@@ -327,7 +327,7 @@ Script FunctionCompilerModuleLoader::load(const SourceFile &src)
 {
   Script s = engine()->newScript(src);
   compiler_->session()->generated.scripts.push_back(s);
-  bool success = engine()->compile(s);
+  bool success = engine()->compile(s); /// TODO: bad, will create another compiler and another session
   if (!success)
   {
     std::string mssg;

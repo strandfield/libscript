@@ -21,7 +21,7 @@
 
 #include "script/ast/forwards.h"
 
-#include <vector>
+#include <queue>
 
 namespace script
 {
@@ -88,6 +88,9 @@ private:
   friend class ScriptCompilerNameResolver;
 };
 
+/// TODO: should we split that in two, with a new DeclarationCompiler
+// DeclarationCompiler would deal wthi namesoaces, classes, functions, enums
+// ScriptCompiler would handle registration of root function, 
 class ScriptCompiler : public CompilerComponent
 {
 public:
@@ -95,6 +98,35 @@ public:
   ~ScriptCompiler();
 
   void compile(const Script & task);
+
+  void add(const Script & task);
+  Class instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+
+
+  bool done() const;
+  void processNext();
+
+  /*
+  TODO:
+
+  void preprocess(const Script &s); // or add()
+
+  void run()
+  {
+    while(something to do)
+    {
+      if(!mIncompleteFunctions.empty())
+        processAllIncompelteFunctions();
+      else if(!mPendingDeclarations.empty())
+       processOnePendingDecl();
+      else if(!mCompilataionTaks.empty())
+       processOneCompilation();
+
+       etc..
+    }
+  }
+
+  */
 
   Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
@@ -175,15 +207,15 @@ protected:
 protected:
   Script mCurrentScript;
 
-  std::vector<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
+  std::queue<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
 
   Scope mCurrentScope;
 
-  std::vector<CompileFunctionTask> mCompilationTasks;
+  std::queue<CompileFunctionTask> mCompilationTasks;
 
   VariableProcessor variable_;
 
-  std::vector<IncompleteFunction> mIncompleteFunctions;
+  std::queue<IncompleteFunction> mIncompleteFunctions;
 
   ScriptCompilerNameResolver name_resolver;
   TypeResolver<ScriptCompilerNameResolver> type_resolver;

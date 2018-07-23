@@ -48,6 +48,7 @@ public:
 
   void process(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
   void initializeVariables();
+  inline bool empty() const { return uninitialized_variables_.empty(); }
 
 protected:
   void process_namespace_variable(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);

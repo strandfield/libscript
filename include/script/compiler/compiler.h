@@ -36,15 +36,19 @@ namespace compiler
 
 class CompilerException;
 class CompileSession;
+class ScriptCompiler;
+class SessionManager;
 
 class Compiler
 {
 public:
   explicit Compiler(Engine *e);
-  ~Compiler() = default;
+  ~Compiler();
 
-  Engine* engine() const;
+  inline Engine* engine() const { return mEngine; }
   inline const std::shared_ptr<CompileSession> & session() const { return mSession; }
+
+  bool hasActiveSession() const;
 
   bool compile(Script s);
 
@@ -53,7 +57,13 @@ public:
   std::shared_ptr<program::Expression> compile(const std::string & cmmd, const Context & con, const Scope & scp);
 
 private:
+  ScriptCompiler * getScriptCompiler();
+
+private:
+  friend class SessionManager;
+  Engine* mEngine;
   std::shared_ptr<CompileSession> mSession;
+  std::unique_ptr<ScriptCompiler> mScriptCompiler;
 };
 
 } // namespace compiler

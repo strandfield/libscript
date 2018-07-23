@@ -22,13 +22,17 @@ namespace compiler
 
 class Compiler;
 
+/// TODO: should we create a queue of Function to compile, and remove the 
+// responsability away from ScriptCompiler
 class CompileSession
 {
 private:
-  Engine * mEngine;
+  Engine* mEngine;
+  bool mIsActive;
 
 public:
   CompileSession(Engine *e);
+  CompileSession(const Script & s);
 
   inline Engine* engine() const { return mEngine; }
 
@@ -43,6 +47,7 @@ public:
 
   std::vector<diagnostic::Message> messages;
   bool error;
+  Script script;
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);
@@ -50,6 +55,9 @@ public:
   ClosureType newLambda();
 
   void clear();
+
+  inline bool is_active() const { return mIsActive; }
+  inline void set_active(bool act) { mIsActive = act; }
 };
 
 } // namespace compiler

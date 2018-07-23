@@ -147,6 +147,20 @@ ScriptCompiler::~ScriptCompiler()
 
 void ScriptCompiler::compile(const Script & task)
 {
+  add(task);
+
+  resolveIncompleteTypes();
+  processPendingDeclarations();
+  compileFunctions();
+  //initializeStaticVariables();
+  variable_.initializeVariables();
+
+  for (auto s : session()->generated.scripts)
+    s.run();
+}
+
+void ScriptCompiler::add(const Script & task)
+{
   parser::Parser parser{ task.source() };
   auto ast = parser.parse(task.source());
 
@@ -160,15 +174,71 @@ void ScriptCompiler::compile(const Script & task)
   task.impl()->ast = ast;
 
   processOrCollectScriptDeclarations(task);
+}
 
-  resolveIncompleteTypes();
-  processPendingDeclarations();
-  compileFunctions();
-  //initializeStaticVariables();
-  variable_.initializeVariables();
+Class ScriptCompiler::instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  return instantiate(ct, args, ScriptCompilerComponentKey{});
+}
 
-  for (auto s : session()->generated.scripts)
-    s.run();
+bool ScriptCompiler::done() const
+{
+  return mIncompleteFunctions.empty()
+    && mProcessingQueue.empty()
+    && mCompilationTasks.empty()
+    && variable_.empty();
+}
+
+void ScriptCompiler::processNext()
+{
+  if (!mIncompleteFunctions.empty())
+  {
+    while (!mIncompleteFunctions.empty())
+    {
+      auto task = mIncompleteFunctions.front();
+      mIncompleteFunctions.pop();
+
+      reprocess(task);
+    }
+
+    return;
+  }
+
+  if (!mProcessingQueue.empty())
+  {
+    auto task = mProcessingQueue.front();
+    mProcessingQueue.pop();
+
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = task.scope;
+
+    if (task.declaration->is<ast::FriendDeclaration>())
+    {
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
+    }
+    else
+    {
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
+    }
+
+    return;
+  }
+
+  if (!mCompilationTasks.empty())
+  {
+    auto task = mCompilationTasks.front();
+    mCompilationTasks.pop();
+
+    FunctionCompiler fcomp{ compiler() };
+    fcomp.compile(task);
+    return;
+  }
+
+
+  if (!variable_.empty())
+  {
+    variable_.initializeVariables();
+  }
 }
 
 Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
@@ -369,17 +439,23 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
 
 void ScriptCompiler::collectDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
-  mProcessingQueue.push_back(ScopedDeclaration{ currentScope(), decl });
+  mProcessingQueue.push(ScopedDeclaration{ currentScope(), decl });
 }
 
 void ScriptCompiler::resolveIncompleteTypes()
 {
   ScopeGuard guard{ mCurrentScope };
 
-  for (auto & f : mIncompleteFunctions)
-    reprocess(f);
+  //for (auto & f : mIncompleteFunctions)
+  //  reprocess(f);
 
-  mIncompleteFunctions.clear();
+  //mIncompleteFunctions.clear();
+  while (!mIncompleteFunctions.empty())
+  {
+    auto task = mIncompleteFunctions.front();
+    mIncompleteFunctions.pop();
+    reprocess(task);
+  }
 }
 
 void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl)
@@ -400,7 +476,7 @@ void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclarat
 
 void ScriptCompiler::processPendingDeclarations()
 {
-  for (size_t i(0); i < mProcessingQueue.size(); ++i)
+  /*for (size_t i(0); i < mProcessingQueue.size(); ++i)
   {
     const auto & decl = mProcessingQueue.at(i);
 
@@ -417,7 +493,28 @@ void ScriptCompiler::processPendingDeclarations()
     }
   }
 
-  mProcessingQueue.clear();
+  mProcessingQueue.clear();*/
+  
+  while (!mProcessingQueue.empty())
+  {
+    auto task = mProcessingQueue.front();
+    mProcessingQueue.pop();
+
+
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = task.scope;
+
+    if (task.declaration->is<ast::FriendDeclaration>())
+    {
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
+    }
+    else
+    {
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
+    }
+
+
+  }
 }
 
 
@@ -426,9 +523,16 @@ bool ScriptCompiler::compileFunctions()
 {
   FunctionCompiler fcomp{ compiler() };
 
-  for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
+  /*for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
   {
     const auto & task = this->mCompilationTasks.at(i);
+    fcomp.compile(task);
+  }*/
+
+  while (!mCompilationTasks.empty())
+  {
+    auto task = mCompilationTasks.front();
+    mCompilationTasks.pop();
     fcomp.compile(task);
   }
 
@@ -902,7 +1006,7 @@ void ScriptCompiler::reprocess(IncompleteFunction & func)
 void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
   if (function_processor_.prototype_.type_.relax)
-    mIncompleteFunctions.push_back(IncompleteFunction{ scp, fundecl, f });
+    mIncompleteFunctions.push(IncompleteFunction{ scp, fundecl, f });
   else
     default_arguments_.process(fundecl->params, f, scp);
 
@@ -910,7 +1014,7 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 
   if (f.isDeleted() || f.isPureVirtual())
     return;
-  mCompilationTasks.push_back(CompileFunctionTask{ f, fundecl, scp });
+  mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
 }
 
 const std::shared_ptr<ast::AST> & ScriptCompiler::currentAst() const
