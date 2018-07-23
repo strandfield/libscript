@@ -25,10 +25,10 @@ namespace script
 class NameResolver
 {
 public:
-  compiler::TemplateNameProcessor *template_;
+  TemplateNameProcessor *template_;
 public:
   NameResolver() : template_(nullptr) {}
-  explicit NameResolver(compiler::TemplateNameProcessor *tnp) : template_(tnp) { }
+  explicit NameResolver(TemplateNameProcessor *tnp) : template_(tnp) { }
   NameResolver(const NameResolver &) = default;
   ~NameResolver() = default;
 

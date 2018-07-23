@@ -10,7 +10,7 @@
 #include "script/private/class_p.h"
 #include "script/engine.h"
 #include "script/private/engine_p.h"
-#include "script/compiler/templatenameprocessor.h"
+#include "script/templatenameprocessor.h"
 
 namespace script
 {
@@ -44,13 +44,16 @@ bool ClassTemplate::hasInstance(const std::vector<TemplateArgument> & args, Clas
 
 Class ClassTemplate::getInstance(const std::vector<TemplateArgument> & args)
 {
+  /// TODO: should we check if the list of args is complete
+  // we could use default template argument value
+
   Class ret;
   if (hasInstance(args, &ret))
     return ret;
 
   auto d = impl();
 
-  compiler::TemplateNameProcessor tnp;
+  TemplateNameProcessor tnp;
   ret = tnp.instantiate(*this, args);
 
   /// TODO : this might be unnecessary

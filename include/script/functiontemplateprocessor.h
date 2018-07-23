@@ -8,7 +8,7 @@
 #include "script/functiontemplate.h"
 
 #include "script/diagnosticmessage.h"
-#include "script/compiler/templatenameprocessor.h"
+#include "script/templatenameprocessor.h"
 
 namespace script
 {
@@ -16,16 +16,16 @@ namespace script
 class LIBSCRIPT_API FunctionTemplateProcessor
 {
 private:
-  compiler::TemplateNameProcessor *name_;
-  compiler::TemplateNameProcessor default_name_;
+  TemplateNameProcessor *name_;
+  TemplateNameProcessor default_name_;
 
 public:
   FunctionTemplateProcessor();
   FunctionTemplateProcessor(const FunctionTemplateProcessor & ) = default;
   virtual ~FunctionTemplateProcessor() = default;
 
-  inline compiler::TemplateNameProcessor & name_processor() { return *name_; }
-  inline void set_name_processor(compiler::TemplateNameProcessor & np) { name_ = &np; }
+  inline TemplateNameProcessor & name_processor() { return *name_; }
+  inline void set_name_processor(TemplateNameProcessor & np) { name_ = &np; }
 
   static void remove_duplicates(std::vector<FunctionTemplate> & list);
 

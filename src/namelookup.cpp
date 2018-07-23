@@ -68,7 +68,7 @@ const std::shared_ptr<ast::Identifier> & NameLookup::identifier() const
   return d->identifier;
 }
 
-compiler::TemplateNameProcessor & NameLookup::template_processor()
+TemplateNameProcessor & NameLookup::template_processor()
 {
   return *(d->template_);
 }
@@ -361,7 +361,7 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
   return unqualified_scope_lookup(name, scope.parent());
 }
  
-NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, compiler::TemplateNameProcessor & tnp)
+NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, TemplateNameProcessor & tnp)
 {
   auto result = std::make_shared<NameLookupImpl>();
   result->identifier = name;

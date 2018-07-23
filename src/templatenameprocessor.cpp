@@ -2,7 +2,7 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "script/compiler/templatenameprocessor.h"
+#include "script/templatenameprocessor.h"
 
 #include "script/classtemplate.h"
 #include "script/classtemplateinstancebuilder.h"
@@ -20,9 +20,6 @@
 namespace script
 {
 
-namespace compiler
-{
-
 TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())
@@ -32,7 +29,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
     if (lookup.resultType() == NameLookup::TypeName)
       return TemplateArgument{ lookup.typeResult() };
     else
-      throw InvalidTemplateArgument{ dpos(arg) };
+      throw compiler::InvalidTemplateArgument{ dpos(arg) };
   }
   else if (arg->is<ast::Literal>())
   {
@@ -40,18 +37,18 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
     if (l.is<ast::BoolLiteral>())
       return TemplateArgument{ l.token == parser::Token::True };
     else if (l.is<ast::IntegerLiteral>())
-      return TemplateArgument{ LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)) };
+      return TemplateArgument{ compiler::LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)) };
     else
-      throw InvalidLiteralTemplateArgument{ dpos(arg) };
+      throw compiler::InvalidLiteralTemplateArgument{ dpos(arg) };
   }
   else if (arg->is<ast::TypeNode>())
   {
     auto type = std::static_pointer_cast<ast::TypeNode>(arg);
-    TypeResolver<BasicNameResolver> r;
+    compiler::TypeResolver<compiler::BasicNameResolver> r;
     return TemplateArgument{ r.resolve(type->value, scp) };
   }
 
-  throw InvalidTemplateArgument{ dpos(arg) };
+  throw compiler::InvalidTemplateArgument{ dpos(arg) };
 }
 
 std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args)
@@ -86,7 +83,7 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
 Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
 {
   std::vector<TemplateArgument> targs = arguments(scp, tmplt->arguments);
-  postprocess(ct, scp, targs);
+  complete(ct, scp, targs);
   Class c;
   const bool result = ct.hasInstance(targs, &c);
   if (result)
@@ -94,7 +91,7 @@ Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, cons
   return instantiate(ct, targs);
 }
 
-void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
+void TemplateNameProcessor::complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
 {
   if (t.parameters().size() == args.size())
     return;
@@ -102,14 +99,14 @@ void TemplateNameProcessor::postprocess(const Template & t, const Scope &scp, st
   for (size_t i(0); i < t.parameters().size(); ++i)
   {
     if (!t.parameters().at(i).hasDefaultValue())
-      throw MissingNonDefaultedTemplateParameter{};
+      throw compiler::MissingNonDefaultedTemplateParameter{};
 
     TemplateArgument arg = argument(scp, t.parameters().at(i).defaultValue());
     args.push_back(arg);
   }
 }
 
-const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::get_trailing_template_arguments(const std::shared_ptr<ast::Identifier> & tname)
+const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname)
 {
   if (tname->is<ast::TemplateIdentifier>())
   {
@@ -118,33 +115,11 @@ const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::get_trail
   }
   else if (tname->is<ast::ScopedIdentifier>())
   {
-    return get_trailing_template_arguments(tname->as<ast::ScopedIdentifier>().rhs);
+    return getTemplateArguments(tname->as<ast::ScopedIdentifier>().rhs);
   }
 
-  throw std::runtime_error{ "Bad call to TemplateNameProcessor::get_trailing_template_arguments()" };
+  throw std::runtime_error{ "Bad call to TemplateNameProcessor::getTemplateArguments()" };
 }
-
-TemplateArgument DummyTemplateNameProcessor::argument(const Scope & , const std::shared_ptr<ast::Node> & )
-{
-  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::argument()" };
-}
-
-Class DummyTemplateNameProcessor::instantiate(ClassTemplate & , const std::vector<TemplateArgument> & )
-{
-  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::instantiate()" };
-}
-
-Class DummyTemplateNameProcessor::process(const Scope & , ClassTemplate & , const std::shared_ptr<ast::TemplateIdentifier> &)
-{
-  return Class{};
-}
-
-void DummyTemplateNameProcessor::postprocess(const Template & , const Scope &, std::vector<TemplateArgument> & )
-{
-  throw std::runtime_error{ "Bad call to DummyTemplateNameProcessor::postprocess()" };
-}
-
-} // namespace compiler
 
 } // namespace script
 

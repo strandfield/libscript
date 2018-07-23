@@ -21,9 +21,11 @@
 #include "script/program/expression.h"
 #include "script/program/statements.h"
 
-#include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/namelookup.h"
+#include "script/templatenameprocessor.h"
+
+#include "script/private/function_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/script_p.h"
 
