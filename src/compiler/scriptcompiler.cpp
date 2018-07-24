@@ -34,6 +34,7 @@
 #include "script/private/template_p.h"
 #include "script/symbol.h"
 #include "script/templatebuilder.h"
+#include "script/templatenameprocessor.h"
 
 namespace script
 {

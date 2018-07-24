@@ -21,12 +21,6 @@ class Scope;
 class Template;
 class TemplateArgument;
 
-enum class TemplateInstantiationPolicy {
-  IgnoreTemplates,
-  InstantiateIfNeeded,
-  DoNotInstantiate,
-};
-
 class LIBSCRIPT_API TemplateNameProcessor
 {
 public:

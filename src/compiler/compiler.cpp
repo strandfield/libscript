@@ -5,11 +5,14 @@
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilercomponent.h"
 #include "script/compiler/compilesession.h"
+#include "script/compiler/cfunctiontemplateprocessor.h"
+#include "script/compiler/ctemplatenameprocessor.h"
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
 
 #include "script/classtemplate.h"
+#include "script/classtemplateinstancebuilder.h"
 
 #include "script/parser/parser.h"
 
@@ -19,6 +22,7 @@
 #include "script/compiler/scriptcompiler.h"
 
 #include "script/private/class_p.h"
+#include "script/private/function_p.h"
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
@@ -186,6 +190,11 @@ bool Compiler::compile(Script s)
       s.impl()->messages = std::move(session()->messages);
       engine()->implementation()->destroy(Namespace{ s.impl() });
     }
+    else
+    {
+      /// TODO: should we throw ?
+    }
+
     return false;
   }
 
@@ -198,18 +207,39 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
   ScriptCompiler *sc = getScriptCompiler();
 
-  Class result = sc->instantiate2(ct, targs);
-  if (manager.started_session())
+  try
   {
-    while (!sc->done())
-      sc->processNext();
-  }
+    Class result = sc->instantiate2(ct, targs);
 
-  return result;
+    if (manager.started_session())
+    {
+      while (!sc->done())
+        sc->processNext();
+
+      session()->set_active(false);
+    }
+    else
+    {
+      session()->generated.classes.push_back(result);
+    }
+
+    return result;
+  }
+  catch (const CompilerException & ex)
+  {
+    session()->clear();
+
+    auto mssg = diagnostic::error(engine());
+    mssg << ex;
+
+    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+  }
 }
 
 void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp)
 {
+  assert(!func.instanceOf().isNull());
+
   SessionManager manager{ this };
 
   FunctionCompiler fc{ this };
@@ -219,17 +249,35 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   task.function = func;
   task.scope = scp;
 
-  fc.compile(task);
-
-  if (manager.started_session())
+  try
   {
-    if (mScriptCompiler != nullptr)
-    {
-      while (!mScriptCompiler->done())
-        mScriptCompiler->processNext();
-    }
+    fc.compile(task);
 
-    /// TODO: run imported scripts
+    if (manager.started_session())
+    {
+      if (mScriptCompiler != nullptr)
+      {
+        while (!mScriptCompiler->done())
+          mScriptCompiler->processNext();
+      }
+
+      /// TODO: run imported scripts
+
+      session()->set_active(false);
+    }
+    else
+    {
+      session()->generated.functions.push_back(func);
+    }
+  }
+  catch (const CompilerException & ex)
+  {
+    session()->clear();
+
+    auto mssg = diagnostic::error(engine());
+    mssg << ex;
+
+    throw TemplateInstantiationError{ mssg.build().to_string().data() };
   }
 }
 
@@ -308,6 +356,48 @@ void CompilerComponent::log(const diagnostic::Message & mssg)
 void CompilerComponent::log(const CompilerException & ex)
 {
   session()->log(ex);
+}
+
+
+
+Class CTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+{
+  if (ct.is_native())
+  {
+    auto instantiate = ct.native_callback();
+    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
+    Class ret = instantiate(builder);
+    ct.impl()->instances[args] = ret;
+    compiler_->session()->generated.classes.push_back(ret);
+    return ret;
+  }
+  else
+  {
+    Class ret = compiler_->instantiate(ct, args);
+    ct.impl()->instances[args] = ret;
+    return ret;
+  }
+}
+
+void CFunctionTemplateProcessor::instantiate(Function & f)
+{
+  FunctionTemplate ft = f.instanceOf();
+  const std::vector<TemplateArgument> & targs = f.arguments();
+
+  if (ft.is_native())
+  {
+    auto result = ft.native_callbacks().instantiation(ft, f);
+    f.impl()->implementation.callback = result.first;
+    f.impl()->data = result.second;
+  }
+  else
+  {
+    Engine *e = ft.engine();
+    auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
+    compiler_->instantiate(decl, f, ft.argumentScope(f.arguments()));
+  }
+
+  ft.impl()->instances[targs] = f;
 }
 
 } // namespace compiler

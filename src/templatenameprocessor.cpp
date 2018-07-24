@@ -6,6 +6,7 @@
 
 #include "script/classtemplate.h"
 #include "script/classtemplateinstancebuilder.h"
+#include "script/diagnosticmessage.h"
 #include "script/private/template_p.h"
 
 #include "script/compiler/compilererrors.h"
@@ -82,13 +83,28 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
 
 Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
 {
-  std::vector<TemplateArgument> targs = arguments(scp, tmplt->arguments);
-  complete(ct, scp, targs);
-  Class c;
-  const bool result = ct.hasInstance(targs, &c);
-  if (result)
-    return c;
-  return instantiate(ct, targs);
+  try 
+  {
+    std::vector<TemplateArgument> targs = arguments(scp, tmplt->arguments);
+    complete(ct, scp, targs);
+    Class c;
+    const bool result = ct.hasInstance(targs, &c);
+    if (result)
+      return c;
+    return instantiate(ct, targs);
+  }
+  catch (const compiler::CompilerException & ce)
+  {
+    // silently discard the error
+    (void)ce;
+  }
+  catch (const TemplateInstantiationError & error)
+  {
+    // silently discard the error
+    (void)error;
+  }
+
+  return Class{};
 }
 
 void TemplateNameProcessor::complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
