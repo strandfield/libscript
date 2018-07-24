@@ -69,11 +69,24 @@ std::shared_ptr<program::Expression> VariableAccessor::implicit_object(Expressio
 
 
 
+NameLookup TnpNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
+{
+  return NameLookup::resolve(name, scp, *tnp_);
+}
+
+void TnpNameResolver::set_tnp(TemplateNameProcessor & tnp)
+{
+  tnp_ = &tnp;
+}
+
+
+
 ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;
   variable_ = &default_variable_;
   templates_ = &default_templates_;
+  type_resolver.name_resolver().set_tnp(templates_->name_processor());
 }
 
 ExpressionCompiler::ExpressionCompiler(const Scope & scp)
@@ -82,6 +95,12 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   lambda_ = &default_lambda_;
   variable_ = &default_variable_;
   templates_ = &default_templates_;
+}
+
+void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
+{
+  templates_ = &ftp;
+  type_resolver.name_resolver().set_tnp(ftp.name_processor());
 }
 
 std::string ExpressionCompiler::dstr(const Type & t) const

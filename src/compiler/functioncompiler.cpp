@@ -439,12 +439,14 @@ FunctionCompiler::FunctionCompiler(Compiler *c)
   , variable_(mStack, this)
   , lambda_(mStack, this)
 {
-  ftp_ = std::make_unique<FunctionCompilerTemplateProcessor>(this);
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
-  expr_.setTemplateProcessor(*ftp_);
+  expr_.setTemplateProcessor(default_ftp_);
   scope_statements_.scope_ = &mCurrentScope;
   modules_.loader_.compiler_ = this;
+  
+  logger_ = &default_logger_;
+  ftp_ = &default_ftp_;
 }
 
 FunctionCompiler::~FunctionCompiler()
@@ -455,10 +457,10 @@ FunctionCompiler::~FunctionCompiler()
 
 void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
-  mScript = task.function.script();
+  Script s = task.function.script();
 
-  variable_.script() = mScript;
-  lambda_.script() = mScript;
+  variable_.script() = s;
+  lambda_.script() = s;
   expr_.setCaller(task.function);
   
   mFunction = task.function;
@@ -485,7 +487,7 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
 Script FunctionCompiler::script()
 {
-  return mScript;
+  return mFunction.script();
 }
 
 Class FunctionCompiler::classScope()
@@ -533,6 +535,12 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 bool FunctionCompiler::canUseThis() const
 {
   return mFunction.hasImplicitObject() || mFunction.isConstructor() || mFunction.isDestructor();
+}
+
+void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp)
+{
+  ftp_ = &ftp;
+  expr_.setTemplateProcessor(ftp);
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
@@ -795,6 +803,16 @@ void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::sha
   processExitScope(scp);
 }
 
+void FunctionCompiler::log(const diagnostic::Message & mssg)
+{
+  logger_->log(mssg);
+}
+
+void FunctionCompiler::log(const CompilerException & exception)
+{
+  logger_->log(exception);
+}
+
 void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
 {
   EnterScope guard{ this, scopeType };
@@ -1032,7 +1050,7 @@ void FunctionCompiler::processVariableCreation(const Type & type, const std::str
   {
     mStack[stack_index].global = true;
 
-    auto simpl = mScript.impl();
+    auto simpl = script().impl();
     simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
 
     write(program::PushGlobal::New(script().id(), stack_index));

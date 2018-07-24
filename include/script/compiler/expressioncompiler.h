@@ -62,6 +62,19 @@ protected:
   std::shared_ptr<program::Expression> implicit_object(ExpressionCompiler & ec) const;
 };
 
+class TnpNameResolver
+{
+public:
+  TemplateNameProcessor* tnp_;
+
+  TnpNameResolver()
+    : tnp_(nullptr) { }
+
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
+  
+  void set_tnp(TemplateNameProcessor & tnp);
+};
+
 class ExpressionCompiler
 {
 private:
@@ -69,7 +82,7 @@ private:
   Function caller_; 
   
 private:
-  TypeResolver<BasicNameResolver> type_resolver;
+  TypeResolver<TnpNameResolver> type_resolver;
 
   LambdaProcessor default_lambda_;
   LambdaProcessor *lambda_;
@@ -102,7 +115,7 @@ public:
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
 
   inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
-  inline void setTemplateProcessor(FunctionTemplateProcessor & ftp) { templates_ = &ftp; }
+  void setTemplateProcessor(FunctionTemplateProcessor & ftp);
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);

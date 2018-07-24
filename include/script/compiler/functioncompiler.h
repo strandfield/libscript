@@ -11,8 +11,11 @@
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
 #include "script/compiler/importprocessor.h"
+#include "script/compiler/logger.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/stack.h"
+
+#include "script/functiontemplateprocessor.h"
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -98,6 +101,8 @@ public:
   FunctionCompiler(Compiler *c);
   ~FunctionCompiler();
 
+  //inline Engine* engine() const { return mEngine; }
+
   void compile(const CompileFunctionTask & task);
 
   Script script();
@@ -108,6 +113,8 @@ public:
 
   /// TODO (hopefully) temporarily public (used by ExtendedExpressionCompiler)
   bool canUseThis() const;
+
+  void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
 
 protected:
   bool isCompilingAnonymousFunction() const;
@@ -170,6 +177,10 @@ protected:
   void processExitScope(const Scope & scp);
   void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
 
+protected:
+  void log(const diagnostic::Message & mssg);
+  void log(const CompilerException & exception);
+
 private:
   void processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
   void processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
@@ -191,7 +202,7 @@ protected:
   friend class FunctionScope;
   friend class FunctionCompilerExtension;
 
-  Script mScript;
+  //Engine *mEngine;
 
   Stack mStack;
   Function mFunction;
@@ -209,7 +220,12 @@ protected:
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
   ImportProcessor<FunctionCompilerModuleLoader> modules_;
-  std::unique_ptr<FunctionCompilerTemplateProcessor> ftp_;
+
+  Logger default_logger_;
+  Logger *logger_;
+
+  FunctionTemplateProcessor default_ftp_;
+  FunctionTemplateProcessor *ftp_;
 };
 
 } // namespace compiler
