@@ -115,19 +115,11 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   , variable_(c->engine())
   , modules_(c->engine())
 {
-  tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
-
-  name_resolver.compiler = this;
-  name_resolver.tnp = tnp_.get();
-
-  type_resolver.name_resolver() = name_resolver;
-
-  function_processor_.prototype_.type_.name_resolver() = name_resolver;
 
   scope_statements_.scope_ = &mCurrentScope;
 
   logger_ = &default_logger_;
-  tnp2_ = &default_tnp2_;
+  setTemplateNameProcessor(default_tnp_);
 }
 
 ScriptCompiler::~ScriptCompiler()
@@ -221,6 +213,7 @@ void ScriptCompiler::processNext()
     mCompilationTasks.pop();
 
     FunctionCompiler fcomp{ compiler() };
+    /// TODO: fcomp.setFunctionTemplateProcessor();
     fcomp.compile(task);
     return;
   }
@@ -292,6 +285,15 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 void ScriptCompiler::setLogger(Logger & lg)
 {
   logger_ = &lg;
+}
+
+void ScriptCompiler::setTemplateNameProcessor(TemplateNameProcessor &tnp)
+{
+  tnp_ = &tnp;
+  name_resolver.set_tnp(tnp);
+  type_resolver.name_resolver().set_tnp(tnp);
+  function_processor_.prototype_.type_.name_resolver().set_tnp(tnp);
+  scope_statements_.name_.set_tnp(tnp);
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
@@ -496,6 +498,7 @@ void ScriptCompiler::processPendingDeclarations()
 bool ScriptCompiler::compileFunctions()
 {
   FunctionCompiler fcomp{ compiler() };
+  /// TODO: fcomp.setFunctionTemplateProcessor();
 
   /*for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
   {

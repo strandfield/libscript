@@ -101,6 +101,7 @@ public:
 
   ImportProcessor & importProcessor() { return modules_; }
   void setLogger(Logger & lg);
+  void setTemplateNameProcessor(TemplateNameProcessor &tnp);
 
   /*
   TODO:
@@ -212,14 +213,13 @@ protected:
 
   std::queue<IncompleteFunction> mIncompleteFunctions;
 
-  ScriptCompilerNameResolver name_resolver;
-  TypeResolver<ScriptCompilerNameResolver> type_resolver;
-  std::unique_ptr<ScriptCompilerTemplateNameProcessor> tnp_;
+  TnpNameResolver name_resolver;
+  TypeResolver<TnpNameResolver> type_resolver;
 
-  typedef BasicPrototypeResolver<LenientTypeResolver<ScriptCompilerNameResolver>> PrototypeResolver;
+  typedef BasicPrototypeResolver<LenientTypeResolver<TnpNameResolver>> PrototypeResolver;
   FunctionProcessor<PrototypeResolver> function_processor_;
 
-  ScopeStatementProcessor<BasicNameResolver> scope_statements_;
+  ScopeStatementProcessor<TnpNameResolver> scope_statements_;
 
   ImportProcessor modules_;
 
@@ -228,8 +228,8 @@ protected:
   Logger default_logger_;
   Logger *logger_;
 
-  TemplateNameProcessor default_tnp2_;
-  TemplateNameProcessor *tnp2_;
+  TemplateNameProcessor default_tnp_;
+  TemplateNameProcessor *tnp_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const
