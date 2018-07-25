@@ -409,11 +409,11 @@ FunctionCompiler::FunctionCompiler(Compiler *c)
 {
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
-  expr_.setTemplateProcessor(default_ftp_);
   scope_statements_.scope_ = &mCurrentScope;
   
   logger_ = &default_logger_;
-  ftp_ = &default_ftp_;
+
+  setFunctionTemplateProcessor(default_ftp_);
 }
 
 FunctionCompiler::~FunctionCompiler()
@@ -507,6 +507,8 @@ void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & 
 {
   ftp_ = &ftp;
   expr_.setTemplateProcessor(ftp);
+  type_.name_resolver().set_tnp(ftp_->name_processor());
+  scope_statements_.name_.set_tnp(ftp.name_processor());
 }
 
 void FunctionCompiler::setLogger(Logger & lg)
