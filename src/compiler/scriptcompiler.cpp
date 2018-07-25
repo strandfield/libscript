@@ -243,27 +243,6 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
   return result;
 }
 
-void ScriptCompiler::load(const Script & s, ScriptCompilerComponentKey)
-{
-  parser::Parser parser{ s.source() };
-  auto ast = parser.parse(s.source());
-
-  s.impl()->ast = ast;
-
-  if (ast->hasErrors())
-  {
-    log(diagnostic::info() << "While loading script module:");
-    for (const auto & m : ast->messages())
-      log(m);
-
-    /// TODO : destroy scripts
-    return;
-  }
-
-  session()->generated.scripts.push_back(s);
-  processOrCollectScriptDeclarations(s);
-}
-
 Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey)
 {
   TemplateSpecializationSelector selector;

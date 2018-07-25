@@ -127,7 +127,6 @@ public:
   inline const Scope & currentScope() const { return mCurrentScope; }
 
 public:
-  void load(const Script & s, ScriptCompilerComponentKey);
   Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey);
 
 protected:
