@@ -258,6 +258,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
   FunctionCompiler fc{ this };
   fc.setLogger(session()->mLogger);
+  fc.setFunctionTemplateProcessor(session()->mFTP);
 
   CompileFunctionTask task;
   task.declaration = decl;
@@ -323,7 +324,7 @@ ScriptCompiler * Compiler::getScriptCompiler()
   {
     mScriptCompiler = std::make_unique<ScriptCompiler>(this);
     mScriptCompiler->setLogger(mSession->mLogger);
-    /// TODO: set TNP
+    mScriptCompiler->setTemplateNameProcessor(mSession->mTNP);
   }
 
   return mScriptCompiler.get();
