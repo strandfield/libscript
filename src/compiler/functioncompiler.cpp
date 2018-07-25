@@ -5,6 +5,7 @@
 #include "script/compiler/functioncompiler.h"
 #include "script/private/functionscope_p.h"
 
+#include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/compilesession.h"
 
@@ -311,32 +312,6 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   return result.expression;
 }
 
-
-Engine* FunctionCompilerModuleLoader::engine() const
-{
-  return compiler_->engine();
-}
-
-Script FunctionCompilerModuleLoader::load(const SourceFile &src)
-{
-  Script s = engine()->newScript(src);
-  compiler_->session()->generated.scripts.push_back(s);
-  bool success = engine()->compile(s); /// TODO: bad, will create another compiler and another session
-  if (!success)
-  {
-    std::string mssg;
-    for (const auto & m : s.messages())
-      mssg += m.to_string() + "\n";
-    throw ModuleImportationError{ src.filepath(), mssg };
-  }
-
-  /// TODO: ensure the script is run later
-  // s.run();
-
-  return s;
-}
-
-
 class FunctionCompilerTemplateNameProcessor : public TemplateNameProcessor
 {
 public:
@@ -430,12 +405,12 @@ FunctionCompiler::FunctionCompiler(Compiler *c)
   : CompilerComponent(c)
   , variable_(mStack)
   , lambda_(mStack, this)
+  , modules_(c->engine())
 {
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
   expr_.setTemplateProcessor(default_ftp_);
   scope_statements_.scope_ = &mCurrentScope;
-  modules_.loader_.compiler_ = this;
   
   logger_ = &default_logger_;
   ftp_ = &default_ftp_;

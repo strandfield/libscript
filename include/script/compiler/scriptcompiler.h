@@ -70,15 +70,6 @@ public:
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
 };
 
-class ScriptCompilerModuleLoader
-{
-public:
-  ScriptCompiler *compiler_;
-  Engine* engine() const;
-
-  Script load(const SourceFile &src);
-};
-
 struct ScriptCompilerComponentKey
 {
 private:
@@ -105,6 +96,8 @@ public:
 
   bool done() const;
   void processNext();
+
+  ImportProcessor & importProcessor() { return modules_; }
 
   /*
   TODO:
@@ -226,7 +219,7 @@ protected:
 
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
 
-  ImportProcessor<ScriptCompilerModuleLoader> modules_;
+  ImportProcessor modules_;
 
   DefaultArgumentProcessor default_arguments_;
 };

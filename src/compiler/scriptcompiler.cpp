@@ -109,23 +109,10 @@ ScriptCompiler::StateGuard::~StateGuard()
   compiler->mCurrentScript = script;
 }
 
-Engine* ScriptCompilerModuleLoader::engine() const
-{
-  return compiler_->engine();
-}
-
-Script ScriptCompilerModuleLoader::load(const SourceFile &src)
-{
-  Script s = engine()->newScript(src);
-
-  compiler_->load(s, ScriptCompilerComponentKey{});
-
-  return s;
-}
-
 ScriptCompiler::ScriptCompiler(Compiler *c)
   : CompilerComponent(c)
   , variable_(c->engine())
+  , modules_(c->engine())
 {
   tnp_ = std::make_unique<ScriptCompilerTemplateNameProcessor>(this);
 
@@ -137,8 +124,6 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
 
   scope_statements_.scope_ = &mCurrentScope;
-
-  modules_.loader_.compiler_ = this;
 }
 
 ScriptCompiler::~ScriptCompiler()

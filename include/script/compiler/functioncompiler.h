@@ -83,14 +83,6 @@ public:
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
-class FunctionCompilerModuleLoader
-{
-public:
-  FunctionCompiler *compiler_;
-  Engine* engine() const;
-  Script load(const SourceFile &src);
-};
-
 class FunctionCompiler : public CompilerComponent
 {
 public:
@@ -111,6 +103,7 @@ public:
   bool canUseThis() const;
 
   void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
+  ImportProcessor & importProcessor() { return modules_; }
 
 protected:
   bool isCompilingAnonymousFunction() const;
@@ -214,7 +207,7 @@ protected:
   ExpressionCompiler expr_;
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
-  ImportProcessor<FunctionCompilerModuleLoader> modules_;
+  ImportProcessor modules_;
 
   Logger default_logger_;
   Logger *logger_;
