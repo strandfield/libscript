@@ -128,10 +128,6 @@ void CompileSession::clear()
   }
   this->generated.classes.clear();
 
-  for (const auto & l : this->generated.lambdas)
-    engine()->implementation()->destroy(l);
-  this->generated.lambdas.clear();
-
   for (const auto & s : this->generated.scripts)
     engine()->destroy(s);
 
@@ -308,13 +304,6 @@ ScriptCompiler * Compiler::getScriptCompiler()
     mScriptCompiler = std::make_unique<ScriptCompiler>(this);
 
   return mScriptCompiler.get();
-}
-
-ClosureType CompileSession::newLambda()
-{
-  auto ret = engine()->implementation()->newLambda();
-  this->generated.lambdas.push_back(ret);
-  return ret;
 }
 
 CompilerComponent::CompilerComponent(Compiler *c)

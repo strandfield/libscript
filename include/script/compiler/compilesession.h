@@ -37,8 +37,7 @@ public:
   inline Engine* engine() const { return mEngine; }
 
   struct {
-    /// TODO : store a list of generated scripts
-    std::vector<ClosureType> lambdas;
+    /// TODO : ideally we should store a list of generated lambdas and function types
     std::vector<Function> functions; /// generated function template instances
     std::vector<Class> classes; /// generated class template instances
     std::shared_ptr<program::Expression> expression;
@@ -51,8 +50,6 @@ public:
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);
-
-  ClosureType newLambda();
 
   void clear();
 

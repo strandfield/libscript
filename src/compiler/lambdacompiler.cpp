@@ -14,9 +14,12 @@
 #include "script/program/expression.h"
 #include "script/program/statements.h"
 
+#include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
+
+#include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/operator_p.h"
 
@@ -177,7 +180,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   // we should fix that !!
   //mDeclaration = task.lexpr;
 
-  mLambda = session()->newLambda();
+  mLambda = engine()->implementation()->newLambda();
 
   for (const auto & cap : task.captures)
   {
