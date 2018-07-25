@@ -60,12 +60,40 @@ std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member
 
 
 
+LambdaVariableAccessor2::LambdaVariableAccessor2(Stack & s)
+  : StackVariableAccessor2(s)
+{
+
+}
+
+std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  ClosureType ct = ec.caller().memberOf().toClosure();
+  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+  const auto capture = ct.captures().at(offset);
+  auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
+  generated_access_.push_back(capaccess);
+  return capaccess;
+}
+
+std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  ClosureType ct = ec.caller().memberOf().toClosure();
+  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+  auto this_object = program::CaptureAccess::New(Type::ref(ct.captures().at(0).type), lambda, 0);
+  return generateMemberAccess(ec, this_object, offset, dpos);
+}
+
+
+
 LambdaCompiler::LambdaCompiler(Compiler* c)
   : FunctionCompiler(c)
   , mCurrentTask(nullptr)
   , variable_(mStack, this)
+  , variable2_(mStack)
 {
   expr_.setVariableAccessor(this->variable_);
+  expr_.setVariableAccessor2(this->variable2_);
 }
 
 void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset)
@@ -187,6 +215,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   Function function = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto).create();
 
   mFunction = function;
+  expr_.setCaller(function);
 
   /// TODO : where is the return value ?
   EnterScope guard{ this, FunctionScope::FunctionArguments };

@@ -87,6 +87,8 @@ ExpressionCompiler::ExpressionCompiler()
   variable_ = &default_variable_;
   templates_ = &default_templates_;
   type_resolver.name_resolver().set_tnp(templates_->name_processor());
+  variable2_ = &default_variable2_;
+
 }
 
 ExpressionCompiler::ExpressionCompiler(const Scope & scp)
@@ -95,6 +97,7 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   lambda_ = &default_lambda_;
   variable_ = &default_variable_;
   templates_ = &default_templates_;
+  variable2_ = &default_variable2_;
 }
 
 void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
@@ -672,13 +675,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::StaticDataMemberName:
     return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
-    return variable_->data_member(*this, lookup.dataMemberIndex(), dpos(identifier));
+    return variable2_->accessDataMember(*this, lookup.dataMemberIndex(), dpos(identifier));
   case NameLookup::GlobalName:
-    return variable_->global_name(*this, lookup.globalIndex(), dpos(identifier));
+    return variable2_->accessGlobal(*this, lookup.globalIndex(), dpos(identifier));
   case NameLookup::LocalName:
-    return variable_->local_name(*this, lookup.localIndex(), dpos(identifier));
+    return variable2_->accessLocal(*this, lookup.localIndex(), dpos(identifier));
   case NameLookup::CaptureName:
-    return variable_->capture_name(*this, lookup.captureIndex(), dpos(identifier));
+    return variable2_->accessCapture(*this, lookup.captureIndex(), dpos(identifier));
   case NameLookup::EnumValueName:
     return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
   case NameLookup::NamespaceName:
@@ -704,6 +707,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
 {
+  /// TODO: replace all of this by VariableAccessor
+
   Class cla = engine()->getClass(object->type());
   int relative_index = index;
   while (relative_index - int(cla.dataMembers().size()) >= 0)

@@ -71,6 +71,19 @@ public:
   std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
 };
 
+class StackVariableAccessor2 : public VariableAccessor2
+{
+protected:
+  Stack * stack_;
+public:
+  StackVariableAccessor2(Stack & s);
+  ~StackVariableAccessor2() = default;
+
+  inline const Stack & stack() const { return *stack_; }
+
+  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+};
+
 class FunctionCompilerLambdaProcessor : public LambdaProcessor
 {
 protected:
@@ -217,6 +230,7 @@ protected:
   TypeResolver<BasicNameResolver> type_;
   ExpressionCompiler expr_;
   StackVariableAccessor variable_;
+  StackVariableAccessor2 variable2_;
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
   ImportProcessor<FunctionCompilerModuleLoader> modules_;

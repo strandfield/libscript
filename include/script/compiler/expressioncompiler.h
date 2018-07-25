@@ -8,6 +8,8 @@
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
+#include "script/compiler/variableaccessor.h"
+
 #include "script/functiontemplateprocessor.h"
 #include "script/scope.h"
 
@@ -90,6 +92,9 @@ private:
   VariableAccessor default_variable_;
   VariableAccessor *variable_;
 
+  VariableAccessor2 default_variable2_;
+  VariableAccessor2 *variable2_;
+
   FunctionTemplateProcessor default_templates_;
   FunctionTemplateProcessor *templates_;
 
@@ -113,6 +118,9 @@ public:
 
   inline VariableAccessor & variableAccessor() { return *variable_; }
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
+
+  inline VariableAccessor2 & variableAccessor2() { return *variable2_; }
+  inline void setVariableAccessor2(VariableAccessor2 & va) { variable2_ = &va; }
 
   inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
   void setTemplateProcessor(FunctionTemplateProcessor & ftp);

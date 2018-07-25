@@ -297,6 +297,19 @@ std::shared_ptr<program::Expression> StackVariableAccessor::local_name(Expressio
   return program::StackValue::New(offset, t);
 }
 
+StackVariableAccessor2::StackVariableAccessor2(Stack & s)
+  : stack_(&s)
+{
+
+}
+
+std::shared_ptr<program::Expression> StackVariableAccessor2::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  const Type t = stack()[offset].type;
+  return program::StackValue::New(offset, t);
+}
+
+
 FunctionCompilerLambdaProcessor::FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc)
   : stack_(&s)
   , fcomp_(fc)
@@ -437,9 +450,11 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 FunctionCompiler::FunctionCompiler(Compiler *c)
   : CompilerComponent(c)
   , variable_(mStack, this)
+  , variable2_(mStack)
   , lambda_(mStack, this)
 {
   expr_.setVariableAccessor(variable_);
+  expr_.setVariableAccessor2(variable2_);
   expr_.setLambdaProcessor(lambda_);
   expr_.setTemplateProcessor(default_ftp_);
   scope_statements_.scope_ = &mCurrentScope;

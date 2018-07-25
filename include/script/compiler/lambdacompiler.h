@@ -68,6 +68,19 @@ public:
   std::shared_ptr<program::Expression> data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
 };
 
+class LambdaVariableAccessor2 : public StackVariableAccessor2
+{
+public:
+  // Will be used to update the capture offset after removing unused captures
+  std::vector<std::shared_ptr<program::CaptureAccess>> generated_access_;
+public:
+  LambdaVariableAccessor2(Stack & s);
+  ~LambdaVariableAccessor2() = default;
+
+  std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+};
+
 
 class LambdaCompiler : public FunctionCompiler
 {
@@ -105,6 +118,7 @@ private:
   std::vector<Capture> mCaptures;
   ClosureType mLambda;
   LambdaCompilerVariableAccessor variable_;
+  LambdaVariableAccessor2 variable2_;
 };
 
 
