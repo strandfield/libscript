@@ -45,20 +45,6 @@ public:
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
 
-
-class TnpNameResolver
-{
-public:
-  TemplateNameProcessor* tnp_;
-
-  TnpNameResolver()
-    : tnp_(nullptr) { }
-
-  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
-  
-  void set_tnp(TemplateNameProcessor & tnp);
-};
-
 class ExpressionCompiler
 {
 private:

@@ -7,6 +7,10 @@
 
 #include "libscriptdefs.h"
 
+#include "script/compiler/cfunctiontemplateprocessor.h"
+#include "script/compiler/ctemplatenameprocessor.h"
+#include "script/compiler/logger.h"
+
 #include "script/diagnosticmessage.h"
 #include "script/function.h"
 #include "script/lambda.h"
@@ -22,19 +26,38 @@ namespace compiler
 
 class Compiler;
 
+class SessionLogger : public Logger
+{
+public:
+  CompileSession *session_;
+
+public:
+  SessionLogger(CompileSession *s)
+    : session_(s)
+  {
+
+  }
+
+  ~SessionLogger() = default;
+
+  void log(const diagnostic::Message & mssg) override;
+  void log(const CompilerException & exception) override;
+};
+
 /// TODO: should we create a queue of Function to compile, and remove the 
 // responsability away from ScriptCompiler
 class CompileSession
 {
 private:
-  Engine* mEngine;
+  Compiler* mCompiler;
   bool mIsActive;
 
 public:
-  CompileSession(Engine *e);
-  CompileSession(const Script & s);
+  CompileSession(Compiler *c);
+  CompileSession(Compiler *c, const Script & s);
 
-  inline Engine* engine() const { return mEngine; }
+  inline Compiler* compiler() const { return mCompiler; }
+  Engine* engine() const;
 
   struct {
     /// TODO : ideally we should store a list of generated lambdas and function types
@@ -47,6 +70,10 @@ public:
   std::vector<diagnostic::Message> messages;
   bool error;
   Script script;
+
+  SessionLogger mLogger;
+  CTemplateNameProcessor mTNP;
+  CFunctionTemplateProcessor mFTP;
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);

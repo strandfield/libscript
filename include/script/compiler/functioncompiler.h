@@ -104,6 +104,7 @@ public:
 
   void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
   ImportProcessor & importProcessor() { return modules_; }
+  void setLogger(Logger & lg);
 
 protected:
   bool isCompilingAnonymousFunction() const;

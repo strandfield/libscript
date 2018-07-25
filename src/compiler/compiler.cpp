@@ -42,6 +42,16 @@ diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, co
 namespace compiler
 {
 
+void SessionLogger::log(const diagnostic::Message & mssg)
+{
+  session_->log(mssg);
+}
+
+void SessionLogger::log(const CompilerException & exception)
+{
+  session_->log(exception);
+}
+
 class SessionManager
 {
 private:
@@ -63,7 +73,7 @@ SessionManager::SessionManager(Compiler *c)
   if (c->hasActiveSession())
     return;
 
-  c->mSession = std::make_shared<CompileSession>(c->engine());
+  c->mSession = std::make_shared<CompileSession>(c);
   mStartedSession = true;
 }
 
@@ -74,7 +84,7 @@ SessionManager::SessionManager(Compiler *c, const Script & s)
   if (c->hasActiveSession())
     return;
 
-  c->mSession = std::make_shared<CompileSession>(s);
+  c->mSession = std::make_shared<CompileSession>(c, s);
   mStartedSession = true;
 }
 
@@ -85,22 +95,30 @@ SessionManager::~SessionManager()
 }
 
 
-
-CompileSession::CompileSession(Engine *e)
-  : mEngine(e)
+CompileSession::CompileSession(Compiler *c)
+  : mCompiler(c)
   , mIsActive(true)
   , error(false)
+  , mLogger(this)
 {
-
+  mTNP.compiler_ = c;
+  mFTP.set_name_processor(mTNP);
 }
 
-CompileSession::CompileSession(const Script & s)
-  : mEngine(s.engine())
+CompileSession::CompileSession(Compiler *c, const Script & s)
+  : mCompiler(c)
   , mIsActive(true)
   , script(s)
   , error(false)
+  , mLogger(this)
 {
+  mTNP.compiler_ = c;
+  mFTP.set_name_processor(mTNP);
+}
 
+Engine* CompileSession::engine() const
+{
+  return mCompiler->engine();
 }
 
 void CompileSession::clear()
@@ -239,6 +257,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   SessionManager manager{ this };
 
   FunctionCompiler fc{ this };
+  fc.setLogger(session()->mLogger);
 
   CompileFunctionTask task;
   task.declaration = decl;
@@ -301,7 +320,11 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd,
 ScriptCompiler * Compiler::getScriptCompiler()
 {
   if (mScriptCompiler == nullptr)
+  {
     mScriptCompiler = std::make_unique<ScriptCompiler>(this);
+    mScriptCompiler->setLogger(mSession->mLogger);
+    /// TODO: set TNP
+  }
 
   return mScriptCompiler.get();
 }

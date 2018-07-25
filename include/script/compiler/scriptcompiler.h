@@ -12,12 +12,14 @@
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
+#include "script/compiler/logger.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/typeresolver.h"
 #include "script/compiler/variableprocessor.h"
 
-#include "script/types.h"
 #include "script/engine.h"
+#include "script/templatenameprocessor.h"
+#include "script/types.h"
 
 #include "script/ast/forwards.h"
 
@@ -98,6 +100,7 @@ public:
   void processNext();
 
   ImportProcessor & importProcessor() { return modules_; }
+  void setLogger(Logger & lg);
 
   /*
   TODO:
@@ -221,6 +224,12 @@ protected:
   ImportProcessor modules_;
 
   DefaultArgumentProcessor default_arguments_;
+
+  Logger default_logger_;
+  Logger *logger_;
+
+  TemplateNameProcessor default_tnp2_;
+  TemplateNameProcessor *tnp2_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const

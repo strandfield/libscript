@@ -63,7 +63,8 @@ Class ScriptCompilerTemplateNameProcessor::instantiate(ClassTemplate & ct, const
     ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
     Class ret = instantiate(builder);
     ct.impl()->instances[args] = ret;
-    compiler_->session()->generated.classes.push_back(ret);
+    /// TODO: ensure new instance is logged
+    ///compiler_->session()->generated.classes.push_back(ret);
     return ret;
   }
   else
@@ -124,6 +125,9 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   function_processor_.prototype_.type_.name_resolver() = name_resolver;
 
   scope_statements_.scope_ = &mCurrentScope;
+
+  logger_ = &default_logger_;
+  tnp2_ = &default_tnp2_;
 }
 
 ScriptCompiler::~ScriptCompiler()
@@ -141,8 +145,9 @@ void ScriptCompiler::compile(const Script & task)
   //initializeStaticVariables();
   variable_.initializeVariables();
 
-  for (auto s : session()->generated.scripts)
-    s.run();
+  /// TODO: ensure that all scripts are run
+  //for (auto s : session()->generated.scripts)
+  //  s.run();
 }
 
 void ScriptCompiler::add(const Script & task)
@@ -152,9 +157,9 @@ void ScriptCompiler::add(const Script & task)
 
   if (ast->hasErrors())
   {
-    session()->messages = ast->steal_messages();
-    session()->error = true;
-    return;
+    for (const auto & m : ast->messages())
+      logger_->log(m);
+    return; /// TODO: should we throw instead ?
   }
 
   task.impl()->ast = ast;
@@ -237,8 +242,9 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
   compileFunctions();
   variable_.initializeVariables();
 
-  for (auto s : session()->generated.scripts)
-    s.run();
+  /// TODO: ensure scripts are run 
+  //for (auto s : session()->generated.scripts)
+  //  s.run();
 
   return result;
 }
@@ -256,7 +262,6 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
     builder.base = readClassBase(class_decl);
 
     Class result = builder.get();
-    session()->generated.classes.push_back(result);
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
@@ -274,7 +279,6 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
     builder.base = readClassBase(class_decl);
 
     Class result = builder.get();
-    session()->generated.classes.push_back(result);
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
@@ -283,6 +287,11 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
     return result;
   }
+}
+
+void ScriptCompiler::setLogger(Logger & lg)
+{
+  logger_ = &lg;
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)

@@ -7,6 +7,7 @@
 
 #include "script/namelookup.h"
 #include "script/scope.h"
+#include "script/templatenameprocessor.h"
 
 #include "script/ast/node.h"
 
@@ -29,6 +30,22 @@ public:
   }
 
   BasicNameResolver & operator=(const BasicNameResolver &) = default;
+};
+
+class TnpNameResolver
+{
+public:
+  TemplateNameProcessor *tnp_;
+
+  TnpNameResolver()
+    : tnp_(nullptr) { }
+
+  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
+  {
+    return NameLookup::resolve(name, scp, *tnp_);
+  }
+
+  void set_tnp(TemplateNameProcessor & tnp) { tnp_ = &tnp; }
 };
 
 } // namespace compiler

@@ -37,19 +37,6 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
   throw NotImplementedError{ "Default LambdaProcessor cannot generate lambda expression" };
 }
 
-
-NameLookup TnpNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-{
-  return NameLookup::resolve(name, scp, *tnp_);
-}
-
-void TnpNameResolver::set_tnp(TemplateNameProcessor & tnp)
-{
-  tnp_ = &tnp;
-}
-
-
-
 ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;

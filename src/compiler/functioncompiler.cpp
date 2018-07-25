@@ -509,6 +509,11 @@ void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & 
   expr_.setTemplateProcessor(ftp);
 }
 
+void FunctionCompiler::setLogger(Logger & lg)
+{
+  logger_ = &lg;
+}
+
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
 {
   expr_.setScope(mCurrentScope);
