@@ -19,12 +19,12 @@ namespace compiler
 
 class ExpressionCompiler;
 
-class VariableAccessor2
+class VariableAccessor
 {
 public:
-  VariableAccessor2() = default;
-  VariableAccessor2(const VariableAccessor2 &) = delete;
-  virtual ~VariableAccessor2() = default;
+  VariableAccessor() = default;
+  VariableAccessor(const VariableAccessor &) = delete;
+  virtual ~VariableAccessor() = default;
 
   /// TODO: maybe pass ast::Expression instead of dpos
   virtual std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
@@ -33,10 +33,9 @@ public:
   virtual std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
   /// TODO: add accessStaticDataMember
 
-  VariableAccessor2 & operator=(const VariableAccessor2 &) = delete;
+  static std::shared_ptr<program::Expression> generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
 
-protected:
-  std::shared_ptr<program::Expression> generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
+  VariableAccessor & operator=(const VariableAccessor &) = delete;
 
 };
 

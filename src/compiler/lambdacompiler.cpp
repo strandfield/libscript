@@ -37,36 +37,13 @@ Capture::Capture(const std::string & n, const std::shared_ptr<program::Expressio
 }
 
 
-LambdaCompilerVariableAccessor::LambdaCompilerVariableAccessor(Stack & s, LambdaCompiler* fc)
-  : StackVariableAccessor(s, fc) { }
-
-std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
-  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
-  const auto & capture = lc->task().captures[offset];
-  auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
-  generated_access_.push_back(capaccess);
-  return capaccess;
-}
-
-std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
-  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
-  auto this_object = program::CaptureAccess::New(Type::ref(lc->task().capturedObject.id()), lambda, 0);
-  return member_access(ec, this_object, offset, dpos);
-}
-
-
-
-LambdaVariableAccessor2::LambdaVariableAccessor2(Stack & s)
-  : StackVariableAccessor2(s)
+LambdaVariableAccessor::LambdaVariableAccessor(Stack & s)
+  : StackVariableAccessor(s)
 {
 
 }
 
-std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> LambdaVariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   ClosureType ct = ec.caller().memberOf().toClosure();
   auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
@@ -76,7 +53,7 @@ std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessCapture(Expr
   return capaccess;
 }
 
-std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> LambdaVariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   ClosureType ct = ec.caller().memberOf().toClosure();
   auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
@@ -89,11 +66,9 @@ std::shared_ptr<program::Expression> LambdaVariableAccessor2::accessDataMember(E
 LambdaCompiler::LambdaCompiler(Compiler* c)
   : FunctionCompiler(c)
   , mCurrentTask(nullptr)
-  , variable_(mStack, this)
-  , variable2_(mStack)
+  , variable_(mStack)
 {
   expr_.setVariableAccessor(this->variable_);
-  expr_.setVariableAccessor2(this->variable2_);
 }
 
 void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset)

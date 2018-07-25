@@ -275,35 +275,14 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-StackVariableAccessor::StackVariableAccessor(Stack & s, FunctionCompiler* fc)
-  : stack_(&s)
-  , fcomp_(fc)
-{
 
-}
-
-std::shared_ptr<program::Expression> StackVariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  Script s = script_;
-  auto simpl = s.impl();
-  const Type & gtype = simpl->global_types[offset];
-
-  return program::FetchGlobal::New(s.id(), offset, gtype);
-}
-
-std::shared_ptr<program::Expression> StackVariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  const Type t = stack()[offset].type;
-  return program::StackValue::New(offset, t);
-}
-
-StackVariableAccessor2::StackVariableAccessor2(Stack & s)
+StackVariableAccessor::StackVariableAccessor(Stack & s)
   : stack_(&s)
 {
 
 }
 
-std::shared_ptr<program::Expression> StackVariableAccessor2::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> StackVariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   const Type t = stack()[offset].type;
   return program::StackValue::New(offset, t);
@@ -449,12 +428,10 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 
 FunctionCompiler::FunctionCompiler(Compiler *c)
   : CompilerComponent(c)
-  , variable_(mStack, this)
-  , variable2_(mStack)
+  , variable_(mStack)
   , lambda_(mStack, this)
 {
   expr_.setVariableAccessor(variable_);
-  expr_.setVariableAccessor2(variable2_);
   expr_.setLambdaProcessor(lambda_);
   expr_.setTemplateProcessor(default_ftp_);
   scope_statements_.scope_ = &mCurrentScope;
@@ -474,7 +451,6 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
   Script s = task.function.script();
 
-  variable_.script() = s;
   lambda_.script() = s;
   expr_.setCaller(task.function);
   

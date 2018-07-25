@@ -45,24 +45,6 @@ public:
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
 
-class VariableAccessor
-{
-public:
-  VariableAccessor() = default;
-  VariableAccessor(const VariableAccessor &) = delete;
-  virtual ~VariableAccessor() = default;
-
-  virtual std::shared_ptr<program::Expression> data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-
-  VariableAccessor & operator=(const VariableAccessor &) = delete;
-
-protected:
-  std::shared_ptr<program::Expression> member_access(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> implicit_object(ExpressionCompiler & ec) const;
-};
 
 class TnpNameResolver
 {
@@ -92,14 +74,8 @@ private:
   VariableAccessor default_variable_;
   VariableAccessor *variable_;
 
-  VariableAccessor2 default_variable2_;
-  VariableAccessor2 *variable2_;
-
   FunctionTemplateProcessor default_templates_;
   FunctionTemplateProcessor *templates_;
-
-private:
-  friend class VariableAccessor;
 
 public:
   ExpressionCompiler();
@@ -116,11 +92,8 @@ public:
   inline LambdaProcessor & lambdaProcessor() { return *lambda_; }
   inline void setLambdaProcessor(LambdaProcessor & lp) { lambda_ = &lp; }
 
-  inline VariableAccessor & variableAccessor() { return *variable_; }
+  inline VariableAccessor & variableAccessor2() { return *variable_; }
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
-
-  inline VariableAccessor2 & variableAccessor2() { return *variable2_; }
-  inline void setVariableAccessor2(VariableAccessor2 & va) { variable2_ = &va; }
 
   inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
   void setTemplateProcessor(FunctionTemplateProcessor & ftp);
@@ -170,7 +143,6 @@ protected:
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
   std::shared_ptr<program::Expression> generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
-  std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
   std::shared_ptr<program::Expression> generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup);
 };
 

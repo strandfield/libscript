@@ -58,26 +58,9 @@ class StackVariableAccessor : public VariableAccessor
 {
 protected:
   Stack * stack_;
-  Script script_;
-  FunctionCompiler* fcomp_;
 public:
-  StackVariableAccessor(Stack & s, FunctionCompiler* fc);
+  StackVariableAccessor(Stack & s);
   ~StackVariableAccessor() = default;
-
-  inline const Stack & stack() const { return *stack_; }
-  inline Script & script() { return script_; }
-
-  std::shared_ptr<program::Expression> global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
-  std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
-};
-
-class StackVariableAccessor2 : public VariableAccessor2
-{
-protected:
-  Stack * stack_;
-public:
-  StackVariableAccessor2(Stack & s);
-  ~StackVariableAccessor2() = default;
 
   inline const Stack & stack() const { return *stack_; }
 
@@ -229,8 +212,6 @@ protected:
 
   TypeResolver<BasicNameResolver> type_;
   ExpressionCompiler expr_;
-  StackVariableAccessor variable_;
-  StackVariableAccessor2 variable2_;
   FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor<BasicNameResolver> scope_statements_;
   ImportProcessor<FunctionCompilerModuleLoader> modules_;
@@ -240,6 +221,9 @@ protected:
 
   FunctionTemplateProcessor default_ftp_;
   FunctionTemplateProcessor *ftp_;
+
+private:
+  StackVariableAccessor variable_;
 };
 
 } // namespace compiler

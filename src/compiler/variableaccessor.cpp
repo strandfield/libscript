@@ -18,13 +18,13 @@ namespace script
 namespace compiler
 {
 
-std::shared_ptr<program::Expression> VariableAccessor2::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   auto object = ec.implicit_object();
   return generateMemberAccess(ec, object, offset, dpos);
 }
 
-std::shared_ptr<program::Expression> VariableAccessor2::accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   Script s = ec.caller().script();
   auto simpl = s.impl();
@@ -33,19 +33,19 @@ std::shared_ptr<program::Expression> VariableAccessor2::accessGlobal(ExpressionC
   return program::FetchGlobal::New(s.id(), offset, gtype);
 }
 
-std::shared_ptr<program::Expression> VariableAccessor2::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   /// TODO: should we throw this type of exception ?
   throw std::runtime_error{ "Default VariableAccessor does not support accessing local variables" };
 }
 
-std::shared_ptr<program::Expression> VariableAccessor2::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   /// TODO: should we throw this type of exception ?
   throw std::runtime_error{ "Default VariableAccessor does not support accessing captures" };
 }
 
-std::shared_ptr<program::Expression> VariableAccessor2::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset, const diagnostic::pos_t dpos)
 {
   Class cla = ec.engine()->getClass(object->type());
   int relative_index = offset;
