@@ -97,14 +97,14 @@ public:
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;
 
-  /// TODO (hopefully) temporarily public (used by ExtendedExpressionCompiler)
-  bool canUseThis() const;
-
   void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
+  inline FunctionTemplateProcessor & functionTemplateProcessor() { return *ftp_; }
   ImportProcessor & importProcessor() { return modules_; }
+  inline Logger & logger() { return *logger_; }
   void setLogger(Logger & lg);
 
 protected:
+  bool canUseThis() const;
   bool isCompilingAnonymousFunction() const;
   std::string argumentName(int index);
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();

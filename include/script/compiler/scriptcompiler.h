@@ -61,7 +61,7 @@ public:
   inline Engine* engine() const { return mEngine; }
 
   void add(const Script & task);
-  Class instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
   bool done() const;
   void processNext();

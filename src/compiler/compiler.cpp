@@ -129,7 +129,6 @@ Engine* CompileSession::engine() const
 
 void CompileSession::clear()
 {
-  /// TODO !!
   for (const auto & f : this->generated.functions)
   {
     if (!f.isTemplateInstance())
@@ -235,7 +234,7 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
   try
   {
-    Class result = sc->instantiate2(ct, targs);
+    Class result = sc->instantiate(ct, targs);
 
     if (manager.started_session())
     {

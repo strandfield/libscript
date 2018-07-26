@@ -307,6 +307,9 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
   LambdaCompiler compiler{ fcomp_->engine() };
+  compiler.importProcessor().set_loader(fcomp_->importProcessor().loader());
+  compiler.setLogger(fcomp_->logger());
+  compiler.setFunctionTemplateProcessor(fcomp_->functionTemplateProcessor());
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;

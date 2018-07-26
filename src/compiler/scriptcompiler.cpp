@@ -99,7 +99,7 @@ void ScriptCompiler::add(const Script & task)
   processOrCollectScriptDeclarations(task);
 }
 
-Class ScriptCompiler::instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
   TemplateSpecializationSelector selector;
   auto selected_specialization = selector.select(ct, args);
@@ -752,9 +752,8 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   if (ct.isNull())
     throw CouldNotFindPrimaryClassTemplate{dpos(classdecl)};
 
-  TemplateNameProcessor tnp; /// TODO : use a custom TNP
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
-  std::vector<TemplateArgument> args = tnp.arguments(scp, template_full_name->arguments);
+  std::vector<TemplateArgument> args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
 
   ClassTemplateSpecializationBuilder builder = ct.Specialization(std::move(args));
   builder.name = readClassName(classdecl);
@@ -808,9 +807,8 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   std::vector<TemplateArgument> args;
   if (fundecl->name->is<ast::TemplateIdentifier>())
   {
-    TemplateNameProcessor tnp; /// TODO : use a custom TNP
     auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(fundecl->name);
-    args = tnp.arguments(scp, template_full_name->arguments);
+    args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
   }
 
   FunctionBuilder builder{ Function::StandardFunction };

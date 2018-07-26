@@ -43,6 +43,7 @@ public:
   inline Engine* engine() const { return engine_; }
 
   void set_loader(ModuleLoader & l) { loader_ = &l; }
+  ModuleLoader & loader() { return *loader_; }
 
   Scope process(const std::shared_ptr<ast::ImportDirective> & decl);
 

@@ -7,6 +7,7 @@
 
 #include "libscriptdefs.h"
 
+#include <memory>
 #include <vector>
 
 namespace script

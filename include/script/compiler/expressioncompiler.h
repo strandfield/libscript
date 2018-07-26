@@ -78,7 +78,7 @@ public:
   inline LambdaProcessor & lambdaProcessor() { return *lambda_; }
   inline void setLambdaProcessor(LambdaProcessor & lp) { lambda_ = &lp; }
 
-  inline VariableAccessor & variableAccessor2() { return *variable_; }
+  inline VariableAccessor & variableAccessor() { return *variable_; }
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
 
   inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
