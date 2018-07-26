@@ -50,10 +50,10 @@ public:
 class CompileSession
 {
 public:
-  enum State {
-    Active,
-    Inactive,
-    Finalizing,
+  enum class State {
+    ProcessingDeclarations,
+    CompilingFunctions,
+    Finished,
   };
 
 private:

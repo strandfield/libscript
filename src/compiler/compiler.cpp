@@ -92,13 +92,13 @@ SessionManager::SessionManager(Compiler *c, const Script & s)
 SessionManager::~SessionManager()
 {
   if (mStartedSession)
-    mCompiler->session()->setState(CompileSession::Inactive);
+    mCompiler->session()->setState(CompileSession::State::Finished);
 }
 
 
 CompileSession::CompileSession(Compiler *c)
   : mCompiler(c)
-  , mState(Active)
+  , mState(State::ProcessingDeclarations)
   , error(false)
   , mLogger(this)
   , mLoader(c)
@@ -111,7 +111,7 @@ CompileSession::CompileSession(Compiler *c)
 
 CompileSession::CompileSession(Compiler *c, const Script & s)
   : mCompiler(c)
-  , mState(Active)
+  , mState(State::ProcessingDeclarations)
   , script(s)
   , error(false)
   , mLogger(this)
@@ -175,7 +175,7 @@ Compiler::~Compiler()
 
 bool Compiler::hasActiveSession() const
 {
-  return mSession != nullptr && mSession->state() != CompileSession::Inactive;
+  return mSession != nullptr && mSession->state() != CompileSession::State::Finished;
 }
 
 bool Compiler::compile(Script s)
@@ -194,7 +194,7 @@ bool Compiler::compile(Script s)
     }
     else
     {
-      if (session()->state() == CompileSession::Finalizing)
+      if (session()->state() == CompileSession::State::CompilingFunctions)
       {
         processAllDeclarations();
       }
@@ -246,7 +246,7 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
     {
       session()->generated.classes.push_back(result);
 
-      if (session()->state() == CompileSession::Finalizing)
+      if (session()->state() == CompileSession::State::CompilingFunctions)
       {
         processAllDeclarations();
       }
@@ -293,7 +293,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
     {
       session()->generated.functions.push_back(func);
 
-      if (session()->state() == CompileSession::Finalizing)
+      if (session()->state() == CompileSession::State::CompilingFunctions)
       {
         processAllDeclarations();
       }
@@ -362,16 +362,15 @@ void Compiler::finalizeSession()
 {
   if (mScriptCompiler == nullptr)
   {
-    session()->setState(CompileSession::Inactive);
+    session()->setState(CompileSession::State::Finished);
     return;
   }
   
-  session()->setState(CompileSession::Finalizing);
+  session()->setState(CompileSession::State::CompilingFunctions);
 
   ScriptCompiler *sc = getScriptCompiler();
 
-  bool done = false;
-  while (!done)
+  while (session()->state() != CompileSession::State::Finished)
   {
     processAllDeclarations();
 
@@ -386,7 +385,7 @@ void Compiler::finalizeSession()
 
     if (sc->variableProcessor().empty())
     {
-      done = true;
+      session()->setState(CompileSession::State::Finished);
     }
     else
     {
@@ -400,7 +399,7 @@ void Compiler::finalizeSession()
       s.run();
   }
 
-  session()->setState(CompileSession::Inactive);
+  session()->setState(CompileSession::State::Finished);
 }
 
 
