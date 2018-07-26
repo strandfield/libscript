@@ -92,16 +92,18 @@ SessionManager::SessionManager(Compiler *c, const Script & s)
 SessionManager::~SessionManager()
 {
   if (mStartedSession)
-    mCompiler->session()->set_active(false);
+    mCompiler->session()->setState(CompileSession::Inactive);
 }
 
 
 CompileSession::CompileSession(Compiler *c)
   : mCompiler(c)
-  , mIsActive(true)
+  , mState(Active)
   , error(false)
   , mLogger(this)
   , mLoader(c)
+  , mFTP(c)
+  , mTNP(c)
 {
   mTNP.compiler_ = c;
   mFTP.set_name_processor(mTNP);
@@ -109,11 +111,13 @@ CompileSession::CompileSession(Compiler *c)
 
 CompileSession::CompileSession(Compiler *c, const Script & s)
   : mCompiler(c)
-  , mIsActive(true)
+  , mState(Active)
   , script(s)
   , error(false)
   , mLogger(this)
   , mLoader(c)
+  , mFTP(c)
+  , mTNP(c)
 {
   mTNP.compiler_ = c;
   mFTP.set_name_processor(mTNP);
@@ -171,7 +175,7 @@ Compiler::~Compiler()
 
 bool Compiler::hasActiveSession() const
 {
-  return mSession != nullptr && mSession->is_active();
+  return mSession != nullptr && mSession->state() != CompileSession::Inactive;
 }
 
 bool Compiler::compile(Script s)
@@ -186,14 +190,15 @@ bool Compiler::compile(Script s)
 
     if (manager.started_session())
     {
-      while (!sc->done())
-        sc->processNext();
+      finalizeSession();
     }
-
-    /// TODO: move function compilation out of ScriptCompiler, and compile them here
-
-    /// TODO: run imported scripts
-
+    else
+    {
+      if (session()->state() == CompileSession::Finalizing)
+      {
+        processAllDeclarations();
+      }
+    }
   }
   catch (const CompilerException & e)
   {
@@ -235,14 +240,16 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
     if (manager.started_session())
     {
-      while (!sc->done())
-        sc->processNext();
-
-      session()->set_active(false);
+      finalizeSession();
     }
     else
     {
       session()->generated.classes.push_back(result);
+
+      if (session()->state() == CompileSession::Finalizing)
+      {
+        processAllDeclarations();
+      }
     }
 
     return result;
@@ -280,19 +287,16 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
     if (manager.started_session())
     {
-      if (mScriptCompiler != nullptr)
-      {
-        while (!mScriptCompiler->done())
-          mScriptCompiler->processNext();
-      }
-
-      /// TODO: run imported scripts
-
-      session()->set_active(false);
+      finalizeSession();
     }
     else
     {
       session()->generated.functions.push_back(func);
+
+      if (session()->state() == CompileSession::Finalizing)
+      {
+        processAllDeclarations();
+      }
     }
   }
   catch (const CompilerException & ex)
@@ -315,13 +319,7 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd,
 
   if (manager.started_session())
   {
-    if (mScriptCompiler != nullptr)
-    {
-      while (!mScriptCompiler->done())
-        mScriptCompiler->processNext();
-    }
-
-    /// TODO: run imported scripts
+    finalizeSession();
   }
 
   return result;
@@ -339,6 +337,72 @@ ScriptCompiler * Compiler::getScriptCompiler()
 
   return mScriptCompiler.get();
 }
+
+FunctionCompiler * Compiler::getFunctionCompiler()
+{
+  if (mFunctionCompiler == nullptr)
+  {
+    mFunctionCompiler = std::make_unique<FunctionCompiler>(this);
+    mFunctionCompiler->setLogger(mSession->mLogger);
+    mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
+    mFunctionCompiler->importProcessor().set_loader(mSession->mLoader);
+  }
+
+  return mFunctionCompiler.get();
+}
+
+void Compiler::processAllDeclarations()
+{
+  ScriptCompiler *sc = getScriptCompiler();
+  while (!sc->done())
+    sc->processNext();
+}
+
+void Compiler::finalizeSession()
+{
+  if (mScriptCompiler == nullptr)
+  {
+    session()->setState(CompileSession::Inactive);
+    return;
+  }
+  
+  session()->setState(CompileSession::Finalizing);
+
+  ScriptCompiler *sc = getScriptCompiler();
+
+  bool done = false;
+  while (!done)
+  {
+    processAllDeclarations();
+
+    FunctionCompiler *fc = getFunctionCompiler();
+    auto & queue = sc->compileTasks();
+    while (!queue.empty())
+    {
+      CompileFunctionTask task = queue.front();
+      queue.pop();
+      fc->compile(task);
+    }
+
+    if (sc->variableProcessor().empty())
+    {
+      done = true;
+    }
+    else
+    {
+      sc->variableProcessor().initializeVariables();
+    }
+  }
+
+  for (Script s : session()->generated.scripts)
+  {
+    if (s != session()->script)
+      s.run();
+  }
+
+  session()->setState(CompileSession::Inactive);
+}
+
 
 CompilerComponent::CompilerComponent(Compiler *c)
   : mCompiler(c)

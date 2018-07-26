@@ -49,16 +49,26 @@ public:
 // responsability away from ScriptCompiler
 class CompileSession
 {
+public:
+  enum State {
+    Active,
+    Inactive,
+    Finalizing,
+  };
+
 private:
   Compiler* mCompiler;
-  bool mIsActive;
+  State mState;
 
 public:
   CompileSession(Compiler *c);
   CompileSession(Compiler *c, const Script & s);
 
+
   inline Compiler* compiler() const { return mCompiler; }
   Engine* engine() const;
+  inline State state() const { return mState; }
+  inline void setState(State t) { mState = t; }
 
   struct {
     /// TODO : ideally we should store a list of generated lambdas and function types
@@ -81,9 +91,6 @@ public:
   void log(const CompilerException & exception);
 
   void clear();
-
-  inline bool is_active() const { return mIsActive; }
-  inline void set_active(bool act) { mIsActive = act; }
 };
 
 } // namespace compiler

@@ -42,51 +42,6 @@ namespace script
 namespace compiler
 {
 
-class ScriptCompilerTemplateNameProcessor : public TemplateNameProcessor
-{
-public:
-  ScriptCompiler* compiler_;
-public:
-  ScriptCompilerTemplateNameProcessor(ScriptCompiler *c)
-    : compiler_(c) { }
-
-  ~ScriptCompilerTemplateNameProcessor() = default;
-
-  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;
-};
-
-Class ScriptCompilerTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
-{
-  if (ct.is_native())
-  {
-    auto instantiate = ct.native_callback();
-    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
-    Class ret = instantiate(builder);
-    ct.impl()->instances[args] = ret;
-    /// TODO: ensure new instance is logged
-    ///compiler_->session()->generated.classes.push_back(ret);
-    return ret;
-  }
-  else
-  {
-    Class ret = compiler_->instantiate(ct, args, ScriptCompilerComponentKey{});
-    ct.impl()->instances[args] = ret;
-    return ret;
-  }
-}
-
-
-NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name)
-{
-  return NameLookup::resolve(name, compiler->currentScope(), *tnp);
-}
-
-NameLookup ScriptCompilerNameResolver::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-{
-  return NameLookup::resolve(name, scp, *tnp);
-}
-
-
 static inline AccessSpecifier get_access_specifier(const std::shared_ptr<ast::AccessSpecifier> & as)
 {
   if (as->visibility == parser::Token::Private)
@@ -127,21 +82,6 @@ ScriptCompiler::~ScriptCompiler()
 
 }
 
-void ScriptCompiler::compile(const Script & task)
-{
-  add(task);
-
-  resolveIncompleteTypes();
-  processPendingDeclarations();
-  compileFunctions();
-  //initializeStaticVariables();
-  variable_.initializeVariables();
-
-  /// TODO: ensure that all scripts are run
-  //for (auto s : session()->generated.scripts)
-  //  s.run();
-}
-
 void ScriptCompiler::add(const Script & task)
 {
   parser::Parser parser{ task.source() };
@@ -160,89 +100,6 @@ void ScriptCompiler::add(const Script & task)
 }
 
 Class ScriptCompiler::instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
-{
-  return instantiate(ct, args, ScriptCompilerComponentKey{});
-}
-
-bool ScriptCompiler::done() const
-{
-  return mIncompleteFunctions.empty()
-    && mProcessingQueue.empty()
-    && mCompilationTasks.empty()
-    && variable_.empty();
-}
-
-void ScriptCompiler::processNext()
-{
-  if (!mIncompleteFunctions.empty())
-  {
-    while (!mIncompleteFunctions.empty())
-    {
-      auto task = mIncompleteFunctions.front();
-      mIncompleteFunctions.pop();
-
-      reprocess(task);
-    }
-
-    return;
-  }
-
-  if (!mProcessingQueue.empty())
-  {
-    auto task = mProcessingQueue.front();
-    mProcessingQueue.pop();
-
-    ScopeGuard guard{ mCurrentScope };
-    mCurrentScope = task.scope;
-
-    if (task.declaration->is<ast::FriendDeclaration>())
-    {
-      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
-    }
-    else
-    {
-      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
-    }
-
-    return;
-  }
-
-  if (!mCompilationTasks.empty())
-  {
-    auto task = mCompilationTasks.front();
-    mCompilationTasks.pop();
-
-    FunctionCompiler fcomp{ compiler() };
-    /// TODO: fcomp.setFunctionTemplateProcessor();
-    fcomp.compile(task);
-    return;
-  }
-
-
-  if (!variable_.empty())
-  {
-    variable_.initializeVariables();
-  }
-}
-
-Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
-{
-  Class result = instantiate(ct, args, ScriptCompilerComponentKey{});
-
-  // This is a standalone job 
-  resolveIncompleteTypes();
-  processPendingDeclarations();
-  compileFunctions();
-  variable_.initializeVariables();
-
-  /// TODO: ensure scripts are run 
-  //for (auto s : session()->generated.scripts)
-  //  s.run();
-
-  return result;
-}
-
-Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey)
 {
   TemplateSpecializationSelector selector;
   auto selected_specialization = selector.select(ct, args);
@@ -279,6 +136,48 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
     readClassContent(result, class_decl);
 
     return result;
+  }
+}
+
+bool ScriptCompiler::done() const
+{
+  return mIncompleteFunctions.empty()
+    && mProcessingQueue.empty();
+}
+
+void ScriptCompiler::processNext()
+{
+  if (!mIncompleteFunctions.empty())
+  {
+    while (!mIncompleteFunctions.empty())
+    {
+      auto task = mIncompleteFunctions.front();
+      mIncompleteFunctions.pop();
+
+      reprocess(task);
+    }
+
+    return;
+  }
+
+  if (!mProcessingQueue.empty())
+  {
+    auto task = mProcessingQueue.front();
+    mProcessingQueue.pop();
+
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = task.scope;
+
+    if (task.declaration->is<ast::FriendDeclaration>())
+    {
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
+    }
+    else
+    {
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
+    }
+
+    return;
   }
 }
 
@@ -495,28 +394,6 @@ void ScriptCompiler::processPendingDeclarations()
   }
 }
 
-
-
-bool ScriptCompiler::compileFunctions()
-{
-  FunctionCompiler fcomp{ compiler() };
-  /// TODO: fcomp.setFunctionTemplateProcessor();
-
-  /*for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
-  {
-    const auto & task = this->mCompilationTasks.at(i);
-    fcomp.compile(task);
-  }*/
-
-  while (!mCompilationTasks.empty())
-  {
-    auto task = mCompilationTasks.front();
-    mCompilationTasks.pop();
-    fcomp.compile(task);
-  }
-
-  return true;
-}
 
 void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)
 {

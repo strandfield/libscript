@@ -20,6 +20,7 @@ class LIBSCRIPT_API CFunctionTemplateProcessor : public FunctionTemplateProcesso
 public:
   Compiler* compiler_;
 public:
+  CFunctionTemplateProcessor(Compiler *c) : compiler_(c) { }
   ~CFunctionTemplateProcessor() = default;
 
   void instantiate(Function & f) override;

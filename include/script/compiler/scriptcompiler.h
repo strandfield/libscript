@@ -54,33 +54,6 @@ struct IncompleteFunction : public ScopedDeclaration
 };
 
 class ScriptCompiler;
-class ScriptCompilerTemplateNameProcessor;
-
-class ScriptCompilerNameResolver
-{
-public:
-  ScriptCompiler* compiler;
-  ScriptCompilerTemplateNameProcessor *tnp;
-public:
-  ScriptCompilerNameResolver() = default;
-  ScriptCompilerNameResolver(const ScriptCompilerNameResolver &) = default;
-
-  inline Engine* engine() const;
-
-  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
-
-  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp);
-};
-
-struct ScriptCompilerComponentKey
-{
-private:
-  ScriptCompilerComponentKey() = default;
-  friend class ScriptCompiler;
-  friend class ScriptCompilerModuleLoader;
-  friend class ScriptCompilerNameResolver;
-};
-
 
 class ScriptCompiler : public CompilerComponent
 {
@@ -88,11 +61,8 @@ public:
   ScriptCompiler(Compiler *c);
   ~ScriptCompiler();
 
-  void compile(const Script & task);
-
   void add(const Script & task);
   Class instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
-
 
   bool done() const;
   void processNext();
@@ -101,13 +71,11 @@ public:
   void setLogger(Logger & lg);
   void setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp);
 
-  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
-
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
 
-public:
-  Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args, ScriptCompilerComponentKey);
+  inline std::queue<CompileFunctionTask> & compileTasks() { return mCompilationTasks; }
+  VariableProcessor & variableProcessor() { return variable_; }
 
 protected:
   Type resolve(const ast::QualifiedType & qt);
@@ -122,7 +90,6 @@ protected:
   void resolveIncompleteTypes();
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
-  bool compileFunctions();
 
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl);
@@ -185,7 +152,6 @@ protected:
 
   std::queue<CompileFunctionTask> mCompilationTasks;
 
-  /// TODO: inject FTP
   VariableProcessor variable_;
 
   std::queue<IncompleteFunction> mIncompleteFunctions;
@@ -208,11 +174,6 @@ protected:
   FunctionTemplateProcessor default_ftp_;
   FunctionTemplateProcessor *ftp_;
 };
-
-inline Engine* ScriptCompilerNameResolver::engine() const
-{
-  return compiler->engine();
-}
 
 } // namespace compiler
 

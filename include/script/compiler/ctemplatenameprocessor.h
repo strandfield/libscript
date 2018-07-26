@@ -20,6 +20,7 @@ class LIBSCRIPT_API CTemplateNameProcessor : public TemplateNameProcessor
 public:
   Compiler* compiler_;
 public:
+  CTemplateNameProcessor(Compiler *c) : compiler_(c) { }
   ~CTemplateNameProcessor() = default;
 
   Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;

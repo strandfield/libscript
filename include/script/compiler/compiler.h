@@ -36,6 +36,7 @@ namespace compiler
 
 class CompilerException;
 class CompileSession;
+class FunctionCompiler;
 class ScriptCompiler;
 class SessionManager;
 
@@ -58,12 +59,16 @@ public:
 
 private:
   ScriptCompiler * getScriptCompiler();
+  FunctionCompiler * getFunctionCompiler();
+  void processAllDeclarations();
+  void finalizeSession();
 
 private:
   friend class SessionManager;
   Engine* mEngine;
   std::shared_ptr<CompileSession> mSession;
   std::unique_ptr<ScriptCompiler> mScriptCompiler;
+  std::unique_ptr<FunctionCompiler> mFunctionCompiler;
 };
 
 } // namespace compiler
