@@ -37,14 +37,16 @@ private:
   Engine *engine_;
   std::vector<Variable> uninitialized_variables_;
   ExpressionCompiler expr_;
-  TypeResolver<BasicNameResolver> type_;
-
+  TypeResolver<TnpNameResolver> type_;
 
 public:
   VariableProcessor(Engine *e);
   ~VariableProcessor() = default;
 
   inline Engine * engine() const { return engine_; }
+
+  inline ExpressionCompiler & expressionCompiler() { return expr_; }
+  inline TypeResolver<TnpNameResolver> & typeResolver() { return type_; }
 
   void process(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
   void initializeVariables();

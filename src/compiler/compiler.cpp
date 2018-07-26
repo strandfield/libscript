@@ -189,6 +189,11 @@ bool Compiler::compile(Script s)
       while (!sc->done())
         sc->processNext();
     }
+
+    /// TODO: move function compilation out of ScriptCompiler, and compile them here
+
+    /// TODO: run imported scripts
+
   }
   catch (const CompilerException & e)
   {
@@ -328,7 +333,7 @@ ScriptCompiler * Compiler::getScriptCompiler()
   {
     mScriptCompiler = std::make_unique<ScriptCompiler>(this);
     mScriptCompiler->setLogger(mSession->mLogger);
-    mScriptCompiler->setTemplateNameProcessor(mSession->mTNP);
+    mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
     mScriptCompiler->importProcessor().set_loader(mSession->mLoader);
   }
 

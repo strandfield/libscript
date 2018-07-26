@@ -81,9 +81,7 @@ private:
   friend class ScriptCompilerNameResolver;
 };
 
-/// TODO: should we split that in two, with a new DeclarationCompiler
-// DeclarationCompiler would deal wthi namesoaces, classes, functions, enums
-// ScriptCompiler would handle registration of root function, 
+
 class ScriptCompiler : public CompilerComponent
 {
 public:
@@ -101,29 +99,7 @@ public:
 
   ImportProcessor & importProcessor() { return modules_; }
   void setLogger(Logger & lg);
-  void setTemplateNameProcessor(TemplateNameProcessor &tnp);
-
-  /*
-  TODO:
-
-  void preprocess(const Script &s); // or add()
-
-  void run()
-  {
-    while(something to do)
-    {
-      if(!mIncompleteFunctions.empty())
-        processAllIncompelteFunctions();
-      else if(!mPendingDeclarations.empty())
-       processOnePendingDecl();
-      else if(!mCompilataionTaks.empty())
-       processOneCompilation();
-
-       etc..
-    }
-  }
-
-  */
+  void setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp);
 
   Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
 
@@ -209,6 +185,7 @@ protected:
 
   std::queue<CompileFunctionTask> mCompilationTasks;
 
+  /// TODO: inject FTP
   VariableProcessor variable_;
 
   std::queue<IncompleteFunction> mIncompleteFunctions;
@@ -228,8 +205,8 @@ protected:
   Logger default_logger_;
   Logger *logger_;
 
-  TemplateNameProcessor default_tnp_;
-  TemplateNameProcessor *tnp_;
+  FunctionTemplateProcessor default_ftp_;
+  FunctionTemplateProcessor *ftp_;
 };
 
 inline Engine* ScriptCompilerNameResolver::engine() const

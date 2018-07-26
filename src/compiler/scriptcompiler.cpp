@@ -119,7 +119,7 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   scope_statements_.scope_ = &mCurrentScope;
 
   logger_ = &default_logger_;
-  setTemplateNameProcessor(default_tnp_);
+  setFunctionTemplateProcessor(default_ftp_);
 }
 
 ScriptCompiler::~ScriptCompiler()
@@ -287,13 +287,15 @@ void ScriptCompiler::setLogger(Logger & lg)
   logger_ = &lg;
 }
 
-void ScriptCompiler::setTemplateNameProcessor(TemplateNameProcessor &tnp)
+void ScriptCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp)
 {
-  tnp_ = &tnp;
-  name_resolver.set_tnp(tnp);
-  type_resolver.name_resolver().set_tnp(tnp);
-  function_processor_.prototype_.type_.name_resolver().set_tnp(tnp);
-  scope_statements_.name_.set_tnp(tnp);
+  ftp_ = &ftp;
+  name_resolver.set_tnp(ftp.name_processor());
+  type_resolver.name_resolver().set_tnp(ftp.name_processor());
+  function_processor_.prototype_.type_.name_resolver().set_tnp(ftp.name_processor());
+  scope_statements_.name_.set_tnp(ftp.name_processor());
+  variable_.expressionCompiler().setTemplateProcessor(ftp);
+  variable_.typeResolver().name_resolver().set_tnp(ftp.name_processor());
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
