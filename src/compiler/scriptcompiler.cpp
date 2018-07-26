@@ -65,10 +65,10 @@ ScriptCompiler::StateGuard::~StateGuard()
   compiler->mCurrentScript = script;
 }
 
-ScriptCompiler::ScriptCompiler(Compiler *c)
-  : CompilerComponent(c)
-  , variable_(c->engine())
-  , modules_(c->engine())
+ScriptCompiler::ScriptCompiler(Engine *e)
+  : mEngine(e)
+  , variable_(e)
+  , modules_(e)
 {
 
   scope_statements_.scope_ = &mCurrentScope;
@@ -871,6 +871,16 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
   if (f.isDeleted() || f.isPureVirtual())
     return;
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
+}
+
+void ScriptCompiler::log(const diagnostic::Message & mssg)
+{
+  logger_->log(mssg);
+}
+
+void ScriptCompiler::log(const CompilerException & exception)
+{
+  logger_->log(exception);
 }
 
 const std::shared_ptr<ast::AST> & ScriptCompiler::currentAst() const

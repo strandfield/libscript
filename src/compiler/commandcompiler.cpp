@@ -41,8 +41,8 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   return ExpressionCompiler::generateOperation(op);
 }
 
-CapturelessLambdaProcessor::CapturelessLambdaProcessor(Compiler *c)
-  : compiler_(c)
+CapturelessLambdaProcessor::CapturelessLambdaProcessor(Engine *e)
+  : engine_(e)
 {
 
 }
@@ -56,17 +56,18 @@ std::shared_ptr<program::LambdaExpression> CapturelessLambdaProcessor::generate(
 
   CompileLambdaTask task;
   task.lexpr = le;
-  task.scope = script::Scope{ compiler_->engine()->rootNamespace() }; /// TODO : make this customizable !
+  task.scope = script::Scope{ engine_->rootNamespace() }; /// TODO : make this customizable !
 
-  LambdaCompiler compiler{ compiler_ };
+  /// TODO: set tnp, module loader and so on
+  LambdaCompiler compiler{ engine_ };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
 }
 
-CommandCompiler::CommandCompiler(Compiler *c)
-  : CompilerComponent(c)
-  , lambda_(c)
+CommandCompiler::CommandCompiler(Engine *e)
+  : mEngine(e)
+  , lambda_(e)
 {
   expr_.setLambdaProcessor(lambda_);
 }

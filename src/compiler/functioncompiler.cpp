@@ -306,57 +306,11 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
-  LambdaCompiler compiler{ fcomp_->compiler() };
+  LambdaCompiler compiler{ fcomp_->engine() };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
 }
-
-class FunctionCompilerTemplateNameProcessor : public TemplateNameProcessor
-{
-public:
-  FunctionCompiler * compiler_;
-public:
-  FunctionCompilerTemplateNameProcessor(FunctionCompiler* c)
-    : compiler_(c) { }
-
-  ~FunctionCompilerTemplateNameProcessor() = default;
-
-  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args) override;
-};
-
-Class FunctionCompilerTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
-{
-  Class result = TemplateNameProcessor::instantiate(ct, args);
-  compiler_->session()->generated.classes.push_back(result);
-  return result;
-}
-
-
-
-class FunctionCompilerTemplateProcessor : public FunctionTemplateProcessor
-{
-public:
-  FunctionCompiler* compiler_;
-  FunctionCompilerTemplateNameProcessor tnp_;
-public:
-  FunctionCompilerTemplateProcessor(FunctionCompiler* c)
-    : compiler_(c), tnp_(c) 
-  { 
-    set_name_processor(tnp_);
-  }
-
-  ~FunctionCompilerTemplateProcessor() = default;
-
-  void instantiate(Function & f) override;
-};
-
-void FunctionCompilerTemplateProcessor::instantiate(Function & f)
-{
-  FunctionTemplateProcessor::instantiate(f);
-  compiler_->session()->generated.functions.push_back(f);
-}
-
 
 
 Class FunctionCompilerExtension::currentClass() const 
@@ -401,11 +355,11 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 
 
 
-FunctionCompiler::FunctionCompiler(Compiler *c)
-  : CompilerComponent(c)
+FunctionCompiler::FunctionCompiler(Engine *e)
+  : mEngine(e)
   , variable_(mStack)
   , lambda_(mStack, this)
-  , modules_(c->engine())
+  , modules_(e)
 {
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);

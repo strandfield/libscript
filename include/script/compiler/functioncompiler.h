@@ -5,8 +5,6 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
-#include "script/compiler/compilercomponent.h"
-
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
@@ -83,13 +81,13 @@ public:
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
-class FunctionCompiler : public CompilerComponent
+class FunctionCompiler
 {
 public:
-  FunctionCompiler(Compiler *c);
+  explicit FunctionCompiler(Engine *e);
   ~FunctionCompiler();
 
-  //inline Engine* engine() const { return mEngine; }
+  inline Engine* engine() const { return mEngine; }
 
   void compile(const CompileFunctionTask & task);
 
@@ -192,7 +190,7 @@ protected:
   friend class FunctionScope;
   friend class FunctionCompilerExtension;
 
-  //Engine *mEngine;
+  Engine *mEngine;
 
   Stack mStack;
   Function mFunction;

@@ -5,7 +5,6 @@
 #ifndef LIBSCRIPT_COMMAND_COMPILER_H
 #define LIBSCRIPT_COMMAND_COMPILER_H
 
-#include "script/compiler/compilercomponent.h"
 #include "script/compiler/expressioncompiler.h"
 
 #include "script/context.h"
@@ -30,19 +29,21 @@ private:
 class CapturelessLambdaProcessor : public LambdaProcessor
 {
 public:
-  CapturelessLambdaProcessor(Compiler *c);
+  CapturelessLambdaProcessor(Engine *e);
   ~CapturelessLambdaProcessor() = default;
 
-  Compiler* compiler_;
+  Engine* engine_;
 
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
-class CommandCompiler : public CompilerComponent
+class CommandCompiler
 {
 public:
-  CommandCompiler(Compiler *c);
+  explicit CommandCompiler(Engine *e);
   ~CommandCompiler() = default;
+
+  inline Engine* engine() const { return mEngine; }
 
   void setScope(const Scope & scp);
 
@@ -54,6 +55,7 @@ public:
 protected:
 
 private:
+  Engine *mEngine;
   CommandExpressionCompiler expr_;
   CapturelessLambdaProcessor lambda_;
 };

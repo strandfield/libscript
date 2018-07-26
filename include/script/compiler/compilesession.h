@@ -26,6 +26,7 @@ namespace compiler
 {
 
 class Compiler;
+class CompileSession;
 
 class SessionLogger : public Logger
 {

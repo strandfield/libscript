@@ -3,7 +3,6 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/compiler/compiler.h"
-#include "script/compiler/compilercomponent.h"
 #include "script/compiler/compilesession.h"
 #include "script/compiler/cfunctiontemplateprocessor.h"
 #include "script/compiler/cmoduleloader.h"
@@ -271,7 +270,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
   SessionManager manager{ this };
 
-  FunctionCompiler fc{ this };
+  FunctionCompiler fc{ engine() };
   fc.setLogger(session()->mLogger);
   fc.setFunctionTemplateProcessor(session()->mFTP);
   fc.importProcessor().set_loader(session()->mLoader);
@@ -314,7 +313,7 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd,
 {
   SessionManager manager{ this };
 
-  CommandCompiler cc{ this };
+  CommandCompiler cc{ engine() };
   auto result = cc.compile(cmmd, con, scp);
 
   if (manager.started_session())
@@ -329,7 +328,7 @@ ScriptCompiler * Compiler::getScriptCompiler()
 {
   if (mScriptCompiler == nullptr)
   {
-    mScriptCompiler = std::make_unique<ScriptCompiler>(this);
+    mScriptCompiler = std::make_unique<ScriptCompiler>(engine());
     mScriptCompiler->setLogger(mSession->mLogger);
     mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
     mScriptCompiler->importProcessor().set_loader(mSession->mLoader);
@@ -342,7 +341,7 @@ FunctionCompiler * Compiler::getFunctionCompiler()
 {
   if (mFunctionCompiler == nullptr)
   {
-    mFunctionCompiler = std::make_unique<FunctionCompiler>(this);
+    mFunctionCompiler = std::make_unique<FunctionCompiler>(engine());
     mFunctionCompiler->setLogger(mSession->mLogger);
     mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
     mFunctionCompiler->importProcessor().set_loader(mSession->mLoader);
@@ -403,22 +402,6 @@ void Compiler::finalizeSession()
 }
 
 
-CompilerComponent::CompilerComponent(Compiler *c)
-  : mCompiler(c)
-{
-
-}
-
-Engine* CompilerComponent::engine() const
-{
-  return session()->engine();
-}
-
-std::shared_ptr<CompileSession> CompilerComponent::session() const
-{
-  return compiler()->session();
-}
-
 void CompileSession::log(const diagnostic::Message & mssg)
 {
   this->messages.push_back(mssg);
@@ -432,16 +415,6 @@ void CompileSession::log(const CompilerException & ex)
   mssg << ex;
   this->messages.push_back(mssg.build());
   this->error = true;
-}
-
-void CompilerComponent::log(const diagnostic::Message & mssg)
-{
-  session()->log(mssg);
-}
-
-void CompilerComponent::log(const CompilerException & ex)
-{
-  session()->log(ex);
 }
 
 

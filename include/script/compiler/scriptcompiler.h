@@ -5,8 +5,6 @@
 #ifndef LIBSCRIPT_COMPILE_SCRIPT_H
 #define LIBSCRIPT_COMPILE_SCRIPT_H
 
-#include "script/compiler/compilercomponent.h"
-
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/defaultargumentprocessor.h"
 #include "script/compiler/expressioncompiler.h"
@@ -53,13 +51,14 @@ struct IncompleteFunction : public ScopedDeclaration
     : ScopedDeclaration(scp, decl), function(func) { }
 };
 
-class ScriptCompiler;
 
-class ScriptCompiler : public CompilerComponent
+class ScriptCompiler
 {
 public:
-  ScriptCompiler(Compiler *c);
+  explicit ScriptCompiler(Engine *e);
   ~ScriptCompiler();
+
+  inline Engine* engine() const { return mEngine; }
 
   void add(const Script & task);
   Class instantiate2(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
@@ -125,6 +124,10 @@ protected:
   void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
+  void log(const diagnostic::Message & mssg);
+  void log(const CompilerException & exception);
+
+protected:
   class StateGuard
   {
   private:
@@ -144,6 +147,7 @@ protected:
   const std::shared_ptr<ast::AST> & currentAst() const;
 
 protected:
+  Engine *mEngine;
   Script mCurrentScript;
 
   std::queue<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations

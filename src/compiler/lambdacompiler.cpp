@@ -66,8 +66,8 @@ std::shared_ptr<program::Expression> LambdaVariableAccessor::accessDataMember(Ex
 
 
 
-LambdaCompiler::LambdaCompiler(Compiler* c)
-  : FunctionCompiler(c)
+LambdaCompiler::LambdaCompiler(Engine* e)
+  : FunctionCompiler(e)
   , mCurrentTask(nullptr)
   , variable_(mStack)
 {
