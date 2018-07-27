@@ -12,7 +12,6 @@ namespace script
 
 class ArrayImpl;
 
-/// TODO: add a resize() function
 class LIBSCRIPT_API Array
 {
 public:
@@ -31,6 +30,8 @@ public:
 
   int size() const;
   inline int length() const { return size(); }
+  void resize(int newsize);
+  void assign(const Array & other);
 
   const Value & at(int index) const;
   Value & operator[](int index);

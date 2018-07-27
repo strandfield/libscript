@@ -4,9 +4,9 @@ set(GTEST_DIR "" CACHE PATH "Root directory for GoogleTest")
 enable_testing()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  add_executable(libscript_tests "${CMAKE_SOURCE_DIR}/vs/debug.natvis" test_coreutils.cpp test_namelookup.cpp test_conversions.cpp test_overloadresolution.cpp test_classes.cpp test_templates.cpp test_lexer.cpp test_parser.cpp test_eval.cpp test_compiler_components.cpp test_compiler.cpp test_compiler_errors.cpp test_modules.cpp test_string.cpp test_namespaces.cpp test_symbols.cpp ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc)
+  add_executable(libscript_tests "${CMAKE_SOURCE_DIR}/vs/debug.natvis" test_arrays.cpp test_coreutils.cpp test_namelookup.cpp test_conversions.cpp test_overloadresolution.cpp test_classes.cpp test_templates.cpp test_lexer.cpp test_parser.cpp test_eval.cpp test_compiler_components.cpp test_compiler.cpp test_compiler_errors.cpp test_modules.cpp test_string.cpp test_namespaces.cpp test_symbols.cpp ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc)
 else()
-  add_executable(libscript_tests test_coreutils.cpp test_namelookup.cpp test_conversions.cpp test_overloadresolution.cpp test_classes.cpp test_templates.cpp test_lexer.cpp test_parser.cpp test_eval.cpp test_compiler_components.cpp test_compiler.cpp test_compiler_errors.cpp test_modules.cpp test_string.cpp test_namespaces.cpp test_symbols.cpp ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc)
+  add_executable(libscript_tests test_arrays.cpp test_coreutils.cpp test_namelookup.cpp test_conversions.cpp test_overloadresolution.cpp test_classes.cpp test_templates.cpp test_lexer.cpp test_parser.cpp test_eval.cpp test_compiler_components.cpp test_compiler.cpp test_compiler_errors.cpp test_modules.cpp test_string.cpp test_namespaces.cpp test_symbols.cpp ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc)
 endif()
 
 add_dependencies(libscript_tests libscript)

@@ -48,21 +48,12 @@ Value copy_ctor(FunctionCall *c)
 Value size_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
+
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
 
-  const int size = c->arg(0).toInt() > 0 ? c->arg(0).toInt() : 0;
+  const int size = c->arg(0).toInt();
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
-
-  if (size > 0)
-  {
-    array_impl->size = size;
-    array_impl->elements = new Value[size];
-
-    auto engine = c->engine()->implementation();
-
-    for (int i(0); i < size; ++i)
-      array_impl->elements[i] = engine->default_construct(array_data->data.elementType, array_data->data.constructor);
-  }
+  array_impl->resize(size);
 
   that.impl()->set_array(Array{ array_impl });
   return that;
@@ -85,32 +76,8 @@ Value size(FunctionCall *c)
 // void Array<T>::resize(const int & newSize);
 Value resize(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
-
-  const int new_size = c->arg(1).toInt() > 0 ? c->arg(1).toInt() : 0;
-  auto array_impl = that.toArray().impl();
-
-  auto engine = c->engine()->implementation();
-
-  for (int i(0); i < array_impl->size; ++i)
-    engine->destroy(array_impl->elements[i], array_data->data.destructor);
-
-  delete[] array_impl->elements;
-  array_impl->elements = nullptr;
-
-  if (new_size > 0)
-  {
-    array_impl->size = new_size;
-    array_impl->elements = new Value[new_size];
-    for (int i(0); i < new_size; ++i)
-      array_impl->elements[i] = engine->default_construct(array_data->data.elementType, array_data->data.constructor);
-  }
-  else
-  {
-    array_impl->size = 0;
-  }
-
+  Array self = c->thisObject().toArray();
+  self.resize(c->arg(1).toInt());
   return Value::Void;
 }
 
@@ -128,33 +95,10 @@ Value subscript(FunctionCall *c)
 // Array<T> & Array<T>::operator=(const Array<T> & other);
 Value assign(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
-  
+  Array self = c->thisObject().toArray();
   Array other = c->arg(1).toArray();
-
-  auto array_impl = that.toArray().impl();
-  auto engine = c->engine()->implementation();
-
-  for (int i(0); i < array_impl->size; ++i)
-    engine->destroy(array_impl->elements[i], array_data->data.destructor);
-
-  delete[] array_impl->elements;
-  array_impl->elements = nullptr;
-
-  if (other.size() > 0)
-  {
-    array_impl->size = other.size();
-    array_impl->elements = new Value[array_impl->size];
-    for (int i(0); i < array_impl->size; ++i)
-      array_impl->elements[i] = engine->copy(other.at(i), array_data->data.copyConstructor);
-  }
-  else
-  {
-    array_impl->size = 0;
-  }
-
-  return that;
+  self.assign(other);
+  return c->thisObject();
 }
 
 } // namespace array
@@ -289,29 +233,50 @@ ArrayImpl * ArrayImpl::copy() const
     return new ArrayImpl{};
 
   auto ret = new ArrayImpl{ this->data, this->engine };
-  if (this->size == 0)
-    return ret;
-
-  ret->size = this->size;
-  ret->elements = new Value[ret->size];
-
-  for (int i(0); i < this->size; ++i)
-  {
-    ret->elements[i] = this->engine->implementation()->copy(this->elements[i], this->data.copyConstructor);
-  }
+  
+  ret->assign(*this);
 
   return ret;
 }
 
-void ArrayImpl::resize(int s)
+void ArrayImpl::destroy()
 {
   for (int i(0); i < this->size; ++i)
     this->engine->destroy(this->elements[i]);
 
   delete[] this->elements;
+  this->elements = nullptr;
+  this->size = 0;
+}
 
-  this->size = s;
-  this->elements = new Value[s];
+void ArrayImpl::allocate(int n)
+{
+  this->size = n;
+  if (n == 0)
+    return;
+  this->elements = new Value[n];
+}
+
+void ArrayImpl::resize(int s)
+{
+  s = std::max(s, 0);
+
+  destroy();
+  allocate(s);
+  
+  for (int i(0); i < s; ++i)
+    this->elements[i] = engine->implementation()->default_construct(this->data.elementType, this->data.constructor);
+}
+
+void ArrayImpl::assign(const ArrayImpl & other)
+{
+  assert(other.data.typeId == this->data.typeId);
+
+  destroy();
+  allocate(other.size);
+  
+  for (int i(0); i < other.size; ++i)
+    this->elements[i] = engine->implementation()->copy(other.elements[i], this->data.copyConstructor);
 }
 
 
@@ -350,6 +315,19 @@ Type Array::elementTypeId() const
 int Array::size() const
 {
   return d->size;
+}
+
+void Array::resize(int newsize)
+{
+  d->resize(newsize);
+}
+
+void Array::assign(const Array & other)
+{
+  if (other.impl() == d)
+    return;
+
+  d->assign(*other.impl());
 }
 
 const Value & Array::at(int index) const

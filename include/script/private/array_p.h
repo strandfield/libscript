@@ -40,10 +40,14 @@ public:
 
   ArrayImpl * copy() const;
 
+  void destroy();
+  void allocate(int n);
   void resize(int s);
+  void assign(const ArrayImpl & other);
 
   static ClassTemplate register_array_template(Engine *e);
 
+  /// TODO: use shared array data instead ?
   ArrayData data;
   int size;
   Value *elements;
