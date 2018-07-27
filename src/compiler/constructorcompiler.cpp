@@ -3,14 +3,18 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/compiler/constructorcompiler.h"
+
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/conversionprocessor.h"
+#include "script/compiler/expressioncompiler.h"
+#include "script/compiler/stack.h"
 #include "script/compiler/valueconstructor.h"
 
 #include "script/ast/node.h"
 
 #include "script/program/statements.h"
 
+#include "script/conversions.h"
 #include "script/datamember.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"

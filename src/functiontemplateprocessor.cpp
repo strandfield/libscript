@@ -13,7 +13,7 @@
 #include "script/templateargumentdeduction.h"
 #include "script/private/templateargumentscope_p.h"
 
-#include "script/compiler/functioncompiler.h"
+#include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/functionprocessor.h"
 
@@ -25,10 +25,10 @@ namespace script
 class NameResolver
 {
 public:
-  compiler::TemplateNameProcessor *template_;
+  TemplateNameProcessor *template_;
 public:
   NameResolver() : template_(nullptr) {}
-  explicit NameResolver(compiler::TemplateNameProcessor *tnp) : template_(tnp) { }
+  explicit NameResolver(TemplateNameProcessor *tnp) : template_(tnp) { }
   NameResolver(const NameResolver &) = default;
   ~NameResolver() = default;
 
@@ -83,12 +83,9 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   else
   {
     Engine *e = ft.engine();
-    compiler::FunctionCompiler compiler{ std::make_shared<compiler::CompileSession>(e) };
-    compiler::CompileFunctionTask task;
-    task.declaration = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
-    task.function = f;
-    task.scope = ft.argumentScope(f.arguments());
-    compiler.compile(task);
+    compiler::Compiler compiler{ e };
+    auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
+    compiler.instantiate(decl, f, ft.argumentScope(f.arguments()));
   }
 
   ft.impl()->instances[targs] = f;

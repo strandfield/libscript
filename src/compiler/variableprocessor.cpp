@@ -48,6 +48,8 @@ void VariableProcessor::initializeVariables()
 {
   for (const auto & v : uninitialized_variables_)
     initialize(v);
+
+  uninitialized_variables_.clear();
 }
 
 void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp)

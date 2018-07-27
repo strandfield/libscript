@@ -5,6 +5,7 @@
 #include "script/compiler/scriptcompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/functioncompiler.h"
@@ -19,6 +20,7 @@
 #include "script/program/expression.h"
 
 #include "script/classbuilder.h"
+#include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
@@ -32,6 +34,7 @@
 #include "script/private/template_p.h"
 #include "script/symbol.h"
 #include "script/templatebuilder.h"
+#include "script/templatenameprocessor.h"
 
 namespace script
 {
@@ -52,88 +55,52 @@ ScriptCompiler::StateGuard::StateGuard(ScriptCompiler *c)
   : compiler(c)
   , script(c->mCurrentScript)
   , scope(c->mCurrentScope)
-  , ast(c->mCurrentAst)
 {
 
 }
 
 ScriptCompiler::StateGuard::~StateGuard()
 {
-  compiler->mCurrentAst = ast;
   compiler->mCurrentScope = scope;
   compiler->mCurrentScript = script;
 }
 
-Engine* ScriptCompilerModuleLoader::engine() const
-{
-  return compiler_->engine();
-}
-
-Script ScriptCompilerModuleLoader::load(const SourceFile &src)
-{
-  Script s = engine()->newScript(src);
-
-  parser::Parser parser{ s.source() };
-  auto ast = parser.parse(s.source());
-
-  assert(ast != nullptr);
-
-  compiler_->addTask(CompileScriptTask{ s, ast });
-
-  return s;
-}
-
 ScriptCompiler::ScriptCompiler(Engine *e)
-  : Compiler(e)
+  : mEngine(e)
   , variable_(e)
+  , modules_(e)
 {
-  name_resolver.compiler = this;
-  type_resolver.name_resolver() = name_resolver;
-
-  function_processor_.prototype_.type_.name_resolver() = name_resolver;
 
   scope_statements_.scope_ = &mCurrentScope;
 
-  modules_.loader_.compiler_ = this;
+  logger_ = &default_logger_;
+  setFunctionTemplateProcessor(default_ftp_);
 }
 
-ScriptCompiler::ScriptCompiler(const std::shared_ptr<CompileSession> & s)
-  : Compiler(s)
-  , variable_(s->engine())
+ScriptCompiler::~ScriptCompiler()
 {
-  name_resolver.compiler = this;
-  type_resolver.name_resolver() = name_resolver;
 
-  function_processor_.prototype_.type_.name_resolver() = name_resolver;
-
-  scope_statements_.scope_ = &mCurrentScope;
-
-  modules_.loader_.compiler_ = this;
 }
 
-void ScriptCompiler::compile(const CompileScriptTask & task)
+void ScriptCompiler::add(const Script & task)
 {
-  mTasks.clear();
-  mTasks.push_back(task);
+  parser::Parser parser{ task.source() };
+  auto ast = parser.parse(task.source());
+
+  if (ast->hasErrors())
+  {
+    for (const auto & m : ast->messages())
+      logger_->log(m);
+    return; /// TODO: should we throw instead ?
+  }
+
+  task.impl()->ast = ast;
 
   processOrCollectScriptDeclarations(task);
-
-  resolveIncompleteTypes();
-  processPendingDeclarations();
-  compileFunctions();
-  //initializeStaticVariables();
-  variable_.initializeVariables();
-
-  for (size_t i(1); i < mTasks.size(); ++i)
-  {
-    mTasks.at(i).script.run();
-  }
 }
 
-Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  Class result;
-
   TemplateSpecializationSelector selector;
   auto selected_specialization = selector.select(ct, args);
   if (!selected_specialization.first.isNull())
@@ -144,12 +111,14 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
     builder.name = readClassName(class_decl);
     builder.base = readClassBase(class_decl);
 
-    result = builder.get(); /// TODO: record this generate template instance
+    Class result = builder.get();
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
 
     readClassContent(result, class_decl);
+
+    return result;
   }
   else
   {
@@ -159,83 +128,73 @@ Class ScriptCompiler::compileClassTemplate(const ClassTemplate & ct, const std::
     builder.name = readClassName(class_decl);
     builder.base = readClassBase(class_decl);
 
-    result = builder.get(); /// TODO: record this generate template instance
+    Class result = builder.get();
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
 
     readClassContent(result, class_decl);
+
+    return result;
   }
-
-  // This is a standalone job 
-  resolveIncompleteTypes();
-  processPendingDeclarations();
-  compileFunctions();
-  variable_.initializeVariables();
-
-  for (size_t i(1); i < mTasks.size(); ++i)
-  {
-    mTasks.at(i).script.run();
-  }
-
-  return result;
 }
 
-void ScriptCompiler::addTask(const CompileScriptTask & task)
+bool ScriptCompiler::done() const
 {
-  if (task.ast->hasErrors())
-  {
-    log(diagnostic::info() << "While loading script module:");
-    for (const auto & m : task.ast->messages())
-      log(m);
+  return mIncompleteFunctions.empty()
+    && mProcessingQueue.empty();
+}
 
-    /// TODO : destroy scripts
+void ScriptCompiler::processNext()
+{
+  if (!mIncompleteFunctions.empty())
+  {
+    while (!mIncompleteFunctions.empty())
+    {
+      auto task = mIncompleteFunctions.front();
+      mIncompleteFunctions.pop();
+
+      reprocess(task);
+    }
+
     return;
   }
 
+  if (!mProcessingQueue.empty())
+  {
+    auto task = mProcessingQueue.front();
+    mProcessingQueue.pop();
 
-  mTasks.push_back(task);
-  processOrCollectScriptDeclarations(mTasks.back());
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = task.scope;
+
+    if (task.declaration->is<ast::FriendDeclaration>())
+    {
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
+    }
+    else
+    {
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
+    }
+
+    return;
+  }
 }
 
-Class ScriptCompiler::addTask(const ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+void ScriptCompiler::setLogger(Logger & lg)
 {
-  TemplateSpecializationSelector selector;
-  auto selected_specialization = selector.select(ct, args);
-  if (!selected_specialization.first.isNull())
-  {
-    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
+  logger_ = &lg;
+}
 
-    auto class_decl = selected_specialization.first.impl()->definition.get_class_decl();
-    builder.name = readClassName(class_decl);
-    builder.base = readClassBase(class_decl);
-
-    Class result = builder.get(); /// TODO: record this generated template instance
-
-    StateGuard guard{ this };
-    mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
-
-    readClassContent(result, class_decl);
-
-    return result;
-  }
-  else
-  {
-    ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
-
-    auto class_decl = ct.impl()->definition.get_class_decl();
-    builder.name = readClassName(class_decl);
-    builder.base = readClassBase(class_decl);
-
-    Class result = builder.get(); /// TODO: record this generated template instance
-
-    StateGuard guard{ this };
-    mCurrentScope = ct.argumentScope(args);
-
-    readClassContent(result, class_decl);
-
-    return result;
-  }
+void ScriptCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp)
+{
+  ftp_ = &ftp;
+  name_resolver.set_tnp(ftp.name_processor());
+  type_resolver.name_resolver().set_tnp(ftp.name_processor());
+  function_processor_.prototype_.type_.name_resolver().set_tnp(ftp.name_processor());
+  scope_statements_.name_.set_tnp(ftp.name_processor());
+  variable_.expressionCompiler().setTemplateProcessor(ftp);
+  variable_.typeResolver().name_resolver().set_tnp(ftp.name_processor());
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
@@ -255,7 +214,7 @@ Function ScriptCompiler::registerRootFunction()
 
   auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
   fakedecl->body = ast::CompoundStatement::New(parser::Token{ parser::Token::LeftBrace, 0, 0, 0, 0 }, parser::Token{ parser::Token::RightBrace, 0, 0, 0, 0 });
-  const auto & stmts = mCurrentAst->statements();
+  const auto & stmts = currentAst()->statements();
   for (const auto & s : stmts)
   {
     switch (s->type())
@@ -281,12 +240,11 @@ Function ScriptCompiler::registerRootFunction()
   return Function{ scriptfunc };
 }
 
-void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask & task)
+void ScriptCompiler::processOrCollectScriptDeclarations(const Script & task)
 {
   StateGuard guard{ this };
 
-  mCurrentAst = task.ast;
-  mCurrentScript = task.script;
+  mCurrentScript = task;
 
   mCurrentScope = Scope{ mCurrentScript };
   mCurrentScope.merge(engine()->rootNamespace());
@@ -298,7 +256,7 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const CompileScriptTask 
 
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
-  for (const auto & decl : mCurrentAst->declarations())
+  for (const auto & decl : currentAst()->declarations())
     processOrCollectDeclaration(decl);
 
   return true;
@@ -358,91 +316,23 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
 
 void ScriptCompiler::collectDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
-  mProcessingQueue.push_back(ScopedDeclaration{ currentScope(), decl });
+  mProcessingQueue.push(ScopedDeclaration{ currentScope(), decl });
 }
 
 void ScriptCompiler::resolveIncompleteTypes()
 {
   ScopeGuard guard{ mCurrentScope };
 
-  for (auto & f : mIncompleteFunctions)
-    reprocess(f);
+  //for (auto & f : mIncompleteFunctions)
+  //  reprocess(f);
 
-  mIncompleteFunctions.clear();
-}
-
-void ScriptCompiler::processDataMemberDecl(const std::shared_ptr<ast::VariableDecl> & var_decl)
-{
-  const Scope & scp = currentScope();
-  Class current_class = scp.asClass();
-  assert(!current_class.isNull());
-
-  if (var_decl->variable_type.type->name == parser::Token::Auto)
-    throw DataMemberCannotBeAuto{ dpos(var_decl) };
-
-  Type var_type = resolve(var_decl->variable_type);
-
-  if (var_decl->staticSpecifier.isValid())
+  //mIncompleteFunctions.clear();
+  while (!mIncompleteFunctions.empty())
   {
-    if (var_decl->init == nullptr)
-      throw MissingStaticInitialization{ dpos(var_decl) };
-
-    if (var_decl->init->is<ast::ConstructorInitialization>() || var_decl->init->is<ast::BraceInitialization>())
-      throw InvalidStaticInitialization{ dpos(var_decl) };
-
-    auto expr = var_decl->init->as<ast::AssignmentInitialization>().value;
-    if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
-    {
-      auto execexpr = generateExpression(expr);
-      
-      Value val = engine()->implementation()->interpreter->eval(execexpr);
-      current_class.addStaticDataMember(var_decl->name->getName(), val, scp.accessibility());
-    }
-    else
-    {
-      Value staticMember = current_class.impl()->add_uninitialized_static_data_member(var_decl->name->getName(), var_type, scp.accessibility());
-      mStaticVariables.push_back(StaticVariable{ staticMember, var_decl, scp });
-    }
+    auto task = mIncompleteFunctions.front();
+    mIncompleteFunctions.pop();
+    reprocess(task);
   }
-  else
-  {
-    Class::DataMember dataMember{ var_type, var_decl->name->getName(), scp.accessibility() };
-    current_class.impl()->dataMembers.push_back(dataMember);
-  }
-}
-
-void ScriptCompiler::processNamespaceVariableDecl(const std::shared_ptr<ast::VariableDecl> & decl)
-{
-  const Scope & scp = currentScope();
-  Namespace ns = scp.asNamespace();
-  assert(!ns.isNull());
-
-  if (decl->variable_type.type->name == parser::Token::Auto)
-    throw GlobalVariablesCannotBeAuto{ dpos(decl) };
-
-  Type var_type = resolve(decl->variable_type);
-
-  if (decl->init == nullptr)
-    throw GlobalVariablesMustBeInitialized{ dpos(decl) };
-
-  if (decl->init->is<ast::ConstructorInitialization>() || decl->init->is<ast::BraceInitialization>())
-    throw GlobalVariablesMustBeAssigned{ dpos(decl) };
-
-  auto expr = decl->init->as<ast::AssignmentInitialization>().value;
-  Value val;
-  if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
-  {
-    auto execexpr = generateExpression(expr);
-    val = engine()->implementation()->interpreter->eval(execexpr);
-  }
-  else
-  {
-    val = engine()->uninitialized(var_type);
-    mStaticVariables.push_back(StaticVariable{ val, decl, scp });
-  }
-
-  engine()->manage(val);
-  ns.impl()->variables[decl->name->getName()] = val;
 }
 
 void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl)
@@ -463,7 +353,7 @@ void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclarat
 
 void ScriptCompiler::processPendingDeclarations()
 {
-  for (size_t i(0); i < mProcessingQueue.size(); ++i)
+  /*for (size_t i(0); i < mProcessingQueue.size(); ++i)
   {
     const auto & decl = mProcessingQueue.at(i);
 
@@ -480,30 +370,30 @@ void ScriptCompiler::processPendingDeclarations()
     }
   }
 
-  mProcessingQueue.clear();
-}
-
-
-
-bool ScriptCompiler::compileFunctions()
-{
-  FunctionCompiler fcomp{ session() };
-
-  for (size_t i(0); i < this->mCompilationTasks.size(); ++i)
+  mProcessingQueue.clear();*/
+  
+  while (!mProcessingQueue.empty())
   {
-    const auto & task = this->mCompilationTasks.at(i);
-    fcomp.compile(task);
+    auto task = mProcessingQueue.front();
+    mProcessingQueue.pop();
+
+
+    ScopeGuard guard{ mCurrentScope };
+    mCurrentScope = task.scope;
+
+    if (task.declaration->is<ast::FriendDeclaration>())
+    {
+      processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));
+    }
+    else
+    {
+      variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
+    }
+
+
   }
-
-  return true;
 }
 
-
-std::shared_ptr<program::Expression> ScriptCompiler::generateExpression(const std::shared_ptr<ast::Expression> & e)
-{
-  expr_.setScope(mCurrentScope);
-  return expr_.generateExpression(e);
-}
 
 void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)
 {
@@ -862,9 +752,8 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   if (ct.isNull())
     throw CouldNotFindPrimaryClassTemplate{dpos(classdecl)};
 
-  TemplateNameProcessor tnp; /// TODO : use a custom TNP
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
-  std::vector<TemplateArgument> args = tnp.arguments(scp, template_full_name->arguments);
+  std::vector<TemplateArgument> args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
 
   ClassTemplateSpecializationBuilder builder = ct.Specialization(std::move(args));
   builder.name = readClassName(classdecl);
@@ -918,9 +807,8 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   std::vector<TemplateArgument> args;
   if (fundecl->name->is<ast::TemplateIdentifier>())
   {
-    TemplateNameProcessor tnp; /// TODO : use a custom TNP
     auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(fundecl->name);
-    args = tnp.arguments(scp, template_full_name->arguments);
+    args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
   }
 
   FunctionBuilder builder{ Function::StandardFunction };
@@ -972,7 +860,7 @@ void ScriptCompiler::reprocess(IncompleteFunction & func)
 void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
   if (function_processor_.prototype_.type_.relax)
-    mIncompleteFunctions.push_back(IncompleteFunction{ scp, fundecl, f });
+    mIncompleteFunctions.push(IncompleteFunction{ scp, fundecl, f });
   else
     default_arguments_.process(fundecl->params, f, scp);
 
@@ -980,7 +868,22 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 
   if (f.isDeleted() || f.isPureVirtual())
     return;
-  mCompilationTasks.push_back(CompileFunctionTask{ f, fundecl, scp });
+  mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
+}
+
+void ScriptCompiler::log(const diagnostic::Message & mssg)
+{
+  logger_->log(mssg);
+}
+
+void ScriptCompiler::log(const CompilerException & exception)
+{
+  logger_->log(exception);
+}
+
+const std::shared_ptr<ast::AST> & ScriptCompiler::currentAst() const
+{
+  return mCurrentScript.impl()->ast;
 }
 
 } // namespace compiler

@@ -21,12 +21,8 @@
 namespace script
 {
 
-namespace compiler
-{
-class TemplateNameProcessor;
-} // namespace compiler
-
 class NameLookupImpl;
+class TemplateNameProcessor;
 
 struct OperatorLookup {
   enum Value { RemoveDuplicates = 1, FetchParentOperators = 2, ConsiderCurrentScope = 4 };
@@ -46,7 +42,7 @@ public:
   const Scope & scope() const;
   const std::shared_ptr<ast::Identifier> & identifier() const;
 
-  compiler::TemplateNameProcessor & template_processor();
+  TemplateNameProcessor & template_processor();
 
   enum ResultType {
     UnknownName,
@@ -84,7 +80,7 @@ public:
   static NameLookup resolve(const std::string & name, const Scope & scope);
   static NameLookup resolve(OperatorName op, const Scope & scope);
 
-  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, compiler::TemplateNameProcessor & tnp);
+  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, TemplateNameProcessor & tnp);
   
   static NameLookup member(const std::string & name, const Class & cla);
 

@@ -5,14 +5,15 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
-#include "script/compiler/compiler.h"
-
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
 #include "script/compiler/importprocessor.h"
+#include "script/compiler/logger.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/stack.h"
+
+#include "script/functiontemplateprocessor.h"
 
 #include "script/types.h"
 #include "script/engine.h"
@@ -37,6 +38,7 @@ namespace compiler
 {
 
 class FunctionCompiler;
+class FunctionCompilerTemplateProcessor;
 
 class EnterScope
 {
@@ -54,17 +56,13 @@ class StackVariableAccessor : public VariableAccessor
 {
 protected:
   Stack * stack_;
-  Script script_;
-  FunctionCompiler* fcomp_;
 public:
-  StackVariableAccessor(Stack & s, FunctionCompiler* fc);
+  StackVariableAccessor(Stack & s);
   ~StackVariableAccessor() = default;
 
   inline const Stack & stack() const { return *stack_; }
-  inline Script & script() { return script_; }
 
-  std::shared_ptr<program::Expression> global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
-  std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
 };
 
 class FunctionCompilerLambdaProcessor : public LambdaProcessor
@@ -83,18 +81,13 @@ public:
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
 };
 
-class FunctionCompilerModuleLoader
+class FunctionCompiler
 {
 public:
-  FunctionCompiler *compiler_;
-  Engine* engine() const;
-  Script load(const SourceFile &src);
-};
+  explicit FunctionCompiler(Engine *e);
+  ~FunctionCompiler();
 
-class FunctionCompiler : public Compiler
-{
-public:
-  FunctionCompiler(const std::shared_ptr<CompileSession> & s);
+  inline Engine* engine() const { return mEngine; }
 
   void compile(const CompileFunctionTask & task);
 
@@ -104,10 +97,14 @@ public:
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;
 
-  /// TODO (hopefully) temporarily public (used by ExtendedExpressionCompiler)
-  bool canUseThis() const;
+  void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
+  inline FunctionTemplateProcessor & functionTemplateProcessor() { return *ftp_; }
+  ImportProcessor & importProcessor() { return modules_; }
+  inline Logger & logger() { return *logger_; }
+  void setLogger(Logger & lg);
 
 protected:
+  bool canUseThis() const;
   bool isCompilingAnonymousFunction() const;
   std::string argumentName(int index);
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();
@@ -168,6 +165,10 @@ protected:
   void processExitScope(const Scope & scp);
   void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
 
+protected:
+  void log(const diagnostic::Message & mssg);
+  void log(const CompilerException & exception);
+
 private:
   void processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
   void processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
@@ -189,7 +190,7 @@ protected:
   friend class FunctionScope;
   friend class FunctionCompilerExtension;
 
-  Script mScript;
+  Engine *mEngine;
 
   Stack mStack;
   Function mFunction;
@@ -201,12 +202,20 @@ protected:
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
 
-  TypeResolver<BasicNameResolver> type_;
+  TypeResolver<ExtendedNameResolver> type_;
   ExpressionCompiler expr_;
-  StackVariableAccessor variable_;
   FunctionCompilerLambdaProcessor lambda_;
-  ScopeStatementProcessor<BasicNameResolver> scope_statements_;
-  ImportProcessor<FunctionCompilerModuleLoader> modules_;
+  ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
+  ImportProcessor modules_;
+
+  Logger default_logger_;
+  Logger *logger_;
+
+  FunctionTemplateProcessor default_ftp_;
+  FunctionTemplateProcessor *ftp_;
+
+private:
+  StackVariableAccessor variable_;
 };
 
 } // namespace compiler

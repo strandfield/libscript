@@ -25,9 +25,6 @@ public:
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
-  void remove_class(const Class & c) override;
-  void remove_enum(const Enum & e) override;
-
 public:
   Template template_;
   std::vector<TemplateArgument> arguments_; /// TODO : perhaps a const std::vector<TemplateArgument> * would be enough

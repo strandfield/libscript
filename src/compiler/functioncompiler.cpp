@@ -5,7 +5,9 @@
 #include "script/compiler/functioncompiler.h"
 #include "script/private/functionscope_p.h"
 
+#include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 
 #include "script/compiler/assignmentcompiler.h"
 #include "script/compiler/constructorcompiler.h"
@@ -20,9 +22,11 @@
 #include "script/program/expression.h"
 #include "script/program/statements.h"
 
-#include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/namelookup.h"
+#include "script/templatenameprocessor.h"
+
+#include "script/private/function_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/script_p.h"
 
@@ -272,27 +276,19 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-StackVariableAccessor::StackVariableAccessor(Stack & s, FunctionCompiler* fc)
+
+StackVariableAccessor::StackVariableAccessor(Stack & s)
   : stack_(&s)
-  , fcomp_(fc)
 {
 
 }
 
-std::shared_ptr<program::Expression> StackVariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  Script s = script_;
-  auto simpl = s.impl();
-  const Type & gtype = simpl->global_types[offset];
-
-  return program::FetchGlobal::New(s.id(), offset, gtype);
-}
-
-std::shared_ptr<program::Expression> StackVariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> StackVariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
   const Type t = stack()[offset].type;
   return program::StackValue::New(offset, t);
 }
+
 
 FunctionCompilerLambdaProcessor::FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc)
   : stack_(&s)
@@ -310,54 +306,84 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
-  LambdaCompiler compiler{ fcomp_->session() };
+  LambdaCompiler compiler{ fcomp_->engine() };
+  compiler.importProcessor().set_loader(fcomp_->importProcessor().loader());
+  compiler.setLogger(fcomp_->logger());
+  compiler.setFunctionTemplateProcessor(fcomp_->functionTemplateProcessor());
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
 }
 
 
-Engine* FunctionCompilerModuleLoader::engine() const
-{
-  return compiler_->engine();
+Class FunctionCompilerExtension::currentClass() const 
+{ 
+  return mCompiler->classScope(); 
 }
 
-Script FunctionCompilerModuleLoader::load(const SourceFile &src)
+FunctionCompiler * FunctionCompilerExtension::compiler() const 
 {
-  Script s = engine()->newScript(src);
-  bool success = engine()->compile(s);
-  if (!success)
-  {
-    std::string mssg;
-    for (const auto & m : s.messages())
-      mssg += m.to_string() + "\n";
-    throw ModuleImportationError{ src.filepath(), mssg };
-  }
+  return mCompiler; 
+}
 
-  s.run();
+const std::shared_ptr<ast::Declaration> & FunctionCompilerExtension::declaration() const
+{ 
+  return mCompiler->declaration();
+}
 
-  return s;
+Engine * FunctionCompilerExtension::engine() const 
+{ 
+  return mCompiler->engine(); 
+}
+
+Stack & FunctionCompilerExtension::stack()
+{
+  return mCompiler->mStack; 
+}
+
+ExpressionCompiler & FunctionCompilerExtension::ec() 
+{ 
+  return mCompiler->expr_; 
+}
+
+std::string FunctionCompilerExtension::dstr(const std::shared_ptr<ast::Identifier> & id)
+{ 
+  return id->getName(); 
+}
+
+NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identifier> & name)
+{
+  return mCompiler->resolve(name);
 }
 
 
-FunctionCompiler::FunctionCompiler(const std::shared_ptr<CompileSession> & s)
-  : Compiler(s)
-  , variable_(mStack, this)
+
+FunctionCompiler::FunctionCompiler(Engine *e)
+  : mEngine(e)
+  , variable_(mStack)
   , lambda_(mStack, this)
+  , modules_(e)
 {
   expr_.setVariableAccessor(variable_);
   expr_.setLambdaProcessor(lambda_);
   scope_statements_.scope_ = &mCurrentScope;
-  modules_.loader_.compiler_ = this;
+  
+  logger_ = &default_logger_;
+
+  setFunctionTemplateProcessor(default_ftp_);
+}
+
+FunctionCompiler::~FunctionCompiler()
+{
+
 }
 
 
 void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
-  mScript = task.function.script();
+  Script s = task.function.script();
 
-  variable_.script() = mScript;
-  lambda_.script() = mScript;
+  lambda_.script() = s;
   expr_.setCaller(task.function);
   
   mFunction = task.function;
@@ -384,7 +410,7 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
 Script FunctionCompiler::script()
 {
-  return mScript;
+  return mFunction.script();
 }
 
 Class FunctionCompiler::classScope()
@@ -434,6 +460,19 @@ bool FunctionCompiler::canUseThis() const
   return mFunction.hasImplicitObject() || mFunction.isConstructor() || mFunction.isDestructor();
 }
 
+void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp)
+{
+  ftp_ = &ftp;
+  expr_.setTemplateProcessor(ftp);
+  type_.name_resolver().set_tnp(ftp_->name_processor());
+  scope_statements_.name_.set_tnp(ftp.name_processor());
+}
+
+void FunctionCompiler::setLogger(Logger & lg)
+{
+  logger_ = &lg;
+}
+
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
 {
   expr_.setScope(mCurrentScope);
@@ -459,7 +498,7 @@ void FunctionCompiler::leave_scope(const ScopeKey &)
 
 NameLookup FunctionCompiler::resolve(const std::shared_ptr<ast::Identifier> & name)
 {
-  return NameLookup::resolve(name, mCurrentScope);
+  return NameLookup::resolve(name, mCurrentScope, ftp_->name_processor());
 }
 
 Scope FunctionCompiler::breakScope() const
@@ -692,6 +731,16 @@ void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::sha
 {
   BufferSwap swap{ mBuffer, statements };
   processExitScope(scp);
+}
+
+void FunctionCompiler::log(const diagnostic::Message & mssg)
+{
+  logger_->log(mssg);
+}
+
+void FunctionCompiler::log(const CompilerException & exception)
+{
+  logger_->log(exception);
 }
 
 void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
@@ -931,7 +980,7 @@ void FunctionCompiler::processVariableCreation(const Type & type, const std::str
   {
     mStack[stack_index].global = true;
 
-    auto simpl = mScript.impl();
+    auto simpl = script().impl();
     simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
 
     write(program::PushGlobal::New(script().id(), stack_index));

@@ -11,7 +11,7 @@
 #include "script/functiontemplate.h"
 #include "script/staticdatamember.h"
 
-#include "script/compiler/templatenameprocessor.h"
+#include "script/templatenameprocessor.h"
 
 namespace script
 {
@@ -25,8 +25,8 @@ public:
   Scope scope;
   std::shared_ptr<ast::Identifier> identifier;
   // template-related stuff
-  compiler::TemplateNameProcessor default_template_;
-  compiler::TemplateNameProcessor *template_;
+  TemplateNameProcessor default_template_;
+  TemplateNameProcessor *template_;
 
   // storing results
   std::vector<Function> functions;

@@ -5,15 +5,30 @@
 #ifndef LIBSCRIPT_FUNCTION_COMPILER_EXTENSION_H
 #define LIBSCRIPT_FUNCTION_COMPILER_EXTENSION_H
 
-#include "script/compiler/functioncompiler.h"
+#include "libscriptdefs.h"
 
-#include "script/namelookup.h"
+#include <memory>
+#include <string>
 
 namespace script
 {
 
+class Class;
+class Engine;
+class NameLookup;
+
+namespace ast
+{
+class Declaration;
+class Identifier;
+} // namespace ast
+
 namespace compiler
 {
+
+class ExpressionCompiler;
+class FunctionCompiler;
+class Stack;
 
 class FunctionCompilerExtension
 {
@@ -28,17 +43,17 @@ public:
 
   ~FunctionCompilerExtension() = default;
 
-  inline Class currentClass() const { return mCompiler->classScope(); }
-  inline FunctionCompiler * compiler() const { return mCompiler; }
-  inline const std::shared_ptr<ast::Declaration> & declaration() const { return mCompiler->declaration(); }
-  inline Engine * engine() const { return mCompiler->engine(); }
-  inline Stack & stack() { return mCompiler->mStack; }
+  Class currentClass() const;
+  FunctionCompiler * compiler() const;
+  const std::shared_ptr<ast::Declaration> & declaration() const;
+  Engine * engine() const;
+  Stack & stack();
 
-  inline ExpressionCompiler & ec() { return mCompiler->expr_; }
+  ExpressionCompiler & ec();
 
-  inline static std::string dstr(const std::shared_ptr<ast::Identifier> & id) { return id->getName(); }
+  static std::string dstr(const std::shared_ptr<ast::Identifier> & id);
 
-  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name) const { return mCompiler->resolve(name); }
+  NameLookup resolve(const std::shared_ptr<ast::Identifier> & name);
 };
 
 } // namespace compiler

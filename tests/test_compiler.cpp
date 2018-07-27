@@ -5,16 +5,19 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/class.h"
 #include "script/datamember.h"
 #include "script/engine.h"
+#include "script/enumvalue.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
-#include "script/enumvalue.h"
+#include "script/lambda.h"
+#include "script/namespace.h"
+#include "script/script.h"
 #include "script/staticdatamember.h"
+#include "script/typedefs.h"
 
-#include "script/compiler/commandcompiler.h"
-#include "script/compiler/functioncompiler.h"
-#include "script/compiler/scriptcompiler.h"
+#include "script/compiler/compiler.h"
 
 #include "script/program/expression.h"
 #include "script/program/statements.h"
@@ -29,8 +32,8 @@ void test_operation(const char *source, script::OperatorName op1, script::Operat
   Engine engine;
   engine.setup();
 
-  compiler::CommandCompiler compiler{ &engine };
-  auto expr = compiler.compile(source, engine.currentContext());
+  compiler::Compiler cmd{ &engine };
+  auto expr = cmd.compile(source, engine.currentContext(), Scope{ engine.rootNamespace() });
 
   ASSERT_TRUE(expr->is<program::FunctionCall>());
   const program::FunctionCall & call = dynamic_cast<const program::FunctionCall &>(*expr);
@@ -84,8 +87,8 @@ TEST(CompilerTests, bind_expression) {
   Engine engine;
   engine.setup();
 
-  compiler::CommandCompiler compiler{ &engine };
-  auto expr = compiler.compile(source, engine.currentContext());
+  compiler::Compiler cmd{ &engine };
+  auto expr = cmd.compile(source, engine.currentContext(), Scope{ engine.rootNamespace() });
 
   ASSERT_TRUE(expr->is<program::BindExpression>());
   const program::BindExpression & bind = dynamic_cast<const program::BindExpression &>(*expr);

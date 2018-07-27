@@ -3,7 +3,10 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/compiler/assignmentcompiler.h"
+
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/expressioncompiler.h"
+#include "script/compiler/stack.h"
 
 #include "script/ast/node.h"
 
@@ -11,6 +14,7 @@
 
 #include "script/datamember.h"
 #include "script/namelookup.h"
+#include "script/operator.h"
 #include "script/overloadresolution.h"
 
 namespace script

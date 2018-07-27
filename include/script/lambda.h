@@ -29,6 +29,7 @@ public:
   };
 
   int id() const;
+  inline bool isNull() const { return d == nullptr; }
 
   int captureCount() const;
   bool isCaptureless() const;

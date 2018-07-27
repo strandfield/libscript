@@ -55,25 +55,24 @@ struct LambdaCompilationResult
 
 class LambdaCompiler;
 
-class LambdaCompilerVariableAccessor : public StackVariableAccessor
+class LambdaVariableAccessor : public StackVariableAccessor
 {
 public:
   // Will be used to update the capture offset after removing unused captures
   std::vector<std::shared_ptr<program::CaptureAccess>> generated_access_;
 public:
-  LambdaCompilerVariableAccessor(Stack & s, LambdaCompiler* fc);
-  ~LambdaCompilerVariableAccessor() = default;
+  LambdaVariableAccessor(Stack & s);
+  ~LambdaVariableAccessor() = default;
 
-  std::shared_ptr<program::Expression> capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
-  std::shared_ptr<program::Expression> data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
+  std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
 };
 
 
 class LambdaCompiler : public FunctionCompiler
 {
-  friend class LambdaCompilerVariableAccessor;
 public:
-  LambdaCompiler(const std::shared_ptr<CompileSession> & s);
+  explicit LambdaCompiler(Engine *e);
 
   static void preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset);
 
@@ -104,7 +103,7 @@ protected:
 private:
   std::vector<Capture> mCaptures;
   ClosureType mLambda;
-  LambdaCompilerVariableAccessor variable_;
+  LambdaVariableAccessor variable_;
 };
 
 

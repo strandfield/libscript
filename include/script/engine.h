@@ -108,6 +108,7 @@ public:
 
   Script newScript(const SourceFile & source);
   bool compile(Script s);
+  void destroy(Script s);
 
   Module newModule(const std::string & name);
   Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);

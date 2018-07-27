@@ -8,6 +8,8 @@
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
+#include "script/compiler/variableaccessor.h"
+
 #include "script/functiontemplateprocessor.h"
 #include "script/scope.h"
 
@@ -43,25 +45,6 @@ public:
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
 
-class VariableAccessor
-{
-public:
-  VariableAccessor() = default;
-  VariableAccessor(const VariableAccessor &) = delete;
-  virtual ~VariableAccessor() = default;
-
-  virtual std::shared_ptr<program::Expression> data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-
-  VariableAccessor & operator=(const VariableAccessor &) = delete;
-
-protected:
-  std::shared_ptr<program::Expression> member_access(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> implicit_object(ExpressionCompiler & ec) const;
-};
-
 class ExpressionCompiler
 {
 private:
@@ -69,7 +52,7 @@ private:
   Function caller_; 
   
 private:
-  TypeResolver<BasicNameResolver> type_resolver;
+  TypeResolver<ExtendedNameResolver> type_resolver;
 
   LambdaProcessor default_lambda_;
   LambdaProcessor *lambda_;
@@ -79,9 +62,6 @@ private:
 
   FunctionTemplateProcessor default_templates_;
   FunctionTemplateProcessor *templates_;
-
-private:
-  friend class VariableAccessor;
 
 public:
   ExpressionCompiler();
@@ -102,7 +82,7 @@ public:
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
 
   inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
-  inline void setTemplateProcessor(FunctionTemplateProcessor & ftp) { templates_ = &ftp; }
+  void setTemplateProcessor(FunctionTemplateProcessor & ftp);
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);
@@ -149,7 +129,6 @@ protected:
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier);
   std::shared_ptr<program::Expression> generateVariableAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
   std::shared_ptr<program::Expression> generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup);
-  std::shared_ptr<program::Expression> generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
   std::shared_ptr<program::Expression> generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup);
 };
 

@@ -569,21 +569,6 @@ const std::map<std::string, Value> & NamespaceScope::values() const
   return mValues;
 }
 
-void NamespaceScope::remove_class(const Class & c)
-{
-  auto & container = mNamespace.impl()->classes;
-  auto it = std::find(container.begin(), container.end(), c);
-  container.erase(it);
-}
-
-void NamespaceScope::remove_enum(const Enum & e)
-{
-  auto & container = mNamespace.impl()->enums;
-  auto it = std::find(container.begin(), container.end(), e);
-  container.erase(it);
-}
-
-
 void NamespaceScope::import_namespace(const NamespaceScope & other)
 {
   if (!other.mNamespace.isNull())

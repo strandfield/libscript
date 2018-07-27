@@ -4,7 +4,9 @@
 
 #include "script/compiler/commandcompiler.h"
 
+#include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/parser/parser.h"
@@ -39,8 +41,8 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   return ExpressionCompiler::generateOperation(op);
 }
 
-CapturelessLambdaProcessor::CapturelessLambdaProcessor(const std::shared_ptr<CompileSession> & s)
-  : session_(s)
+CapturelessLambdaProcessor::CapturelessLambdaProcessor(Engine *e)
+  : engine_(e)
 {
 
 }
@@ -54,17 +56,18 @@ std::shared_ptr<program::LambdaExpression> CapturelessLambdaProcessor::generate(
 
   CompileLambdaTask task;
   task.lexpr = le;
-  task.scope = script::Scope{ session_->engine()->rootNamespace() }; /// TODO : make this customizable !
+  task.scope = script::Scope{ engine_->rootNamespace() }; /// TODO : make this customizable !
 
-  LambdaCompiler compiler{ session_ };
+  /// TODO: set tnp, module loader and so on
+  LambdaCompiler compiler{ engine_ };
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
 }
 
 CommandCompiler::CommandCompiler(Engine *e)
-  : Compiler(e)
-  , lambda_(session())
+  : mEngine(e)
+  , lambda_(e)
 {
   expr_.setLambdaProcessor(lambda_);
 }

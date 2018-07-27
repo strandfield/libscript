@@ -4,7 +4,7 @@
 
 #include "script/compiler/templatespecialization.h"
 
-#include "script/compiler/templatenameprocessor.h"
+#include "script/compiler/dummytemplatenameprocessor.h"
 
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
@@ -118,8 +118,8 @@ TemplatePartialOrdering TemplateSpecialization::compare(const SType & a, const S
     if (lookup_a.classTemplateResult() != lookup_b.classTemplateResult())
       return TemplatePartialOrdering::NotComparable; // neither is more specialized
 
-    const auto & a_args = TemplateNameProcessor::get_trailing_template_arguments(a.value.type);
-    const auto & b_args = TemplateNameProcessor::get_trailing_template_arguments(b.value.type);
+    const auto & a_args = TemplateNameProcessor::getTemplateArguments(a.value.type);
+    const auto & b_args = TemplateNameProcessor::getTemplateArguments(b.value.type);
     auto ret = compare_from_args(a.scope, a_args, b.scope, b_args);
     if (ret.positive())
       return ret;

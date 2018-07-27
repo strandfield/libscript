@@ -27,7 +27,6 @@
 #include "script/script.h"
 #include "script/value.h"
 
-#include "script/compiler/commandcompiler.h"
 #include "script/compiler/compiler.h"
 
 #include "script/private/array_p.h"
@@ -290,46 +289,125 @@ void EngineImpl::register_enum(Enum & e, int id)
   this->enums[index] = e;
 }
 
-void EngineImpl::destroyClass(Class c)
+void EngineImpl::destroy(Enum e)
 {
-  /// TODO : we need to redesign script destruction 
-  // and more generally destruction of entities
-  Scope decl;
-  if (!c.memberOf().isNull())
-    decl = Scope{ c.memberOf() };
-  else if (!c.enclosingNamespace().isNull())
-    decl = Scope{ c.enclosingNamespace() };
-
-  if (decl.isNull())
-    return;
-  decl.impl()->remove_class(c);
-  auto & name = c.impl()->name;
-  name.insert(0, "deleted_");
-  const int index = c.id() & 0xFFFF;
-  this->classes[index] = Class();
-  while (!this->classes.empty() && this->classes.back().isNull())
-    this->classes.pop_back();
-  c.impl()->id = 0;
+  e.impl()->name.insert(0, "deleted_");
+  unregister_enum(e);
 }
 
-void EngineImpl::destroyEnum(Enum e)
+void EngineImpl::destroy(Class c)
 {
-  Scope decl;
-  if (!e.memberOf().isNull())
-    decl = Scope{ e.memberOf() };
-  else if (!e.enclosingNamespace().isNull())
-    decl = Scope{ e.enclosingNamespace() };
+  for (const auto & v : c.staticDataMembers())
+  {
+    this->engine->destroy(v.second.value);
+  }
 
-  if (decl.isNull())
-    return;
-  decl.impl()->remove_enum(e);
-  auto & name = e.impl()->name;
-  name.insert(0, "deleted_");
+  auto impl = c.impl();
+  impl->staticMembers.clear();
+
+  for (const auto & e : impl->enums)
+    destroy(e);
+
+  for (const auto & c : impl->classes)
+    destroy(c);
+  impl->classes.clear();
+
+  impl->functions.clear();
+  impl->operators.clear();
+  impl->casts.clear();
+  impl->templates.clear(); /// TODO: clear the template instances
+  impl->typedefs.clear();
+
+  unregister_class(c);
+
+  impl->name.insert(0, "deleted_");
+  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
+}
+
+void EngineImpl::destroy(Namespace ns)
+{
+  for (const auto & v : ns.vars())
+  {
+    this->engine->destroy(v.second);
+  }
+
+  auto impl = ns.impl();
+  impl->variables.clear();
+
+  for (const auto & e : impl->enums)
+    destroy(e);
+
+  for (const auto & nns : impl->namespaces)
+    destroy(nns);
+
+  impl->namespaces.clear();
+
+  for (const auto & c : impl->classes)
+    destroy(c);
+  impl->classes.clear();
+
+  impl->functions.clear();
+  impl->operators.clear();
+  impl->literal_operators.clear();
+  impl->templates.clear(); /// TODO: clear the template instances
+  impl->typedefs.clear();
+
+  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
+}
+
+void EngineImpl::destroy(Script s)
+{
+  auto impl = s.impl();
+  destroy(Namespace{ impl });
+  
+  impl->globalNames.clear();
+  impl->global_types.clear();
+
+  const int index = s.id();
+  this->scripts[index] = Script{};
+  while (!this->scripts.empty() && this->scripts.back().isNull())
+    this->scripts.pop_back();
+}
+
+void EngineImpl::destroy(ClosureType ct)
+{
+  auto impl = ct.impl();
+
+  impl->operators.clear();
+  impl->templates.clear(); /// TODO: clear the template instances
+
+  unregister_closure(ct);
+
+  impl->name.insert(0, "deleted_");
+  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
+}
+
+template<typename T>
+void squeeze(std::vector<T> & list)
+{
+  while (!list.empty() && list.back().isNull())
+    list.pop_back();
+}
+
+void EngineImpl::unregister_class(Class &c)
+{
+  const int index = c.id() & 0xFFFF;
+  this->classes[index] = Class();
+  squeeze(this->classes);
+}
+
+void EngineImpl::unregister_enum(Enum &e)
+{
   const int index = e.id() & 0xFFFF;
   this->enums[index] = Enum();
-  while (!this->enums.empty() && this->enums.back().isNull())
-    this->enums.pop_back();
-  e.impl()->id = 0;
+  squeeze(this->enums);
+}
+
+void EngineImpl::unregister_closure(ClosureType &c)
+{
+  const int index = c.id() & 0xFFFF;
+  this->lambdas[index] = ClosureType();
+  squeeze(this->lambdas);
 }
 
 
@@ -914,6 +992,11 @@ bool Engine::compile(Script s)
   return c.compile(s);
 }
 
+void Engine::destroy(Script s)
+{
+  d->destroy(s);
+}
+
 Module Engine::newModule(const std::string & name)
 {
   Module m{ std::make_shared<ModuleImpl>(this, name) };
@@ -1045,8 +1128,8 @@ void Engine::setContext(Context con)
 
 Value Engine::eval(const std::string & command, const Scope & scp)
 {
-  compiler::CommandCompiler cc{ this };
-  auto expr = cc.compile(command, d->context, scp);
+  compiler::Compiler c{ this };
+  auto expr = c.compile(command, d->context, scp);
   if (expr == nullptr)
     throw std::runtime_error{ "Could not compile expression" };
   return d->interpreter->eval(expr);

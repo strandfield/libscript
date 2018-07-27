@@ -5,6 +5,7 @@
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/conversionprocessor.h"
 #include "script/compiler/defaultargumentprocessor.h"
 
@@ -13,9 +14,12 @@
 #include "script/program/expression.h"
 #include "script/program/statements.h"
 
+#include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
+
+#include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/operator_p.h"
 
@@ -36,33 +40,36 @@ Capture::Capture(const std::string & n, const std::shared_ptr<program::Expressio
 }
 
 
-LambdaCompilerVariableAccessor::LambdaCompilerVariableAccessor(Stack & s, LambdaCompiler* fc)
-  : StackVariableAccessor(s, fc) { }
-
-std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+LambdaVariableAccessor::LambdaVariableAccessor(Stack & s)
+  : StackVariableAccessor(s)
 {
-  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
-  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
-  const auto & capture = lc->task().captures[offset];
+
+}
+
+std::shared_ptr<program::Expression> LambdaVariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+{
+  ClosureType ct = ec.caller().memberOf().toClosure();
+  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+  const auto capture = ct.captures().at(offset);
   auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
   generated_access_.push_back(capaccess);
   return capaccess;
 }
 
-std::shared_ptr<program::Expression> LambdaCompilerVariableAccessor::data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> LambdaVariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
-  LambdaCompiler *lc = static_cast<LambdaCompiler*>(fcomp_);
-  auto lambda = program::StackValue::New(1, Type::ref(lc->mLambda.id()));
-  auto this_object = program::CaptureAccess::New(Type::ref(lc->task().capturedObject.id()), lambda, 0);
-  return member_access(ec, this_object, offset, dpos);
+  ClosureType ct = ec.caller().memberOf().toClosure();
+  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+  auto this_object = program::CaptureAccess::New(Type::ref(ct.captures().at(0).type), lambda, 0);
+  return generateMemberAccess(ec, this_object, offset, dpos);
 }
 
 
 
-LambdaCompiler::LambdaCompiler(const std::shared_ptr<CompileSession> & s)
-  : FunctionCompiler(s)
+LambdaCompiler::LambdaCompiler(Engine* e)
+  : FunctionCompiler(e)
   , mCurrentTask(nullptr)
-  , variable_(mStack, this)
+  , variable_(mStack)
 {
   expr_.setVariableAccessor(this->variable_);
 }
@@ -173,7 +180,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   // we should fix that !!
   //mDeclaration = task.lexpr;
 
-  mLambda = newLambda();
+  mLambda = engine()->implementation()->newLambda();
 
   for (const auto & cap : task.captures)
   {
@@ -186,6 +193,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   Function function = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto).create();
 
   mFunction = function;
+  expr_.setCaller(function);
 
   /// TODO : where is the return value ?
   EnterScope guard{ this, FunctionScope::FunctionArguments };

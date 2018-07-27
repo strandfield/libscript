@@ -37,51 +37,27 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
   throw NotImplementedError{ "Default LambdaProcessor cannot generate lambda expression" };
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::data_member(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  return member_access(ec, implicit_object(ec), offset, dpos);
-}
-
-std::shared_ptr<program::Expression> VariableAccessor::global_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  throw NotImplementedError{ "Default VariableAccessor does not support access to globals" };
-}
-
-std::shared_ptr<program::Expression> VariableAccessor::local_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  throw NotImplementedError{ "Default VariableAccessor does not support access to locals" };
-}
-
-std::shared_ptr<program::Expression> VariableAccessor::capture_name(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  throw NotImplementedError{ "Default VariableAccessor does not support access to captures" };
-}
-
-std::shared_ptr<program::Expression> VariableAccessor::member_access(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
-{
-  return ec.generateMemberAccess(object, index, dpos);
-}
-
-std::shared_ptr<program::Expression> VariableAccessor::implicit_object(ExpressionCompiler & ec) const
-{
-  return ec.implicit_object();
-}
-
-
-
 ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;
-  variable_ = &default_variable_;
   templates_ = &default_templates_;
+  type_resolver.name_resolver().set_tnp(templates_->name_processor());
+  variable_ = &default_variable_;
+
 }
 
 ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   : scope_(scp)
 {
   lambda_ = &default_lambda_;
-  variable_ = &default_variable_;
   templates_ = &default_templates_;
+  variable_ = &default_variable_;
+}
+
+void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
+{
+  templates_ = &ftp;
+  type_resolver.name_resolver().set_tnp(ftp.name_processor());
 }
 
 std::string ExpressionCompiler::dstr(const Type & t) const
@@ -310,7 +286,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     NameLookup lookup = NameLookup::member(callee_name->getName(), engine()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
-      auto functor = generateMemberAccess(object, lookup.dataMemberIndex(), dpos(call));
+      auto functor = VariableAccessor::generateMemberAccess(*this, object, lookup.dataMemberIndex(), dpos(call));
       return generateFunctorCall(call, functor, std::move(args));
     }
 
@@ -559,7 +535,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
   if (attr_index == -1)
     throw NoSuchMember{ dpos(operation) };
 
-  return generateMemberAccess(object, attr_index, dpos(operation));
+  return VariableAccessor::generateMemberAccess(*this, object, attr_index, dpos(operation));
 }
 
 
@@ -653,13 +629,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::StaticDataMemberName:
     return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
-    return variable_->data_member(*this, lookup.dataMemberIndex(), dpos(identifier));
+    return variable_->accessDataMember(*this, lookup.dataMemberIndex(), dpos(identifier));
   case NameLookup::GlobalName:
-    return variable_->global_name(*this, lookup.globalIndex(), dpos(identifier));
+    return variable_->accessGlobal(*this, lookup.globalIndex(), dpos(identifier));
   case NameLookup::LocalName:
-    return variable_->local_name(*this, lookup.localIndex(), dpos(identifier));
+    return variable_->accessLocal(*this, lookup.localIndex(), dpos(identifier));
   case NameLookup::CaptureName:
-    return variable_->capture_name(*this, lookup.captureIndex(), dpos(identifier));
+    return variable_->accessCapture(*this, lookup.captureIndex(), dpos(identifier));
   case NameLookup::EnumValueName:
     return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
   case NameLookup::NamespaceName:
@@ -681,25 +657,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
   Value val = Value::fromFunction(f, ft.type());
   engine()->manage(val);
   return program::Literal::New(val); /// TODO : perhaps a program::VariableAccess would be better ?
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos)
-{
-  Class cla = engine()->getClass(object->type());
-  int relative_index = index;
-  while (relative_index - int(cla.dataMembers().size()) >= 0)
-  {
-    relative_index = relative_index - cla.dataMembers().size();
-    cla = cla.parent();
-  }
-
-  const auto & dm = cla.dataMembers().at(relative_index);
-
-  if (!Accessibility::check(caller(), cla, dm.accessibility()))
-    throw InaccessibleMember{ dpos, dm.name, dm.accessibility() };
-
-  const Type access_type = object->type().isConst() ? Type::cref(dm.type) : Type::ref(dm.type);
-  return program::MemberAccess::New(access_type, object, index);
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMemberAccess(const std::shared_ptr<ast::Identifier> & id, const NameLookup & lookup)
