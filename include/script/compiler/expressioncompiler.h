@@ -52,7 +52,7 @@ private:
   Function caller_; 
   
 private:
-  TypeResolver<TnpNameResolver> type_resolver;
+  TypeResolver<ExtendedNameResolver> type_resolver;
 
   LambdaProcessor default_lambda_;
   LambdaProcessor *lambda_;

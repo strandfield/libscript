@@ -160,13 +160,13 @@ protected:
 
   std::queue<IncompleteFunction> mIncompleteFunctions;
 
-  TnpNameResolver name_resolver;
-  TypeResolver<TnpNameResolver> type_resolver;
+  ExtendedNameResolver name_resolver;
+  TypeResolver<ExtendedNameResolver> type_resolver;
 
-  typedef BasicPrototypeResolver<LenientTypeResolver<TnpNameResolver>> PrototypeResolver;
+  typedef BasicPrototypeResolver<LenientTypeResolver<ExtendedNameResolver>> PrototypeResolver;
   FunctionProcessor<PrototypeResolver> function_processor_;
 
-  ScopeStatementProcessor<TnpNameResolver> scope_statements_;
+  ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
 
   ImportProcessor modules_;
 

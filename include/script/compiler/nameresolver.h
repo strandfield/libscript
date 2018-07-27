@@ -32,12 +32,12 @@ public:
   BasicNameResolver & operator=(const BasicNameResolver &) = default;
 };
 
-class TnpNameResolver
+class ExtendedNameResolver
 {
 public:
   TemplateNameProcessor *tnp_;
 
-  TnpNameResolver()
+  ExtendedNameResolver()
     : tnp_(nullptr) { }
 
   inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)

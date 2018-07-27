@@ -202,10 +202,10 @@ protected:
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
 
-  TypeResolver<TnpNameResolver> type_;
+  TypeResolver<ExtendedNameResolver> type_;
   ExpressionCompiler expr_;
   FunctionCompilerLambdaProcessor lambda_;
-  ScopeStatementProcessor<TnpNameResolver> scope_statements_;
+  ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
   ImportProcessor modules_;
 
   Logger default_logger_;
