@@ -282,27 +282,6 @@ TEST(ParserTests, nested_calls) {
 }
 
 
-TEST(ParserTests, expr3) {
-  using namespace script;
-  using namespace parser;
-  using namespace ast;
-
-  const char *source =
-    " array[index] ";
-
-  ScriptFragment fragment{ parser_data(source) };
-  ExpressionParser parser{ &fragment };
-
-  auto expr = parser.parse();
-
-  ASSERT_TRUE(expr->is<ast::ArraySubscript>());
-  {
-    const auto & asub = expr->as<ast::ArraySubscript>();
-    ASSERT_TRUE(asub.array->is<ast::Identifier>());
-    ASSERT_TRUE(asub.index->is<ast::Identifier>());
-  }
-}
-
 TEST(ParserTests, arraysubscript) {
   using namespace script;
   using namespace parser;
