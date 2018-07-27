@@ -104,6 +104,10 @@ static ConversionSequence select_converting_constructor(const Type & src, const 
 
   // TODO : before returning, check if better candidates can be found ?
   // this would result in an ambiguous conversion sequence I believe
+  StandardConversion best_conv = StandardConversion::NotConvertible();
+  Function best_ctor;
+  StandardConversion ambiguous_conv = StandardConversion::NotConvertible();
+
   for (const auto & c : ctors)
   {
     if (c.prototype().count() != 1)
@@ -116,16 +120,38 @@ static ConversionSequence select_converting_constructor(const Type & src, const 
     if (first_conversion == StandardConversion::NotConvertible())
       continue;
 
-    StandardConversion second_conversion = StandardConversion::compute(Type::rref(dest.baseType()), dest, engine);
-    /// TODO : not sure this is correct
-    /*if (second_conversion == StandardConversion::NotConvertible())
-      continue;*/
-    second_conversion = StandardConversion::None();
+    bool comp1 = first_conversion < best_conv;
+    bool comp2 = best_conv < first_conversion;
 
-    return ConversionSequence{ first_conversion, c, second_conversion };
+    if (comp1 && !comp2)
+    {
+      best_conv = first_conversion;
+      best_ctor = c;
+      ambiguous_conv = StandardConversion::NotConvertible();
+    } 
+    else if (comp2 && !comp1)
+    {
+      // nothing to do
+    }
+    else
+    {
+      ambiguous_conv = first_conversion;
+    }
   }
 
-  return ConversionSequence::NotConvertible();
+  if(!(best_conv < ambiguous_conv))
+    return ConversionSequence::NotConvertible();
+
+  /// TODO: correctly compute second conversion, which can be
+  // - a const-qualification
+  // - a derived to base conversion
+  //StandardConversion second_conversion = StandardConversion::compute(Type::rref(dest.baseType()), dest, engine);
+  /// TODO : not sure this is correct
+  /*if (second_conversion == StandardConversion::NotConvertible())
+  continue;*/
+  //second_conversion = StandardConversion::None();
+
+  return ConversionSequence{ best_conv, best_ctor, StandardConversion::None() };
 }
 
 static ConversionSequence select_cast(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine)

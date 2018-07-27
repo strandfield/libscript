@@ -126,6 +126,23 @@ TEST(Conversions, user_defined_converting_constructor) {
 }
 
 
+TEST(Conversions, converting_constructor_selection) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_int = A.Constructor().params(Type::Int).create();
+  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+
+  ConversionSequence conv = ConversionSequence::compute(Type::Boolean, A.id(), &e);
+  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  ASSERT_TRUE(conv.isUserDefinedConversion());
+  ASSERT_EQ(conv.function, ctor_bool);
+}
+
+
 TEST(Conversions, function_type) {
   using namespace script;
 
