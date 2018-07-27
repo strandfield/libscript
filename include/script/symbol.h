@@ -71,27 +71,6 @@ private:
   std::shared_ptr<SymbolImpl> d;
 };
 
-
-/// TODO: move to typedef.h
-class LIBSCRIPT_API TypedefBuilder
-{
-public:
-  Symbol symbol_;
-  std::string name_;
-  Type type_;
-public:
-  TypedefBuilder(const Symbol & s, const std::string & name, const Type & type) 
-    : symbol_(s), name_(name), type_(type) {}
-
-  TypedefBuilder(const Symbol & s, std::string && name, const Type & type)
-    : symbol_(s), name_(std::move(name)), type_(type) {}
-
-  TypedefBuilder(const TypedefBuilder &) = default;
-  ~TypedefBuilder() = default;
-
-  void create();
-};
-
 } // namespace script
 
 #endif // LIBSCRIPT_SYMBOL_H

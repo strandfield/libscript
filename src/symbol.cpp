@@ -15,6 +15,7 @@
 #include "script/private/script_p.h"
 #include "script/script.h"
 #include "script/templatebuilder.h"
+#include "script/typedefs.h"
 
 namespace script
 {
@@ -148,16 +149,6 @@ TypedefBuilder Symbol::Typedef(const Type & t, const std::string & name)
 TypedefBuilder Symbol::Typedef(const Type & t, std::string && name)
 {
   return TypedefBuilder{ *this, std::move(name), t };
-}
-
-void TypedefBuilder::create()
-{
-  if (this->symbol_.isClass())
-    this->symbol_.toClass().impl()->typedefs.push_back(Typedef{ std::move(this->name_), this->type_ });
-  else if(this->symbol_.isNamespace())
-    this->symbol_.toNamespace().impl()->typedefs.push_back(Typedef{ std::move(this->name_), this->type_ });
-
-  /// TODO ? Should we throw on error ?
 }
 
 } // namespace script
