@@ -7,6 +7,7 @@
 #include "script/engine.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/templateargument.h"
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/valueconstructor.h"
@@ -36,17 +37,40 @@ std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, co
   return program::FundamentalConversion::New(type, arg);
 }
 
+static void make_initializer_list(Class initalizer_list_type, program::InitializerList & ilist, const std::shared_ptr<ListInitializationSequence> & linit)
+{
+  Type T = initalizer_list_type.arguments().front().type;
+  for (size_t i(0); i < ilist.elements.size(); ++i)
+  {
+    ilist.elements[i] = ConversionProcessor::convert(initalizer_list_type.engine(), ilist.elements[i], T, linit->conversions().at(i));
+  }
+  ilist.initializer_list_type = initalizer_list_type.id();
+}
+
 std::shared_ptr<program::Expression> ConversionProcessor::listinit(Engine *e, const std::shared_ptr<program::Expression> & arg, const Type & type, const std::shared_ptr<ListInitializationSequence> & linit)
 {
   assert(arg->is<program::InitializerList>());
 
-  const program::InitializerList & ilist = *std::static_pointer_cast<program::InitializerList>(arg);
+  program::InitializerList & ilist = *std::static_pointer_cast<program::InitializerList>(arg);
 
   if (linit->kind() == ListInitializationSequence::DefaultInitialization)
     return ValueConstructor::construct(e, linit->destType(), nullptr, diagnostic::pos_t{});
+
+  if (linit->kind() == ListInitializationSequence::InitializerListCreation)
+  {
+    Class initalizer_list_type = e->getClass(linit->destType());
+    make_initializer_list(initalizer_list_type, ilist, linit);
+    return arg;
+  }
+  else if (linit->kind() == ListInitializationSequence::InitializerListInitialization)
+  {
+    Class initalizer_list_type = e->getClass(linit->constructor().parameter(0));
+    make_initializer_list(initalizer_list_type, ilist, linit);
+    return program::ConstructorCall::New(linit->constructor(), {arg});
+  }
   
   if (linit->kind() != ListInitializationSequence::ConstructorListInitialization)
-    throw NotImplementedError{ "Initializer list not implemented yet" };
+    throw NotImplementedError{ "This kind of list initialization is not implemented yet" };
 
   auto args = ilist.elements;
   prepare(e, args, linit->constructor().prototype(), linit->conversions());

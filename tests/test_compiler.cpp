@@ -1994,3 +1994,80 @@ TEST(CompilerTests, func_arg_ctor_list_init) {
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 66);
 }
+
+
+TEST(CompilerTests, func_initializer_list) {
+  using namespace script;
+
+  const char *source =
+    "  int sum(InitializerList<int> list)                      "
+    "  {                                                       "
+    "    int s = 0;                                            "
+    "    for(auto it = list.begin(); it != list.end(); ++it)   "
+    "    {                                                     "
+    "      s += it.get();                                      "
+    "    }                                                     "
+    "    return s;                                             "
+    "  }                                                       "
+    "  int n = sum({1, 2, 3, 4});                              ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 10);
+}
+
+
+TEST(CompilerTests, class_initializer_list) {
+  using namespace script;
+
+  const char *source =
+    "  class A                                                     "
+    "  {                                                           "
+    "  public:                                                     "
+    "    ~A() = default;                                           "
+    "                                                              "
+    "    int n;                                                    "
+    "    A(int a) : n(a) { }                                       "
+    "                                                              "
+    "    A(InitializerList<int> list) : n(0)                       "
+    "    {                                                         "
+    "      for(auto it = list.begin(); it != list.end(); ++it)     "
+    "      {                                                       "
+    "        n += it.get();                                        "
+    "      }                                                       "
+    "    }                                                         "
+    "  };                                                          "
+    "                                                              "
+    "  int foo(A a)                                                "
+    "  {                                                           "
+    "    return a.n;                                               "
+    "  }                                                           "
+    "                                                              "
+    "  int n = foo({1, 2, 3, 4});                                  ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 10);
+}

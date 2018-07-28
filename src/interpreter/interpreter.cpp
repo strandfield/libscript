@@ -184,9 +184,13 @@ void Interpreter::invoke(const Function & f)
   }
 
   mEngine->garbageCollect();
-  for (Value & val : mExecutionContext->initializer_list_buffer)
-    mEngine->destroy(val);
-  mExecutionContext->initializer_list_buffer.clear();
+  if (f == mExecutionContext->initializer_list_owner)
+  {
+    for (Value & val : mExecutionContext->initializer_list_buffer)
+      mEngine->destroy(val);
+    mExecutionContext->initializer_list_buffer.clear();
+    mExecutionContext->initializer_list_owner = Function{};
+  }
 }
 
 Value Interpreter::createObject(const Type & t)
@@ -477,6 +481,9 @@ Value Interpreter::visit(const program::InitializerList & il)
   }
 
   const int new_size = mExecutionContext->initializer_list_buffer.size();
+
+  if (old_size != new_size && mExecutionContext->initializer_list_owner.isNull())
+    mExecutionContext->initializer_list_owner = mExecutionContext->callstack.top()->callee();
 
   Value ret = mEngine->construct(il.initializer_list_type, {});
   mEngine->manage(ret);

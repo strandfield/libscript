@@ -150,6 +150,7 @@ public:
   Callstack callstack;
   Stack stack;
   std::vector<Value> initializer_list_buffer;
+  Function initializer_list_owner;
 };
 
 } // namespace interpreter
