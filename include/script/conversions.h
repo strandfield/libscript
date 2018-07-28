@@ -6,6 +6,7 @@
 #define LIBSCRIPT_CONVERSIONS_H
 
 #include "script/function.h"
+#include "script/types.h"
 
 namespace script
 {
@@ -157,10 +158,22 @@ public:
 
   enum Kind {
     None = 0,
-    InitializerListInitialization = 1,
-    ConstructorListInitialization = 2, // TODO : should'nt we store the constructor in this case
-    AggregateListInitialization = 4,
+    DefaultInitialization = 1,
+    InitializerListInitialization = 2,  // currently not used
+    ConstructorListInitialization = 3,
+    AggregateListInitialization = 4, // currently not used
   };
+
+  ListInitializationSequence(Type t)
+    : mKind(DefaultInitialization)
+    , mType(t) {}
+
+  ListInitializationSequence(Kind k, Function ctor);
+
+
+  inline Kind kind() const { return mKind; }
+  inline Type destType() const { return mType; }
+  inline Function constructor() const { return mConstructor; }
 
   std::vector<ConversionSequence> & conversions();
   const std::vector<ConversionSequence> & conversions() const;
@@ -169,6 +182,8 @@ public:
 
 private:
   Kind mKind;
+  Type mType;
+  Function mConstructor;
   std::vector<ConversionSequence> mConversions;
 };
 

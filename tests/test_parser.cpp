@@ -15,7 +15,10 @@
 
 std::shared_ptr<script::parser::ParserData> parser_data(const char *source)
 {
-  return std::make_shared<script::parser::ParserData>(script::SourceFile::fromString(std::string(source)));
+  auto src = script::SourceFile::fromString(std::string(source));
+  auto ret = std::make_shared<script::parser::ParserData>(src);
+  ret->mAst = std::make_shared<script::ast::AST>(src);
+  return ret;
 }
 
 TEST(ParserTests, identifier1) {

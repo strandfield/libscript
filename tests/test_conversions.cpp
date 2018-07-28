@@ -178,3 +178,107 @@ TEST(Conversions, no_converting_constructor) {
   ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
 }
+
+
+/****************************************************************
+Testing list initializations
+****************************************************************/
+
+#include "script/ast/node.h"
+#include "script/compiler/expressioncompiler.h"
+
+TEST(Conversions, list_initialization_default) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto astlistexpr = ast::ListExpression::New(parser::Token{ parser::Token::LeftBrace, 0, 1, 0, 0 });
+
+  compiler::ExpressionCompiler ec;
+  auto listexpr = ec.generateExpression(astlistexpr);
+
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  ConversionSequence conv = ConversionSequence::compute(listexpr, Type::Int, &e);
+  ASSERT_TRUE(conv.isListInitialization());
+  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::DefaultInitialization);
+  ASSERT_EQ(conv.listInitialization->destType(), Type::Int);
+
+  conv = ConversionSequence::compute(listexpr, Type::String, &e);
+  ASSERT_TRUE(conv.isListInitialization());
+  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::DefaultInitialization);
+  ASSERT_EQ(conv.listInitialization->destType(), Type::String);
+}
+
+
+#include "script/parser/parser.h"
+
+std::shared_ptr<script::parser::ParserData> parser_data(const char *source);
+
+TEST(Conversions, list_initialization_constructor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  const char *source =
+    "{1, \"Hello\", 3.14}";
+
+  parser::ScriptFragment fragment{ parser_data(source) };
+  parser::ExpressionParser parser{ &fragment };
+
+  auto astlistexpr = parser.parse();
+  ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
+
+  compiler::ExpressionCompiler ec;
+  ec.setScope(Scope{ e.rootNamespace() });
+  auto listexpr = ec.generateExpression(astlistexpr);
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).create();
+
+  ConversionSequence conv = ConversionSequence::compute(listexpr, A.id(), &e);
+  ASSERT_TRUE(conv.isListInitialization());
+  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::ConstructorListInitialization);
+  ASSERT_EQ(conv.listInitialization->constructor(), ctor);
+  ASSERT_EQ(conv.listInitialization->conversions().size(), 3);
+}
+
+
+TEST(Conversions, list_initialization_not_convertible) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  const char *source =
+    "{1, \"Hello\", 3.14}";
+
+  parser::ScriptFragment fragment{ parser_data(source) };
+  parser::ExpressionParser parser{ &fragment };
+
+  auto astlistexpr = parser.parse();
+
+  compiler::ExpressionCompiler ec;
+  ec.setScope(Scope{ e.rootNamespace() });
+  auto listexpr = ec.generateExpression(astlistexpr);
+
+  ConversionSequence conv = ConversionSequence::compute(listexpr, Type::String, &e);
+  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+
+  conv = ConversionSequence::compute(listexpr, Type::Int, &e);
+  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+
+  auto initlist = std::static_pointer_cast<program::InitializerList>(listexpr);
+  initlist->elements.clear();
+
+  Enum Foo = Symbol{ e.rootNamespace() }.Enum("Foo").get();
+
+  conv = ConversionSequence::compute(listexpr, Foo.id(), &e);
+  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+
+  conv = ConversionSequence::compute(listexpr, Type::ref(Type::Int), &e);
+  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+}

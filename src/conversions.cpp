@@ -530,34 +530,50 @@ ConversionSequence ConversionSequence::compute(const std::shared_ptr<program::Ex
   if (expr->type() != Type::InitializerList)
     return compute(expr->type(), dest, engine);
 
+  if (dest.isReference() && !dest.isConst())
+    return ConversionSequence::NotConvertible();
+
   const program::InitializerList & init_list = dynamic_cast<const program::InitializerList &>(*expr);
+
+  if (init_list.elements.empty())
+  {
+    if (dest.isFundamentalType())
+      return ConversionSequence{ std::make_shared<ListInitializationSequence>(dest) };
+    else if(dest.isObjectType() && engine->getClass(dest).isDefaultConstructible())
+      return ConversionSequence{ std::make_shared<ListInitializationSequence>(dest) };
+    else
+      return ConversionSequence::NotConvertible();
+  }
 
   if (!dest.isObjectType())
     return ConversionSequence::NotConvertible();
 
-  if (dest.isReference() && !dest.isConstRef())
-    return ConversionSequence::NotConvertible();
-
   const Class dest_class = engine->getClass(dest);
 
-  auto result = std::make_shared<ListInitializationSequence>();
-  std::vector<ConversionSequence> & conversions = result->conversions();
+  std::vector<ConversionSequence> conversions;
   conversions.resize(init_list.elements.size());
 
+  /// TODO: shouldn't we perform overload resolution instead ?
   for (const auto & c : dest_class.constructors())
   {
     if (c.prototype().count() != init_list.elements.size())
       continue;
 
+    conversions.clear();
     for (size_t i(0); i < init_list.elements.size(); ++i)
     {
       ConversionSequence conv = ConversionSequence::compute(init_list.elements.at(i), c.prototype().at(i), engine);
+      conversions.push_back(conv);
       if (conv == ConversionSequence::NotConvertible())
         break;
     }
 
     if (conversions.back() != ConversionSequence::NotConvertible())
+    {
+      auto result = std::make_shared<ListInitializationSequence>(ListInitializationSequence::ConstructorListInitialization, c);
+      result->conversions() = std::move(conversions);
       return ConversionSequence{ result };
+    }
   }
 
   // TODO : implement aggregate and initializer_list initialization
@@ -601,6 +617,14 @@ bool ConversionSequence::operator==(const ConversionSequence & other) const
 {
   // TODO : add comparison when it is a brace initialization
   return conv1 == other.conv1 && conv3 == other.conv3 && other.function == other.function;
+}
+
+
+ListInitializationSequence::ListInitializationSequence(Kind k, script::Function ctor)
+  : mKind(k)
+  , mConstructor(ctor)
+{
+  mType = ctor.memberOf().id();
 }
 
 std::vector<ConversionSequence> & ListInitializationSequence::conversions()
