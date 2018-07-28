@@ -29,7 +29,7 @@ public:
   inline iterator begin() const { return begin_; }
   inline iterator end()  const { return end_; }
 
-  inline size_t size() const { return std::distance(begin_, end_); }
+  size_t size() const;
 
   InitializerList & operator=(const InitializerList &) = default;
 };

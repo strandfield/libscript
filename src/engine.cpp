@@ -428,6 +428,8 @@ Engine::~Engine()
 }
 
 
+ClassTemplate register_initialize_list_template(Engine*); // defined in initializerlist.cpp
+
 void Engine::setup()
 {
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "main_context") };
@@ -445,6 +447,7 @@ void Engine::setup()
   register_string_type(string);
 
   d->templates.array = ArrayImpl::register_array_template(this);
+  d->templates.initializer_list = register_initialize_list_template(this);
 
   auto ec = std::make_shared<interpreter::ExecutionContext>(this, 1024, 256);
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
@@ -1160,6 +1163,13 @@ const Engine::array_template_t Engine::ArrayTemplate = Engine::array_template_t{
 ClassTemplate Engine::getTemplate(array_template_t) const
 {
   return d->templates.array;
+}
+
+const Engine::initializer_list_template_t Engine::InitializerListTemplate = Engine::initializer_list_template_t{};
+
+ClassTemplate Engine::getTemplate(initializer_list_template_t) const
+{
+  return d->templates.initializer_list;
 }
 
 const std::vector<Script> & Engine::scripts() const

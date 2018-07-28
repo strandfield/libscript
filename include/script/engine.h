@@ -143,6 +143,10 @@ public:
   static const array_template_t ArrayTemplate;
   ClassTemplate getTemplate(array_template_t) const;
 
+  struct initializer_list_template_t {};
+  static const initializer_list_template_t InitializerListTemplate;
+  ClassTemplate getTemplate(initializer_list_template_t) const;
+
 
   const std::vector<Script> & scripts() const;
 

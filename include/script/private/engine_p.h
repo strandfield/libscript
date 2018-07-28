@@ -67,6 +67,7 @@ public:
   struct
   {
     ClassTemplate array;
+    ClassTemplate initializer_list;
   }templates;
 
 public:
