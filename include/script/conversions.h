@@ -159,15 +159,17 @@ public:
   enum Kind {
     None = 0,
     DefaultInitialization = 1,
-    InitializerListInitialization = 2,  // currently not used
-    ConstructorListInitialization = 3,
-    AggregateListInitialization = 4, // currently not used
+    InitializerListCreation = 2,
+    InitializerListInitialization = 3,
+    ConstructorListInitialization = 4,
+    AggregateListInitialization = 5, // currently not used
   };
 
   ListInitializationSequence(Type t)
     : mKind(DefaultInitialization)
     , mType(t) {}
 
+  ListInitializationSequence(Kind k, Type t);
   ListInitializationSequence(Kind k, Function ctor);
 
 

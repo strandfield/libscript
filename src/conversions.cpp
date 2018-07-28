@@ -7,6 +7,7 @@
 #include "script/engine.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/templateargument.h"
 
 #include "script/program/expression.h"
 
@@ -177,6 +178,55 @@ static ConversionSequence select_cast(const Type & src, const std::vector<Cast> 
   return ConversionSequence::NotConvertible();
 }
 
+static ConversionSequence compute_initializer_list_conv(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine)
+{
+  if (!expr->is<program::InitializerList>())
+    return ConversionSequence::NotConvertible();
+  const program::InitializerList & init_list = dynamic_cast<const program::InitializerList &>(*expr);
+
+
+  Class initializer_list_type = engine->getClass(dest);
+  Type T = initializer_list_type.arguments().front().type;
+
+  std::vector<ConversionSequence> conversions;
+  for (const auto & e : init_list.elements)
+  {
+    ConversionSequence conv = ConversionSequence::compute(e, T, engine);
+    if (conv == ConversionSequence::NotConvertible())
+      return conv;
+
+    conversions.push_back(conv);
+  }
+
+  auto result = std::make_shared<ListInitializationSequence>(ListInitializationSequence::InitializerListCreation, initializer_list_type.id());
+  result->conversions() = std::move(conversions);
+  return ConversionSequence{ result };
+}
+
+static ConversionSequence compute_initializer_list_conv(const std::shared_ptr<program::Expression> & expr, const Function & ctor, Engine *engine)
+{
+  assert(expr->is<program::InitializerList>());
+  assert(engine->isInitializerListType(ctor.parameter(0)));
+
+  const program::InitializerList & init_list = dynamic_cast<const program::InitializerList &>(*expr);
+
+  Class initializer_list_type = engine->getClass(ctor.parameter(0));
+  Type T = initializer_list_type.arguments().front().type;
+
+  std::vector<ConversionSequence> conversions;
+  for (const auto & e : init_list.elements)
+  {
+    ConversionSequence conv = ConversionSequence::compute(e, T, engine);
+    if (conv == ConversionSequence::NotConvertible())
+      return conv;
+
+    conversions.push_back(conv);
+  }
+
+  auto result = std::make_shared<ListInitializationSequence>(ListInitializationSequence::InitializerListInitialization, ctor);
+  result->conversions() = std::move(conversions);
+  return ConversionSequence{ result };
+}
 
 // The format used should allow easy comparison : 
 // highest bit is set to 1 if no conversion is possible
@@ -530,6 +580,9 @@ ConversionSequence ConversionSequence::compute(const std::shared_ptr<program::Ex
   if (expr->type() != Type::InitializerList)
     return compute(expr->type(), dest, engine);
 
+  if (engine->isInitializerListType(dest))
+    return compute_initializer_list_conv(expr, dest, engine);
+
   if (dest.isReference() && !dest.isConst())
     return ConversionSequence::NotConvertible();
 
@@ -556,6 +609,9 @@ ConversionSequence ConversionSequence::compute(const std::shared_ptr<program::Ex
   /// TODO: shouldn't we perform overload resolution instead ?
   for (const auto & c : dest_class.constructors())
   {
+    if(c.prototype().count() == 1 && engine->isInitializerListType(c.parameter(0)))
+      return compute_initializer_list_conv(expr, c, engine);
+
     if (c.prototype().count() != init_list.elements.size())
       continue;
 
@@ -619,6 +675,12 @@ bool ConversionSequence::operator==(const ConversionSequence & other) const
   return conv1 == other.conv1 && conv3 == other.conv3 && other.function == other.function;
 }
 
+ListInitializationSequence::ListInitializationSequence(Kind k, Type t)
+  : mKind(k)
+  , mType(t)
+{
+
+}
 
 ListInitializationSequence::ListInitializationSequence(Kind k, script::Function ctor)
   : mKind(k)
