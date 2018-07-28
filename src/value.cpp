@@ -11,6 +11,7 @@
 #include "script/array.h"
 #include "script/enumvalue.h"
 #include "script/function.h"
+#include "script/initializerlist.h"
 #include "script/object.h"
 #include "script/private/object_p.h"
 
@@ -26,6 +27,7 @@ namespace script
 ValueImpl::Storage::Storage()
 {
   builtin.string = nullptr;
+  initlistEnd = nullptr;
 }
 
 bool ValueImpl::is_object() const
@@ -104,6 +106,22 @@ void ValueImpl::set_enum_value(const EnumValue & evval)
     data.builtin.enumValue = new EnumValue{ evval };
   else
     *data.builtin.enumValue = evval;
+}
+
+bool ValueImpl::is_initializer_list() const
+{
+  return data.initlistEnd != nullptr && data.builtin.valueptr != nullptr;
+}
+
+InitializerList ValueImpl::get_initializer_list() const
+{
+  return InitializerList{ data.builtin.valueptr, data.initlistEnd };
+}
+
+void ValueImpl::set_initializer_list(const InitializerList & il)
+{
+  data.builtin.valueptr = il.begin();
+  data.initlistEnd = il.end();
 }
 
 void ValueImpl::clear()
@@ -234,6 +252,11 @@ bool Value::isArray() const
   return d->is_array();
 }
 
+bool Value::isInitializerList() const
+{
+  return d->is_initializer_list();
+}
+
 bool Value::toBool() const
 {
   return d->get_bool();
@@ -287,6 +310,11 @@ EnumValue Value::toEnumValue() const
 Lambda Value::toLambda() const
 {
   return d->get_lambda();
+}
+
+InitializerList Value::toInitializerList() const
+{
+  return d->get_initializer_list();
 }
 
 Value Value::fromEnumValue(const EnumValue & ev)

@@ -20,6 +20,7 @@ private:
 
 public:
   InitializerList() : begin_(nullptr), end_(nullptr) { }
+  InitializerList(Value *b, Value *e) : begin_(b), end_(e) { }
   InitializerList(const InitializerList &) = default;
   ~InitializerList() = default;
 

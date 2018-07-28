@@ -19,6 +19,7 @@ class Array;
 class Engine;
 class EnumValue;
 class Function;
+class InitializerList;
 class Lambda;
 class Object;
 
@@ -55,6 +56,7 @@ public:
   bool isString() const;
   bool isObject() const;
   bool isArray() const;
+  bool isInitializerList() const;
 
   bool toBool() const;
   char toChar() const;
@@ -67,6 +69,7 @@ public:
   Array toArray() const;
   EnumValue toEnumValue() const;
   Lambda toLambda() const;
+  InitializerList toInitializerList() const;
 
   static Value fromEnumValue(const EnumValue & ev);
   static Value fromFunction(const Function & f, const Type & ft);

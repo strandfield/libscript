@@ -18,6 +18,8 @@
 namespace script
 {
 
+class Value;
+
 struct LIBSCRIPT_API CharRef
 {
   String *string;
@@ -45,11 +47,13 @@ struct LIBSCRIPT_API ValueImpl
       String *string;
       EnumValue *enumValue;
       CharRef charref;
+      Value *valueptr;
       void *data;
     }builtin;
 
     /// TODO : we could try to merge Lambda and Object
     // a Lambda is an object (and its members are captures)
+    Value *initlistEnd;
     Object object;
     Array array;
     Function function;
@@ -94,6 +98,10 @@ struct LIBSCRIPT_API ValueImpl
   void set_lambda(const Lambda & lval);
   const EnumValue & get_enum_value() const;
   void set_enum_value(const EnumValue & evval);
+
+  bool is_initializer_list() const;
+  InitializerList get_initializer_list() const;
+  void set_initializer_list(const InitializerList & il);
 
   void clear();
 };
