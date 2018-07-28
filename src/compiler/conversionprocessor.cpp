@@ -9,6 +9,7 @@
 #include "script/class.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/valueconstructor.h"
 
 namespace script
 {
@@ -35,16 +36,27 @@ std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, co
   return program::FundamentalConversion::New(type, arg);
 }
 
-std::shared_ptr<program::Expression> ConversionProcessor::listinit(const std::shared_ptr<program::Expression> & arg, const Type & type, const std::shared_ptr<ListInitializationSequence> & linit)
+std::shared_ptr<program::Expression> ConversionProcessor::listinit(Engine *e, const std::shared_ptr<program::Expression> & arg, const Type & type, const std::shared_ptr<ListInitializationSequence> & linit)
 {
-  throw std::runtime_error{ "Not implemented" };
+  assert(arg->is<program::InitializerList>());
+
+  const program::InitializerList & ilist = *std::static_pointer_cast<program::InitializerList>(arg);
+
+  if (linit->kind() == ListInitializationSequence::DefaultInitialization)
+    return ValueConstructor::construct(e, linit->destType(), nullptr, diagnostic::pos_t{});
+  
+  if (linit->kind() != ListInitializationSequence::ConstructorListInitialization)
+    throw NotImplementedError{ "Initializer list not implemented yet" };
+
+  auto args = ilist.elements;
+  prepare(e, args, linit->constructor().prototype(), linit->conversions());
+  return program::ConstructorCall::New(linit->constructor(), std::move(args));
 }
 
 std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, const std::shared_ptr<program::Expression> & arg, const Type & type, const ConversionSequence & conv)
 {
-
   if (conv.isListInitialization())
-    return listinit(arg, type, conv.listInitialization);
+    return listinit(e, arg, type, conv.listInitialization);
   else if (!conv.isUserDefinedConversion())
     return sconvert(e, arg, type, conv.conv1);
 

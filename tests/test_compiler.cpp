@@ -1939,3 +1939,58 @@ TEST(CompilerTests, unknown_type) {
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 42);
 }
+
+
+TEST(CompilerTests, func_arg_default_list_init) {
+  using namespace script;
+
+  const char *source =
+    "  int foo(int n) { return n; }     "
+    "  int a = foo({});                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 0);
+}
+
+TEST(CompilerTests, func_arg_ctor_list_init) {
+  using namespace script;
+
+  const char *source =
+    "  class A                                             "
+    "  {                                                   "
+    "  public:                                             "
+    "    int n;                                            "
+    "    ~A() { }                                          "
+    "    A(int a, bool b, const String & c) : n(a) { }     "
+    "  };                                                  "
+    "                                                      "
+    "  int foo(A a) { return a.n; }                        "
+    "  int n = foo({66, true, \"Hello\"});                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 66);
+}
