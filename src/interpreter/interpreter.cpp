@@ -8,6 +8,7 @@
 #include "script/private/engine_p.h"
 
 #include "script/context.h"
+#include "script/initializerlist.h"
 #include "script/object.h"
 #include "script/script.h"
 
@@ -183,6 +184,9 @@ void Interpreter::invoke(const Function & f)
   }
 
   mEngine->garbageCollect();
+  for (Value & val : mExecutionContext->initializer_list_buffer)
+    mEngine->destroy(val);
+  mExecutionContext->initializer_list_buffer.clear();
 }
 
 Value Interpreter::createObject(const Type & t)
@@ -459,6 +463,27 @@ Value Interpreter::visit(const program::FundamentalConversion & conv)
   Value src = eval(conv.argument);
   Value ret = fundamental_conversion(src, conv.dest_type.baseType().data(), mEngine);
   mEngine->manage(ret);
+  return ret;
+}
+
+Value Interpreter::visit(const program::InitializerList & il)
+{
+  const int old_size = mExecutionContext->initializer_list_buffer.size();
+
+  for (const auto & e : il.elements)
+  {
+    Value val = eval(e);
+    mExecutionContext->initializer_list_buffer.push_back(val);
+  }
+
+  const int new_size = mExecutionContext->initializer_list_buffer.size();
+
+  Value ret = mEngine->construct(il.initializer_list_type, {});
+  mEngine->manage(ret);
+
+  Value* begin = mExecutionContext->initializer_list_buffer.data() + old_size;
+  Value* end = mExecutionContext->initializer_list_buffer.data() + new_size;
+  ret.impl()->set_initializer_list(InitializerList{ begin, end });
   return ret;
 }
 

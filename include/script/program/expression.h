@@ -325,6 +325,7 @@ public:
 struct LIBSCRIPT_API InitializerList : public Expression
 {
   std::vector<std::shared_ptr<Expression>> elements;
+  Type initializer_list_type;
 
 public:
   InitializerList(std::vector<std::shared_ptr<Expression>> && elems);
@@ -388,6 +389,7 @@ public:
   virtual Value visit(const FunctionCall &) = 0;
   virtual Value visit(const FunctionVariableCall &) = 0;
   virtual Value visit(const FundamentalConversion &) = 0;
+  virtual Value visit(const InitializerList &) = 0;
   virtual Value visit(const LambdaExpression &) = 0;
   virtual Value visit(const Literal &) = 0;
   virtual Value visit(const LogicalAnd &) = 0;

@@ -74,6 +74,7 @@ protected:
   Value visit(const program::FunctionCall & fc);
   Value visit(const program::FunctionVariableCall & fvc);
   Value visit(const program::FundamentalConversion &);
+  Value visit(const program::InitializerList &);
   Value visit(const program::LambdaExpression &);
   Value visit(const program::Literal &);
   Value visit(const program::LogicalAnd &);

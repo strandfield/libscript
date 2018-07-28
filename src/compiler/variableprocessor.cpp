@@ -273,6 +273,11 @@ Value VariableProcessor::visit(const program::FundamentalConversion & fc)
   return ret;
 }
 
+Value VariableProcessor::visit(const program::InitializerList &)
+{
+  throw InvalidStaticInitialization{};
+}
+
 Value VariableProcessor::visit(const program::LambdaExpression & le)
 {
   throw InvalidStaticInitialization{};

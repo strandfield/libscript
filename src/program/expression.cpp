@@ -66,7 +66,7 @@ Value FundamentalConversion::accept(ExpressionVisitor & visitor)
 
 Value InitializerList::accept(ExpressionVisitor & visitor)
 {
-  throw std::runtime_error{ "Implementation error : InitializerList::accept() should never be called." };
+  return visitor.visit(*this);
 }
 
 Value LambdaExpression::accept(ExpressionVisitor & visitor)
@@ -452,13 +452,14 @@ std::shared_ptr<CaptureAccess> CaptureAccess::New(const Type & ct, const std::sh
 
 InitializerList::InitializerList(std::vector<std::shared_ptr<Expression>> && elems)
   : elements(std::move(elems))
+  , initializer_list_type(Type::InitializerList)
 {
 
 }
 
 Type InitializerList::type() const
 {
-  return Type::InitializerList;
+  return initializer_list_type;
 }
 
 std::shared_ptr<InitializerList> InitializerList::New(std::vector<std::shared_ptr<Expression>> && elems)

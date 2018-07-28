@@ -7,6 +7,7 @@
 
 #include "script/function.h"
 #include "script/types.h"
+#include "script/value.h"
 
 namespace script
 {
@@ -148,6 +149,7 @@ public:
   Engine *engine;
   Callstack callstack;
   Stack stack;
+  std::vector<Value> initializer_list_buffer;
 };
 
 } // namespace interpreter

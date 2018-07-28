@@ -107,6 +107,7 @@ private:
   Value visit(const program::FunctionCall &) override;
   Value visit(const program::FunctionVariableCall &) override;
   Value visit(const program::FundamentalConversion &) override;
+  Value visit(const program::InitializerList &) override;
   Value visit(const program::LambdaExpression &) override;
   Value visit(const program::Literal &) override;
   Value visit(const program::LogicalAnd &) override;
