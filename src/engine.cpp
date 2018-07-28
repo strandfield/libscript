@@ -1172,6 +1172,14 @@ ClassTemplate Engine::getTemplate(initializer_list_template_t) const
   return d->templates.initializer_list;
 }
 
+bool Engine::isInitializerListType(const Type & t) const
+{
+  if (!t.isObjectType())
+    return false;
+
+  return getClass(t).isTemplateInstance() && getClass(t).instanceOf() == getTemplate(InitializerListTemplate);
+}
+
 const std::vector<Script> & Engine::scripts() const
 {
   return d->scripts;

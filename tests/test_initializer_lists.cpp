@@ -23,8 +23,10 @@ TEST(InitializerLists, class_template) {
     TemplateArgument{ Type{Type::Int} }
     });
 
-  ASSERT_EQ(ilist_int.classes().size(), 1);
+  ASSERT_TRUE(engine.isInitializerListType(ilist_int.id()));
+  ASSERT_FALSE(engine.isInitializerListType(Type::String));
 
+  ASSERT_EQ(ilist_int.classes().size(), 1);
   Class iter = ilist_int.classes().front();
 
   NameLookup lookup = NameLookup::member("begin", ilist_int);
