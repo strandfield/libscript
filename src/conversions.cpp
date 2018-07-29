@@ -422,11 +422,12 @@ StandardConversion StandardConversion::compute(const Type & src, const Type & de
   }
   else if (src.isEnumType() && dest.baseType() == Type::Int)
   {
+    if (dest.isConstRef())
+      return StandardConversion::CopyRefInitialization(StandardConversion{ IntegralConversion });
+
     if (dest.isReference())
       return StandardConversion::NotConvertible();
 
-    if (dest.isConstRef())
-      return StandardConversion::CopyRefInitialization(StandardConversion{IntegralConversion});
     return StandardConversion{ IntegralConversion };
   }
   else if (src.isFunctionType() && dest.isFunctionType())

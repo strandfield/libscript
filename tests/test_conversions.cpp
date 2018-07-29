@@ -87,6 +87,10 @@ TEST(Conversions, enum_to_int) {
   ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
   ASSERT_FALSE(conv.isUserDefinedConversion());
 
+  conv = ConversionSequence::compute(A.id(), Type::cref(Type::Int), &e);
+  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  ASSERT_FALSE(conv.isUserDefinedConversion());
+
   conv = ConversionSequence::compute(A.id(), Type::ref(Type::Int), &e);
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
 
