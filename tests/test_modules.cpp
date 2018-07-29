@@ -262,3 +262,26 @@ TEST(ModuleTests, script_module_import_inside_function_body) {
   ASSERT_EQ(a.type(), Type::Int);
   ASSERT_EQ(a.toInt(), 6);
 }
+
+TEST(ModuleTests, export_import) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  engine.setScriptExtension(".m");
+
+  Script s = engine.newScript(SourceFile{ "tuk.m" });
+  bool success = s.compile();
+  const auto & errors = s.messages();
+
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+
+  Value n = s.globals().front();
+  ASSERT_EQ(n.type(), Type::Int);
+  ASSERT_EQ(n.toInt(), 66);
+}

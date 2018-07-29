@@ -96,6 +96,10 @@ const std::vector<diagnostic::Message> & Script::messages() const
   return d->messages;
 }
 
+Scope Script::exports() const
+{
+  return d->exports;
+}
 
 Engine * Script::engine() const
 {

@@ -7,6 +7,7 @@
 
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
+#include "script/scope.h"
 #include "script/sourcefile.h"
 #include "script/diagnosticmessage.h"
 
@@ -33,6 +34,7 @@ public:
   std::map<std::string, int> globalNames;
   std::vector<diagnostic::Message> messages;
   std::shared_ptr<ast::AST> ast;
+  Scope exports;
 
   void register_global(const Type & t, const std::string & name);
 };

@@ -98,15 +98,18 @@ Scope ImportProcessor::load(const support::filesystem::path & p)
     return Scope{};
 
   Script s;
-  if (is_loaded(p, s))
+  if (!is_loaded(p, s))
   {
-    /// TODO : also import exported content
-    return Scope{ s.rootNamespace() };
+    s = loader_->load(engine(), SourceFile{ p.string() });
   }
 
-  s = loader_->load(engine(), SourceFile{ p.string() });
+  Scope ret{ s.rootNamespace() };
 
-  return Scope{ s.rootNamespace() };
+  // Also import exported names
+  if(!s.exports().isNull())
+    ret.merge(s.exports());
+  
+  return ret;
 }
 
 void ImportProcessor::load_recursively(const support::filesystem::path & dir)

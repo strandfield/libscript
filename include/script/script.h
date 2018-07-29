@@ -17,6 +17,7 @@ namespace script
 class ScriptImpl;
 
 class Engine;
+class Scope;
 
 class LIBSCRIPT_API Script
 {
@@ -56,6 +57,8 @@ public:
   inline const std::vector<Typedef> & typedefs() const { return rootNamespace().typedefs(); }
 
   const std::vector<diagnostic::Message> & messages() const;
+
+  Scope exports() const;
 
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }

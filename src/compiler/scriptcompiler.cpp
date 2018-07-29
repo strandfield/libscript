@@ -505,12 +505,17 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
 
 void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl)
 {
+  Scope imported = modules_.process(decl);
+
   if (decl->export_keyword.isValid())
   {
-    log(diagnostic::info() << dpos(decl->export_keyword) << "'export' is ignored for now");
+    Script s = script();
+    if (s.impl()->exports.isNull())
+      s.impl()->exports = imported;
+    else
+      s.impl()->exports.merge(imported);
   }
 
-  Scope imported = modules_.process(decl);
   mCurrentScope.merge(imported);
 }
 

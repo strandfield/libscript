@@ -817,7 +817,7 @@ void FunctionCompiler::processIfStatement(const std::shared_ptr<ast::IfStatement
 
 void FunctionCompiler::processImportDirective(const std::shared_ptr<ast::ImportDirective> & id)
 {
-  if (id->export_keyword.isValid())
+  if (id->export_keyword.isValid() && !isCompilingAnonymousFunction())
   {
     log(diagnostic::error() << dpos(id->export_keyword) << "'export' are only allowed at script level");
   }
