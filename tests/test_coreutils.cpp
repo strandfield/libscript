@@ -27,6 +27,9 @@
 #include "script/symbol.h"
 #include "script/types.h"
 
+#include "script/interpreter/executioncontext.h"
+
+#include "script/private/value_p.h"
 
 TEST(CoreUtilsTests, SourceFile) {
   using namespace script;
@@ -786,4 +789,43 @@ TEST(CoreUtilsTests, symbols) {
   ASSERT_FALSE(eq.isMemberFunction());
   ASSERT_EQ(eq.enclosingNamespace(), ns);
   ASSERT_EQ(eq.prototype().count(), 2);
+};
+
+
+static script::Value incr_callback(script::FunctionCall *c)
+{
+  int n = c->arg(1).toInt();
+  c->arg(0).impl()->set_int(c->arg(0).toInt() + n);
+  return c->arg(0);
+}
+
+TEST(CoreUtilsTests, default_arguments) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Function incr = Symbol{ e.rootNamespace() }.Function("incr")
+    .returns(Type::ref(Type::Int))
+    .params(Type::ref(Type::Int), Type::cref(Type::Int))
+    .setCallback(incr_callback).create();
+
+  incr.addDefaultArgument(e.newInt(1), Value::Take);
+
+  const char *src =
+    "  int a = 0;     \n"
+    "  incr(a, 2);    \n"
+    "  incr(a);       \n";
+
+  Script s = e.newScript(SourceFile::fromString(src));
+  const bool success = s.compile();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 1);
+  
+  Value a = s.globals().front();
+  ASSERT_EQ(a.type(), Type::Int);
+  ASSERT_EQ(a.toInt(), 3);
 };

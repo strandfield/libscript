@@ -82,6 +82,7 @@ public:
   bool hasDefaultArguments() const;
   size_t defaultArgumentCount() const;
   void addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+  void addDefaultArgument(const script::Value & val, ParameterPolicy policy = ParameterPolicy::Copy);
   const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const;
 
   Script script() const;

@@ -14,6 +14,8 @@
 #include "script/operator.h"
 #include "script/script.h"
 
+#include "script/program/expression.h"
+
 #include "script/private/cast_p.h"
 #include "script/private/class_p.h"
 #include "script/private/literals_p.h"
@@ -252,7 +254,25 @@ size_t Function::defaultArgumentCount() const
 
 void Function::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
 {
+  /// TODO: add type-checking
   d->default_arguments.push_back(value);
+}
+
+void Function::addDefaultArgument(const script::Value & val, ParameterPolicy policy)
+{
+  /// TODO: add type-checking
+
+  if (policy == Value::Take)
+  {
+    engine()->manage(val);
+    d->default_arguments.push_back(program::VariableAccess::New(val));
+  }
+  else if (policy == Value::Copy || policy == Value::Move) // move not well supported yet
+  {
+    Value v = engine()->copy(val);
+    engine()->manage(v);
+    d->default_arguments.push_back(program::VariableAccess::New(val));
+  }
 }
 
 const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
