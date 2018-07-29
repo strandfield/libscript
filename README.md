@@ -116,6 +116,21 @@ auto func = [](int a){ return a + 2; };
 
 Operator overloading, user-defined conversions and literal operators are also supported.
 
+Basic support for initializer lists is available.
+
+```cpp
+int sum(InitializerList<int> list)
+{
+  int s = 0;
+  for(auto it = list.begin(); it != list.end(); ++it)
+  {
+    s += it.get();
+  }
+  return s;
+}
+int n = sum({1, 2, 3, 4});
+```
+
 Unlike C++, libscript does not rely on a preprocessor and has no `#include` mechanism.
 Instead, a very basic module system allows the importation of modules written in C++ 
 or user-defined scripts.
