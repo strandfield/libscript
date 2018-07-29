@@ -34,11 +34,9 @@ public:
 
   explicit Value(ValueImpl * impl);
 
-  enum ParameterPolicy {
-    Copy,
-    Move,
-    Take
-  };
+  static constexpr ParameterPolicy Copy = ParameterPolicy::Copy;
+  static constexpr ParameterPolicy Move = ParameterPolicy::Move;
+  static constexpr ParameterPolicy Take = ParameterPolicy::Take;
 
   bool isNull() const;
   Type type() const;

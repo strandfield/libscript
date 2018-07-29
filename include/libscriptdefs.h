@@ -31,6 +31,13 @@ typedef int int32;
 typedef unsigned int uint32;
 typedef signed long long int64;
 typedef unsigned long long uint64;
+
+enum class ParameterPolicy {
+  Copy,
+  Move,
+  Take
+};
+
 } // namespace script
 
 #endif // LIBSCRIPT_GLOBAL_DEFS_H
