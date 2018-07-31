@@ -4,7 +4,6 @@
 
 #include "script/compiler/logger.h"
 
-#include "script/engine.h" /// TODO: remove, needed for repr(AccessSpecifier)
 #include "script/compiler/compilererrors.h"
 
 namespace script

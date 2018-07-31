@@ -1202,33 +1202,4 @@ Value Engine::buildValue(Type t)
   return d->buildValue(t);
 }
 
-namespace diagnostic
-{
-
-std::string repr(const Type & t, Engine *e)
-{
-  if (e == nullptr)
-    return diagnostic::format("Type<%1>", repr(t.data()));
-
-  std::string result = e->typeName(t);
-  if (t.isConst())
-    result = std::string{ "const " } +result;
-  if (t.isReference())
-    result = result + std::string{ " &" };
-  else if (t.isRefRef())
-    result = result + std::string{ " &&" };
-  return result;
-}
-
-std::string repr(const AccessSpecifier & as, Engine*)
-{
-  if (as == AccessSpecifier::Protected)
-    return "protected";
-  else if (as == AccessSpecifier::Private)
-    return "private";
-  return "public";
-}
-
-} // namespace diagnostic
-
 } // namespace script

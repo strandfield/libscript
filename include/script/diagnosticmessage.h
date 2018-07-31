@@ -12,7 +12,9 @@
 namespace script
 {
 
+enum class AccessSpecifier;
 class Engine;
+class Type;
 
 namespace diagnostic
 {
@@ -37,6 +39,10 @@ inline std::string repr(char c, Engine *) { return repr(c); }
 inline std::string repr(unsigned int n, Engine *) { return repr(int(n)); }
 inline std::string repr(int n, Engine *) { return repr(n); }
 inline const std::string & repr(const std::string & str, Engine *) { return str; }
+
+std::string repr(const Type & t, Engine *e = nullptr);
+std::string repr(const AccessSpecifier & as, Engine *e = nullptr);
+
 
 enum Severity {
   Info = 1,

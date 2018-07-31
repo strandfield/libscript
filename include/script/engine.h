@@ -165,14 +165,6 @@ protected:
   std::unique_ptr<EngineImpl> d;
 };
 
-namespace diagnostic
-{
-
-std::string repr(const Type & t, Engine *e = nullptr);
-std::string repr(const AccessSpecifier & as, Engine *e = nullptr);
-
-} // diagnostic
-
 } // namespace script
 
 #endif // LIBSCRIPT_ENGINE_H
