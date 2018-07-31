@@ -56,6 +56,7 @@ TEST(InitializerLists, class_template) {
 #include "script/parser/parser.h"
 #include "script/ast/node.h"
 #include "script/compiler/expressioncompiler.h"
+#include "script/program/expression.h"
 
 std::shared_ptr<script::parser::ParserData> parser_data(const char *source);
 

@@ -190,6 +190,7 @@ Testing list initializations
 
 #include "script/ast/node.h"
 #include "script/compiler/expressioncompiler.h"
+#include "script/program/expression.h"
 
 TEST(Conversions, list_initialization_default) {
   using namespace script;

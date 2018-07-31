@@ -5,14 +5,15 @@
 #ifndef LIBSCRIPT_COMPILER_VARIABLE_ACCESSOR_H
 #define LIBSCRIPT_COMPILER_VARIABLE_ACCESSOR_H
 
-
-/// TODO: review these includes
-#include "script/ast/forwards.h"
-#include "script/program/expression.h"
 #include "script/diagnosticmessage.h"
 
 namespace script
 {
+
+namespace program
+{
+class Expression;
+} // namespace program
 
 namespace compiler
 {

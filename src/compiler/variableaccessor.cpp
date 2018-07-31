@@ -7,6 +7,8 @@
 #include "script/compiler/diagnostichelper.h"
 #include "script/compiler/expressioncompiler.h"
 
+#include "script/program/expression.h"
+
 #include "script/class.h"
 #include "script/datamember.h"
 
