@@ -7,7 +7,6 @@
 
 #include <vector>
 
-/// TODO: review and remove useless includes
 #include "script/scope.h"
 #include "script/string.h"
 

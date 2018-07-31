@@ -46,8 +46,6 @@ public:
   void log(const CompilerException & exception) override;
 };
 
-/// TODO: should we create a queue of Function to compile, and remove the 
-// responsability away from ScriptCompiler
 class CompileSession
 {
 public:

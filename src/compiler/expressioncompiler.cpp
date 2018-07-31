@@ -196,7 +196,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBraceConstructi
   if (lookup.typeResult().isNull())
     throw UnknownTypeInBraceInitialization{ dpos(bc), dstr(bc->temporary_type) };
 
-  /// TODO : refactor this huge duplicate of FunctionCompiler::generateVariableDeclaration()
   const Type & type = lookup.typeResult();
 
   if (!type.isObjectType() && bc->arguments.size() != 1)
