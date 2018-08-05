@@ -19,7 +19,6 @@ public:
   ~EnumValue() = default;
 
   EnumValue(Enum e, int val);
-  EnumValue(Enum e, const std::string & name);
 
   inline bool isNull() const { return mEnum.isNull(); }
   inline bool isValid() const { return !isNull(); }
