@@ -82,6 +82,17 @@ int Enum::getValue(const std::string & k, int defaultValue) const
   return it->second;
 }
 
+std::string Enum::getKey(int val) const
+{
+  for (auto it = d->values.begin(); it != d->values.end(); ++it)
+  {
+    if (it->second == val)
+      return it->first;
+  }
+
+  throw std::runtime_error{ "Enum::getKey() : no such value" };
+}
+
 int Enum::addValue(const std::string & key, int value)
 {
   if (value == -1)

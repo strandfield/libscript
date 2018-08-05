@@ -137,6 +137,28 @@ TEST(CoreUtilsTests, TypeReservation) {
   ASSERT_EQ(A.id(), Type::ObjectFlag | 10);
 }
 
+TEST(CoreUtilsTests, Enums) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Enum A = Symbol{ e.rootNamespace() }.Enum("A").get();
+  A.addValue("A1", 1);
+  A.addValue("A2", 2);
+  A.addValue("A3", 3);
+
+  ASSERT_TRUE(A.hasKey("A1"));
+  ASSERT_FALSE(A.hasKey("HK47"));
+  ASSERT_TRUE(A.hasValue(2));
+  ASSERT_EQ(A.getKey(2), "A2");
+  ASSERT_FALSE(A.hasValue(66));
+  ASSERT_EQ(A.getValue("A1"), 1);
+  ASSERT_EQ(A.getValue("HK47", -1), -1);
+
+  ASSERT_EQ(A.enclosingNamespace(), e.rootNamespace());
+}
+
 TEST(CoreUtilsTests, ClassConstruction) {
   using namespace script;
 
