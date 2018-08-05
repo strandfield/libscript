@@ -8,7 +8,7 @@
 #include "script/engine.h"
 #include "script/private/class_p.h"
 #include "script/private/enum_p.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/private/function_p.h"
 #include "script/private/namespace_p.h"
 #include "script/operator.h"
@@ -189,7 +189,7 @@ bool ScopeImpl::lookup(const std::string & name, NameLookupImpl *nl) const
     auto it = e.values().find(name);
     if (it != e.values().end())
     {
-      nl->enumValueResult = EnumValue{ e, it->second };
+      nl->enumeratorResult = Enumerator{ e, it->second };
       return true;
     }
   }
@@ -726,7 +726,7 @@ bool ClassScope::lookup(const std::string & name, const Class & c, NameLookupImp
     auto it = e.values().find(name);
     if (it != e.values().end())
     {
-      nl->enumValueResult = EnumValue{ e, it->second };
+      nl->enumeratorResult = Enumerator{ e, it->second };
       return true;
     }
   }
@@ -878,7 +878,7 @@ bool EnumScope::lookup(const std::string & name, NameLookupImpl *nl) const
   auto it = vals.find(name);
   if (it == vals.end())
     return false;
-  nl->enumValueResult = EnumValue{ mEnum, it->second };
+  nl->enumeratorResult = Enumerator{ mEnum, it->second };
   return true;
 }
 

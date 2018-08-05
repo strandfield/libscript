@@ -17,7 +17,7 @@ namespace script
 
 class Array;
 class Engine;
-class EnumValue;
+class Enumerator;
 class Function;
 class InitializerList;
 class Lambda;
@@ -65,11 +65,11 @@ public:
   Function toFunction() const;
   Object toObject() const;
   Array toArray() const;
-  EnumValue toEnumValue() const;
+  Enumerator toEnumerator() const;
   Lambda toLambda() const;
   InitializerList toInitializerList() const;
 
-  static Value fromEnumValue(const EnumValue & ev);
+  static Value fromEnumerator(const Enumerator & ev);
   static Value fromFunction(const Function & f, const Type & ft);
   static Value fromLambda(const Lambda & obj);
   static Value fromArray(const Array & a);

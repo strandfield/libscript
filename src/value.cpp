@@ -9,7 +9,7 @@
 #include "script/private/engine_p.h"
 
 #include "script/array.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/function.h"
 #include "script/initializerlist.h"
 #include "script/object.h"
@@ -95,17 +95,17 @@ void ValueImpl::set_lambda(const Lambda & lval)
 }
 
 
-const EnumValue & ValueImpl::get_enum_value() const
+const Enumerator & ValueImpl::get_enumerator() const
 {
   return *data.builtin.enumValue;
 }
 
-void ValueImpl::set_enum_value(const EnumValue & evval)
+void ValueImpl::set_enumerator(const Enumerator & val)
 {
   if (data.builtin.enumValue == nullptr)
-    data.builtin.enumValue = new EnumValue{ evval };
+    data.builtin.enumValue = new Enumerator{ val };
   else
-    *data.builtin.enumValue = evval;
+    *data.builtin.enumValue = val;
 }
 
 bool ValueImpl::is_initializer_list() const
@@ -302,9 +302,9 @@ Array Value::toArray() const
   return d->get_array();
 }
 
-EnumValue Value::toEnumValue() const
+Enumerator Value::toEnumerator() const
 {
-  return d->get_enum_value();
+  return d->get_enumerator();
 }
 
 Lambda Value::toLambda() const
@@ -317,13 +317,13 @@ InitializerList Value::toInitializerList() const
   return d->get_initializer_list();
 }
 
-Value Value::fromEnumValue(const EnumValue & ev)
+Value Value::fromEnumerator(const Enumerator & ev)
 {
   if (ev.isNull())
     return Value{}; // TODO : should we throw
   Engine *e = ev.enumeration().engine();
   Value ret = e->implementation()->buildValue(ev.enumeration().id());
-  ret.impl()->set_enum_value(ev);
+  ret.impl()->set_enumerator(ev);
   return ret;
 }
 

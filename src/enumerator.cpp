@@ -2,30 +2,30 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 
 namespace script
 {
 
-EnumValue::EnumValue()
+Enumerator::Enumerator()
   : mValue(-1)
 {
 
 }
 
-EnumValue::EnumValue(Enum e, int val)
+Enumerator::Enumerator(Enum e, int val)
   : mEnum(e)
   , mValue(val)
 {
 
 }
 
-bool EnumValue::operator==(const EnumValue & other) const
+bool Enumerator::operator==(const Enumerator & other) const
 {
   return other.mEnum == mEnum && other.mValue == mValue;
 }
 
-bool EnumValue::operator!=(const EnumValue & other) const
+bool Enumerator::operator!=(const Enumerator & other) const
 {
   return !operator==(other);
 }

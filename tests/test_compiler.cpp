@@ -8,7 +8,7 @@
 #include "script/class.h"
 #include "script/datamember.h"
 #include "script/engine.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
@@ -288,7 +288,7 @@ TEST(CompilerTests, enum_assignment) {
 
   Value a = s.globals().front();
   ASSERT_EQ(a.type(), A.id());
-  EnumValue ev = a.toEnumValue();
+  Enumerator ev = a.toEnumerator();
   ASSERT_EQ(ev.enumeration().getValue("AB"), ev.value());
 }
 

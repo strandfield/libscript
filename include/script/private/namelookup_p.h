@@ -6,7 +6,7 @@
 #define LIBSCRIPT_NAMELOOKUP_P_H
 
 #include "script/classtemplate.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/function.h"
 #include "script/functiontemplate.h"
 #include "script/staticdatamember.h"
@@ -37,7 +37,7 @@ public:
   ClassTemplate classTemplateResult;
   std::vector<FunctionTemplate> functionTemplateResult;
   Scope scopeResult;
-  EnumValue enumValueResult;
+  Enumerator enumeratorResult;
   int dataMemberIndex;
   int globalIndex;
   int localIndex;

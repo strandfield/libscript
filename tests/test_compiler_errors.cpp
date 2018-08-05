@@ -9,7 +9,7 @@
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"

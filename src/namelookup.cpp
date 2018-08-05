@@ -81,7 +81,7 @@ NameLookup::ResultType NameLookup::resultType() const
     return DataMemberName;
   else if (!d->staticDataMemberResult.isNull())
     return StaticDataMemberName;
-  else if (d->enumValueResult.isValid())
+  else if (d->enumeratorResult.isValid())
     return EnumValueName;
   else if (d->globalIndex != -1)
     return GlobalName;
@@ -149,9 +149,9 @@ int NameLookup::templateParameterIndex() const
   return d->templateParameterIndex;
 }
 
-const EnumValue & NameLookup::enumValueResult() const
+const Enumerator & NameLookup::enumeratorResult() const
 {
-  return d->enumValueResult;
+  return d->enumeratorResult;
 }
 
 const Scope & NameLookup::scopeResult() const

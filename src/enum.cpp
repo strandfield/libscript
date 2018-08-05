@@ -4,7 +4,7 @@
 
 #include "script/enum.h"
 #include "script/private/enum_p.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 
 #include <algorithm>
 

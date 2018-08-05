@@ -636,7 +636,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::CaptureName:
     return variable_->accessCapture(*this, lookup.captureIndex(), dpos(identifier));
   case NameLookup::EnumValueName:
-    return program::Literal::New(Value::fromEnumValue(lookup.enumValueResult()));
+    return program::Literal::New(Value::fromEnumerator(lookup.enumeratorResult()));
   case NameLookup::NamespaceName:
     throw NamespaceNameInExpression{ dpos(identifier) };
   default:

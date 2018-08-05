@@ -12,7 +12,7 @@
 #include "script/context.h"
 #include "script/conversions.h"
 #include "script/enum.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
@@ -75,7 +75,7 @@ T fundamental_value_cast(const Value & v)
   }
 
   if (v.type().isEnumType())
-    return (T) v.toEnumValue().value();
+    return (T) v.toEnumerator().value();
 
   throw std::runtime_error{ "fundamental_value_cast : Implementation error" };
 }
@@ -679,7 +679,7 @@ void Engine::uninitialized_copy(const Value & value, Value & memory)
   }
   else if (t.isEnumType())
   {
-    memory.impl()->set_enum_value(value.toEnumValue());
+    memory.impl()->set_enumerator(value.toEnumerator());
   }
   else
     throw std::runtime_error{ "Engine::uninitialized_copy() : case not implemented" };
@@ -790,7 +790,7 @@ static Value copy_fundamental(const Value & val, Engine *e)
 
 static Value copy_enumvalue(const Value & val, Engine *e)
 {
-  return Value::fromEnumValue(val.toEnumValue());
+  return Value::fromEnumerator(val.toEnumerator());
 }
 
 static Lambda copy_lambda(const Lambda & l, Engine *e)

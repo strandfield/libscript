@@ -5,7 +5,7 @@
 #include "script/enumbuilder.h"
 
 #include "script/engine.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/value.h"
 
 #include "script/interpreter/executioncontext.h"
@@ -25,7 +25,7 @@ namespace callbacks
 
 Value enum_assignment(interpreter::FunctionCall *c)
 {
-  c->arg(0).impl()->set_enum_value(c->arg(1).toEnumValue());
+  c->arg(0).impl()->set_enumerator(c->arg(1).toEnumerator());
   return c->arg(0);
 }
 

@@ -45,7 +45,7 @@ struct LIBSCRIPT_API ValueImpl
       float realf;
       double reald;
       String *string;
-      EnumValue *enumValue;
+      Enumerator *enumValue;
       CharRef charref;
       Value *valueptr;
       void *data;
@@ -96,8 +96,8 @@ struct LIBSCRIPT_API ValueImpl
   bool is_lambda() const;
   const Lambda & get_lambda() const;
   void set_lambda(const Lambda & lval);
-  const EnumValue & get_enum_value() const;
-  void set_enum_value(const EnumValue & evval);
+  const Enumerator & get_enumerator() const;
+  void set_enumerator(const Enumerator & val);
 
   bool is_initializer_list() const;
   InitializerList get_initializer_list() const;

@@ -10,7 +10,7 @@
 
 #include "script/class.h"
 #include "script/enum.h"
-#include "script/enumvalue.h"
+#include "script/enumerator.h"
 #include "script/namespace.h"
 #include "script/script.h"
 #include "script/template.h"
@@ -71,7 +71,7 @@ public:
   int globalIndex() const;
   int localIndex() const;
   int templateParameterIndex() const;
-  const EnumValue & enumValueResult() const;
+  const Enumerator & enumeratorResult() const;
   const Scope & scopeResult() const;
   const Class::StaticDataMember & staticDataMemberResult() const;
   const Class & memberOf() const;
