@@ -180,25 +180,6 @@ FunctionBuilder FunctionBuilder::Function(const std::string & name, const Protot
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Constructor(const Class & cla, Prototype proto, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::Constructor };
-  ret.callback = impl;
-  ret.symbol = Symbol{ cla };
-  proto.setReturnType(Type::cref(cla.id()));
-  ret.proto = std::move(proto);
-  return ret;
-}
-
-FunctionBuilder FunctionBuilder::Constructor(const Class & cla, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::Constructor };
-  ret.callback = impl;
-  ret.symbol = Symbol{ cla };
-  ret.proto.setReturnType(Type::cref(cla.id()));
-  return ret;
-}
-
 FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::Destructor };

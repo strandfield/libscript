@@ -36,8 +36,6 @@ public:
   FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix);
 
   static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use Class::Constructor instead")]] static FunctionBuilder Constructor(const Class & cla, Prototype proto, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use Class::Constructor instead")]] static FunctionBuilder Constructor(const Class & cla, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
   [[deprecated("use builder functions in Class instead")]] static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
 
