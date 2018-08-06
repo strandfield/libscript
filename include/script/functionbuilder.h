@@ -37,7 +37,6 @@ public:
 
   static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
   static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
-  [[deprecated("use builder functions in Class instead")]] static FunctionBuilder Method(const Class & cla, const std::string & name, NativeFunctionSignature impl = nullptr);
 
   static FunctionBuilder Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl = nullptr);
 

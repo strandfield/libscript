@@ -189,16 +189,6 @@ FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSig
   return ret;
 }
 
-FunctionBuilder FunctionBuilder::Method(const Class & cla, const std::string & name, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::StandardFunction };
-  ret.callback = impl;
-  ret.name = name;
-  ret.proto.setReturnType(Type::Void);
-  ret.proto.addParameter(Type::ref(cla.id() | Type::ThisFlag));
-  return ret;
-}
-
 FunctionBuilder FunctionBuilder::Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::CastFunction };
