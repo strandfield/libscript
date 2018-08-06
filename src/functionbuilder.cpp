@@ -169,17 +169,6 @@ FunctionBuilder::FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::st
 
 }
 
-
-
-FunctionBuilder FunctionBuilder::Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::StandardFunction };
-  ret.callback = impl;
-  ret.name = name;
-  ret.proto = proto;
-  return ret;
-}
-
 FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSignature impl)
 {
   FunctionBuilder ret{ Function::Destructor };
@@ -188,15 +177,6 @@ FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSig
   ret.proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
   return ret;
 }
-
-FunctionBuilder FunctionBuilder::Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::CastFunction };
-  ret.proto = Prototype{ destType, Type::ref(srcType).withFlag(Type::ThisFlag) };
-  ret.callback = impl;
-  return ret;
-}
-
 
 FunctionBuilder & FunctionBuilder::setConst()
 {

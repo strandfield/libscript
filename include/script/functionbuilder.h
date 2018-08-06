@@ -35,10 +35,7 @@ public:
   FunctionBuilder(Namespace ns, OperatorName op);
   FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix);
 
-  static FunctionBuilder Function(const std::string & name, const Prototype & proto, NativeFunctionSignature impl = nullptr);
-  static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
-
-  static FunctionBuilder Cast(const Type & srcType, const Type & destType, NativeFunctionSignature impl = nullptr);
+  [[deprecated("TODO: remove")]] static FunctionBuilder Destructor(const Class & cla, NativeFunctionSignature impl = nullptr);
 
   FunctionBuilder & setConst();
   FunctionBuilder & setVirtual();
