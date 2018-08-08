@@ -105,29 +105,33 @@ inline static int compare(int a, int b)
 
 int TemplateArgumentComparison::compare(const TemplateArgument & a, const TemplateArgument & b)
 {
-  if (a.kind == TemplateArgument::BoolArgument)
-  {
-    if (b.kind != TemplateArgument::BoolArgument)
-      return -1;
-
-    return script::compare(a.boolean, b.boolean);
-  }
-  else if (a.kind == TemplateArgument::IntegerArgument)
-  {
-    if (b.kind == TemplateArgument::BoolArgument)
-      return 1;
-    else if (b.kind == TemplateArgument::TypeArgument)
-      return -1;
-
-    return script::compare(a.integer, b.integer);
-  }
-
-  assert(a.kind == TemplateArgument::TypeArgument);
-
-  if (b.kind != TemplateArgument::TypeArgument)
+  if (a.kind < b.kind)
+    return -1;
+  else if (b.kind > a.kind)
     return 1;
 
-  return script::compare(a.type.data(), b.type.data());
+  const TemplateArgument::Kind common_kind = a.kind;
+
+  if (common_kind == TemplateArgument::BoolArgument)
+    return script::compare(a.boolean, b.boolean);
+  else if (common_kind == TemplateArgument::IntegerArgument)
+    return script::compare(a.integer, b.integer);
+  else if (common_kind == TemplateArgument::TypeArgument)
+    return script::compare(a.type.data(), b.type.data());
+
+  assert(common_kind == TemplateArgument::PackArgument);
+
+  if (a.pack->size() != b.pack->size())
+    return script::compare((int) a.pack->size(), (int) b.pack->size());
+
+  for (size_t i(0); i < a.pack->size(); ++i)
+  {
+    const int c = compare(a.pack->at(i), b.pack->at(i));
+    if (c != 0)
+      return c;
+  }
+
+  return 0;
 }
 
 bool TemplateArgumentComparison::operator()(const TemplateArgument & a, const TemplateArgument & b) const
