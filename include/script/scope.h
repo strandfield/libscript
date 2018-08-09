@@ -101,7 +101,22 @@ public:
   bool lookup(const std::string & name, std::shared_ptr<NameLookupImpl> nl) const;
   bool lookup(const std::string & name, NameLookupImpl *nl) const;
 
-  void invalidateCache();
+  enum CacheInvalidation {
+    NoCacheInvalidation = 0,
+    InvalidateClassCache = 1,
+    InvalidateEnumCache = 2,
+    InvalidateFunctionCache = 4,
+    InvalidateLiteralOperatorCache = 8,
+    InvalidateOperatorCache = 16,
+    InvalidateAllFunctionsCache = InvalidateFunctionCache | InvalidateLiteralOperatorCache | InvalidateOperatorCache,
+    InvalidateNamespaceCache = 32,
+    InvalidateTemplateCache = 64,
+    InvalidateVariableCache = 128,
+    InvalidateTypedefCache = 256,
+    InvalidateAllCaches = (1 << 16) - 1,
+  };
+
+  void invalidateCache(int which = InvalidateAllCaches);
 
   const std::shared_ptr<ScopeImpl> & impl() const;
 

@@ -58,7 +58,7 @@ public:
 
   virtual bool lookup(const std::string & name, NameLookupImpl *nl) const;
 
-  virtual void invalidate_cache();
+  virtual void invalidate_cache(int which);
 };
 
 class ExtensibleScope : public ScopeImpl
@@ -125,7 +125,7 @@ public:
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
-  void invalidate_cache() override;
+  void invalidate_cache(int which) override;
 };
 
 class ClassScope : public ExtensibleScope

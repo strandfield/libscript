@@ -403,7 +403,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
   fill(builder, class_decl);
 
   Class cla = builder.get();
-  mCurrentScope.invalidateCache();
+  mCurrentScope.invalidateCache(Scope::InvalidateClassCache);
 
   readClassContent(cla, class_decl);
 }
@@ -456,7 +456,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   Enum e = symbol.Enum(enum_decl.name->getName()).get();
 
-  mCurrentScope.invalidateCache();
+  mCurrentScope.invalidateCache(Scope::InvalidateEnumCache);
 
   for (size_t i(0); i < enum_decl.values.size(); ++i)
   {
@@ -477,7 +477,7 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   Symbol s = currentScope().symbol();
   s.Typedef(t, name).create();
 
-  mCurrentScope.invalidateCache();
+  mCurrentScope.invalidateCache(Scope::InvalidateTypedefCache);
 }
 
 void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl)
@@ -525,6 +525,8 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
   FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
   function_processor_.fill(builder, fundecl, scp);
   Function function = builder.create();
+  
+  /// TODO : should we invalidate the scope cache ? I believe we should !
 
   if (function.isVirtual() && !fundecl->virtualKeyword.isValid())
     log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
