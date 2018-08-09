@@ -17,6 +17,7 @@
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
 #include "script/enumbuilder.h"
+#include "script/enumerator.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/name.h"
@@ -152,6 +153,7 @@ TEST(CoreUtilsTests, Enums) {
   ASSERT_FALSE(A.hasKey("HK47"));
   ASSERT_TRUE(A.hasValue(2));
   ASSERT_EQ(A.getKey(2), "A2");
+  ASSERT_EQ(Enumerator(A, 2).name(), "A2");
   ASSERT_FALSE(A.hasValue(66));
   ASSERT_EQ(A.getValue("A1"), 1);
   ASSERT_EQ(A.getValue("HK47", -1), -1);

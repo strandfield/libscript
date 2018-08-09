@@ -82,7 +82,7 @@ int Enum::getValue(const std::string & k, int defaultValue) const
   return it->second;
 }
 
-std::string Enum::getKey(int val) const
+const std::string & Enum::getKey(int val) const
 {
   for (auto it = d->values.begin(); it != d->values.end(); ++it)
   {

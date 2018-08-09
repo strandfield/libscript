@@ -25,6 +25,8 @@ public:
   inline int value() const { return mValue; }
   inline const Enum & enumeration() const { return mEnum; }
 
+  inline const std::string & name() const { return mEnum.getKey(mValue); }
+
   Enumerator & operator=(const Enumerator & other) = default;
   bool operator==(const Enumerator & other) const;
   bool operator!=(const Enumerator & other) const;

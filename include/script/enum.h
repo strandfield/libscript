@@ -40,7 +40,7 @@ public:
   bool hasKey(const std::string & k) const;
   bool hasValue(int val) const;
   int getValue(const std::string & k, int defaultValue = -1) const;
-  std::string getKey(int val) const;
+  const std::string & getKey(int val) const;
   int addValue(const std::string & key, int value = -1);
 
   Operator getAssignmentOperator() const;
