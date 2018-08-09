@@ -61,7 +61,7 @@ Value begin(FunctionCall *c)
   InitializerList self = c->thisObject().toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  ret.impl()->data.builtin.valueptr = self.begin();
+  ret.impl()->set_initializer_list(InitializerList{ self.begin(), self.begin() });
   return ret;
 }
 
@@ -71,7 +71,7 @@ Value end(FunctionCall *c)
   InitializerList self = c->thisObject().toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  ret.impl()->data.builtin.valueptr = self.end();
+  ret.impl()->set_initializer_list(InitializerList{ self.end(), self.end() });
   return ret;
 }
 
@@ -97,8 +97,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  Value *other = c->arg(0).impl()->data.builtin.valueptr;
-  self.impl()->data.builtin.valueptr = other;
+  self.impl()->set_initializer_list(c->arg(0).impl()->get_initializer_list());
   return self;
 }
 
@@ -106,7 +105,7 @@ Value copy_ctor(FunctionCall *c)
 Value dtor(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  self.impl()->data.builtin.valueptr = nullptr;
+  self.impl()->set_initializer_list(InitializerList{ nullptr, nullptr });
   return self;
 }
 
@@ -114,15 +113,14 @@ Value dtor(FunctionCall *c)
 Value get(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  return *(self.impl()->data.builtin.valueptr);
+  return *(self.impl()->get_initializer_list().begin());
 }
 
 // iterator & operator=(const iterator & other);
 Value assign(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  Value *other = c->arg(1).impl()->data.builtin.valueptr;
-  self.impl()->data.builtin.valueptr = other;
+  self.impl()->set_initializer_list(c->arg(1).impl()->get_initializer_list());
   return self;
 }
 
@@ -130,7 +128,8 @@ Value assign(FunctionCall *c)
 Value pre_increment(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  (self.impl()->data.builtin.valueptr)++;
+  InitializerList iter = self.impl()->get_initializer_list();
+  self.impl()->set_initializer_list(InitializerList{ iter.begin() + 1, iter.begin() + 1 });
   return self;
 }
 
@@ -138,7 +137,8 @@ Value pre_increment(FunctionCall *c)
 Value pre_decrement(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  (self.impl()->data.builtin.valueptr)--;
+  InitializerList iter = self.impl()->get_initializer_list();
+  self.impl()->set_initializer_list(InitializerList{ iter.begin() - 1, iter.begin() - 1 });
   return self;
 }
 
@@ -146,16 +146,14 @@ Value pre_decrement(FunctionCall *c)
 Value eq(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  Value *other = c->arg(1).impl()->data.builtin.valueptr;
-  return c->engine()->newBool(self.impl()->data.builtin.valueptr == other);
+  return c->engine()->newBool(self.impl()->get_initializer_list().begin() == c->arg(1).impl()->get_initializer_list().begin());
 }
 
 // bool operator!=(const iterator & other) const;
 Value neq(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  Value *other = c->arg(1).impl()->data.builtin.valueptr;
-  return c->engine()->newBool(self.impl()->data.builtin.valueptr != other);
+  return c->engine()->newBool(self.impl()->get_initializer_list().begin() != c->arg(1).impl()->get_initializer_list().begin());
 }
 
 } // namespace iterator
