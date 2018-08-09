@@ -14,7 +14,7 @@ namespace script
 {
 
 template<typename Derived>
-class LIBSCRIPT_API TemplateBuilder
+class TemplateBuilder
 {
 public:
   Symbol symbol;
@@ -49,7 +49,7 @@ public:
     return *(static_cast<Derived*>(this));
   }
 
-  inline Derived & params(const TemplateParameter & p) { this->parameters.push_back(p); return *(static_cast<Derived*>(this)); }
+  Derived & params(const TemplateParameter & p) { this->parameters.push_back(p); return *(static_cast<Derived*>(this)); }
 
   template<typename...Args>
   Derived & params(const TemplateParameter & p, const Args &... rest)
