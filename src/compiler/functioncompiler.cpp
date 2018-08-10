@@ -1014,7 +1014,7 @@ void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & 
 
   std::shared_ptr<program::Statement> body;
   if (whileLoop->body->is<ast::CompoundStatement>())
-    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(body), FunctionScope::WhileBody);
+    body = generateCompoundStatement(std::dynamic_pointer_cast<ast::CompoundStatement>(whileLoop->body), FunctionScope::WhileBody);
   else
     body = generate(whileLoop->body);
 

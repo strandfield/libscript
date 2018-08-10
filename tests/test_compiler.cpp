@@ -1727,7 +1727,8 @@ TEST(CompilerTests, while_loop_1) {
 
   const char *source =
     "  int n = 0;             "
-    "  while (n < 10) ++n;    ";
+    "  while (n < 10) ++n;    "
+    "  while (n < 20) { ++n; }    ";
 
   Engine engine;
   engine.setup();
@@ -1745,7 +1746,7 @@ TEST(CompilerTests, while_loop_1) {
 
   Value n = s.globals().front();
   ASSERT_EQ(n.type(), Type::Int);
-  ASSERT_EQ(n.toInt(), 10);
+  ASSERT_EQ(n.toInt(), 20);
 }
 
 TEST(CompilerTests, type_alias_1) {
