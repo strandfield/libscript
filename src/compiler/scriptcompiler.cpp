@@ -521,12 +521,12 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
 
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
-  const Scope scp = currentScope();
+  Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
   function_processor_.fill(builder, fundecl, scp);
   Function function = builder.create();
-  
-  /// TODO : should we invalidate the scope cache ? I believe we should !
+
+  scp.invalidateCache(Scope::InvalidateFunctionCache);
 
   if (function.isVirtual() && !fundecl->virtualKeyword.isValid())
     log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
@@ -583,12 +583,14 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   Function function = b.create();
 
+  scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
+
   schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
 {
-  const Scope scp = currentScope();
+  Scope scp = currentScope();
   const ast::OperatorOverloadDecl & over_decl = *decl;
 
   if (over_decl.name->is<ast::LiteralOperatorName>())
@@ -624,6 +626,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
 
   Function function = builder.create();
+
+  scp.invalidateCache(Scope::InvalidateOperatorCache);
 
   schedule(function, decl, scp);
 }
@@ -708,6 +712,8 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
     .setCallback(nullptr)
     .get();
 
+  scp.invalidateCache(Scope::InvalidateTemplateCache);
+
   ct.impl()->definition = TemplateDefinition::make(decl);
 }
 
@@ -723,6 +729,8 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
     .setScope(scp)
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
     .get();
+
+  scp.invalidateCache(Scope::InvalidateTemplateCache);
 
   ft.impl()->definition = TemplateDefinition::make(decl);
 }

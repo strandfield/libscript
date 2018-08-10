@@ -116,6 +116,7 @@ public:
     InvalidateAllCaches = (1 << 16) - 1,
   };
 
+  /// TODO: should we make this const ?
   void invalidateCache(int which = InvalidateAllCaches);
 
   const std::shared_ptr<ScopeImpl> & impl() const;
