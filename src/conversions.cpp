@@ -543,6 +543,7 @@ ConversionSequence ConversionSequence::NotConvertible()
 
 ConversionSequence ConversionSequence::compute(const Type & src, const Type & dest, Engine *engine)
 {
+  /// TODO : might be incorrect if src is a class that has some conversion operators.
   if (dest.isReference() && !dest.isConst() && src.isConst())
     return ConversionSequence::NotConvertible();
 
