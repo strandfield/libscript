@@ -992,17 +992,19 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
   if (var.global)
     return write(program::PopValue::New(false, Function{}, var.index));
 
+  const bool is_ref = var.type.isReference() || var.type.isRefRef();
+  const bool destroy = !is_ref;
+
   if (var.type.isObjectType())
   {
     Function dtor = engine()->getClass(var.type).destructor();
     if (dtor.isNull())
       throw ObjectHasNoDestructor{};
 
-    return write(program::PopValue::New(true, dtor, var.index));
+    return write(program::PopValue::New(destroy, dtor, var.index));
   }
 
-  /// TODO : what about reference variable ?
-  write(program::PopValue::New(true, Function{}, var.index));
+  write(program::PopValue::New(destroy, Function{}, var.index));
 }
 
 void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)
