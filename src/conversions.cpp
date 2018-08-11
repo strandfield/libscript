@@ -101,7 +101,8 @@ static StandardConversion fundamental_conversion(const Type & srcType, const Typ
 
 static ConversionSequence select_converting_constructor(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine)
 {
-  // assert(!dest.isReference() || dest.isConst())
+  if (dest.isReference() && !dest.isConst() && src.isConst())
+    return ConversionSequence::NotConvertible();
 
   // TODO : before returning, check if better candidates can be found ?
   // this would result in an ambiguous conversion sequence I believe
@@ -543,10 +544,6 @@ ConversionSequence ConversionSequence::NotConvertible()
 
 ConversionSequence ConversionSequence::compute(const Type & src, const Type & dest, Engine *engine)
 {
-  /// TODO : might be incorrect if src is a class that has some conversion operators.
-  if (dest.isReference() && !dest.isConst() && src.isConst())
-    return ConversionSequence::NotConvertible();
-
   StandardConversion stdconv = StandardConversion::compute(src, dest, engine);
   if (stdconv != StandardConversion::NotConvertible())
     return stdconv;
