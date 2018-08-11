@@ -111,13 +111,13 @@ Value Interpreter::call(const Function & f, const std::vector<Value> & args)
       mExecutionContext->stack.push(arg);
     }
   }
-  catch (const std::runtime_error & exception)
+  catch (const std::runtime_error &)
   {
     // pop the arguments
     while (mExecutionContext->stack.size > sp + 1)
       mExecutionContext->stack.pop();
 
-    throw exception;
+    throw;
   }
 
   mExecutionContext->push(f, sp);
