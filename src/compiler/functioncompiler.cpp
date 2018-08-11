@@ -1001,6 +1001,7 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
     return write(program::PopValue::New(true, dtor, var.index));
   }
 
+  /// TODO : what about reference variable ?
   write(program::PopValue::New(true, Function{}, var.index));
 }
 
