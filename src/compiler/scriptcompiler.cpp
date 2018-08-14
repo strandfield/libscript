@@ -853,6 +853,9 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
 
 void ScriptCompiler::reprocess(IncompleteFunction & func)
 {
+  /// TODO: Would this be useful ?
+  // ScopeGuard guard{ mCurrentScope };
+
   const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
   mCurrentScope = func.scope;
 

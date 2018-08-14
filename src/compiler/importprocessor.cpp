@@ -47,8 +47,6 @@ ImportProcessor::ImportProcessor(Engine *e)
 
 Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & decl)
 {
-  result_ = Scope{};
-
   Module m = engine()->getModule(decl->at(0));
   if (m.isNull())
   {
@@ -78,8 +76,9 @@ Scope ImportProcessor::load_script_module(const std::shared_ptr<ast::ImportDirec
 
   if (support::filesystem::is_directory(path))
   {
-    load_recursively(path);
-    return result_;
+    Scope result;
+    load_recursively(result, path);
+    return result;
   }
   else
   {
@@ -112,14 +111,14 @@ Scope ImportProcessor::load(const support::filesystem::path & p)
   return ret;
 }
 
-void ImportProcessor::load_recursively(const support::filesystem::path & dir)
+void ImportProcessor::load_recursively(Scope & result, const support::filesystem::path & dir)
 {
   for (auto& p : support::filesystem::directory_iterator(dir))
   {
     if (support::filesystem::is_directory(p))
-      load_recursively(p);
+      load_recursively(result, p);
     else
-      add_import(load(p));
+      add_import(result, load(p));
   }
 }
 
@@ -137,12 +136,12 @@ bool ImportProcessor::is_loaded(const support::filesystem::path & p, Script & re
   return false;
 }
 
-void ImportProcessor::add_import(const Scope & scp)
+void ImportProcessor::add_import(Scope & result, const Scope & scp)
 {
-  if (result_.isNull())
-    result_ = scp;
+  if (result.isNull())
+    result = scp;
   else
-    result_.merge(scp);
+    result.merge(scp);
 }
 
 } // namespace compiler

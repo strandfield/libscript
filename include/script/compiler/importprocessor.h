@@ -36,7 +36,6 @@ public:
   Engine *engine_;
   ModuleLoader default_loader_;
   ModuleLoader *loader_;
-  Scope result_;
 
 public:
   ImportProcessor(Engine *e);
@@ -52,12 +51,12 @@ public:
 
   Scope load(const support::filesystem::path & p);
 
-  void load_recursively(const support::filesystem::path & dir);
+  void load_recursively(Scope & result, const support::filesystem::path & dir);
 
   bool is_loaded(const support::filesystem::path & p, Script & result);
 
 private:
-  void add_import(const Scope & scp);
+  void add_import(Scope & result, const Scope & scp);
 
 };
 
