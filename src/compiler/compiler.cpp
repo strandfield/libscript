@@ -82,7 +82,10 @@ SessionManager::SessionManager(Compiler *c, const Script & s)
   , mStartedSession(false)
 {
   if (c->hasActiveSession())
+  {
+    c->session()->generated.scripts.push_back(s);
     return;
+  }
 
   c->mSession = std::make_shared<CompileSession>(c, s);
   mStartedSession = true;
