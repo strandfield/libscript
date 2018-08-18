@@ -94,10 +94,11 @@ public:
   bool isCopyConstructible() const;
   bool isMoveConstructible() const;
 
-  Function newDestructor(NativeFunctionSignature func);
+  [[deprecated("Use Destructor() instead")]] Function newDestructor(NativeFunctionSignature func);
   Function destructor() const;
   
   FunctionBuilder Constructor(NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder Destructor(NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;

@@ -346,7 +346,7 @@ Type register_charref_type(Engine *e)
 
   charref.Constructor(callbacks::charref::copy_ctor).params(Type::cref(charref.id())).create();
 
-  charref.newDestructor(callbacks::charref::dtor);
+  charref.Destructor(callbacks::charref::dtor).create();
 
   charref.Operation(AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
 
@@ -361,7 +361,7 @@ void register_string_type(Class string)
   string.Constructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
   string.Constructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
-  string.newDestructor(callbacks::string::dtor);
+  string.Destructor(callbacks::string::dtor).create();
 
   string.Method("at", callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
   string.Method("capacity", callbacks::string::capacity).setConst().returns(Type::Int).create();

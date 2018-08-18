@@ -368,7 +368,8 @@ bool Class::isMoveConstructible() const
 
 Function Class::newDestructor(NativeFunctionSignature func)
 {
-  auto builder = FunctionBuilder::Destructor(*this, func);
+  auto builder = FunctionBuilder{ *this, Function::Destructor };
+  builder.setCallback(func);
   d->destructor = builder.create();
   return d->destructor;
 }
@@ -381,6 +382,13 @@ Function Class::destructor() const
 FunctionBuilder Class::Constructor(NativeFunctionSignature func) const
 {
   FunctionBuilder builder{ *this, Function::Constructor };
+  builder.callback = func;
+  return builder;
+}
+
+FunctionBuilder Class::Destructor(NativeFunctionSignature func) const
+{
+  FunctionBuilder builder{ *this, Function::Destructor };
   builder.callback = func;
   return builder;
 }

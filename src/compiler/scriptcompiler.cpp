@@ -553,7 +553,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const auto & dtor_decl = *decl;
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Destructor(current_class);
+  FunctionBuilder b = current_class.Destructor();
   function_processor_.fill(b, decl, scp);
 
   if (!current_class.parent().isNull())

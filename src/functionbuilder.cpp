@@ -117,10 +117,12 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
 {
   this->proto.setReturnType(Type::Void);
 
-  if (k != Function::Constructor)
+  if(k == Function::Constructor)
+    this->proto.setReturnType(Type::cref(cla.id())); /// TODO: make return void instead
+  else if(k == Function::Destructor)
+    this->proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
+  else
     this->proto.addParameter(Type::ref(cla.id()).withFlag(Type::ThisFlag));
-  else 
-    this->proto.setReturnType(Type::cref(cla.id()));
 }
 
 FunctionBuilder::FunctionBuilder(Class cla, OperatorName op)
@@ -167,15 +169,6 @@ FunctionBuilder::FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::st
   , operation(Operator::Null)
 {
 
-}
-
-FunctionBuilder FunctionBuilder::Destructor(const Class & cla, NativeFunctionSignature impl)
-{
-  FunctionBuilder ret{ Function::Destructor };
-  ret.callback = impl;
-  ret.symbol = Symbol{ cla };
-  ret.proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
-  return ret;
 }
 
 FunctionBuilder & FunctionBuilder::setConst()
