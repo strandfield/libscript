@@ -69,7 +69,7 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
       mExecutionContext->stack.push(arg);
     }
   }
-  catch (const std::runtime_error & exception)
+  catch (const std::runtime_error &)
   {
     // pop the arguments
     while (mExecutionContext->stack.size > sp + 1)
@@ -77,7 +77,7 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
 
     mExecutionContext->stack.pop();
 
-    throw exception;
+    throw;
   }
 
   mExecutionContext->push(f, sp);
