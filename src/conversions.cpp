@@ -104,8 +104,7 @@ static ConversionSequence select_converting_constructor(const Type & src, const 
   if (dest.isReference() && !dest.isConst() && src.isConst())
     return ConversionSequence::NotConvertible();
 
-  // TODO : before returning, check if better candidates can be found ?
-  // this would result in an ambiguous conversion sequence I believe
+  // We store the two best conversion sequences to detect ambiguity.
   StandardConversion best_conv = StandardConversion::NotConvertible();
   Function best_ctor;
   StandardConversion ambiguous_conv = StandardConversion::NotConvertible();
