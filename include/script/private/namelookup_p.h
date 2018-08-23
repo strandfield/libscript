@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_P_H
 #define LIBSCRIPT_NAMELOOKUP_P_H
 
+#include "script/class.h"
 #include "script/classtemplate.h"
 #include "script/enumerator.h"
 #include "script/function.h"
@@ -15,8 +16,6 @@
 
 namespace script
 {
-
-class Class;
 
 class NameLookupImpl
 {

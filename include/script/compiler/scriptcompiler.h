@@ -16,6 +16,7 @@
 #include "script/compiler/variableprocessor.h"
 
 #include "script/engine.h"
+#include "script/script.h"
 #include "script/templatenameprocessor.h"
 #include "script/types.h"
 

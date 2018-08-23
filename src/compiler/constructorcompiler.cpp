@@ -14,6 +14,7 @@
 
 #include "script/program/statements.h"
 
+#include "script/class.h"
 #include "script/conversions.h"
 #include "script/datamember.h"
 #include "script/namelookup.h"

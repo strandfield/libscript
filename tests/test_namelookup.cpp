@@ -4,11 +4,13 @@
 
 #include <gtest/gtest.h>
 
+#include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
+#include "script/namespace.h"
 #include "script/value.h"
 
 TEST(NameLookup, simple_function) {

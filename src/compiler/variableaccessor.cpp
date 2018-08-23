@@ -11,6 +11,7 @@
 
 #include "script/class.h"
 #include "script/datamember.h"
+#include "script/script.h"
 
 #include "script/private/script_p.h"
 

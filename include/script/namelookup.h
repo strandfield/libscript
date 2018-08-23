@@ -5,23 +5,19 @@
 #ifndef LIBSCRIPT_NAMELOOKUP_H
 #define LIBSCRIPT_NAMELOOKUP_H
 
-/// TODO: replace all includes by forward declarations
+/// TODO: should we forward declare Scope also ?
 #include "script/scope.h"
 
-#include "script/class.h"
-#include "script/enum.h"
-#include "script/enumerator.h"
-#include "script/namespace.h"
-#include "script/script.h"
-#include "script/template.h"
-
-/// TODO : remove this, replace it by a simple forward declaration
-#include "script/ast/ast.h"
+#include "script/ast/forwards.h"
 
 namespace script
 {
 
+class Class;
+class Enumerator;
 class NameLookupImpl;
+class StaticDataMember;
+class Template;
 class TemplateNameProcessor;
 
 struct OperatorLookup {
@@ -73,7 +69,7 @@ public:
   int templateParameterIndex() const;
   const Enumerator & enumeratorResult() const;
   const Scope & scopeResult() const;
-  const Class::StaticDataMember & staticDataMemberResult() const;
+  const StaticDataMember & staticDataMemberResult() const;
   const Class & memberOf() const;
 
   static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scope);
@@ -89,7 +85,7 @@ public:
 
   NameLookup & operator=(const NameLookup &) = default;
 
-  inline std::shared_ptr<NameLookupImpl> impl() const { return d; }
+  inline const std::shared_ptr<NameLookupImpl> & impl() const { return d; }
 
 protected:
   bool checkBuiltinName();

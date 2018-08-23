@@ -5,12 +5,14 @@
 #include <gtest/gtest.h>
 
 #include "script/array.h"
+#include "script/class.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"
 #include "script/functiontype.h"
 #include "script/private/template_p.h"
+#include "script/script.h"
 #include "script/templateargumentdeduction.h"
 #include "script/templatebuilder.h"
 

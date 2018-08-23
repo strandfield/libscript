@@ -12,8 +12,11 @@
 
 #include "script/program/statements.h"
 
+#include "script/class.h"
 #include "script/datamember.h"
+#include "script/enum.h"
 #include "script/namelookup.h"
+#include "script/namespace.h"
 #include "script/operator.h"
 #include "script/overloadresolution.h"
 

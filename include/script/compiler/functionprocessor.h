@@ -8,6 +8,8 @@
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
+#include "script/class.h"
+
 #include <vector>
 
 namespace script

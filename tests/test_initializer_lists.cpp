@@ -13,6 +13,7 @@
 #include "script/functionbuilder.h"
 #include "script/initializerlist.h"
 #include "script/namelookup.h"
+#include "script/namespace.h"
 #include "script/symbol.h"
 
 TEST(InitializerLists, class_template) {

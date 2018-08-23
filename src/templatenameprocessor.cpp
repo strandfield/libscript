@@ -4,6 +4,7 @@
 
 #include "script/templatenameprocessor.h"
 
+#include "script/class.h"
 #include "script/classtemplate.h"
 #include "script/classtemplateinstancebuilder.h"
 #include "script/diagnosticmessage.h"

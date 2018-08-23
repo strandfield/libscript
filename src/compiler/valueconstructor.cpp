@@ -8,6 +8,7 @@
 #include "script/compiler/conversionprocessor.h"
 #include "script/compiler/expressioncompiler.h"
 
+#include "script/class.h"
 #include "script/engine.h"
 #include "script/overloadresolution.h"
 
