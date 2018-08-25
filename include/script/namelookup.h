@@ -19,6 +19,7 @@ class NameLookupImpl;
 class StaticDataMember;
 class Template;
 class TemplateNameProcessor;
+class Value;
 
 struct OperatorLookup {
   enum Value { RemoveDuplicates = 1, FetchParentOperators = 2, ConsiderCurrentScope = 4 };

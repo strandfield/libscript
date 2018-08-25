@@ -9,6 +9,7 @@
 
 #include "script/scope.h"
 #include "script/string.h"
+#include "script/types.h"
 
 #include "script/modulecallbacks.h"
 
@@ -32,6 +33,7 @@ class Enum;
 class FunctionBuilder;
 class FunctionType;
 class Namespace;
+class Prototype;
 class Script;
 class SourceFile;
 class TemplateArgumentDeduction;

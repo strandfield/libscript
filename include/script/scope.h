@@ -5,8 +5,11 @@
 #ifndef LIBSCRIPT_SCOPE_H
 #define LIBSCRIPT_SCOPE_H
 
-#include "script/function.h" /// TODO : forward declare
+#include "libscriptdefs.h"
 #include "script/operators.h"
+
+#include <memory>
+#include <vector>
 
 namespace script
 {
@@ -14,11 +17,18 @@ namespace script
 class ScopeImpl;
 
 enum class AccessSpecifier;
+class Class;
+class Engine;
 class Enum;
+class Function;
+class LiteralOperator;
 class Namespace;
 class NamespaceAlias;
+class Operator;
+class Script;
 class Symbol;
 class Template;
+class Type;
 
 class NameLookup;
 class NameLookupImpl;
@@ -138,8 +148,5 @@ private:
 };
 
 } // namespace script
-
-
-
 
 #endif // LIBSCRIPT_SCOPE_H
