@@ -616,6 +616,10 @@ void NameLookup::process()
         d->typeResult = cla.id();
       }
     }
+    else
+    {
+      /// TODO: if the result is not Unknown name, we should throw or at least report an error
+    }
   }
 }
 
