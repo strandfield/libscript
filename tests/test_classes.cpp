@@ -87,7 +87,7 @@ TEST(ClassTest, datamembers) {
   ASSERT_EQ(A.attributesOffset(), 0);
 
   b = Symbol{ engine.rootNamespace() }.Class("B")
-    .setParent(A)
+    .setBase(A.id())
     .addMember(Class::DataMember{ Type::Boolean, "b" })
     .setFinal();
 
@@ -129,7 +129,7 @@ TEST(ClassTest, virtual_members) {
 
 
   b = Symbol{ engine.rootNamespace() }.Class("B")
-    .setParent(A);
+    .setBase(A.id());
 
   Class B = b.get();
 
