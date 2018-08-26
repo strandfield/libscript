@@ -269,6 +269,22 @@ TEST(Conversions, user_defined_cast) {
   ASSERT_EQ(conv.function, to_int);
 }
 
+TEST(Conversions, user_defined_conv_cast) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
+
+  Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
+  ASSERT_TRUE(conv.isUserDefinedConversion());
+  ASSERT_EQ(conv.userDefinedConversion(), to_int);
+  ASSERT_EQ(conv.srcType(), A.id());
+  ASSERT_EQ(conv.destType(), Type::Int);
+}
 
 TEST(Conversions, user_defined_converting_constructor) {
   using namespace script;
@@ -285,6 +301,22 @@ TEST(Conversions, user_defined_converting_constructor) {
   ASSERT_EQ(conv.function, ctor);
 }
 
+TEST(Conversions, user_defined_converting_constructor2) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor = A.Constructor().params(Type::Float).create();
+
+  Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
+  ASSERT_TRUE(conv.isUserDefinedConversion());
+  ASSERT_EQ(conv.userDefinedConversion(), ctor);
+  ASSERT_EQ(conv.srcType(), Type::Float);
+  ASSERT_EQ(conv.destType(), A.id());
+}
 
 TEST(Conversions, converting_constructor_selection) {
   using namespace script;
@@ -302,6 +334,23 @@ TEST(Conversions, converting_constructor_selection) {
   ASSERT_EQ(conv.function, ctor_bool);
 }
 
+TEST(Conversions, converting_constructor_selection2) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_int = A.Constructor().params(Type::Int).create();
+  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+
+  Conversion conv = Conversion::compute(Type::Boolean, A.id(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
+  ASSERT_TRUE(conv.isUserDefinedConversion());
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
+  ASSERT_EQ(conv.srcType(), Type::Boolean);
+  ASSERT_EQ(conv.destType(), A.id());
+}
 
 TEST(Conversions, function_type) {
   using namespace script;
@@ -327,6 +376,30 @@ TEST(Conversions, function_type) {
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
 }
 
+TEST(Conversions, function_type2) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto ft = e.getFunctionType(Prototype{ Type::Void, Type::Int });
+
+  Conversion conv = Conversion::compute(ft.type(), ft.type(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
+  ASSERT_FALSE(conv.isUserDefinedConversion());
+  ASSERT_EQ(conv.firstStandardConversion(), StandardConversion2::Copy());
+
+  conv = Conversion::compute(ft.type(), ft.type().withFlag(Type::ReferenceFlag), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
+  ASSERT_FALSE(conv.isUserDefinedConversion());
+  ASSERT_TRUE(conv.firstStandardConversion().isReferenceConversion());
+
+  auto ft2 = e.getFunctionType(Prototype{ Type::Void, Type::Float });
+
+  conv = Conversion::compute(ft.type(), ft2.type(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+}
+
 TEST(Conversions, no_converting_constructor) {
   using namespace script;
 
@@ -339,6 +412,17 @@ TEST(Conversions, no_converting_constructor) {
   ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
 }
 
+TEST(Conversions, no_converting_constructor2) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+
+  Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+}
 
 /****************************************************************
 Testing list initializations
