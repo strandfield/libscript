@@ -969,7 +969,7 @@ StandardConversion2 StandardConversion2::NotConvertible()
 
 StandardConversion2 StandardConversion2::compute(const Type & src, const Type & dest, Engine *e)
 {
-  if (dest.isReference() && dest.isConst() && !src.isConst())
+  if (dest.isReference() && src.isConst() && !dest.isConst())
     return StandardConversion2::NotConvertible();
 
   if (dest.isFundamentalType() && src.isFundamentalType())
