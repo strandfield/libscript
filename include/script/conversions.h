@@ -251,6 +251,46 @@ private:
   int d;
 };
 
+
+class LIBSCRIPT_API Conversion
+{
+public:
+  Conversion() = default;
+  Conversion(const Conversion &) = default;
+  ~Conversion() = default;
+  Conversion(const StandardConversion2 & c1, const Function & userdefinedConversion = Function{}, const StandardConversion2 & c2 = StandardConversion2::None());
+
+  ConversionRank rank() const;
+
+  static ConversionRank globalRank(const std::vector<Conversion> & convs);
+
+  bool isInvalid() const;
+  bool isNarrowing() const;
+  bool isUserDefinedConversion() const;
+
+  const StandardConversion2 & firstStandardConversion() const { return conv1; }
+  const Function & userDefinedConversion() const { return function; }
+  const StandardConversion2 & secondStandardConversion() const { return conv3; }
+
+  Type srcType() const;
+  Type destType() const;
+
+  static Conversion NotConvertible();
+
+  static Conversion compute(const Type & src, const Type & dest, Engine *engine);
+  static Conversion compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine);
+
+  static int comp(const Conversion & a, const Conversion & b);
+
+  bool operator==(const Conversion & other) const;
+  inline bool operator!=(const Conversion & other) const { return !((*this) == other); }
+
+private:
+  StandardConversion2 conv1;
+  Function function;
+  StandardConversion2 conv3;
+};
+
 } // namespace script
 
 #endif // LIBSCRIPT_CONVERSIONS_H

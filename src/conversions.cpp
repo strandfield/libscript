@@ -1044,4 +1044,236 @@ bool StandardConversion2::operator<(const StandardConversion2 & other) const
 }
 
 
+static Conversion select_converting_constructor2(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine)
+{
+  if (dest.isReference() && !dest.isConst() && src.isConst())
+    return Conversion::NotConvertible();
+
+  // We store the two best conversion sequences to detect ambiguity.
+  StandardConversion2 best_conv = StandardConversion2::NotConvertible();
+  Function best_ctor;
+  StandardConversion2 ambiguous_conv = StandardConversion2::NotConvertible();
+
+  for (const auto & c : ctors)
+  {
+    if (c.prototype().count() != 1)
+      continue;
+
+    if (c.isExplicit())
+      continue;
+
+    StandardConversion2 first_conversion = StandardConversion2::compute(src, c.prototype().at(0), engine);
+    if (first_conversion == StandardConversion2::NotConvertible())
+      continue;
+
+    bool comp1 = first_conversion < best_conv;
+    bool comp2 = best_conv < first_conversion;
+
+    if (comp1 && !comp2)
+    {
+      best_conv = first_conversion;
+      best_ctor = c;
+      ambiguous_conv = StandardConversion2::NotConvertible();
+    }
+    else if (comp2 && !comp1)
+    {
+      // nothing to do
+    }
+    else
+    {
+      ambiguous_conv = first_conversion;
+    }
+  }
+
+  if (!(best_conv < ambiguous_conv))
+    return Conversion::NotConvertible();
+
+  /// TODO: correctly compute second conversion, which can be
+  // - a const-qualification
+  // - a derived to base conversion
+  //StandardConversion second_conversion = StandardConversion::compute(Type::rref(dest.baseType()), dest, engine);
+  /// TODO : not sure this is correct
+  /*if (second_conversion == StandardConversion::NotConvertible())
+  continue;*/
+  //second_conversion = StandardConversion::None();
+
+  return Conversion{ best_conv, best_ctor, StandardConversion2::None() };
+}
+
+static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine)
+{
+  // TODO : before returning, check if better candidates can be found ?
+  // this would result in an ambiguous conversion sequence I believe
+  for (const auto & c : casts)
+  {
+    if (c.isExplicit())
+      continue;
+
+    StandardConversion2 first_conversion = StandardConversion2::compute(src, c.sourceType(), engine);
+    if (first_conversion == StandardConversion2::NotConvertible())
+      continue;
+
+    StandardConversion2 second_conversion = StandardConversion2::compute(c.destType(), dest, engine);
+    if (second_conversion == StandardConversion2::NotConvertible())
+      continue;
+    // Avoid additonal useless copy
+    if (second_conversion == StandardConversion2::Copy())
+      second_conversion = StandardConversion2{};
+
+    return Conversion{ first_conversion, c, second_conversion };
+  }
+
+  return Conversion::NotConvertible();
+}
+
+
+Conversion::Conversion(const StandardConversion2 & c1, const Function & userdefinedConversion, const StandardConversion2 & c2)
+  : conv1(c1)
+  , function(userdefinedConversion)
+  , conv3(c2)
+{
+
+}
+
+ConversionRank Conversion::rank() const
+{
+  if (conv1 == StandardConversion2::NotConvertible())
+    return ConversionRank::NotConvertible;
+
+  if (!function.isNull())
+    return ConversionRank::UserDefinedConversion;
+
+  return conv1.rank();
+}
+
+ConversionRank Conversion::globalRank(const std::vector<Conversion> & convs)
+{
+  if (convs.empty())
+    return ConversionRank::ExactMatch;
+
+  ConversionRank r = convs.front().rank();
+  for (size_t i(1); i < convs.size(); ++i)
+  {
+    ConversionRank r2 = convs.at(i).rank();
+    r = r2 > r ? r2 : r;
+  }
+  return r;
+}
+
+bool Conversion::isInvalid() const
+{
+  return conv1.rank() == ConversionRank::NotConvertible;
+}
+
+bool Conversion::isNarrowing() const
+{
+  return conv1.isNarrowing() || conv3.isNarrowing();
+}
+
+bool Conversion::isUserDefinedConversion() const
+{
+  return !this->function.isNull();
+}
+
+Type Conversion::srcType() const
+{
+  if (function.isNull())
+    return conv1.srcType();
+  else if (function.isConstructor())
+    return function.parameter(0).baseType();
+
+  assert(function.isCast());
+  if (!conv3.isNone())
+    return conv3.destType();
+  return function.parameter(0).baseType();
+}
+
+Type Conversion::destType() const
+{
+  if (function.isNull())
+    return conv1.destType();
+  else if (function.isConstructor())
+    return function.memberOf().id();
+
+  assert(function.isCast());
+  return function.returnType().baseType();
+}
+
+Conversion Conversion::NotConvertible()
+{
+  return Conversion{ StandardConversion2::NotConvertible() };
+}
+
+Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engine)
+{
+  StandardConversion2 stdconv = StandardConversion2::compute(src, dest, engine);
+  if (stdconv != StandardConversion2::NotConvertible())
+    return stdconv;
+
+  if (!src.isObjectType() && !dest.isObjectType())
+    return Conversion::NotConvertible();
+
+  assert(src.isObjectType() || dest.isObjectType());
+
+  if (dest.isObjectType())
+  {
+    const auto & ctors = engine->getClass(dest).constructors();
+    Conversion userdefconv = select_converting_constructor2(src, ctors, dest, engine);
+    if (userdefconv != Conversion::NotConvertible())
+      return userdefconv;
+  }
+
+  if (src.isObjectType())
+  {
+    const auto & casts = engine->getClass(src).casts();
+    Conversion userdefconv = select_cast2(src, casts, dest, engine);
+    if (userdefconv != Conversion::NotConvertible())
+      return userdefconv;
+  }
+
+  /// TODO : implement other forms of conversion
+
+  return Conversion::NotConvertible();
+}
+
+Conversion Conversion::compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine)
+{
+  if (expr->type() == Type::InitializerList)
+    throw std::runtime_error{ "Conversion does not support brace-expressions" };
+
+  return compute(expr->type(), dest, engine);
+}
+
+int Conversion::comp(const Conversion & a, const Conversion & b)
+{
+  // 1) A standard conversion sequence is always better than a user defined conversion sequence.
+  if (a.function.isNull() && !b.function.isNull())
+    return -1;
+  else if (b.function.isNull() && !a.function.isNull())
+    return 1;
+
+  if (a.function.isNull() && b.function.isNull())
+  {
+    if (a.conv1 < b.conv1)
+      return -1;
+    else if (b.conv1 < a.conv1)
+      return 1;
+    return 0;
+  }
+
+  assert(a.function.isNull() == false && b.function.isNull() == false);
+
+  if (a.conv3 < b.conv3)
+    return -1;
+  else if (b.conv3 < a.conv3)
+    return 1;
+  return 0;
+}
+
+bool Conversion::operator==(const Conversion & other) const
+{
+  return conv1 == other.conv1 && conv3 == other.conv3 && other.function == other.function;
+}
+
+
 } // namespace script
