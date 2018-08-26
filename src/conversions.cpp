@@ -708,4 +708,340 @@ int ListInitializationSequence::comp(const ListInitializationSequence & a, const
   return 0;
 }
 
+
+static const int stdconv_table[] = {
+               /* bool */ /* char */ /* int */ /* float */ /* double */
+  /* bool */         0,         2,        3,          4,           5,
+  /* char */         6,         0,        8,          9,          10,
+  /* int */         11,        12,        0,         14,          15,
+  /* float */       16,        17,       18,          0,          20,
+  /* double */      21,        22,       23,         24,           0,
+};
+
+static const Type::BuiltInType stdconv_srctype_table[] = {
+  Type::Auto,
+  Type::Boolean, 
+  Type::Boolean,
+  Type::Boolean,
+  Type::Boolean,
+  Type::Boolean,
+  Type::Char,
+  Type::Char,
+  Type::Char,
+  Type::Char,
+  Type::Char,
+  Type::Int,
+  Type::Int,
+  Type::Int,
+  Type::Int,
+  Type::Int,
+  Type::Float,
+  Type::Float,
+  Type::Float,
+  Type::Float,
+  Type::Float,
+  Type::Double,
+  Type::Double,
+  Type::Double,
+  Type::Double,
+  Type::Double,
+  Type::Auto, // enum to int
+  Type::Auto, // derived to base
+  Type::Null, // not convertible
+};
+
+static const Type::BuiltInType stdconv_desttype_table[] = {
+  Type::Auto,
+  Type::Boolean,
+  Type::Char,
+  Type::Int,
+  Type::Float,
+  Type::Double,
+  Type::Boolean,
+  Type::Char,
+  Type::Int,
+  Type::Float,
+  Type::Double,
+  Type::Boolean,
+  Type::Char,
+  Type::Int,
+  Type::Float,
+  Type::Double,
+  Type::Boolean,
+  Type::Char,
+  Type::Int,
+  Type::Float,
+  Type::Double,
+  Type::Boolean,
+  Type::Char,
+  Type::Int,
+  Type::Float,
+  Type::Double,
+  Type::Int, // enum to int
+  Type::Auto, // derived to base
+  Type::Null, // not convertible
+};
+
+static const int conversion_categories[] = {
+  0, // copy
+                                     0,   NumericPromotion::IntegralPromotion,   NumericPromotion::IntegralPromotion,   NumericPromotion::FloatingPointPromotion, NumericPromotion::FloatingPointPromotion,
+  NumericConversion::BooleanConversion,                                     0,   NumericPromotion::IntegralPromotion,   NumericPromotion::FloatingPointPromotion, NumericPromotion::FloatingPointPromotion,
+  NumericConversion::BooleanConversion, NumericConversion::IntegralConversion,                                     0,   NumericPromotion::FloatingPointPromotion, NumericPromotion::FloatingPointPromotion,
+  NumericConversion::BooleanConversion, NumericConversion::IntegralConversion, NumericConversion::IntegralConversion,                                          0, NumericPromotion::FloatingPointPromotion,
+  NumericConversion::BooleanConversion, NumericConversion::IntegralConversion, NumericConversion::IntegralConversion, NumericConversion::FloatingPointConversion,                                        0,
+  NumericConversion::IntegralConversion, // enum-to-int
+  0, // derived-to-base
+  0, // not-convertible
+};
+
+static const ConversionRank conversion_ranks[] = {
+  ConversionRank::ExactMatch, // copy
+  ConversionRank::ExactMatch,  ConversionRank::Promotion,  ConversionRank::Promotion,  ConversionRank::Promotion,  ConversionRank::Promotion,
+  ConversionRank::Conversion, ConversionRank::ExactMatch,  ConversionRank::Promotion,  ConversionRank::Promotion,  ConversionRank::Promotion,
+  ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::ExactMatch,  ConversionRank::Promotion,  ConversionRank::Promotion,
+  ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::ExactMatch,  ConversionRank::Promotion,
+  ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::Conversion, ConversionRank::ExactMatch,
+  ConversionRank::Conversion, // enum-to-int
+  ConversionRank::Conversion, // derived-to-base
+  ConversionRank::NotConvertible, //not-convertible
+};
+
+// 5 bits to store conv between fundamental types and "not convertible"
+// 1 bit to store ref-init, 1 bit to store qual adjust
+static const int gEnumToIntConversion = 26;
+static const int gDerivedToBaseConv = 27;
+static const int gNotConvertibleStdConv = 28;
+static const int gConstQualAdjustStdConv = (1 << 5);
+static const int gCopyConvStdConv = (1 << 6);
+static const int gRefConvStdConv = (1 << 6);
+static const int gDerivedToBaseConvOffset = 8;
+static const int gConvIdMask = (1 << 5) - 1;
+static const int g8bitsMask = 255;
+
+
+inline static bool checkNotConvertible(const Type & src, const Type & dest)
+{
+  return
+    src == Type::Void ||
+    dest == Type::Void ||
+    (dest.isReference() && src.baseType() != dest.baseType()) ||
+    (dest.isReference() && src.isConst() && !dest.isConst());
+}
+
+StandardConversion2::StandardConversion2()
+{
+  d = gRefConvStdConv;
+}
+
+StandardConversion2::StandardConversion2(const Type & src, const Type & dest)
+{
+  if (!src.isFundamentalType() || !dest.isFundamentalType())
+    throw std::runtime_error{ "Types must be fundamental types" };
+
+  if (checkNotConvertible(src, dest))
+  {
+    d = gNotConvertibleStdConv;
+    return;
+  }
+  
+  d = stdconv_table[(src.baseType().data() - 2)*5 + (dest.baseType().data() - 2)];
+  if (dest.isReference())
+    d |= gRefConvStdConv;
+  if (dest.isConst() && !src.isConst())
+    d |= gConstQualAdjustStdConv;
+}
+
+StandardConversion2::StandardConversion2(QualificationAdjustment qualadjust)
+{
+  d = gRefConvStdConv | (gConstQualAdjustStdConv * qualadjust);
+}
+
+
+bool StandardConversion2::isNone() const
+{
+  return d == gRefConvStdConv;
+}
+
+StandardConversion2 StandardConversion2::None()
+{
+  StandardConversion2 ret;
+  ret.d = gRefConvStdConv;
+  return ret;
+}
+
+bool StandardConversion2::isNarrowing() const
+{
+  return isNumericConversion();
+}
+
+ConversionRank StandardConversion2::rank() const
+{
+  if (isDerivedToBaseConversion())
+    return ConversionRank::Conversion;
+  else if (d == gNotConvertibleStdConv)
+    return ConversionRank::NotConvertible;
+
+  return conversion_ranks[d & gConvIdMask];
+}
+
+bool StandardConversion2::isReferenceConversion() const
+{
+  return d & gRefConvStdConv;
+}
+
+bool StandardConversion2::isNumericPromotion() const
+{
+  return numericPromotion() != NumericPromotion::NoNumericPromotion;
+}
+
+NumericPromotion StandardConversion2::numericPromotion() const
+{
+  return static_cast<NumericPromotion>(conversion_categories[d & gConvIdMask] & (NumericPromotion::IntegralPromotion | NumericPromotion::FloatingPointPromotion));
+}
+
+bool StandardConversion2::isNumericConversion() const
+{
+  return numericConversion() != NumericConversion::NoNumericConversion;
+}
+
+NumericConversion StandardConversion2::numericConversion() const
+{
+  return static_cast<NumericConversion>(conversion_categories[d & gConvIdMask] & (NumericConversion::IntegralConversion | NumericConversion::FloatingPointConversion | NumericConversion::BooleanConversion));
+}
+
+bool StandardConversion2::hasQualificationAdjustment() const
+{
+  return d & gConstQualAdjustStdConv;
+}
+
+bool StandardConversion2::isDerivedToBaseConversion() const
+{
+  return (d & gConvIdMask) == gDerivedToBaseConv;
+  // Alternative:
+  //return ((d >> gDerivedToBaseConvOffset) & g8bitsMask) != 0;
+}
+
+int StandardConversion2::derivedToBaseConversionDepth() const
+{
+  return (d >> gDerivedToBaseConvOffset) & g8bitsMask;
+}
+
+Type StandardConversion2::srcType() const
+{
+  return stdconv_srctype_table[d & gConvIdMask];
+}
+
+Type StandardConversion2::destType() const
+{
+  /// TODO : should we add const-qual and ref-specifiers ?
+  return stdconv_desttype_table[d & gConvIdMask];
+}
+
+StandardConversion2 StandardConversion2::with(QualificationAdjustment adjust) const
+{
+  StandardConversion2 conv{ *this };
+  conv.d |= static_cast<int>(adjust) * gConstQualAdjustStdConv;
+  return conv;
+}
+
+StandardConversion2 StandardConversion2::Copy()
+{
+  return StandardConversion2{ 0 };
+}
+
+StandardConversion2 StandardConversion2::EnumToInt()
+{
+  return StandardConversion2{ gEnumToIntConversion };
+}
+
+StandardConversion2 StandardConversion2::DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust)
+{
+  return StandardConversion2{ gDerivedToBaseConv |(depth << gDerivedToBaseConvOffset) | (is_ref_conv ? gRefConvStdConv : 0) | (adjust ? gConstQualAdjustStdConv : 0) };
+}
+
+StandardConversion2 StandardConversion2::NotConvertible()
+{
+  StandardConversion2 seq;
+  seq.d = gNotConvertibleStdConv;
+  return seq;
+}
+
+
+StandardConversion2 StandardConversion2::compute(const Type & src, const Type & dest, Engine *e)
+{
+  if (dest.isReference() && dest.isConst() && !src.isConst())
+    return StandardConversion2::NotConvertible();
+
+  if (dest.isFundamentalType() && src.isFundamentalType())
+    return StandardConversion2{ src, dest };
+
+  if (src.isObjectType() && dest.isObjectType())
+  {
+    const Class src_class = e->getClass(src), dest_class = e->getClass(dest);
+    const int inheritance_depth = src_class.inheritanceLevel(dest_class);
+    if (inheritance_depth < 0)
+      return StandardConversion2::NotConvertible();
+
+    const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
+
+    if (dest.isReference())
+      return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+
+    if (!dest_class.isCopyConstructible())
+      return StandardConversion2::NotConvertible();
+    return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+  }
+  else if (src.baseType() == dest.baseType())
+  {
+    if (dest.isReference())
+      return StandardConversion2{};
+
+    if (dest.isEnumType() || dest.isClosureType() || dest.isFunctionType())
+      return StandardConversion2::Copy();
+  }
+  else if (src.isEnumType() && dest.baseType() == Type::Int)
+  {
+    if (dest.isReference())
+      return StandardConversion2::NotConvertible();
+
+    return StandardConversion2::EnumToInt();
+  }
+
+  return StandardConversion2::NotConvertible();
+}
+
+bool StandardConversion2::operator==(const StandardConversion2 & other) const
+{
+  return d == other.d;
+}
+
+bool StandardConversion2::operator<(const StandardConversion2 & other) const
+{
+  auto this_rank = rank();
+  auto other_rank = other.rank();
+  if (this_rank < other_rank)
+    return true;
+  else if (this_rank > other_rank)
+    return false;
+
+  if (other.isDerivedToBaseConversion() && this->isDerivedToBaseConversion())
+  {
+    if (this->derivedToBaseConversionDepth() < other.derivedToBaseConversionDepth())
+      return true;
+    else if (this->derivedToBaseConversionDepth() > other.derivedToBaseConversionDepth())
+      return false;
+  }
+
+  if (!this->isReferenceConversion() && other.isReferenceConversion())
+    return false;
+  else if (this->isReferenceConversion() && !other.isReferenceConversion())
+    return true;
+
+  if (other.hasQualificationAdjustment() && !this->hasQualificationAdjustment())
+    return true;
+
+  return false;
+}
+
+
 } // namespace script

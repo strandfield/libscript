@@ -190,6 +190,67 @@ private:
 };
 
 
+
+enum class ConversionRank {
+  ExactMatch = 1,
+  Promotion = 2,
+  Conversion = 3,
+  UserDefinedConversion = 4,
+  NotConvertible = 5,
+};
+
+class LIBSCRIPT_API StandardConversion2
+{
+public:
+  StandardConversion2();
+  StandardConversion2(const Type & src, const Type & dest);
+  StandardConversion2(const StandardConversion2 &) = default;
+  ~StandardConversion2() = default;
+
+  StandardConversion2(QualificationAdjustment qualadjust);
+
+  bool isNone() const;
+  static StandardConversion2 None();
+
+  bool isNarrowing() const;
+  ConversionRank rank() const;
+
+  bool isReferenceConversion() const;
+
+  bool isNumericPromotion() const;
+  NumericPromotion numericPromotion() const;
+
+  bool isNumericConversion() const;
+  NumericConversion numericConversion() const;
+
+  bool hasQualificationAdjustment() const;
+
+  bool isDerivedToBaseConversion() const;
+  int derivedToBaseConversionDepth() const;
+
+  Type srcType() const;
+  Type destType() const;
+
+  StandardConversion2 with(QualificationAdjustment adjust) const;
+
+  static StandardConversion2 Copy();
+  static StandardConversion2 EnumToInt();
+  static StandardConversion2 DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust = QualificationAdjustment::NoQualificationAdjustment);
+  static StandardConversion2 NotConvertible();
+
+  static StandardConversion2 compute(const Type & src, const Type & dest, Engine *e);
+
+  bool operator==(const StandardConversion2 & other) const;
+  inline bool operator!=(const StandardConversion2 & other) const { return !((*this) == other); }
+  bool operator<(const StandardConversion2 & other) const;
+
+private:
+  StandardConversion2(int val) : d(val) { }
+
+private:
+  int d;
+};
+
 } // namespace script
 
 #endif // LIBSCRIPT_CONVERSIONS_H
