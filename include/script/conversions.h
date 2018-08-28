@@ -277,7 +277,12 @@ public:
 
   static Conversion NotConvertible();
 
-  static Conversion compute(const Type & src, const Type & dest, Engine *engine);
+  enum ConversionPolicy {
+    NoExplicitConversions = 0,
+    AllowExplicitConversions,
+  };
+
+  static Conversion compute(const Type & src, const Type & dest, Engine *engine, ConversionPolicy policy = NoExplicitConversions);
   static Conversion compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine);
 
   static int comp(const Conversion & a, const Conversion & b);

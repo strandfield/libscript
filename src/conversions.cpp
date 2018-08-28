@@ -1044,7 +1044,7 @@ bool StandardConversion2::operator<(const StandardConversion2 & other) const
 }
 
 
-static Conversion select_converting_constructor2(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine)
+static Conversion select_converting_constructor2(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
 {
   if (dest.isReference() && !dest.isConst() && src.isConst())
     return Conversion::NotConvertible();
@@ -1059,7 +1059,7 @@ static Conversion select_converting_constructor2(const Type & src, const std::ve
     if (c.prototype().count() != 1)
       continue;
 
-    if (c.isExplicit())
+    if (c.isExplicit() && policy == Conversion::NoExplicitConversions)
       continue;
 
     StandardConversion2 first_conversion = StandardConversion2::compute(src, c.prototype().at(0), engine);
@@ -1100,13 +1100,13 @@ static Conversion select_converting_constructor2(const Type & src, const std::ve
   return Conversion{ best_conv, best_ctor, StandardConversion2::None() };
 }
 
-static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine)
+static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
 {
   // TODO : before returning, check if better candidates can be found ?
   // this would result in an ambiguous conversion sequence I believe
   for (const auto & c : casts)
   {
-    if (c.isExplicit())
+    if (c.isExplicit() && policy == Conversion::NoExplicitConversions)
       continue;
 
     StandardConversion2 first_conversion = StandardConversion2::compute(src, c.sourceType(), engine);
@@ -1204,7 +1204,7 @@ Conversion Conversion::NotConvertible()
   return Conversion{ StandardConversion2::NotConvertible() };
 }
 
-Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engine)
+Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engine, ConversionPolicy policy)
 {
   StandardConversion2 stdconv = StandardConversion2::compute(src, dest, engine);
   if (stdconv != StandardConversion2::NotConvertible())
@@ -1218,7 +1218,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
   if (dest.isObjectType())
   {
     const auto & ctors = engine->getClass(dest).constructors();
-    Conversion userdefconv = select_converting_constructor2(src, ctors, dest, engine);
+    Conversion userdefconv = select_converting_constructor2(src, ctors, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;
   }
@@ -1226,7 +1226,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
   if (src.isObjectType())
   {
     const auto & casts = engine->getClass(src).casts();
-    Conversion userdefconv = select_cast2(src, casts, dest, engine);
+    Conversion userdefconv = select_cast2(src, casts, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;
   }

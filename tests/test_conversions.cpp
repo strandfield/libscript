@@ -424,6 +424,26 @@ TEST(Conversions, no_converting_constructor2) {
   ASSERT_TRUE(conv == Conversion::NotConvertible());
 }
 
+TEST(Conversions, explicit_ctor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_int = A.Constructor().setExplicit().params(Type::Int).create();
+
+  Conversion conv = Conversion::compute(Type::Int, A.id(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+
+  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+  conv = Conversion::compute(Type::Int, A.id(), &e);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
+
+  conv = Conversion::compute(Type::Int, A.id(), &e, Conversion::AllowExplicitConversions);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_int);
+}
+
 /****************************************************************
 Testing list initializations
 ****************************************************************/
