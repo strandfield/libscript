@@ -85,6 +85,7 @@ TEST(Conversions, fundamentals) {
   ASSERT_EQ(conv.numericConversion(), BooleanConversion);
   ASSERT_EQ(conv.srcType().baseType(), Type::Int);
   ASSERT_EQ(conv.destType().baseType(), Type::Boolean);
+  ASSERT_EQ(conv.rank(), ConversionRank::Conversion);
 
   conv = StandardConversion2{ Type::Int, Type::Float };
   ASSERT_FALSE(conv.isReferenceConversion());
@@ -130,6 +131,13 @@ TEST(Conversions, fundamentals) {
   conv = StandardConversion2{ Type::cref(Type::Int), Type::ref(Type::Int) };
   ASSERT_TRUE(conv == StandardConversion2::NotConvertible());
   ASSERT_EQ(conv.rank(), ConversionRank::NotConvertible);
+
+  Conversion c = Conversion::compute(Type::Float, Type::Double, &e);
+  ASSERT_EQ(c.rank(), ConversionRank::Promotion);
+  ASSERT_EQ(c.firstStandardConversion(), StandardConversion2(Type::Float, Type::Double));
+  ASSERT_FALSE(c.isNarrowing());
+  c = Conversion::compute(Type::Double, Type::Float, &e);
+  ASSERT_TRUE(c.isNarrowing());
 }
 
 TEST(Conversions, comparison) {
@@ -145,10 +153,11 @@ TEST(Conversions, comparison) {
   ASSERT_TRUE(b < a);
 }
 
-TEST(Conversions, stdconv_comparisons) {
+TEST(Conversions, comparisons) {
   using namespace script;
 
   Engine e;
+  e.setup();
 
   ASSERT_TRUE(StandardConversion2(Type::Int, Type::ref(Type::Int)) < StandardConversion2(Type::Int, Type::cref(Type::Int)));
   ASSERT_TRUE(StandardConversion2(Type::Int, Type::Double) < StandardConversion2(Type::Float, Type::Int));
@@ -159,6 +168,25 @@ TEST(Conversions, stdconv_comparisons) {
 
   ASSERT_TRUE(StandardConversion2(Type::Int, Type::ref(Type::Int)) < StandardConversion2(Type::Int, Type::Int));
   ASSERT_FALSE(StandardConversion2::Copy() < StandardConversion2(Type::Int, Type::ref(Type::Int)));
+
+  std::vector<Conversion> convs{
+    Conversion::compute(Type::Float, Type::Double, &e),
+    Conversion::compute(Type::Double, Type::Float, &e),
+    Conversion::compute(Type::Int, Type::Int, &e),
+  };
+  ASSERT_EQ(Conversion::globalRank(convs), ConversionRank::Conversion);
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_float = A.Constructor().params(Type::Float).create();
+  convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
+  ASSERT_EQ(Conversion::globalRank(convs), ConversionRank::UserDefinedConversion);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Float, Type::Double, &e), Conversion::compute(Type::Double, Type::Float, &e)) < 0);
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, Type::Double, &e)) > 0);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, Type::Int, &e)) == 0);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, A.id(), &e)) < 0);
 }
 
 TEST(Conversions, enum_to_int) {
@@ -284,6 +312,7 @@ TEST(Conversions, user_defined_conv_cast) {
   ASSERT_EQ(conv.userDefinedConversion(), to_int);
   ASSERT_EQ(conv.srcType(), A.id());
   ASSERT_EQ(conv.destType(), Type::Int);
+  ASSERT_EQ(conv.rank(), ConversionRank::UserDefinedConversion);
 }
 
 TEST(Conversions, user_defined_converting_constructor) {
@@ -398,6 +427,7 @@ TEST(Conversions, function_type2) {
 
   conv = Conversion::compute(ft.type(), ft2.type(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
+  ASSERT_TRUE(conv.isInvalid());
 }
 
 TEST(Conversions, no_converting_constructor) {
