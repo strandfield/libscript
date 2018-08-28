@@ -7,6 +7,7 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/classtemplate.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
@@ -576,4 +577,110 @@ TEST(Conversions, list_initialization_not_convertible) {
 
   conv = ConversionSequence::compute(listexpr, Type::ref(Type::Int), &e);
   ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+}
+
+
+/****************************************************************
+Testing Initilization class
+****************************************************************/
+
+#include "script/initialization.h"
+
+static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engine *e, const std::string & str)
+{
+  using namespace script;
+
+  parser::ScriptFragment fragment{ parser_data(str.data()) };
+  parser::ExpressionParser parser{ &fragment };
+
+  auto astlistexpr = parser.parse();
+
+  compiler::ExpressionCompiler ec;
+  ec.setScope(Scope{ e->rootNamespace() });
+  return ec.generateExpression(astlistexpr);
+}
+
+TEST(Initializations, list_initialization_ctor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{1, \"Hello\", 3.14}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).create();
+
+  Initialization init = Initialization::compute(A.id(), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.rank(), ConversionRank::ExactMatch);
+  ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
+}
+
+TEST(Initializations, list_initialization_initializer_list) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+    .getInstance({ TemplateArgument{Type::Int} }).id();
+
+  Initialization init = Initialization::compute(initializer_list_int, listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_TRUE(init.constructor().isNull());
+  ASSERT_EQ(init.destType(), initializer_list_int);
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
+}
+
+TEST(Initializations, list_initialization_initializer_list_ctor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+    .getInstance({ TemplateArgument{ Type::Int } }).id();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor = A.Constructor().params(initializer_list_int).create();
+
+  Initialization init = Initialization::compute(A.id(), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
+}
+
+
+TEST(Initializations, list_initialization_empty) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{ }");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Initialization init = Initialization::compute(Type::String, listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::DefaultInitialization);
 }
