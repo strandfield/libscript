@@ -979,17 +979,31 @@ StandardConversion2 StandardConversion2::compute(const Type & src, const Type & 
   {
     const Class src_class = e->getClass(src), dest_class = e->getClass(dest);
     const int inheritance_depth = src_class.inheritanceLevel(dest_class);
+
     if (inheritance_depth < 0)
       return StandardConversion2::NotConvertible();
 
     const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
 
-    if (dest.isReference())
-      return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
 
-    if (!dest_class.isCopyConstructible())
-      return StandardConversion2::NotConvertible();
-    return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+    if (inheritance_depth == 0)
+    {
+      if (dest.isReference())
+        return StandardConversion2{};
+
+      if (!dest_class.isCopyConstructible())
+        return StandardConversion2::NotConvertible();
+      return StandardConversion2::Copy().with(adjust);
+    }
+    else
+    {
+      if (dest.isReference())
+        return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+
+      if (!dest_class.isCopyConstructible())
+        return StandardConversion2::NotConvertible();
+      return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+    }
   }
   else if (src.baseType() == dest.baseType())
   {
