@@ -1160,20 +1160,6 @@ ConversionRank Conversion::rank() const
   return conv1.rank();
 }
 
-ConversionRank Conversion::globalRank(const std::vector<Conversion> & convs)
-{
-  if (convs.empty())
-    return ConversionRank::ExactMatch;
-
-  ConversionRank r = convs.front().rank();
-  for (size_t i(1); i < convs.size(); ++i)
-  {
-    ConversionRank r2 = convs.at(i).rank();
-    r = r2 > r ? r2 : r;
-  }
-  return r;
-}
-
 bool Conversion::isInvalid() const
 {
   return conv1.rank() == ConversionRank::NotConvertible;

@@ -175,12 +175,12 @@ TEST(Conversions, comparisons) {
     Conversion::compute(Type::Double, Type::Float, &e),
     Conversion::compute(Type::Int, Type::Int, &e),
   };
-  ASSERT_EQ(Conversion::globalRank(convs), ConversionRank::Conversion);
+  ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Function ctor_float = A.Constructor().params(Type::Float).create();
   convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
-  ASSERT_EQ(Conversion::globalRank(convs), ConversionRank::UserDefinedConversion);
+  ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
 
   ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Float, Type::Double, &e), Conversion::compute(Type::Double, Type::Float, &e)) < 0);
   ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, Type::Double, &e)) > 0);

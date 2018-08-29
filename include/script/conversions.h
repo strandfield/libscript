@@ -199,6 +199,24 @@ enum class ConversionRank {
   NotConvertible = 5,
 };
 
+namespace ranking
+{
+
+template<typename T>
+ConversionRank worstRank(const std::vector<T> & elems)
+{
+  if (elems.empty())
+    return ConversionRank::ExactMatch;
+
+  ConversionRank r = elems.front().rank();
+  for (size_t i(1); i < elems.size(); ++i)
+    r = std::max(r, elems.at(i).rank());
+  return r;
+}
+
+} // namespace ranking
+
+
 class LIBSCRIPT_API StandardConversion2
 {
 public:
@@ -261,8 +279,6 @@ public:
   Conversion(const StandardConversion2 & c1, const Function & userdefinedConversion = Function{}, const StandardConversion2 & c2 = StandardConversion2::None());
 
   ConversionRank rank() const;
-
-  static ConversionRank globalRank(const std::vector<Conversion> & convs);
 
   bool isInvalid() const;
   bool isNarrowing() const;
