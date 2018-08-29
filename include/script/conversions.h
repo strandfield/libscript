@@ -233,6 +233,7 @@ public:
   bool isNarrowing() const;
   ConversionRank rank() const;
 
+  bool isCopy() const;
   bool isReferenceConversion() const;
 
   bool isNumericPromotion() const;

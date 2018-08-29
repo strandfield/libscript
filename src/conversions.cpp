@@ -812,7 +812,6 @@ static const int gEnumToIntConversion = 26;
 static const int gDerivedToBaseConv = 27;
 static const int gNotConvertibleStdConv = 28;
 static const int gConstQualAdjustStdConv = (1 << 5);
-static const int gCopyConvStdConv = (1 << 6);
 static const int gRefConvStdConv = (1 << 6);
 static const int gDerivedToBaseConvOffset = 8;
 static const int gConvIdMask = (1 << 5) - 1;
@@ -882,6 +881,11 @@ ConversionRank StandardConversion2::rank() const
     return ConversionRank::NotConvertible;
 
   return conversion_ranks[d & gConvIdMask];
+}
+
+bool StandardConversion2::isCopy() const
+{
+  return (d & gConvIdMask) == 0;
 }
 
 bool StandardConversion2::isReferenceConversion() const

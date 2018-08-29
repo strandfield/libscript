@@ -74,8 +74,10 @@ TEST(Conversions, fundamentals) {
 
   conv = StandardConversion2{ Type::Int, Type::Int };
   ASSERT_EQ(conv, StandardConversion2::Copy());
+  ASSERT_TRUE(conv.isCopy());
   conv = StandardConversion2{ Type::Int, Type{Type::Int}.withFlag(Type::ConstFlag) };
   ASSERT_EQ(conv, StandardConversion2::Copy().with(ConstQualification));
+  ASSERT_TRUE(conv.isCopy());
 
   conv = StandardConversion2{ Type::Int, Type::Boolean };
   ASSERT_FALSE(conv.isReferenceConversion());
