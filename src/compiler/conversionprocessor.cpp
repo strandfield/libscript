@@ -112,6 +112,44 @@ void ConversionProcessor::prepare(Engine *e, std::vector<std::shared_ptr<program
   }
 }
 
+std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, const std::shared_ptr<program::Expression> & arg, const StandardConversion2 & conv)
+{
+  if (conv.isReferenceConversion())
+    return arg;
+
+  if (conv.isCopy())
+  {
+    return program::Copy::New(arg->type(), arg); /// TODO: remove this redundancy
+  }
+  else if (conv.isDerivedToBaseConversion())
+  {
+    const Class dest_class = e->getClass(arg->type()).indirectBase(conv.derivedToBaseConversionDepth());
+    return program::ConstructorCall::New(dest_class.copyConstructor(), { arg });
+  }
+
+  return program::FundamentalConversion::New(conv.destType(), arg);
+}
+
+std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, const std::shared_ptr<program::Expression> & arg, const Conversion & conv)
+{
+  if (!conv.isUserDefinedConversion())
+    return sconvert(e, arg, conv.firstStandardConversion());
+
+  std::shared_ptr<program::Expression> ret = sconvert(e, arg, conv.firstStandardConversion());
+
+  if (conv.userDefinedConversion().isCast())
+  {
+    ret = program::FunctionCall::New(conv.userDefinedConversion(), { ret });
+  }
+  else
+  {
+    assert(conv.userDefinedConversion().isConstructor());
+    ret = program::ConstructorCall::New(conv.userDefinedConversion(), { ret });
+  }
+
+  return sconvert(e, ret, conv.secondStandardConversion());
+}
+
 script::Type ConversionProcessor::common_type(Engine *e, const std::shared_ptr<program::Expression> & a, const std::shared_ptr<program::Expression> & b)
 {
   ConversionSequence conv_a = ConversionSequence::compute(a, b->type(), e);
