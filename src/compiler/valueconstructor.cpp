@@ -92,14 +92,14 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
 
   if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, e);
-    if (seq == ConversionSequence::NotConvertible())
+    Conversion conv = Conversion::compute(args.front(), type, e);
+    if (conv == Conversion::NotConvertible())
       throw CouldNotConvert{ dp, args.front()->type(), type };
 
-    if (seq.isNarrowing())
+    if (conv.isNarrowing())
       throw NarrowingConversionInBraceInitialization{ dp, args.front()->type(), type };
 
-    return ConversionProcessor::convert(e, args.front(), type, seq);
+    return ConversionProcessor::convert(e, args.front(), conv);
   }
   else if (type.isObjectType())
   {
@@ -137,11 +137,11 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 
   if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
   {
-    ConversionSequence seq = ConversionSequence::compute(args.front(), type, e);
-    if (seq == ConversionSequence::NotConvertible())
+    Conversion conv = Conversion::compute(args.front(), type, e);
+    if (conv == Conversion::NotConvertible())
       throw CouldNotConvert{ dp, args.front()->type(), type };
 
-    return ConversionProcessor::convert(e, args.front(), type, seq);
+    return ConversionProcessor::convert(e, args.front(), conv);
   }
   else if (type.isObjectType())
   {
