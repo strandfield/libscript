@@ -167,3 +167,24 @@ TEST(ClassTest, static_member_functions) {
 
   ASSERT_EQ(foo.prototype().count(), 1);
 }
+
+TEST(ClassTest, inheritance) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  Namespace ns = engine.rootNamespace();
+
+  Class A = ns.Class("A").get();
+  Class B = ns.Class("B").setBase(A).get();
+  Class C = ns.Class("C").setBase(B).get();
+  Class D = ns.Class("D").setBase(C).get();
+
+  ASSERT_EQ(A.parent(), Class{});
+  ASSERT_EQ(D.parent(), C);
+  ASSERT_EQ(C.parent(), B);
+  ASSERT_EQ(D.indirectBase(0), D);
+  ASSERT_EQ(D.indirectBase(1), C);
+  ASSERT_EQ(D.indirectBase(2), B);
+}
