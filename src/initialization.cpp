@@ -76,6 +76,11 @@ ConversionRank Initialization::rank() const
   return r;
 }
 
+bool Initialization::hasInitializations() const
+{
+  return mData != nullptr;
+}
+
 std::vector<Initialization> & Initialization::initializations()
 {
   return mData->initializations;

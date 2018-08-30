@@ -618,6 +618,7 @@ TEST(Initializations, list_initialization_ctor) {
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);
   ASSERT_EQ(init.rank(), ConversionRank::ExactMatch);
   ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_TRUE(init.hasInitializations());
   ASSERT_EQ(init.initializations().size(), 3);
   for (size_t i(0); i < init.initializations().size(); ++i)
   {
@@ -684,5 +685,6 @@ TEST(Initializations, list_initialization_empty) {
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
   Initialization init = Initialization::compute(Type::String, listexpr, &e);
+  ASSERT_FALSE(init.hasInitializations());
   ASSERT_EQ(init.kind(), Initialization::DefaultInitialization);
 }

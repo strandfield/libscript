@@ -50,6 +50,7 @@ public:
 
   ConversionRank rank() const;
 
+  bool hasInitializations() const;
   std::vector<Initialization> & initializations();
   const std::vector<Initialization> & initializations() const;
   Type destType() const;
