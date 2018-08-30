@@ -15,6 +15,8 @@
 namespace script
 {
 
+class Initialization;
+
 namespace compiler
 {
 
@@ -35,6 +37,9 @@ public:
 
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init);
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::BraceInitialization> & init);
+
+  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::shared_ptr<program::Expression> & arg, const Initialization & init);
+  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::vector<std::shared_ptr<program::Expression>> && args, const Initialization & init);
 };
 
 } // namespace compiler
