@@ -40,6 +40,8 @@ public:
 
   static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::shared_ptr<program::Expression> & arg, const Initialization & init);
   static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::vector<std::shared_ptr<program::Expression>> && args, const Initialization & init);
+
+  static void prepare(Engine *e, std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<Initialization> & inits);
 };
 
 } // namespace compiler

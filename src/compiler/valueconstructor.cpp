@@ -280,6 +280,12 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   }
 }
 
+void ValueConstructor::prepare(Engine *e, std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<Initialization> & inits)
+{
+  for (size_t i(0); i < args.size(); ++i)
+    args[i] = ValueConstructor::construct(e, proto.at(i), args.at(i), inits.at(i));
+}
+
 } // namespace compiler
 
 } // namespace script
