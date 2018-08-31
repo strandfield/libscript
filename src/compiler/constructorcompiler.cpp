@@ -296,8 +296,8 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructor
 {
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
@@ -327,8 +327,8 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCa
 {
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
