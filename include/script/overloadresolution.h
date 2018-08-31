@@ -17,6 +17,8 @@ class Message;
 class MessageBuilder;
 } // namespace diagnostic
 
+class Initialization;
+
 struct OverloadResolutionImpl;
 
 // see http://en.cppreference.com/w/cpp/language/overload_resolution
@@ -47,6 +49,7 @@ public:
 
   Function selectedOverload() const;
   const std::vector<ConversionSequence> & conversionSequence() const;
+  const std::vector<Initialization> & initializations() const;
 
   Function ambiguousOverload() const;
 
@@ -88,6 +91,7 @@ public:
     
     int size() const;
     ConversionSequence conversion(int argIndex, const Type & dest, Engine *engine) const;
+    Initialization initialization(int argIndex, const Type & parametertype, Engine *e) const;
 
     Arguments & operator=(const Arguments & other);
 
@@ -106,7 +110,10 @@ public:
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
-
+  
+  bool process2(const std::vector<Function> & candidates, const Arguments & types);
+  bool process2(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
+  bool process2(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
 
   enum OverloadComparison {
     FirstIsBetter = 1,
@@ -137,8 +144,12 @@ public:
   OverloadResolution & operator=(const OverloadResolution & other) = default;
 
 protected:
-  void processCandidate(const Function & f, std::vector<ConversionSequence> & conversions);
+  static OverloadComparison compare(const Function & a, const std::vector<Initialization> & inits_a, const Function & b, const std::vector<Initialization> & inits_b);
 
+  void processCandidate(const Function & f, std::vector<ConversionSequence> & conversions);
+  void processCandidate(const Function & f, std::vector<Initialization> & initializations);
+
+  /// TODO: move elsewhere
   std::string dtype(const Type & t) const;
   void write_prototype(diagnostic::MessageBuilder & diag, const Function & f) const;
 
