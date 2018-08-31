@@ -243,9 +243,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
   args.push_back(obj);
   args.push_back(index);
 
-  const auto & conversions = resol.conversionSequence();
-
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), conversions);
+  ValueConstructor::prepare(engine(), args, selected.prototype(), resol.initializations());
 
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -347,8 +345,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (selected.hasImplicitObject() && object != nullptr)
     args.insert(args.begin(), object);
 
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
     return generateVirtualCall(call, selected, std::move(args));
@@ -389,8 +387,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
 
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -469,8 +467,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
     throw CouldNotFindValidLiteralOperator{ dpos(udl) };
 
   Function selected = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
 
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -555,9 +553,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
     throw CouldNotFindValidOperator{ dpos(operation) };
 
   Operator selected = resol.selectedOverload().toOperator();
-  const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ lhs, rhs };
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
@@ -584,9 +582,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
   else if (!Accessibility::check(caller(), selected))
     throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), selected.accessibility() };
 
-  const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
