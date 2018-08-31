@@ -46,6 +46,9 @@ public:
   inline Category kind() const { return mCategory; }
   bool isValid() const;
 
+  inline bool isReferenceInitialization() const { return mCategory == ReferenceInitialization; }
+  bool createsTemporary() const;
+
   const Conversion & conversion() const { return mConversion; }
 
   ConversionRank rank() const;

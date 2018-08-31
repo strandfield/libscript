@@ -593,6 +593,18 @@ Testing Initilization class
 
 #include "script/initialization.h"
 
+
+TEST(Initializations, cref_init) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Initialization init = Initialization::compute(Type::cref(Type::Float), Type::ref(Type::Int), &e);
+  ASSERT_TRUE(init.isReferenceInitialization());
+  ASSERT_TRUE(init.createsTemporary());
+}
+
 static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engine *e, const std::string & str)
 {
   using namespace script;

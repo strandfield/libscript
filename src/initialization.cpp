@@ -57,12 +57,22 @@ Initialization::Initialization(Category cat, const Conversion & conv)
   : mCategory(cat)
   , mConversion(conv)
 {
-
+  if (conv.isInvalid())
+    mCategory = InvalidInitialization;
 }
 
 bool Initialization::isValid() const
 {
   return mData != nullptr || mConversion != Conversion::NotConvertible();
+}
+
+bool Initialization::createsTemporary() const
+{
+  if (!isReferenceInitialization())
+    return false;
+
+  return !mConversion.firstStandardConversion().isReferenceConversion()
+    || !mConversion.firstStandardConversion().isReferenceConversion();
 }
 
 ConversionRank Initialization::rank() const
@@ -209,12 +219,18 @@ Initialization Initialization::compute(const Type & vartype, Engine *engine)
 
 Initialization Initialization::compute(const Type & vartype, const Type & arg, Engine *engine, Initialization::Category cat)
 {
-  if (cat == CopyInitialization)
-    return Initialization{ cat, Conversion::compute(arg, vartype, engine) };
-  else if (cat == DirectInitialization)
-    return Initialization{ cat, Conversion::compute(arg, vartype, engine, Conversion::AllowExplicitConversions) };
-  else
+  if(cat != DirectInitialization && cat != CopyInitialization)
     throw std::runtime_error{ "Invalid Initialization::Category" };
+
+  auto opts = cat == DirectInitialization ? Conversion::AllowExplicitConversions : Conversion::NoExplicitConversions;
+  Conversion conv = Conversion::compute(arg, vartype, engine, opts);
+  if(!conv.isInvalid() || !vartype.isConstRef())
+    return Initialization{ cat, conv };
+
+  assert(vartype.isConstRef() && conv.isInvalid());
+
+  conv = Conversion::compute(arg, vartype.withoutRef(), engine, opts);
+  return Initialization{ ReferenceInitialization, conv };
 }
 
 Initialization Initialization::compute(const Type & vartype, const std::shared_ptr<program::Expression> & expr, Engine *engine)
