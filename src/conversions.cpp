@@ -885,7 +885,7 @@ ConversionRank StandardConversion2::rank() const
 
 bool StandardConversion2::isCopy() const
 {
-  return (d & gConvIdMask) == 0;
+  return (d & gRefConvStdConv) == 0 && (d & gConvIdMask) == 0;
 }
 
 bool StandardConversion2::isReferenceConversion() const
@@ -989,11 +989,10 @@ StandardConversion2 StandardConversion2::compute(const Type & src, const Type & 
 
     const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
 
-
     if (inheritance_depth == 0)
     {
       if (dest.isReference())
-        return StandardConversion2{};
+        return StandardConversion2{}.with(adjust);
 
       if (!dest_class.isCopyConstructible())
         return StandardConversion2::NotConvertible();
@@ -1011,18 +1010,22 @@ StandardConversion2 StandardConversion2::compute(const Type & src, const Type & 
   }
   else if (src.baseType() == dest.baseType())
   {
+    const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
+
     if (dest.isReference())
       return StandardConversion2{};
 
     if (dest.isEnumType() || dest.isClosureType() || dest.isFunctionType())
-      return StandardConversion2::Copy();
+      return StandardConversion2::Copy().with(adjust);
   }
   else if (src.isEnumType() && dest.baseType() == Type::Int)
   {
+    const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
+
     if (dest.isReference())
       return StandardConversion2::NotConvertible();
 
-    return StandardConversion2::EnumToInt();
+    return StandardConversion2::EnumToInt().with(adjust);
   }
 
   return StandardConversion2::NotConvertible();

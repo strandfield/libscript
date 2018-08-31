@@ -125,6 +125,7 @@ TEST(Conversions, fundamentals) {
   conv = StandardConversion2{ Type::Int, Type::ref(Type::Int) };
   ASSERT_FALSE(conv == StandardConversion2::NotConvertible());
   ASSERT_TRUE(conv.isReferenceConversion());
+  ASSERT_FALSE(conv.isCopy());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
   ASSERT_FALSE(conv.isNumericPromotion());
@@ -283,6 +284,10 @@ TEST(Conversions, std_conv_classes) {
 
   StandardConversion2 string_to_a = StandardConversion2::compute(Type::String, A.id(), &e);
   ASSERT_EQ(string_to_a, StandardConversion2::NotConvertible());
+
+  StandardConversion2 ref_conv = StandardConversion2::compute(Type::ref(Type::String), Type::cref(Type::String), &e);
+  ASSERT_TRUE(ref_conv.isReferenceConversion());
+  ASSERT_TRUE(ref_conv.hasQualificationAdjustment());
 }
 
 TEST(Conversions, user_defined_cast) {
