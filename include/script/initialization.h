@@ -52,6 +52,7 @@ public:
   const Conversion & conversion() const { return mConversion; }
 
   ConversionRank rank() const;
+  bool isNarrowing() const;
 
   bool hasInitializations() const;
   std::vector<Initialization> & initializations();

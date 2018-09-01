@@ -86,6 +86,20 @@ ConversionRank Initialization::rank() const
   return r;
 }
 
+bool Initialization::isNarrowing() const
+{
+  if (mData == nullptr)
+    return mConversion.isNarrowing();
+
+  for (const auto & init : mData->initializations)
+  {
+    if (init.isNarrowing())
+      return true;
+  }
+
+  return false;
+}
+
 bool Initialization::hasInitializations() const
 {
   return mData != nullptr;
