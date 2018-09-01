@@ -274,16 +274,6 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
   return program::CompoundStatement::New(std::move(statements));
 }
 
-void ConstructorCompiler::checkNarrowingConversions(const std::vector<ConversionSequence> & convs, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
-{
-  for (size_t i(0); i < convs.size(); ++i)
-  {
-    const auto & c = convs.at(i);
-    if (c.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ args.at(i)->type(), proto.at(i) };
-  }
-}
-
 void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
 {
   for (size_t i(0); i < inits.size(); ++i)
