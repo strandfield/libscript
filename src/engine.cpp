@@ -142,6 +142,40 @@ static Value apply_conversion(const Value & arg, const Type &dest, const Convers
   return apply_standard_conversion(ret, dest, conv.conv3, engine);
 }
 
+static Value apply_standard_conversion2(const Value & arg, const StandardConversion2 & conv, Engine *engine)
+{
+  if (conv.isReferenceConversion())
+    return arg;
+
+  if (conv.isCopy())
+    return engine->copy(arg);
+
+  if (conv.isDerivedToBaseConversion())
+  {
+    Class target = engine->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
+    return engine->invoke(target.copyConstructor(), { arg });
+  }
+
+  return fundamental_conversion(arg, conv.destType().baseType().data(), engine);
+}
+
+static Value apply_conversion2(const Value & arg, const Conversion & conv, Engine *engine)
+{
+  if (!conv.isUserDefinedConversion())
+    return apply_standard_conversion2(arg, conv.firstStandardConversion(), engine);
+
+  Value ret = apply_standard_conversion2(arg, conv.firstStandardConversion(), engine);
+
+  /// TODO : we need to define the behavior of invoking a constructor
+  // since conv.userDefinedConversion() can be a ctor
+  // Should it return the new object has it does currently
+  // or should it take an uninitialized object + the args and return void
+  // I think the second option is better and should be implemented
+  ret = engine->invoke(conv.userDefinedConversion(), { ret }); 
+
+  return apply_standard_conversion2(ret, conv.secondStandardConversion(), engine);
+}
+
 namespace callbacks
 {
 
@@ -842,6 +876,11 @@ ConversionSequence Engine::conversion(const std::shared_ptr<program::Expression>
   return ConversionSequence::compute(expr, dest, this);
 }
 
+Conversion Engine::conversion2(const Type & src, const Type & dest)
+{
+  return Conversion::compute(src, dest, this);
+}
+
 void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Type> & types, const std::vector<ConversionSequence> & conversions)
 {
   for (size_t i(0); i < values.size(); ++i)
@@ -850,16 +889,16 @@ void Engine::applyConversions(std::vector<script::Value> & values, const std::ve
 
 bool Engine::canCast(const Type & srcType, const Type & destType)
 {
-  return conversion(srcType, destType).rank() != ConversionSequence::Rank::NotConvertible;
+  return conversion2(srcType, destType).rank() != ConversionRank::NotConvertible;
 }
 
 Value Engine::cast(const Value & val, const Type & destType)
 {
-  ConversionSequence conv = conversion(val.type(), destType);
-  if (conv == ConversionSequence::NotConvertible())
+  Conversion conv = conversion2(val.type(), destType);
+  if (conv.isInvalid())
     throw std::runtime_error{ "Could not convert value to desired type" }; /// TODO : emit better diagnostic
 
-  return apply_conversion(val, destType, conv, this);
+  return apply_conversion2(val, conv, this);
 }
 
 Namespace Engine::rootNamespace() const

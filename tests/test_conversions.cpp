@@ -482,6 +482,27 @@ TEST(Conversions, explicit_ctor) {
   ASSERT_EQ(conv.userDefinedConversion(), ctor_int);
 }
 
+TEST(Conversions, engine_functions) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  ASSERT_TRUE(e.canCast(Type::Int, Type::Float));
+  ASSERT_FALSE(e.canCast(Type::String, Type::Int));
+
+  Namespace ns = e.rootNamespace();
+  Class A = ns.Class("A").get();
+  A.Constructor().params(Type::cref(A.id())).create();
+  ASSERT_TRUE(e.canCopy(A.id()));
+  ASSERT_TRUE(e.canCast(A.id(), A.id()));
+
+  Class B = ns.Class("B").get();
+  ASSERT_FALSE(e.canCopy(B.id()));
+  B.Constructor().params(Type::cref(B.id())).setDeleted().create();
+  ASSERT_FALSE(e.canCopy(B.id()));
+}
+
 /****************************************************************
 Testing list initializations
 ****************************************************************/
