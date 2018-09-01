@@ -15,7 +15,6 @@
 #include "script/program/statements.h"
 
 #include "script/class.h"
-#include "script/conversions.h"
 #include "script/datamember.h"
 #include "script/initialization.h"
 #include "script/namelookup.h"
@@ -176,11 +175,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
 
     const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
 
-    const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-    if (conv == ConversionSequence::NotConvertible())
+    const Initialization init = Initialization::compute(dm.type, member_access, engine());
+    if (!init.isValid())
       throw DataMemberIsNotCopyable{};
 
-    members_initialization[i] = program::PushDataMember::New(ConversionProcessor::convert(engine(), member_access, dm.type, conv));
+    members_initialization[i] = program::PushDataMember::New(ValueConstructor::construct(engine(), dm.type, member_access, init));
   }
 
   std::vector<std::shared_ptr<program::Statement>> statements;
@@ -254,11 +253,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
       }
       else
       {
-        const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-        if (conv == ConversionSequence::NotConvertible())
+        const Initialization init = Initialization::compute(dm.type, member_access, engine());
+        if (!init.isValid())
           throw DataMemberIsNotCopyable{};
 
-        member_value = ConversionProcessor::convert(engine(), member_access, dm.type, conv);
+        member_value = ValueConstructor::construct(engine(), dm.type, member_access, init);
       }
     }
 

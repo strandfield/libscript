@@ -199,7 +199,7 @@ static std::shared_ptr<program::Expression> make_ctor_call(const Function & ctor
   return program::ConstructorCall::New(ctor, std::move(args));
 }
 
-std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & t, std::shared_ptr<program::Expression> & arg, const Initialization & init)
+std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & t, const std::shared_ptr<program::Expression> & arg, const Initialization & init)
 {
   if (init.kind() == Initialization::DefaultInitialization)
     return construct(e, t, nullptr, diagnostic::pos_t{});
