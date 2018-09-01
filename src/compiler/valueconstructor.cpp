@@ -109,15 +109,15 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
 
     const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    for (std::size_t i(0); i < conversions.size(); ++i)
+    const auto & inits = resol.initializations();
+    for (std::size_t i(0); i < inits.size(); ++i)
     {
-      const auto & conv = conversions.at(i);
-      if (conv.isNarrowing())
+      const auto & init = inits.at(i);
+      if (init.isNarrowing())
         throw NarrowingConversionInBraceInitialization{ dp, args.at(i)->type(), ctor.parameter(i) };
     }
 
-    ConversionProcessor::prepare(e, args, ctor.prototype(), conversions);
+    ValueConstructor::prepare(e, args, ctor.prototype(), inits);
     return program::ConstructorCall::New(ctor, std::move(args));
   }
   else
@@ -151,8 +151,8 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
 
     const Function ctor = resol.selectedOverload();
-    const auto & conversions = resol.conversionSequence();
-    ConversionProcessor::prepare(e, args, ctor.prototype(), conversions);
+    const auto & inits = resol.initializations();
+    ValueConstructor::prepare(e, args, ctor.prototype(), inits);
     return program::ConstructorCall::New(ctor, std::move(args));
   }
   else
