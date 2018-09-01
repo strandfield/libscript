@@ -5,9 +5,8 @@
 #include "script/compiler/constructorcompiler.h"
 
 #include "script/compiler/compilererrors.h"
-#include "script/compiler/conversionprocessor.h"
 #include "script/compiler/expressioncompiler.h"
-#include "script/compiler/stack.h"
+#include "script/compiler/stack.h" /// TODO: we could avoid using this
 #include "script/compiler/valueconstructor.h"
 
 #include "script/ast/node.h"
