@@ -15,6 +15,7 @@ namespace script
 {
 
 class ConversionSequence;
+class Initialization;
 class OverloadResolution;
 class Prototype;
 
@@ -42,6 +43,7 @@ public:
 
 protected:
   void checkNarrowingConversions(const std::vector<ConversionSequence> & convs, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto);
+  void checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto);
 
   OverloadResolution getDelegateConstructor(std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> makeDelegateConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args);

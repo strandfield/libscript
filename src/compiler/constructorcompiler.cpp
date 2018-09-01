@@ -17,6 +17,7 @@
 #include "script/class.h"
 #include "script/conversions.h"
 #include "script/datamember.h"
+#include "script/initialization.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
 
@@ -283,6 +284,15 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Conversion
   }
 }
 
+void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
+{
+  for (size_t i(0); i < inits.size(); ++i)
+  {
+    if (inits.at(i).isNarrowing())
+      throw NarrowingConversionInBraceInitialization{ args.at(i)->type(), proto.at(i) };
+  }
+}
+
 OverloadResolution ConstructorCompiler::getDelegateConstructor(std::vector<std::shared_ptr<program::Expression>> & args)
 {
   const std::vector<Function> & ctors = currentClass().constructors();
@@ -309,7 +319,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstru
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getDelegateConstructor(args);
-  checkNarrowingConversions(resol.conversionSequence(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeDelegateConstructorCall(resol, args);
 }
 
@@ -340,7 +350,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstruct
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getParentConstructor(args);
-  checkNarrowingConversions(resol.conversionSequence(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeParentConstructorCall(resol, args);
 }
 
