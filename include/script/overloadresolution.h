@@ -48,7 +48,7 @@ public:
   inline bool failure() const { return !success(); }
 
   Function selectedOverload() const;
-  const std::vector<ConversionSequence> & conversionSequence() const;
+  [[deprecated("use initializations() instead")]] const std::vector<ConversionSequence> & conversionSequence() const;
   const std::vector<Initialization> & initializations() const;
 
   Function ambiguousOverload() const;
