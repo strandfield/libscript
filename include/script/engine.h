@@ -71,11 +71,20 @@ public:
   Array newArray(ElementType t, fail_if_not_instantiated_t);
 
   Value construct(Type t, const std::vector<Value> & args);
+  
+  template<typename InitFunc>
+  Value construct(Type t, InitFunc && f)
+  {
+    Value ret = buildValue(t);
+    f(ret);
+    return ret;
+  }
 
-  Value uninitialized(const Type & t);
-  void initialize(Value & memory);
-  void uninitialized_copy(const Value & value, Value & memory);
-  void emplace(Value & memory, Function ctor, const std::vector<Value> & args);
+  [[deprecated("Feature will be removed in future version")]] Value uninitialized(const Type & t);
+  [[deprecated("Feature will be removed in future version")]] void initialize(Value & memory);
+  [[deprecated("Feature will be removed in future version")]] void uninitialized_copy(const Value & value, Value & memory);
+  [[deprecated("Feature will be removed in future version")]] void emplace(Value & memory, Function ctor, const std::vector<Value> & args);
+
 
   void destroy(Value val);
 
