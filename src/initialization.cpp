@@ -143,7 +143,7 @@ const Function & Initialization::constructor() const
 int Initialization::comp(const Initialization & a, const Initialization & b)
 {
   if ((a.mData == nullptr) != (b.mData == nullptr))
-    throw std::runtime_error{ "ConversionSequence::comp() : the two sequences are not comparable" };
+    throw std::runtime_error{ "Initialization::comp() : the two sequences are not comparable" };
 
   if(a.mData == nullptr)
     return Conversion::comp(a.conversion(), b.conversion());
