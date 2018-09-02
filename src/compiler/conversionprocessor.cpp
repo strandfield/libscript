@@ -152,16 +152,43 @@ std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, con
 
 script::Type ConversionProcessor::common_type(Engine *e, const std::shared_ptr<program::Expression> & a, const std::shared_ptr<program::Expression> & b)
 {
-  ConversionSequence conv_a = ConversionSequence::compute(a, b->type(), e);
-  ConversionSequence conv_b = ConversionSequence::compute(b, a->type(), e);
+  /// TODO: refactor
 
-  if (conv_a == ConversionSequence::NotConvertible() && conv_b == ConversionSequence::NotConvertible())
+  Type dest_a2b = b->type();
+  Conversion conv_a2b = Conversion::compute(a, dest_a2b, e);
+  if (conv_a2b.isInvalid())
+  {
+    if (dest_a2b.isReference())
+    {
+      dest_a2b = dest_a2b.withoutRef();
+      conv_a2b = Conversion::compute(a, dest_a2b, e);
+    }
+
+    if (conv_a2b.isInvalid())
+      return Type::Null;
+  }
+
+  Type dest_b2a = a->type();
+  Conversion conv_b2a = Conversion::compute(b, dest_b2a, e);
+  if (conv_b2a.isInvalid())
+  {
+    if (dest_b2a.isReference())
+    {
+      dest_b2a = dest_b2a.withoutRef();
+      conv_b2a = Conversion::compute(b, dest_b2a, e);
+    }
+
+    if (conv_b2a.isInvalid())
+      return Type::Null;
+  }
+
+  if (conv_a2b == Conversion::NotConvertible() && conv_b2a == Conversion::NotConvertible())
     return Type::Null;
 
-  if(ConversionSequence::comp(conv_a, conv_b) < 0)
-    return b->type();
+  if (Conversion::comp(conv_a2b, conv_b2a) < 0)
+    return dest_a2b;
   
-  return a->type();
+  return dest_b2a;
 }
 
 } // namespace compiler

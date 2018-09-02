@@ -601,8 +601,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpr
   if (common_type.isNull())
     throw CouldNotFindCommonType{ dpos(ce), tru->type(), fal->type() };
 
-  tru = ConversionProcessor::convert(engine(), tru, common_type, ConversionSequence::compute(tru, common_type, engine()));
-  fal = ConversionProcessor::convert(engine(), fal, common_type, ConversionSequence::compute(fal, common_type, engine()));
+  tru = ConversionProcessor::convert(engine(), tru, Conversion::compute(tru, common_type, engine()));
+  fal = ConversionProcessor::convert(engine(), fal, Conversion::compute(fal, common_type, engine()));
 
   return program::ConditionalExpression::New(con, tru, fal);
 }
