@@ -28,7 +28,6 @@ class ClassTemplate;
 class ClosureType;
 class Context;
 class Conversion;
-class ConversionSequence;
 class EngineImpl;
 class Enum;
 class FunctionBuilder;
@@ -86,11 +85,8 @@ public:
   bool canCopy(const Type & t);
   Value copy(const Value & val);
 
-  [[deprecated("to be removed soon by the Conversion-based overload")]] ConversionSequence conversion(const Type & src, const Type & dest);
-  [[deprecated("to be removed soon by the Conversion-based overload")]] ConversionSequence conversion(const std::shared_ptr<program::Expression> & expr, const Type & dest);
   Conversion conversion2(const Type & src, const Type & dest);
 
-  void applyConversions(std::vector<script::Value> & values, const std::vector<Type> & types, const std::vector<ConversionSequence> & conversions);
   void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions);
 
   bool canCast(const Type & srcType, const Type & destType);
