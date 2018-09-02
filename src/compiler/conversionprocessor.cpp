@@ -18,7 +18,7 @@ namespace script
 namespace compiler
 {
 
-std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, const std::shared_ptr<program::Expression> & arg, const StandardConversion2 & conv)
+std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, const std::shared_ptr<program::Expression> & arg, const StandardConversion & conv)
 {
   if (conv.isReferenceConversion())
     return arg;

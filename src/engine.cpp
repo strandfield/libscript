@@ -102,7 +102,7 @@ Value fundamental_conversion(const Value & src, int destType, Engine *e)
   throw std::runtime_error{ "fundamental_conversion : Implementation error" };
 }
 
-static Value apply_standard_conversion2(const Value & arg, const StandardConversion2 & conv, Engine *engine)
+static Value apply_standard_conversion(const Value & arg, const StandardConversion & conv, Engine *engine)
 {
   if (conv.isReferenceConversion())
     return arg;
@@ -119,12 +119,12 @@ static Value apply_standard_conversion2(const Value & arg, const StandardConvers
   return fundamental_conversion(arg, conv.destType().baseType().data(), engine);
 }
 
-static Value apply_conversion2(const Value & arg, const Conversion & conv, Engine *engine)
+static Value apply_conversion(const Value & arg, const Conversion & conv, Engine *engine)
 {
   if (!conv.isUserDefinedConversion())
-    return apply_standard_conversion2(arg, conv.firstStandardConversion(), engine);
+    return apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
 
-  Value ret = apply_standard_conversion2(arg, conv.firstStandardConversion(), engine);
+  Value ret = apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
 
   /// TODO : we need to define the behavior of invoking a constructor
   // since conv.userDefinedConversion() can be a ctor
@@ -133,7 +133,7 @@ static Value apply_conversion2(const Value & arg, const Conversion & conv, Engin
   // I think the second option is better and should be implemented
   ret = engine->invoke(conv.userDefinedConversion(), { ret }); 
 
-  return apply_standard_conversion2(ret, conv.secondStandardConversion(), engine);
+  return apply_standard_conversion(ret, conv.secondStandardConversion(), engine);
 }
 
 namespace callbacks
@@ -826,7 +826,7 @@ Value Engine::copy(const Value & val)
   throw std::runtime_error{ "Cannot copy given value" };
 }
 
-Conversion Engine::conversion2(const Type & src, const Type & dest)
+Conversion Engine::conversion(const Type & src, const Type & dest)
 {
   return Conversion::compute(src, dest, this);
 }
@@ -834,21 +834,21 @@ Conversion Engine::conversion2(const Type & src, const Type & dest)
 void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
 {
   for (size_t i(0); i < values.size(); ++i)
-    values[i] = apply_conversion2(values.at(i), conversions.at(i), this);
+    values[i] = apply_conversion(values.at(i), conversions.at(i), this);
 }
 
 bool Engine::canCast(const Type & srcType, const Type & destType)
 {
-  return conversion2(srcType, destType).rank() != ConversionRank::NotConvertible;
+  return conversion(srcType, destType).rank() != ConversionRank::NotConvertible;
 }
 
 Value Engine::cast(const Value & val, const Type & destType)
 {
-  Conversion conv = conversion2(val.type(), destType);
+  Conversion conv = conversion(val.type(), destType);
   if (conv.isInvalid())
     throw std::runtime_error{ "Could not convert value to desired type" }; /// TODO : emit better diagnostic
 
-  return apply_conversion2(val, conv, this);
+  return apply_conversion(val, conv, this);
 }
 
 Namespace Engine::rootNamespace() const

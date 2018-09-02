@@ -131,12 +131,12 @@ inline static bool checkNotConvertible(const Type & src, const Type & dest)
     (dest.isReference() && src.isConst() && !dest.isConst());
 }
 
-StandardConversion2::StandardConversion2()
+StandardConversion::StandardConversion()
 {
   d = gRefConvStdConv;
 }
 
-StandardConversion2::StandardConversion2(const Type & src, const Type & dest)
+StandardConversion::StandardConversion(const Type & src, const Type & dest)
 {
   if (!src.isFundamentalType() || !dest.isFundamentalType())
     throw std::runtime_error{ "Types must be fundamental types" };
@@ -154,30 +154,30 @@ StandardConversion2::StandardConversion2(const Type & src, const Type & dest)
     d |= gConstQualAdjustStdConv;
 }
 
-StandardConversion2::StandardConversion2(QualificationAdjustment qualadjust)
+StandardConversion::StandardConversion(QualificationAdjustment qualadjust)
 {
   d = gRefConvStdConv | (gConstQualAdjustStdConv * qualadjust);
 }
 
 
-bool StandardConversion2::isNone() const
+bool StandardConversion::isNone() const
 {
   return d == gRefConvStdConv;
 }
 
-StandardConversion2 StandardConversion2::None()
+StandardConversion StandardConversion::None()
 {
-  StandardConversion2 ret;
+  StandardConversion ret;
   ret.d = gRefConvStdConv;
   return ret;
 }
 
-bool StandardConversion2::isNarrowing() const
+bool StandardConversion::isNarrowing() const
 {
   return isNumericConversion();
 }
 
-ConversionRank StandardConversion2::rank() const
+ConversionRank StandardConversion::rank() const
 {
   if (isDerivedToBaseConversion())
     return ConversionRank::Conversion;
@@ -187,101 +187,101 @@ ConversionRank StandardConversion2::rank() const
   return conversion_ranks[d & gConvIdMask];
 }
 
-bool StandardConversion2::isCopy() const
+bool StandardConversion::isCopy() const
 {
   return (d & gRefConvStdConv) == 0 && (d & gConvIdMask) == 0;
 }
 
-bool StandardConversion2::isReferenceConversion() const
+bool StandardConversion::isReferenceConversion() const
 {
   return d & gRefConvStdConv;
 }
 
-bool StandardConversion2::isNumericPromotion() const
+bool StandardConversion::isNumericPromotion() const
 {
   return numericPromotion() != NumericPromotion::NoNumericPromotion;
 }
 
-NumericPromotion StandardConversion2::numericPromotion() const
+NumericPromotion StandardConversion::numericPromotion() const
 {
   return static_cast<NumericPromotion>(conversion_categories[d & gConvIdMask] & (NumericPromotion::IntegralPromotion | NumericPromotion::FloatingPointPromotion));
 }
 
-bool StandardConversion2::isNumericConversion() const
+bool StandardConversion::isNumericConversion() const
 {
   return numericConversion() != NumericConversion::NoNumericConversion;
 }
 
-NumericConversion StandardConversion2::numericConversion() const
+NumericConversion StandardConversion::numericConversion() const
 {
   return static_cast<NumericConversion>(conversion_categories[d & gConvIdMask] & (NumericConversion::IntegralConversion | NumericConversion::FloatingPointConversion | NumericConversion::BooleanConversion));
 }
 
-bool StandardConversion2::hasQualificationAdjustment() const
+bool StandardConversion::hasQualificationAdjustment() const
 {
   return d & gConstQualAdjustStdConv;
 }
 
-bool StandardConversion2::isDerivedToBaseConversion() const
+bool StandardConversion::isDerivedToBaseConversion() const
 {
   return (d & gConvIdMask) == gDerivedToBaseConv;
   // Alternative:
   //return ((d >> gDerivedToBaseConvOffset) & g8bitsMask) != 0;
 }
 
-int StandardConversion2::derivedToBaseConversionDepth() const
+int StandardConversion::derivedToBaseConversionDepth() const
 {
   return (d >> gDerivedToBaseConvOffset) & g8bitsMask;
 }
 
-Type StandardConversion2::srcType() const
+Type StandardConversion::srcType() const
 {
   return stdconv_srctype_table[d & gConvIdMask];
 }
 
-Type StandardConversion2::destType() const
+Type StandardConversion::destType() const
 {
   /// TODO : should we add const-qual and ref-specifiers ?
   return stdconv_desttype_table[d & gConvIdMask];
 }
 
-StandardConversion2 StandardConversion2::with(QualificationAdjustment adjust) const
+StandardConversion StandardConversion::with(QualificationAdjustment adjust) const
 {
-  StandardConversion2 conv{ *this };
+  StandardConversion conv{ *this };
   conv.d |= static_cast<int>(adjust) * gConstQualAdjustStdConv;
   return conv;
 }
 
-StandardConversion2 StandardConversion2::Copy()
+StandardConversion StandardConversion::Copy()
 {
-  return StandardConversion2{ 0 };
+  return StandardConversion{ 0 };
 }
 
-StandardConversion2 StandardConversion2::EnumToInt()
+StandardConversion StandardConversion::EnumToInt()
 {
-  return StandardConversion2{ gEnumToIntConversion };
+  return StandardConversion{ gEnumToIntConversion };
 }
 
-StandardConversion2 StandardConversion2::DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust)
+StandardConversion StandardConversion::DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust)
 {
-  return StandardConversion2{ gDerivedToBaseConv |(depth << gDerivedToBaseConvOffset) | (is_ref_conv ? gRefConvStdConv : 0) | (adjust ? gConstQualAdjustStdConv : 0) };
+  return StandardConversion{ gDerivedToBaseConv |(depth << gDerivedToBaseConvOffset) | (is_ref_conv ? gRefConvStdConv : 0) | (adjust ? gConstQualAdjustStdConv : 0) };
 }
 
-StandardConversion2 StandardConversion2::NotConvertible()
+StandardConversion StandardConversion::NotConvertible()
 {
-  StandardConversion2 seq;
+  StandardConversion seq;
   seq.d = gNotConvertibleStdConv;
   return seq;
 }
 
 
-StandardConversion2 StandardConversion2::compute(const Type & src, const Type & dest, Engine *e)
+StandardConversion StandardConversion::compute(const Type & src, const Type & dest, Engine *e)
 {
   if (dest.isReference() && src.isConst() && !dest.isConst())
-    return StandardConversion2::NotConvertible();
+    return StandardConversion::NotConvertible();
 
   if (dest.isFundamentalType() && src.isFundamentalType())
-    return StandardConversion2{ src, dest };
+    return StandardConversion{ src, dest };
 
   if (src.isObjectType() && dest.isObjectType())
   {
@@ -289,27 +289,27 @@ StandardConversion2 StandardConversion2::compute(const Type & src, const Type & 
     const int inheritance_depth = src_class.inheritanceLevel(dest_class);
 
     if (inheritance_depth < 0)
-      return StandardConversion2::NotConvertible();
+      return StandardConversion::NotConvertible();
 
     const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
 
     if (inheritance_depth == 0)
     {
       if (dest.isReference())
-        return StandardConversion2{}.with(adjust);
+        return StandardConversion{}.with(adjust);
 
       if (!dest_class.isCopyConstructible())
-        return StandardConversion2::NotConvertible();
-      return StandardConversion2::Copy().with(adjust);
+        return StandardConversion::NotConvertible();
+      return StandardConversion::Copy().with(adjust);
     }
     else
     {
       if (dest.isReference())
-        return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+        return StandardConversion::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
 
       if (!dest_class.isCopyConstructible())
-        return StandardConversion2::NotConvertible();
-      return StandardConversion2::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
+        return StandardConversion::NotConvertible();
+      return StandardConversion::DerivedToBaseConversion(inheritance_depth, dest.isReference(), adjust);
     }
   }
   else if (src.baseType() == dest.baseType())
@@ -317,30 +317,30 @@ StandardConversion2 StandardConversion2::compute(const Type & src, const Type & 
     const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
 
     if (dest.isReference())
-      return StandardConversion2{};
+      return StandardConversion{};
 
     if (dest.isEnumType() || dest.isClosureType() || dest.isFunctionType())
-      return StandardConversion2::Copy().with(adjust);
+      return StandardConversion::Copy().with(adjust);
   }
   else if (src.isEnumType() && dest.baseType() == Type::Int)
   {
     const QualificationAdjustment adjust = (dest.isConst() && !src.isConst()) ? ConstQualification : NoQualificationAdjustment;
 
     if (dest.isReference())
-      return StandardConversion2::NotConvertible();
+      return StandardConversion::NotConvertible();
 
-    return StandardConversion2::EnumToInt().with(adjust);
+    return StandardConversion::EnumToInt().with(adjust);
   }
 
-  return StandardConversion2::NotConvertible();
+  return StandardConversion::NotConvertible();
 }
 
-bool StandardConversion2::operator==(const StandardConversion2 & other) const
+bool StandardConversion::operator==(const StandardConversion & other) const
 {
   return d == other.d;
 }
 
-bool StandardConversion2::operator<(const StandardConversion2 & other) const
+bool StandardConversion::operator<(const StandardConversion & other) const
 {
   auto this_rank = rank();
   auto other_rank = other.rank();
@@ -369,15 +369,15 @@ bool StandardConversion2::operator<(const StandardConversion2 & other) const
 }
 
 
-static Conversion select_converting_constructor2(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
+static Conversion select_converting_constructor(const Type & src, const std::vector<Function> & ctors, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
 {
   if (dest.isReference() && !dest.isConst() && src.isConst())
     return Conversion::NotConvertible();
 
   // We store the two best conversion sequences to detect ambiguity.
-  StandardConversion2 best_conv = StandardConversion2::NotConvertible();
+  StandardConversion best_conv = StandardConversion::NotConvertible();
   Function best_ctor;
-  StandardConversion2 ambiguous_conv = StandardConversion2::NotConvertible();
+  StandardConversion ambiguous_conv = StandardConversion::NotConvertible();
 
   for (const auto & c : ctors)
   {
@@ -387,8 +387,8 @@ static Conversion select_converting_constructor2(const Type & src, const std::ve
     if (c.isExplicit() && policy == Conversion::NoExplicitConversions)
       continue;
 
-    StandardConversion2 first_conversion = StandardConversion2::compute(src, c.prototype().at(0), engine);
-    if (first_conversion == StandardConversion2::NotConvertible())
+    StandardConversion first_conversion = StandardConversion::compute(src, c.prototype().at(0), engine);
+    if (first_conversion == StandardConversion::NotConvertible())
       continue;
 
     bool comp1 = first_conversion < best_conv;
@@ -398,7 +398,7 @@ static Conversion select_converting_constructor2(const Type & src, const std::ve
     {
       best_conv = first_conversion;
       best_ctor = c;
-      ambiguous_conv = StandardConversion2::NotConvertible();
+      ambiguous_conv = StandardConversion::NotConvertible();
     }
     else if (comp2 && !comp1)
     {
@@ -422,10 +422,10 @@ static Conversion select_converting_constructor2(const Type & src, const std::ve
   continue;*/
   //second_conversion = StandardConversion::None();
 
-  return Conversion{ best_conv, best_ctor, StandardConversion2::None() };
+  return Conversion{ best_conv, best_ctor, StandardConversion::None() };
 }
 
-static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
+static Conversion select_cast(const Type & src, const std::vector<Cast> & casts, const Type & dest, Engine *engine, Conversion::ConversionPolicy policy)
 {
   // TODO : before returning, check if better candidates can be found ?
   // this would result in an ambiguous conversion sequence I believe
@@ -434,16 +434,16 @@ static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts
     if (c.isExplicit() && policy == Conversion::NoExplicitConversions)
       continue;
 
-    StandardConversion2 first_conversion = StandardConversion2::compute(src, c.sourceType(), engine);
-    if (first_conversion == StandardConversion2::NotConvertible())
+    StandardConversion first_conversion = StandardConversion::compute(src, c.sourceType(), engine);
+    if (first_conversion == StandardConversion::NotConvertible())
       continue;
 
-    StandardConversion2 second_conversion = StandardConversion2::compute(c.destType(), dest, engine);
-    if (second_conversion == StandardConversion2::NotConvertible())
+    StandardConversion second_conversion = StandardConversion::compute(c.destType(), dest, engine);
+    if (second_conversion == StandardConversion::NotConvertible())
       continue;
     // Avoid additonal useless copy
-    if (second_conversion == StandardConversion2::Copy())
-      second_conversion = StandardConversion2{};
+    if (second_conversion == StandardConversion::Copy())
+      second_conversion = StandardConversion{};
 
     return Conversion{ first_conversion, c, second_conversion };
   }
@@ -452,7 +452,7 @@ static Conversion select_cast2(const Type & src, const std::vector<Cast> & casts
 }
 
 
-Conversion::Conversion(const StandardConversion2 & c1, const Function & userdefinedConversion, const StandardConversion2 & c2)
+Conversion::Conversion(const StandardConversion & c1, const Function & userdefinedConversion, const StandardConversion & c2)
   : conv1(c1)
   , function(userdefinedConversion)
   , conv3(c2)
@@ -462,7 +462,7 @@ Conversion::Conversion(const StandardConversion2 & c1, const Function & userdefi
 
 ConversionRank Conversion::rank() const
 {
-  if (conv1 == StandardConversion2::NotConvertible())
+  if (conv1 == StandardConversion::NotConvertible())
     return ConversionRank::NotConvertible;
 
   if (!function.isNull())
@@ -512,13 +512,13 @@ Type Conversion::destType() const
 
 Conversion Conversion::NotConvertible()
 {
-  return Conversion{ StandardConversion2::NotConvertible() };
+  return Conversion{ StandardConversion::NotConvertible() };
 }
 
 Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engine, ConversionPolicy policy)
 {
-  StandardConversion2 stdconv = StandardConversion2::compute(src, dest, engine);
-  if (stdconv != StandardConversion2::NotConvertible())
+  StandardConversion stdconv = StandardConversion::compute(src, dest, engine);
+  if (stdconv != StandardConversion::NotConvertible())
     return stdconv;
 
   if (!src.isObjectType() && !dest.isObjectType())
@@ -529,7 +529,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
   if (dest.isObjectType())
   {
     const auto & ctors = engine->getClass(dest).constructors();
-    Conversion userdefconv = select_converting_constructor2(src, ctors, dest, engine, policy);
+    Conversion userdefconv = select_converting_constructor(src, ctors, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;
   }
@@ -537,7 +537,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
   if (src.isObjectType())
   {
     const auto & casts = engine->getClass(src).casts();
-    Conversion userdefconv = select_cast2(src, casts, dest, engine, policy);
+    Conversion userdefconv = select_cast(src, casts, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;
   }

@@ -20,7 +20,7 @@ class ConversionProcessor
 public:
   static script::Type common_type(Engine *e, const std::shared_ptr<program::Expression> & a, const std::shared_ptr<program::Expression> & b);
 
-  static std::shared_ptr<program::Expression> sconvert(Engine *e, const std::shared_ptr<program::Expression> & arg, const StandardConversion2 & conv);
+  static std::shared_ptr<program::Expression> sconvert(Engine *e, const std::shared_ptr<program::Expression> & arg, const StandardConversion & conv);
   static std::shared_ptr<program::Expression> convert(Engine *e, const std::shared_ptr<program::Expression> & arg, const Conversion & conv);
 };
 

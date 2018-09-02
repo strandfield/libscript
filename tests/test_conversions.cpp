@@ -21,7 +21,7 @@ TEST(Conversions, fundamentals) {
 
   Engine e;
 
-  StandardConversion2 conv{ Type::Int, Type::cref(Type::Int) };
+  StandardConversion conv{ Type::Int, Type::cref(Type::Int) };
   ASSERT_TRUE(conv.isReferenceConversion());
   ASSERT_TRUE(conv.hasQualificationAdjustment());
   ASSERT_FALSE(conv.isNarrowing());
@@ -30,14 +30,14 @@ TEST(Conversions, fundamentals) {
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
   ASSERT_EQ(conv.rank(), ConversionRank::ExactMatch);
 
-  conv = StandardConversion2{ Type::Int, Type::Int };
-  ASSERT_EQ(conv, StandardConversion2::Copy());
+  conv = StandardConversion{ Type::Int, Type::Int };
+  ASSERT_EQ(conv, StandardConversion::Copy());
   ASSERT_TRUE(conv.isCopy());
-  conv = StandardConversion2{ Type::Int, Type{Type::Int}.withFlag(Type::ConstFlag) };
-  ASSERT_EQ(conv, StandardConversion2::Copy().with(ConstQualification));
+  conv = StandardConversion{ Type::Int, Type{Type::Int}.withFlag(Type::ConstFlag) };
+  ASSERT_EQ(conv, StandardConversion::Copy().with(ConstQualification));
   ASSERT_TRUE(conv.isCopy());
 
-  conv = StandardConversion2{ Type::Int, Type::Boolean };
+  conv = StandardConversion{ Type::Int, Type::Boolean };
   ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_TRUE(conv.isNarrowing());
   ASSERT_TRUE(conv.isNumericConversion());
@@ -48,7 +48,7 @@ TEST(Conversions, fundamentals) {
   ASSERT_EQ(conv.destType().baseType(), Type::Boolean);
   ASSERT_EQ(conv.rank(), ConversionRank::Conversion);
 
-  conv = StandardConversion2{ Type::Int, Type::Float };
+  conv = StandardConversion{ Type::Int, Type::Float };
   ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
@@ -59,7 +59,7 @@ TEST(Conversions, fundamentals) {
   ASSERT_EQ(conv.destType().baseType(), Type::Float);
   ASSERT_EQ(conv.rank(), ConversionRank::Promotion);
 
-  conv = StandardConversion2{ Type::Float, Type::Boolean };
+  conv = StandardConversion{ Type::Float, Type::Boolean };
   ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_TRUE(conv.isNarrowing());
   ASSERT_TRUE(conv.isNumericConversion());
@@ -70,7 +70,7 @@ TEST(Conversions, fundamentals) {
   ASSERT_EQ(conv.destType().baseType(), Type::Boolean);
   ASSERT_EQ(conv.rank(), ConversionRank::Conversion);
 
-  conv = StandardConversion2{ Type::Float, Type::Double };
+  conv = StandardConversion{ Type::Float, Type::Double };
   ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
@@ -80,8 +80,8 @@ TEST(Conversions, fundamentals) {
   ASSERT_EQ(conv.srcType().baseType(), Type::Float);
   ASSERT_EQ(conv.destType().baseType(), Type::Double);
 
-  conv = StandardConversion2{ Type::Int, Type::ref(Type::Int) };
-  ASSERT_FALSE(conv == StandardConversion2::NotConvertible());
+  conv = StandardConversion{ Type::Int, Type::ref(Type::Int) };
+  ASSERT_FALSE(conv == StandardConversion::NotConvertible());
   ASSERT_TRUE(conv.isReferenceConversion());
   ASSERT_FALSE(conv.isCopy());
   ASSERT_FALSE(conv.isNarrowing());
@@ -90,13 +90,13 @@ TEST(Conversions, fundamentals) {
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
   ASSERT_FALSE(conv.hasQualificationAdjustment());
 
-  conv = StandardConversion2{ Type::cref(Type::Int), Type::ref(Type::Int) };
-  ASSERT_TRUE(conv == StandardConversion2::NotConvertible());
+  conv = StandardConversion{ Type::cref(Type::Int), Type::ref(Type::Int) };
+  ASSERT_TRUE(conv == StandardConversion::NotConvertible());
   ASSERT_EQ(conv.rank(), ConversionRank::NotConvertible);
 
   Conversion c = Conversion::compute(Type::Float, Type::Double, &e);
   ASSERT_EQ(c.rank(), ConversionRank::Promotion);
-  ASSERT_EQ(c.firstStandardConversion(), StandardConversion2(Type::Float, Type::Double));
+  ASSERT_EQ(c.firstStandardConversion(), StandardConversion(Type::Float, Type::Double));
   ASSERT_FALSE(c.isNarrowing());
   c = Conversion::compute(Type::Double, Type::Float, &e);
   ASSERT_TRUE(c.isNarrowing());
@@ -108,15 +108,15 @@ TEST(Conversions, comparisons) {
   Engine e;
   e.setup();
 
-  ASSERT_TRUE(StandardConversion2(Type::Int, Type::ref(Type::Int)) < StandardConversion2(Type::Int, Type::cref(Type::Int)));
-  ASSERT_TRUE(StandardConversion2(Type::Int, Type::Double) < StandardConversion2(Type::Float, Type::Int));
-  ASSERT_FALSE(StandardConversion2(Type::Float, Type::Int) < StandardConversion2(Type::Int, Type::Double));
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::ref(Type::Int)) < StandardConversion(Type::Int, Type::cref(Type::Int)));
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::Double) < StandardConversion(Type::Float, Type::Int));
+  ASSERT_FALSE(StandardConversion(Type::Float, Type::Int) < StandardConversion(Type::Int, Type::Double));
 
-  ASSERT_FALSE(StandardConversion2(Type::Float, Type::Int) < StandardConversion2::compute(Type::Float, Type::Int, &e));
-  ASSERT_FALSE(StandardConversion2::compute(Type::Float, Type::Int, &e) < StandardConversion2(Type::Float, Type::Int));
+  ASSERT_FALSE(StandardConversion(Type::Float, Type::Int) < StandardConversion::compute(Type::Float, Type::Int, &e));
+  ASSERT_FALSE(StandardConversion::compute(Type::Float, Type::Int, &e) < StandardConversion(Type::Float, Type::Int));
 
-  ASSERT_TRUE(StandardConversion2(Type::Int, Type::ref(Type::Int)) < StandardConversion2(Type::Int, Type::Int));
-  ASSERT_FALSE(StandardConversion2::Copy() < StandardConversion2(Type::Int, Type::ref(Type::Int)));
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::ref(Type::Int)) < StandardConversion(Type::Int, Type::Int));
+  ASSERT_FALSE(StandardConversion::Copy() < StandardConversion(Type::Int, Type::ref(Type::Int)));
 
   std::vector<Conversion> convs{
     Conversion::compute(Type::Float, Type::Double, &e),
@@ -146,20 +146,20 @@ TEST(Conversions, std_conv_enums) {
 
   Enum A = e.rootNamespace().Enum("A").get();
 
-  StandardConversion2 conv = StandardConversion2::compute(A.id(), Type::Int, &e);
-  ASSERT_EQ(conv, StandardConversion2::EnumToInt());
+  StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
+  ASSERT_EQ(conv, StandardConversion::EnumToInt());
 
-  conv = StandardConversion2::compute(A.id(), A.id(), &e);
-  ASSERT_EQ(conv, StandardConversion2::Copy());
+  conv = StandardConversion::compute(A.id(), A.id(), &e);
+  ASSERT_EQ(conv, StandardConversion::Copy());
 
-  conv = StandardConversion2::compute(A.id(), Type::ref(A.id()), &e);
+  conv = StandardConversion::compute(A.id(), Type::ref(A.id()), &e);
   ASSERT_TRUE(conv.isReferenceConversion());
 
-  conv = StandardConversion2::compute(A.id(), Type::Boolean, &e);
-  ASSERT_EQ(conv, StandardConversion2::NotConvertible());
+  conv = StandardConversion::compute(A.id(), Type::Boolean, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
 
-  conv = StandardConversion2::compute(A.id(), Type::Double, &e);
-  ASSERT_EQ(conv, StandardConversion2::NotConvertible());
+  conv = StandardConversion::compute(A.id(), Type::Double, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
 }
 
 TEST(Conversions, std_conv_classes) {
@@ -173,14 +173,14 @@ TEST(Conversions, std_conv_classes) {
   Class B = e.rootNamespace().Class("B").setBase(A.id()).get();
   Class C = e.rootNamespace().Class("C").setBase(B.id()).get();
 
-  StandardConversion2 conv = StandardConversion2::compute(A.id(), Type::Int, &e);
-  ASSERT_EQ(conv, StandardConversion2::NotConvertible());
+  StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
 
-  StandardConversion2 b_to_a = StandardConversion2::compute(B.id(), A.id(), &e);
+  StandardConversion b_to_a = StandardConversion::compute(B.id(), A.id(), &e);
   ASSERT_TRUE(b_to_a.isDerivedToBaseConversion());
   ASSERT_EQ(b_to_a.derivedToBaseConversionDepth(), 1);
 
-  StandardConversion2 c_to_a = StandardConversion2::compute(C.id(), A.id(), &e);
+  StandardConversion c_to_a = StandardConversion::compute(C.id(), A.id(), &e);
   ASSERT_FALSE(c_to_a.isReferenceConversion());
   ASSERT_TRUE(c_to_a.isDerivedToBaseConversion());
   ASSERT_EQ(c_to_a.derivedToBaseConversionDepth(), 2);
@@ -188,23 +188,23 @@ TEST(Conversions, std_conv_classes) {
   ASSERT_TRUE(b_to_a < c_to_a);
   ASSERT_FALSE(c_to_a < b_to_a);
 
-  StandardConversion2 c_to_a_ref = StandardConversion2::compute(C.id(), Type::ref(A.id()), &e);
+  StandardConversion c_to_a_ref = StandardConversion::compute(C.id(), Type::ref(A.id()), &e);
   ASSERT_TRUE(c_to_a_ref.isReferenceConversion());
   ASSERT_TRUE(c_to_a_ref.isDerivedToBaseConversion());
   ASSERT_EQ(c_to_a_ref.derivedToBaseConversionDepth(), 2);
 
-  StandardConversion2 c_to_b = StandardConversion2::compute(C.id(), B.id(), &e);
-  ASSERT_EQ(c_to_b, StandardConversion2::NotConvertible()); // B does not have a copy ctor
+  StandardConversion c_to_b = StandardConversion::compute(C.id(), B.id(), &e);
+  ASSERT_EQ(c_to_b, StandardConversion::NotConvertible()); // B does not have a copy ctor
 
-  StandardConversion2 c_to_b_ref = StandardConversion2::compute(C.id(), Type::ref(B.id()), &e);
+  StandardConversion c_to_b_ref = StandardConversion::compute(C.id(), Type::ref(B.id()), &e);
   ASSERT_TRUE(c_to_b_ref.isReferenceConversion());
   ASSERT_TRUE(c_to_b_ref.isDerivedToBaseConversion());
   ASSERT_EQ(c_to_b_ref.derivedToBaseConversionDepth(), 1);
 
-  StandardConversion2 string_to_a = StandardConversion2::compute(Type::String, A.id(), &e);
-  ASSERT_EQ(string_to_a, StandardConversion2::NotConvertible());
+  StandardConversion string_to_a = StandardConversion::compute(Type::String, A.id(), &e);
+  ASSERT_EQ(string_to_a, StandardConversion::NotConvertible());
 
-  StandardConversion2 ref_conv = StandardConversion2::compute(Type::ref(Type::String), Type::cref(Type::String), &e);
+  StandardConversion ref_conv = StandardConversion::compute(Type::ref(Type::String), Type::cref(Type::String), &e);
   ASSERT_TRUE(ref_conv.isReferenceConversion());
   ASSERT_TRUE(ref_conv.hasQualificationAdjustment());
 }
@@ -273,7 +273,7 @@ TEST(Conversions, function_type) {
   Conversion conv = Conversion::compute(ft.type(), ft.type(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_FALSE(conv.isUserDefinedConversion());
-  ASSERT_EQ(conv.firstStandardConversion(), StandardConversion2::Copy());
+  ASSERT_EQ(conv.firstStandardConversion(), StandardConversion::Copy());
 
   conv = Conversion::compute(ft.type(), ft.type().withFlag(Type::ReferenceFlag), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());

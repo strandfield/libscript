@@ -60,18 +60,18 @@ ConversionRank worstRank(const std::vector<T> & elems)
 } // namespace ranking
 
 
-class LIBSCRIPT_API StandardConversion2
+class LIBSCRIPT_API StandardConversion
 {
 public:
-  StandardConversion2();
-  StandardConversion2(const Type & src, const Type & dest);
-  StandardConversion2(const StandardConversion2 &) = default;
-  ~StandardConversion2() = default;
+  StandardConversion();
+  StandardConversion(const Type & src, const Type & dest);
+  StandardConversion(const StandardConversion &) = default;
+  ~StandardConversion() = default;
 
-  StandardConversion2(QualificationAdjustment qualadjust);
+  StandardConversion(QualificationAdjustment qualadjust);
 
   bool isNone() const;
-  static StandardConversion2 None();
+  static StandardConversion None();
 
   bool isNarrowing() const;
   ConversionRank rank() const;
@@ -93,21 +93,21 @@ public:
   Type srcType() const;
   Type destType() const;
 
-  StandardConversion2 with(QualificationAdjustment adjust) const;
+  StandardConversion with(QualificationAdjustment adjust) const;
 
-  static StandardConversion2 Copy();
-  static StandardConversion2 EnumToInt();
-  static StandardConversion2 DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust = QualificationAdjustment::NoQualificationAdjustment);
-  static StandardConversion2 NotConvertible();
+  static StandardConversion Copy();
+  static StandardConversion EnumToInt();
+  static StandardConversion DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust = QualificationAdjustment::NoQualificationAdjustment);
+  static StandardConversion NotConvertible();
 
-  static StandardConversion2 compute(const Type & src, const Type & dest, Engine *e);
+  static StandardConversion compute(const Type & src, const Type & dest, Engine *e);
 
-  bool operator==(const StandardConversion2 & other) const;
-  inline bool operator!=(const StandardConversion2 & other) const { return !((*this) == other); }
-  bool operator<(const StandardConversion2 & other) const;
+  bool operator==(const StandardConversion & other) const;
+  inline bool operator!=(const StandardConversion & other) const { return !((*this) == other); }
+  bool operator<(const StandardConversion & other) const;
 
 private:
-  StandardConversion2(int val) : d(val) { }
+  StandardConversion(int val) : d(val) { }
 
 private:
   int d;
@@ -120,7 +120,7 @@ public:
   Conversion() = default;
   Conversion(const Conversion &) = default;
   ~Conversion() = default;
-  Conversion(const StandardConversion2 & c1, const Function & userdefinedConversion = Function{}, const StandardConversion2 & c2 = StandardConversion2::None());
+  Conversion(const StandardConversion & c1, const Function & userdefinedConversion = Function{}, const StandardConversion & c2 = StandardConversion::None());
 
   ConversionRank rank() const;
 
@@ -128,9 +128,9 @@ public:
   bool isNarrowing() const;
   bool isUserDefinedConversion() const;
 
-  const StandardConversion2 & firstStandardConversion() const { return conv1; }
+  const StandardConversion & firstStandardConversion() const { return conv1; }
   const Function & userDefinedConversion() const { return function; }
-  const StandardConversion2 & secondStandardConversion() const { return conv3; }
+  const StandardConversion & secondStandardConversion() const { return conv3; }
 
   Type srcType() const;
   Type destType() const;
@@ -151,9 +151,9 @@ public:
   inline bool operator!=(const Conversion & other) const { return !((*this) == other); }
 
 private:
-  StandardConversion2 conv1;
+  StandardConversion conv1;
   Function function;
-  StandardConversion2 conv3;
+  StandardConversion conv3;
 };
 
 } // namespace script

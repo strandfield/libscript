@@ -85,7 +85,7 @@ public:
   bool canCopy(const Type & t);
   Value copy(const Value & val);
 
-  Conversion conversion2(const Type & src, const Type & dest);
+  Conversion conversion(const Type & src, const Type & dest);
 
   void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions);
 

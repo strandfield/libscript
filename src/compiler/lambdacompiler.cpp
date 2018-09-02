@@ -128,8 +128,8 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
       value = program::StackValue::New(offset, stack.at(offset).type);
       if (!cap.reference.isValid())
       {
-        StandardConversion2 conv = StandardConversion2::compute(value->type(), value->type().baseType(), c->engine());
-        if (conv == StandardConversion2::NotConvertible())
+        StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+        if (conv == StandardConversion::NotConvertible())
           throw CannotCaptureNonCopyable{ dpos(cap.name) };
         value = ConversionProcessor::sconvert(c->engine(), value, conv);
       }
@@ -149,8 +149,8 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
       if (capture_flags[i])
         continue;
       std::shared_ptr<program::Expression> value = program::StackValue::New(i, stack.at(i).type);
-      StandardConversion2 conv = StandardConversion2::compute(value->type(), value->type().baseType(), c->engine());
-      if (conv == StandardConversion2::NotConvertible())
+      StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+      if (conv == StandardConversion::NotConvertible())
         throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
       value = ConversionProcessor::sconvert(c->engine(), value, conv);
       captures.push_back(Capture{ stack.at(i).name, value });
