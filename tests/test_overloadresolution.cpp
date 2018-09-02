@@ -10,6 +10,7 @@
 #include "script/conversions.h"
 #include "script/diagnosticmessage.h"
 #include "script/engine.h"
+#include "script/initialization.h"
 #include "script/namespace.h"
 #include "script/operator.h"
 #include "script/overloadresolution.h"
@@ -35,8 +36,8 @@ TEST(OverloadResolution, test1) {
   resol = OverloadResolution::New(&e);
   ASSERT_TRUE(resol.process(overloads, std::vector<Type>{ Type::Int }));
   ASSERT_EQ(resol.selectedOverload(), overloads.at(1));
-  auto conversions = resol.conversionSequence();
-  ASSERT_TRUE(conversions.at(0).conv1.isCopyInitialization());
+  auto inits = resol.initializations();
+  ASSERT_TRUE(inits.at(0).conversion().firstStandardConversion().isCopy());
 
   overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Char).create());
   resol = OverloadResolution::New(&e);

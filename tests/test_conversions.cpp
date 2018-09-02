@@ -7,6 +7,7 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/classtemplate.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
@@ -15,90 +16,200 @@
 #include "script/functiontype.h"
 #include "script/namespace.h"
 
-TEST(Conversions, standard) {
+TEST(Conversions, fundamentals) {
   using namespace script;
 
   Engine e;
 
-  StandardConversion conv = StandardConversion::compute(Type::Int, Type::cref(Type::Int), &e);
-  ASSERT_TRUE(conv.isReferenceInitialization());
-  ASSERT_FALSE(conv.isCopyInitialization());
+  StandardConversion conv{ Type::Int, Type::cref(Type::Int) };
+  ASSERT_TRUE(conv.isReferenceConversion());
+  ASSERT_TRUE(conv.hasQualificationAdjustment());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
   ASSERT_FALSE(conv.isNumericPromotion());
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
+  ASSERT_EQ(conv.rank(), ConversionRank::ExactMatch);
 
-  conv = StandardConversion::compute(Type::Int, Type::Boolean, &e);
-  ASSERT_FALSE(conv.isReferenceInitialization());
-  ASSERT_TRUE(conv.isCopyInitialization());
+  conv = StandardConversion{ Type::Int, Type::Int };
+  ASSERT_EQ(conv, StandardConversion::Copy());
+  ASSERT_TRUE(conv.isCopy());
+  conv = StandardConversion{ Type::Int, Type{Type::Int}.withFlag(Type::ConstFlag) };
+  ASSERT_EQ(conv, StandardConversion::Copy().with(ConstQualification));
+  ASSERT_TRUE(conv.isCopy());
+
+  conv = StandardConversion{ Type::Int, Type::Boolean };
+  ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_TRUE(conv.isNarrowing());
   ASSERT_TRUE(conv.isNumericConversion());
   ASSERT_FALSE(conv.isNumericPromotion());
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
   ASSERT_EQ(conv.numericConversion(), BooleanConversion);
+  ASSERT_EQ(conv.srcType().baseType(), Type::Int);
+  ASSERT_EQ(conv.destType().baseType(), Type::Boolean);
+  ASSERT_EQ(conv.rank(), ConversionRank::Conversion);
 
-  conv = StandardConversion::compute(Type::Int, Type::Float, &e);
-  ASSERT_FALSE(conv.isReferenceInitialization());
-  ASSERT_TRUE(conv.isCopyInitialization());
+  conv = StandardConversion{ Type::Int, Type::Float };
+  ASSERT_FALSE(conv.isReferenceConversion());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
   ASSERT_TRUE(conv.isNumericPromotion());
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
   ASSERT_EQ(conv.numericPromotion(), FloatingPointPromotion);
+  ASSERT_EQ(conv.srcType().baseType(), Type::Int);
+  ASSERT_EQ(conv.destType().baseType(), Type::Float);
+  ASSERT_EQ(conv.rank(), ConversionRank::Promotion);
 
+  conv = StandardConversion{ Type::Float, Type::Boolean };
+  ASSERT_FALSE(conv.isReferenceConversion());
+  ASSERT_TRUE(conv.isNarrowing());
+  ASSERT_TRUE(conv.isNumericConversion());
+  ASSERT_FALSE(conv.isNumericPromotion());
+  ASSERT_FALSE(conv.isDerivedToBaseConversion());
+  ASSERT_EQ(conv.numericConversion(), BooleanConversion);
+  ASSERT_EQ(conv.srcType().baseType(), Type::Float);
+  ASSERT_EQ(conv.destType().baseType(), Type::Boolean);
+  ASSERT_EQ(conv.rank(), ConversionRank::Conversion);
 
-  conv = StandardConversion::compute(Type::Int, Type::ref(Type::Int), &e);
+  conv = StandardConversion{ Type::Float, Type::Double };
+  ASSERT_FALSE(conv.isReferenceConversion());
+  ASSERT_FALSE(conv.isNarrowing());
+  ASSERT_FALSE(conv.isNumericConversion());
+  ASSERT_TRUE(conv.isNumericPromotion());
+  ASSERT_FALSE(conv.isDerivedToBaseConversion());
+  ASSERT_EQ(conv.numericPromotion(), FloatingPointPromotion);
+  ASSERT_EQ(conv.srcType().baseType(), Type::Float);
+  ASSERT_EQ(conv.destType().baseType(), Type::Double);
+
+  conv = StandardConversion{ Type::Int, Type::ref(Type::Int) };
   ASSERT_FALSE(conv == StandardConversion::NotConvertible());
-  ASSERT_TRUE(conv.isReferenceInitialization());
-  ASSERT_FALSE(conv.isCopyInitialization());
+  ASSERT_TRUE(conv.isReferenceConversion());
+  ASSERT_FALSE(conv.isCopy());
   ASSERT_FALSE(conv.isNarrowing());
   ASSERT_FALSE(conv.isNumericConversion());
   ASSERT_FALSE(conv.isNumericPromotion());
   ASSERT_FALSE(conv.isDerivedToBaseConversion());
+  ASSERT_FALSE(conv.hasQualificationAdjustment());
+
+  conv = StandardConversion{ Type::cref(Type::Int), Type::ref(Type::Int) };
+  ASSERT_TRUE(conv == StandardConversion::NotConvertible());
+  ASSERT_EQ(conv.rank(), ConversionRank::NotConvertible);
+
+  Conversion c = Conversion::compute(Type::Float, Type::Double, &e);
+  ASSERT_EQ(c.rank(), ConversionRank::Promotion);
+  ASSERT_EQ(c.firstStandardConversion(), StandardConversion(Type::Float, Type::Double));
+  ASSERT_FALSE(c.isNarrowing());
+  c = Conversion::compute(Type::Double, Type::Float, &e);
+  ASSERT_TRUE(c.isNarrowing());
 }
 
-
-
-TEST(Conversions, comparison) {
+TEST(Conversions, comparisons) {
   using namespace script;
 
   Engine e;
+  e.setup();
 
-  StandardConversion a{ FloatingPointPromotion };
-  StandardConversion b;
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::ref(Type::Int)) < StandardConversion(Type::Int, Type::cref(Type::Int)));
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::Double) < StandardConversion(Type::Float, Type::Int));
+  ASSERT_FALSE(StandardConversion(Type::Float, Type::Int) < StandardConversion(Type::Int, Type::Double));
 
-  ASSERT_TRUE(a.rank() == StandardConversion::Rank::Promotion);
-  ASSERT_TRUE(b.rank() == StandardConversion::Rank::ExactMatch);
-  ASSERT_TRUE(b < a);
+  ASSERT_FALSE(StandardConversion(Type::Float, Type::Int) < StandardConversion::compute(Type::Float, Type::Int, &e));
+  ASSERT_FALSE(StandardConversion::compute(Type::Float, Type::Int, &e) < StandardConversion(Type::Float, Type::Int));
+
+  ASSERT_TRUE(StandardConversion(Type::Int, Type::ref(Type::Int)) < StandardConversion(Type::Int, Type::Int));
+  ASSERT_FALSE(StandardConversion::Copy() < StandardConversion(Type::Int, Type::ref(Type::Int)));
+
+  std::vector<Conversion> convs{
+    Conversion::compute(Type::Float, Type::Double, &e),
+    Conversion::compute(Type::Double, Type::Float, &e),
+    Conversion::compute(Type::Int, Type::Int, &e),
+  };
+  ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_float = A.Constructor().params(Type::Float).create();
+  convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
+  ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Float, Type::Double, &e), Conversion::compute(Type::Double, Type::Float, &e)) < 0);
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, Type::Double, &e)) > 0);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, Type::Int, &e)) == 0);
+
+  ASSERT_TRUE(Conversion::comp(Conversion::compute(Type::Double, Type::Float, &e), Conversion::compute(Type::Float, A.id(), &e)) < 0);
 }
 
-TEST(Conversions, enum_to_int) {
+TEST(Conversions, std_conv_enums) {
   using namespace script;
 
   Engine e;
   e.setup();
 
   Enum A = e.rootNamespace().Enum("A").get();
-  A.addValue("AA", 0);
-  A.addValue("AB", 1);
-  A.addValue("AC", 2);
 
-  ConversionSequence conv = ConversionSequence::compute(A.id(), Type::Int, &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
-  ASSERT_FALSE(conv.isUserDefinedConversion());
+  StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
+  ASSERT_EQ(conv, StandardConversion::EnumToInt());
 
-  conv = ConversionSequence::compute(A.id(), Type::cref(Type::Int), &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
-  ASSERT_FALSE(conv.isUserDefinedConversion());
+  conv = StandardConversion::compute(A.id(), A.id(), &e);
+  ASSERT_EQ(conv, StandardConversion::Copy());
 
-  conv = ConversionSequence::compute(A.id(), Type::ref(Type::Int), &e);
-  ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
+  conv = StandardConversion::compute(A.id(), Type::ref(A.id()), &e);
+  ASSERT_TRUE(conv.isReferenceConversion());
 
-  conv = ConversionSequence::compute(Type::ref(A.id()), Type::ref(Type::Int), &e);
-  ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
+  conv = StandardConversion::compute(A.id(), Type::Boolean, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
+
+  conv = StandardConversion::compute(A.id(), Type::Double, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
 }
 
-TEST(Conversions, user_defined_cast) {
+TEST(Conversions, std_conv_classes) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.rootNamespace().Class("A").get();
+  A.Constructor().params(Type::cref(A.id())).create();
+  Class B = e.rootNamespace().Class("B").setBase(A.id()).get();
+  Class C = e.rootNamespace().Class("C").setBase(B.id()).get();
+
+  StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
+  ASSERT_EQ(conv, StandardConversion::NotConvertible());
+
+  StandardConversion b_to_a = StandardConversion::compute(B.id(), A.id(), &e);
+  ASSERT_TRUE(b_to_a.isDerivedToBaseConversion());
+  ASSERT_EQ(b_to_a.derivedToBaseConversionDepth(), 1);
+
+  StandardConversion c_to_a = StandardConversion::compute(C.id(), A.id(), &e);
+  ASSERT_FALSE(c_to_a.isReferenceConversion());
+  ASSERT_TRUE(c_to_a.isDerivedToBaseConversion());
+  ASSERT_EQ(c_to_a.derivedToBaseConversionDepth(), 2);
+
+  ASSERT_TRUE(b_to_a < c_to_a);
+  ASSERT_FALSE(c_to_a < b_to_a);
+
+  StandardConversion c_to_a_ref = StandardConversion::compute(C.id(), Type::ref(A.id()), &e);
+  ASSERT_TRUE(c_to_a_ref.isReferenceConversion());
+  ASSERT_TRUE(c_to_a_ref.isDerivedToBaseConversion());
+  ASSERT_EQ(c_to_a_ref.derivedToBaseConversionDepth(), 2);
+
+  StandardConversion c_to_b = StandardConversion::compute(C.id(), B.id(), &e);
+  ASSERT_EQ(c_to_b, StandardConversion::NotConvertible()); // B does not have a copy ctor
+
+  StandardConversion c_to_b_ref = StandardConversion::compute(C.id(), Type::ref(B.id()), &e);
+  ASSERT_TRUE(c_to_b_ref.isReferenceConversion());
+  ASSERT_TRUE(c_to_b_ref.isDerivedToBaseConversion());
+  ASSERT_EQ(c_to_b_ref.derivedToBaseConversionDepth(), 1);
+
+  StandardConversion string_to_a = StandardConversion::compute(Type::String, A.id(), &e);
+  ASSERT_EQ(string_to_a, StandardConversion::NotConvertible());
+
+  StandardConversion ref_conv = StandardConversion::compute(Type::ref(Type::String), Type::cref(Type::String), &e);
+  ASSERT_TRUE(ref_conv.isReferenceConversion());
+  ASSERT_TRUE(ref_conv.hasQualificationAdjustment());
+}
+
+TEST(Conversions, user_defined_conv_cast) {
   using namespace script;
 
   Engine e;
@@ -107,12 +218,14 @@ TEST(Conversions, user_defined_cast) {
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
 
-  ConversionSequence conv = ConversionSequence::compute(A.id(), Type::Int, &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_TRUE(conv.isUserDefinedConversion());
-  ASSERT_EQ(conv.function, to_int);
+  ASSERT_EQ(conv.userDefinedConversion(), to_int);
+  ASSERT_EQ(conv.srcType(), A.id());
+  ASSERT_EQ(conv.destType(), Type::Int);
+  ASSERT_EQ(conv.rank(), ConversionRank::UserDefinedConversion);
 }
-
 
 TEST(Conversions, user_defined_converting_constructor) {
   using namespace script;
@@ -123,12 +236,13 @@ TEST(Conversions, user_defined_converting_constructor) {
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Function ctor = A.Constructor().params(Type::Float).create();
 
-  ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_TRUE(conv.isUserDefinedConversion());
-  ASSERT_EQ(conv.function, ctor);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor);
+  ASSERT_EQ(conv.srcType(), Type::Float);
+  ASSERT_EQ(conv.destType(), A.id());
 }
-
 
 TEST(Conversions, converting_constructor_selection) {
   using namespace script;
@@ -140,12 +254,13 @@ TEST(Conversions, converting_constructor_selection) {
   Function ctor_int = A.Constructor().params(Type::Int).create();
   Function ctor_bool = A.Constructor().params(Type::Boolean).create();
 
-  ConversionSequence conv = ConversionSequence::compute(Type::Boolean, A.id(), &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  Conversion conv = Conversion::compute(Type::Boolean, A.id(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_TRUE(conv.isUserDefinedConversion());
-  ASSERT_EQ(conv.function, ctor_bool);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
+  ASSERT_EQ(conv.srcType(), Type::Boolean);
+  ASSERT_EQ(conv.destType(), A.id());
 }
-
 
 TEST(Conversions, function_type) {
   using namespace script;
@@ -155,20 +270,21 @@ TEST(Conversions, function_type) {
 
   auto ft = e.getFunctionType(Prototype{ Type::Void, Type::Int });
 
-  ConversionSequence conv = ConversionSequence::compute(ft.type(), ft.type(), &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  Conversion conv = Conversion::compute(ft.type(), ft.type(), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_FALSE(conv.isUserDefinedConversion());
-  ASSERT_TRUE(conv.conv1.isCopyInitialization());
+  ASSERT_EQ(conv.firstStandardConversion(), StandardConversion::Copy());
 
-  conv = ConversionSequence::compute(ft.type(), ft.type().withFlag(Type::ReferenceFlag), &e);
-  ASSERT_FALSE(conv == ConversionSequence::NotConvertible());
+  conv = Conversion::compute(ft.type(), ft.type().withFlag(Type::ReferenceFlag), &e);
+  ASSERT_FALSE(conv == Conversion::NotConvertible());
   ASSERT_FALSE(conv.isUserDefinedConversion());
-  ASSERT_TRUE(conv.conv1.isReferenceInitialization());
+  ASSERT_TRUE(conv.firstStandardConversion().isReferenceConversion());
 
   auto ft2 = e.getFunctionType(Prototype{ Type::Void, Type::Float });
 
-  conv = ConversionSequence::compute(ft.type(), ft2.type(), &e);
-  ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
+  conv = Conversion::compute(ft.type(), ft2.type(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+  ASSERT_TRUE(conv.isInvalid());
 }
 
 TEST(Conversions, no_converting_constructor) {
@@ -179,111 +295,200 @@ TEST(Conversions, no_converting_constructor) {
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
 
-  ConversionSequence conv = ConversionSequence::compute(Type::Float, A.id(), &e);
-  ASSERT_TRUE(conv == ConversionSequence::NotConvertible());
+  Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+}
+
+TEST(Conversions, explicit_ctor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor_int = A.Constructor().setExplicit().params(Type::Int).create();
+
+  Conversion conv = Conversion::compute(Type::Int, A.id(), &e);
+  ASSERT_TRUE(conv == Conversion::NotConvertible());
+
+  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+  conv = Conversion::compute(Type::Int, A.id(), &e);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
+
+  conv = Conversion::compute(Type::Int, A.id(), &e, Conversion::AllowExplicitConversions);
+  ASSERT_EQ(conv.userDefinedConversion(), ctor_int);
+}
+
+TEST(Conversions, engine_functions) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  ASSERT_TRUE(e.canCast(Type::Int, Type::Float));
+  ASSERT_FALSE(e.canCast(Type::String, Type::Int));
+
+  Namespace ns = e.rootNamespace();
+  Class A = ns.Class("A").get();
+  A.Constructor().params(Type::cref(A.id())).create();
+  ASSERT_TRUE(e.canCopy(A.id()));
+  ASSERT_TRUE(e.canCast(A.id(), A.id()));
+
+  Class B = ns.Class("B").get();
+  ASSERT_FALSE(e.canCopy(B.id()));
+  B.Constructor().params(Type::cref(B.id())).setDeleted().create();
+  ASSERT_FALSE(e.canCopy(B.id()));
 }
 
 
 /****************************************************************
-Testing list initializations
+Testing Initilization class
 ****************************************************************/
 
 #include "script/ast/node.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/program/expression.h"
+#include "script/parser/parser.h"
+#include "script/initialization.h"
 
-TEST(Conversions, list_initialization_default) {
+
+
+TEST(Initializations, cref_init) {
   using namespace script;
 
   Engine e;
   e.setup();
 
-  auto astlistexpr = ast::ListExpression::New(parser::Token{ parser::Token::LeftBrace, 0, 1, 0, 0 });
-
-  compiler::ExpressionCompiler ec;
-  auto listexpr = ec.generateExpression(astlistexpr);
-
-  ASSERT_TRUE(listexpr->is<program::InitializerList>());
-
-  ConversionSequence conv = ConversionSequence::compute(listexpr, Type::Int, &e);
-  ASSERT_TRUE(conv.isListInitialization());
-  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::DefaultInitialization);
-  ASSERT_EQ(conv.listInitialization->destType(), Type::Int);
-
-  conv = ConversionSequence::compute(listexpr, Type::String, &e);
-  ASSERT_TRUE(conv.isListInitialization());
-  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::DefaultInitialization);
-  ASSERT_EQ(conv.listInitialization->destType(), Type::String);
+  Initialization init = Initialization::compute(Type::cref(Type::Float), Type::ref(Type::Int), &e);
+  ASSERT_TRUE(init.isReferenceInitialization());
+  ASSERT_TRUE(init.createsTemporary());
 }
-
-
-#include "script/parser/parser.h"
 
 std::shared_ptr<script::parser::ParserData> parser_data(const char *source);
 
-TEST(Conversions, list_initialization_constructor) {
+static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engine *e, const std::string & str)
+{
+  using namespace script;
+
+  parser::ScriptFragment fragment{ parser_data(str.data()) };
+  parser::ExpressionParser parser{ &fragment };
+
+  auto astlistexpr = parser.parse();
+
+  compiler::ExpressionCompiler ec;
+  ec.setScope(Scope{ e->rootNamespace() });
+  return ec.generateExpression(astlistexpr);
+}
+
+TEST(Initializations, list_initialization_ctor) {
   using namespace script;
 
   Engine e;
   e.setup();
 
-  const char *source =
-    "{1, \"Hello\", 3.14}";
-
-  parser::ScriptFragment fragment{ parser_data(source) };
-  parser::ExpressionParser parser{ &fragment };
-
-  auto astlistexpr = parser.parse();
-  ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
-
-  compiler::ExpressionCompiler ec;
-  ec.setScope(Scope{ e.rootNamespace() });
-  auto listexpr = ec.generateExpression(astlistexpr);
+  auto listexpr = parse_list_expr(&e, "{1, \"Hello\", 3.14}");
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
   Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).create();
 
-  ConversionSequence conv = ConversionSequence::compute(listexpr, A.id(), &e);
-  ASSERT_TRUE(conv.isListInitialization());
-  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::ConstructorListInitialization);
-  ASSERT_EQ(conv.listInitialization->constructor(), ctor);
-  ASSERT_EQ(conv.listInitialization->conversions().size(), 3);
+  Initialization init = Initialization::compute(A.id(), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.rank(), ConversionRank::ExactMatch);
+  ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_TRUE(init.hasInitializations());
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
 }
 
-
-TEST(Conversions, list_initialization_not_convertible) {
+TEST(Initializations, list_initialization_initializer_list) {
   using namespace script;
 
   Engine e;
   e.setup();
 
-  const char *source =
-    "{1, \"Hello\", 3.14}";
+  auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
-  parser::ScriptFragment fragment{ parser_data(source) };
-  parser::ExpressionParser parser{ &fragment };
+  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+    .getInstance({ TemplateArgument{Type::Int} }).id();
 
-  auto astlistexpr = parser.parse();
+  Initialization init = Initialization::compute(initializer_list_int, listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_TRUE(init.constructor().isNull());
+  ASSERT_EQ(init.destType(), initializer_list_int);
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
+}
 
-  compiler::ExpressionCompiler ec;
-  ec.setScope(Scope{ e.rootNamespace() });
-  auto listexpr = ec.generateExpression(astlistexpr);
+TEST(Initializations, list_initialization_initializer_list_ctor) {
+  using namespace script;
 
-  ConversionSequence conv = ConversionSequence::compute(listexpr, Type::String, &e);
-  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+  Engine e;
+  e.setup();
 
-  conv = ConversionSequence::compute(listexpr, Type::Int, &e);
-  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+  auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+    .getInstance({ TemplateArgument{ Type::Int } }).id();
+
+  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Function ctor = A.Constructor().params(initializer_list_int).create();
+
+  Initialization init = Initialization::compute(A.id(), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_EQ(init.initializations().size(), 3);
+  for (size_t i(0); i < init.initializations().size(); ++i)
+  {
+    ASSERT_EQ(init.initializations().at(i).kind(), Initialization::CopyInitialization);
+  }
+}
+
+TEST(Initializations, list_initialization_empty) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{ }");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Initialization init = Initialization::compute(Type::String, listexpr, &e);
+  ASSERT_FALSE(init.hasInitializations());
+  ASSERT_EQ(init.kind(), Initialization::DefaultInitialization);
+}
+
+TEST(Initializations, list_initialization_not_convertible) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto listexpr = parse_list_expr(&e, "{1, \"Hello\", 3.14}");
+  ASSERT_TRUE(listexpr->is<program::InitializerList>());
+
+  Initialization init = Initialization::compute(Type::String, listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);
+
+  init = Initialization::compute(Type::Int, listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);
 
   auto initlist = std::static_pointer_cast<program::InitializerList>(listexpr);
   initlist->elements.clear();
 
   Enum Foo = Symbol{ e.rootNamespace() }.Enum("Foo").get();
 
-  conv = ConversionSequence::compute(listexpr, Foo.id(), &e);
-  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+  init = Initialization::compute(Foo.id(), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);
 
-  conv = ConversionSequence::compute(listexpr, Type::ref(Type::Int), &e);
-  ASSERT_EQ(conv, ConversionSequence::NotConvertible());
+  init = Initialization::compute(Type::ref(Type::Int), listexpr, &e);
+  ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);
 }

@@ -44,11 +44,11 @@ std::shared_ptr<program::Expression> DefaultArgumentProcessor::generateDefaultAr
   ExpressionCompiler ec{ scp };
   auto expr = ec.generateExpression(param.defaultValue);
 
-  ConversionSequence conv = ConversionSequence::compute(expr, t, scp.engine());
-  if (conv == ConversionSequence::NotConvertible())
+  Conversion conv = Conversion::compute(expr, t, scp.engine());
+  if (conv.isInvalid())
     throw NotImplementedError{ "FunctionCompiler::generateDefaultArgument() : failed to convert default value" };
 
-  return ConversionProcessor::convert(scp.engine(), expr, t, conv);
+  return ConversionProcessor::convert(scp.engine(), expr, conv);
 }
 
 } // namespace compiler

@@ -34,47 +34,50 @@ enum QualificationAdjustment {
   ConstQualification = 1,
 };
 
-struct DerivedToBaseConversion {
-  int depth;
-  
-  static const int Shift = 16;
-  operator int() const { return depth << Shift; }
+enum class ConversionRank {
+  ExactMatch = 1,
+  Promotion = 2,
+  Conversion = 3,
+  UserDefinedConversion = 4,
+  NotConvertible = 5,
 };
+
+namespace ranking
+{
+
+template<typename T>
+ConversionRank worstRank(const std::vector<T> & elems)
+{
+  if (elems.empty())
+    return ConversionRank::ExactMatch;
+
+  ConversionRank r = elems.front().rank();
+  for (size_t i(1); i < elems.size(); ++i)
+    r = std::max(r, elems.at(i).rank());
+  return r;
+}
+
+} // namespace ranking
+
 
 class LIBSCRIPT_API StandardConversion
 {
 public:
   StandardConversion();
+  StandardConversion(const Type & src, const Type & dest);
   StandardConversion(const StandardConversion &) = default;
   ~StandardConversion() = default;
 
-  enum Flag {
-    ReferenceInitializationFlag = 1 << 24,
-    CopyInitializationFlag = 2 << 24,
-    CopyRefInitializationFlag = 3 << 24,
-    NotConvertibleFlag = 4 << 24,
-  };
-
-  enum class Rank {
-    ExactMatch = 1,
-    Promotion = 2,
-    Conversion = 3,
-    NotConvertible = 5,
-  };
-
-  StandardConversion(NumericConversion conv, QualificationAdjustment qualadjust = QualificationAdjustment::NoQualificationAdjustment);
-  StandardConversion(NumericPromotion conv, QualificationAdjustment qualadjust = QualificationAdjustment::NoQualificationAdjustment);
-  StandardConversion(DerivedToBaseConversion dbconv, QualificationAdjustment qualadjust = QualificationAdjustment::NoQualificationAdjustment);
   StandardConversion(QualificationAdjustment qualadjust);
 
   bool isNone() const;
   static StandardConversion None();
 
   bool isNarrowing() const;
-  Rank rank() const;
+  ConversionRank rank() const;
 
-  bool isCopyInitialization() const;
-  bool isReferenceInitialization() const;
+  bool isCopy() const;
+  bool isReferenceConversion() const;
 
   bool isNumericPromotion() const;
   NumericPromotion numericPromotion() const;
@@ -82,19 +85,20 @@ public:
   bool isNumericConversion() const;
   NumericConversion numericConversion() const;
 
-  bool hasQualificationConversion() const;
-  QualificationAdjustment qualificationConversion();
+  bool hasQualificationAdjustment() const;
 
   bool isDerivedToBaseConversion() const;
   int derivedToBaseConversionDepth() const;
 
+  Type srcType() const;
+  Type destType() const;
+
   StandardConversion with(QualificationAdjustment adjust) const;
 
+  static StandardConversion Copy();
+  static StandardConversion EnumToInt();
+  static StandardConversion DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust = QualificationAdjustment::NoQualificationAdjustment);
   static StandardConversion NotConvertible();
-  static StandardConversion ReferenceInitialization();
-  static StandardConversion ReferenceInitialization(DerivedToBaseConversion dbconv, QualificationAdjustment qualadjust = QualificationAdjustment::NoQualificationAdjustment);
-  static StandardConversion ReferenceInitialization(QualificationAdjustment qualadjust);
-  static StandardConversion CopyRefInitialization(StandardConversion conv);
 
   static StandardConversion compute(const Type & src, const Type & dest, Engine *e);
 
@@ -103,92 +107,54 @@ public:
   bool operator<(const StandardConversion & other) const;
 
 private:
+  StandardConversion(int val) : d(val) { }
+
+private:
   int d;
 };
 
-class LIBSCRIPT_API ListInitializationSequence;
 
-/// TODO : implement a diagnostic() method that returns error messges
-class LIBSCRIPT_API ConversionSequence
+class LIBSCRIPT_API Conversion
 {
 public:
-  ConversionSequence() = default;
-  ConversionSequence(const ConversionSequence &) = default;
-  ~ConversionSequence() = default;
-  ConversionSequence(const StandardConversion & c1, const Function & userdefinedConversion = Function{}, const StandardConversion & c2 = StandardConversion::None());
-  ConversionSequence(const std::shared_ptr<ListInitializationSequence> & listinit);
+  Conversion() = default;
+  Conversion(const Conversion &) = default;
+  ~Conversion() = default;
+  Conversion(const StandardConversion & c1, const Function & userdefinedConversion = Function{}, const StandardConversion & c2 = StandardConversion::None());
 
-  enum class Rank {
-    ExactMatch = 1,
-    Promotion = 2,
-    Conversion = 3,
-    UserDefinedConversion = 4,
-    NotConvertible = 5,
-  };
-
-  Rank rank() const;
-
-  static Rank globalRank(const std::vector<ConversionSequence> & convs);
+  ConversionRank rank() const;
 
   bool isInvalid() const;
   bool isNarrowing() const;
   bool isUserDefinedConversion() const;
-  bool isListInitialization() const;
 
-  StandardConversion conv1;
-  std::shared_ptr<ListInitializationSequence> listInitialization;
-  Function function;
-  StandardConversion conv3;
+  const StandardConversion & firstStandardConversion() const { return conv1; }
+  const Function & userDefinedConversion() const { return function; }
+  const StandardConversion & secondStandardConversion() const { return conv3; }
 
-  static ConversionSequence NotConvertible();
+  Type srcType() const;
+  Type destType() const;
 
-  static ConversionSequence compute(const Type & src, const Type & dest, Engine *engine);
-  static ConversionSequence compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine);
+  static Conversion NotConvertible();
 
-  static int comp(const ConversionSequence & a, const ConversionSequence & b);
-
-  bool operator==(const ConversionSequence & other) const;
-  inline bool operator!=(const ConversionSequence & other) const { return !((*this) == other); }
-};
-
-
-class LIBSCRIPT_API ListInitializationSequence
-{
-public:
-
-  enum Kind {
-    None = 0,
-    DefaultInitialization = 1,
-    InitializerListCreation = 2,
-    InitializerListInitialization = 3,
-    ConstructorListInitialization = 4,
-    AggregateListInitialization = 5, // currently not used
+  enum ConversionPolicy {
+    NoExplicitConversions = 0,
+    AllowExplicitConversions,
   };
 
-  ListInitializationSequence(Type t)
-    : mKind(DefaultInitialization)
-    , mType(t) {}
+  static Conversion compute(const Type & src, const Type & dest, Engine *engine, ConversionPolicy policy = NoExplicitConversions);
+  static Conversion compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine);
 
-  ListInitializationSequence(Kind k, Type t);
-  ListInitializationSequence(Kind k, Function ctor);
+  static int comp(const Conversion & a, const Conversion & b);
 
-
-  inline Kind kind() const { return mKind; }
-  inline Type destType() const { return mType; }
-  inline Function constructor() const { return mConstructor; }
-
-  std::vector<ConversionSequence> & conversions();
-  const std::vector<ConversionSequence> & conversions() const;
-
-  static int comp(const ListInitializationSequence & a, const ListInitializationSequence & b);
+  bool operator==(const Conversion & other) const;
+  inline bool operator!=(const Conversion & other) const { return !((*this) == other); }
 
 private:
-  Kind mKind;
-  Type mType;
-  Function mConstructor;
-  std::vector<ConversionSequence> mConversions;
+  StandardConversion conv1;
+  Function function;
+  StandardConversion conv3;
 };
-
 
 } // namespace script
 

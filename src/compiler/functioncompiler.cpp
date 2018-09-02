@@ -873,10 +873,10 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 
   auto retval = generate(rs->expression);
 
-  const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
+  const Conversion conv = Conversion::compute(retval, mFunction.prototype().returnType(), engine());
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
+  retval = ConversionProcessor::convert(engine(), retval, conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }
@@ -960,13 +960,14 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
       var_type = var_type.withFlag(Type::ReferenceFlag);
   }
 
-  ConversionSequence seq = ConversionSequence::compute(value, var_type, engine());
-  if (seq == ConversionSequence::NotConvertible())
+  /// TODO: use Initialization instead
+  Conversion conv = Conversion::compute(value, var_type, engine());
+  if (conv == Conversion::NotConvertible())
     throw CouldNotConvert{ dpos(init), value->type(), var_type };
 
   /// TODO : this is not optimal I believe
   // we could add copy elision
-  value = ConversionProcessor::convert(engine(), value, var_type, seq);
+  value = ConversionProcessor::convert(engine(), value, conv);
   processVariableCreation(var_type, var_decl->name->getName(), value);
 }
 

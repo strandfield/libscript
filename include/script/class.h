@@ -55,6 +55,7 @@ public:
   bool inherits(const Class & type) const;
   int inheritanceLevel(const Class & type) const;
   bool isFinal() const;
+  Class indirectBase(int n) const;
 
   bool isClosure() const;
   ClosureType toClosure() const;

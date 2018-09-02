@@ -131,7 +131,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
         StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
         if (conv == StandardConversion::NotConvertible())
           throw CannotCaptureNonCopyable{ dpos(cap.name) };
-        value = ConversionProcessor::sconvert(c->engine(), value, value->type().baseType(), conv);
+        value = ConversionProcessor::sconvert(c->engine(), value, conv);
       }
 
       capture_flags[offset] = true;
@@ -152,7 +152,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
       StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
       if (conv == StandardConversion::NotConvertible())
         throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
-      value = ConversionProcessor::sconvert(c->engine(), value, value->type().baseType(), conv);
+      value = ConversionProcessor::sconvert(c->engine(), value, conv);
       captures.push_back(Capture{ stack.at(i).name, value });
     }
   }
@@ -313,10 +313,10 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
       throw ReturnStatementWithValue{};
   }
 
-  const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
+  const Conversion conv = Conversion::compute(retval, mFunction.prototype().returnType(), engine());
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
+  retval = ConversionProcessor::convert(engine(), retval, conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }

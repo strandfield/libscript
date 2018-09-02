@@ -5,9 +5,8 @@
 #include "script/compiler/constructorcompiler.h"
 
 #include "script/compiler/compilererrors.h"
-#include "script/compiler/conversionprocessor.h"
 #include "script/compiler/expressioncompiler.h"
-#include "script/compiler/stack.h"
+#include "script/compiler/stack.h" /// TODO: we could avoid using this
 #include "script/compiler/valueconstructor.h"
 
 #include "script/ast/node.h"
@@ -15,8 +14,8 @@
 #include "script/program/statements.h"
 
 #include "script/class.h"
-#include "script/conversions.h"
 #include "script/datamember.h"
+#include "script/initialization.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
 
@@ -175,11 +174,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
 
     const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
 
-    const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-    if (conv == ConversionSequence::NotConvertible())
+    const Initialization init = Initialization::compute(dm.type, member_access, engine());
+    if (!init.isValid())
       throw DataMemberIsNotCopyable{};
 
-    members_initialization[i] = program::PushDataMember::New(ConversionProcessor::convert(engine(), member_access, dm.type, conv));
+    members_initialization[i] = program::PushDataMember::New(ValueConstructor::construct(engine(), dm.type, member_access, init));
   }
 
   std::vector<std::shared_ptr<program::Statement>> statements;
@@ -253,11 +252,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
       }
       else
       {
-        const ConversionSequence conv = ConversionSequence::compute(member_access, dm.type, engine());
-        if (conv == ConversionSequence::NotConvertible())
+        const Initialization init = Initialization::compute(dm.type, member_access, engine());
+        if (!init.isValid())
           throw DataMemberIsNotCopyable{};
 
-        member_value = ConversionProcessor::convert(engine(), member_access, dm.type, conv);
+        member_value = ValueConstructor::construct(engine(), dm.type, member_access, init);
       }
     }
 
@@ -273,12 +272,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
   return program::CompoundStatement::New(std::move(statements));
 }
 
-void ConstructorCompiler::checkNarrowingConversions(const std::vector<ConversionSequence> & convs, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
+void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
 {
-  for (size_t i(0); i < convs.size(); ++i)
+  for (size_t i(0); i < inits.size(); ++i)
   {
-    const auto & c = convs.at(i);
-    if (c.isNarrowing())
+    if (inits.at(i).isNarrowing())
       throw NarrowingConversionInBraceInitialization{ args.at(i)->type(), proto.at(i) };
   }
 }
@@ -296,8 +294,8 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructor
 {
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
@@ -309,7 +307,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstru
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getDelegateConstructor(args);
-  checkNarrowingConversions(resol.conversionSequence(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeDelegateConstructorCall(resol, args);
 }
 
@@ -327,8 +325,8 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCa
 {
   auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, ctor.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
@@ -340,7 +338,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstruct
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getParentConstructor(args);
-  checkNarrowingConversions(resol.conversionSequence(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeParentConstructorCall(resol, args);
 }
 

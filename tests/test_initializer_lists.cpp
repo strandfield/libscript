@@ -11,6 +11,7 @@
 #include "script/engine.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
+#include "script/initialization.h"
 #include "script/initializerlist.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
@@ -89,11 +90,10 @@ TEST(InitializerLists, initializer_list_creation) {
     });
 
 
-  ConversionSequence conv = ConversionSequence::compute(listexpr, ilist_int.id(), &engine);
-  ASSERT_TRUE(conv.isListInitialization());
-  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::InitializerListCreation);
-  ASSERT_EQ(conv.listInitialization->destType(), ilist_int.id());
-  ASSERT_EQ(conv.listInitialization->conversions().size(), 3);
+  Initialization init = Initialization::compute(ilist_int.id(), listexpr, &engine);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.destType(), ilist_int.id());
+  ASSERT_EQ(init.initializations().size(), 3);
 }
 
 TEST(InitializerLists, initializer_list_conversion) {
@@ -127,10 +127,9 @@ TEST(InitializerLists, initializer_list_conversion) {
   Function ctor = A.Constructor().params(Type::Int, Type::String).create();
   ctor = A.Constructor().params(ilist_int.id()).create();
 
-  ConversionSequence conv = ConversionSequence::compute(listexpr, A.id(), &engine);
-  ASSERT_TRUE(conv.isListInitialization());
-  ASSERT_TRUE(conv.listInitialization->kind() == ListInitializationSequence::InitializerListInitialization);
-  ASSERT_EQ(conv.listInitialization->destType(), A.id());
-  ASSERT_EQ(conv.listInitialization->constructor(), ctor);
-  ASSERT_EQ(conv.listInitialization->conversions().size(), 3);
+  Initialization init = Initialization::compute(A.id(), listexpr, &engine);
+  ASSERT_EQ(init.kind(), Initialization::ListInitialization);
+  ASSERT_EQ(init.destType(), A.id());
+  ASSERT_EQ(init.constructor(), ctor);
+  ASSERT_EQ(init.initializations().size(), 3);
 }

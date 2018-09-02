@@ -120,6 +120,14 @@ bool Class::isFinal() const
   return d->isFinal;
 }
 
+Class Class::indirectBase(int n) const
+{
+  if (n <= 0 || d == nullptr)
+    return *this;
+
+  return parent().indirectBase(n - 1);
+}
+
 bool Class::isClosure() const
 {
   return dynamic_cast<ClosureTypeImpl*>(d.get()) != nullptr;

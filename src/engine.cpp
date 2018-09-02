@@ -102,44 +102,38 @@ Value fundamental_conversion(const Value & src, int destType, Engine *e)
   throw std::runtime_error{ "fundamental_conversion : Implementation error" };
 }
 
-static Value apply_standard_conversion(const Value & arg, const Type &dest, const StandardConversion & conv, Engine *engine)
+static Value apply_standard_conversion(const Value & arg, const StandardConversion & conv, Engine *engine)
 {
-  if (!conv.isCopyInitialization())
+  if (conv.isReferenceConversion())
     return arg;
 
-  assert(conv.isCopyInitialization());
-
-  if (conv.isDerivedToBaseConversion() || dest.isObjectType())
+  if (conv.isCopy())
     return engine->copy(arg);
 
-  return fundamental_conversion(arg, dest.baseType().data(), engine);
+  if (conv.isDerivedToBaseConversion())
+  {
+    Class target = engine->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
+    return engine->invoke(target.copyConstructor(), { arg });
+  }
+
+  return fundamental_conversion(arg, conv.destType().baseType().data(), engine);
 }
 
-static Value apply_conversion(const Value & arg, const Type &dest, const ConversionSequence & conv, Engine *engine)
+static Value apply_conversion(const Value & arg, const Conversion & conv, Engine *engine)
 {
-  if (conv.isListInitialization())
-    throw std::runtime_error{ "Not implemented" };
-  else if (!conv.isUserDefinedConversion())
-    return apply_standard_conversion(arg, dest, conv.conv1, engine);
+  if (!conv.isUserDefinedConversion())
+    return apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
 
-  Value ret;
+  Value ret = apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
 
-  if (conv.function.isCast())
-  {
-    auto cast = conv.function.toCast();
-    ret = apply_standard_conversion(arg, cast.sourceType(), conv.conv1, engine);
-    ret = engine->invoke(cast, { ret });
-  }
-  else
-  {
-    assert(conv.function.isConstructor());
+  /// TODO : we need to define the behavior of invoking a constructor
+  // since conv.userDefinedConversion() can be a ctor
+  // Should it return the new object has it does currently
+  // or should it take an uninitialized object + the args and return void
+  // I think the second option is better and should be implemented
+  ret = engine->invoke(conv.userDefinedConversion(), { ret }); 
 
-    auto ctor = conv.function;
-    ret = apply_standard_conversion(arg, ctor.prototype().at(0), conv.conv1, engine);
-    ret = engine->invoke(ctor, { ret }); /// TODO : define behavior of invoking a constructor
-  }
-
-  return apply_standard_conversion(ret, dest, conv.conv3, engine);
+  return apply_standard_conversion(ret, conv.secondStandardConversion(), engine);
 }
 
 namespace callbacks
@@ -832,34 +826,29 @@ Value Engine::copy(const Value & val)
   throw std::runtime_error{ "Cannot copy given value" };
 }
 
-ConversionSequence Engine::conversion(const Type & src, const Type & dest)
+Conversion Engine::conversion(const Type & src, const Type & dest)
 {
-  return ConversionSequence::compute(src, dest, this);
+  return Conversion::compute(src, dest, this);
 }
 
-ConversionSequence Engine::conversion(const std::shared_ptr<program::Expression> & expr, const Type & dest)
-{
-  return ConversionSequence::compute(expr, dest, this);
-}
-
-void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Type> & types, const std::vector<ConversionSequence> & conversions)
+void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
 {
   for (size_t i(0); i < values.size(); ++i)
-    values[i] = apply_conversion(values.at(i), types.at(i), conversions.at(i), this);
+    values[i] = apply_conversion(values.at(i), conversions.at(i), this);
 }
 
 bool Engine::canCast(const Type & srcType, const Type & destType)
 {
-  return conversion(srcType, destType).rank() != ConversionSequence::Rank::NotConvertible;
+  return conversion(srcType, destType).rank() != ConversionRank::NotConvertible;
 }
 
 Value Engine::cast(const Value & val, const Type & destType)
 {
-  ConversionSequence conv = conversion(val.type(), destType);
-  if (conv == ConversionSequence::NotConvertible())
+  Conversion conv = conversion(val.type(), destType);
+  if (conv.isInvalid())
     throw std::runtime_error{ "Could not convert value to desired type" }; /// TODO : emit better diagnostic
 
-  return apply_conversion(val, destType, conv, this);
+  return apply_conversion(val, conv, this);
 }
 
 Namespace Engine::rootNamespace() const

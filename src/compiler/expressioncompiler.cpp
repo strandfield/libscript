@@ -19,6 +19,7 @@
 #include "script/datamember.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
+#include "script/initialization.h"
 #include "script/lambda.h"
 #include "script/literals.h"
 #include "script/namelookup.h"
@@ -168,12 +169,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   if (element_type == Type::InitializerList)
     throw InitializerListAsFirstArrayElement{};
 
-  std::vector<ConversionSequence> conversions;
+  std::vector<Conversion> conversions;
   conversions.reserve(args.size());
   for (const auto & arg : args)
   {
-    auto conv = ConversionSequence::compute(arg, element_type, engine());
-    if (conv == ConversionSequence::NotConvertible())
+    auto conv = Conversion::compute(arg, element_type, engine());
+    if (conv == Conversion::NotConvertible())
       throw ArrayElementNotConvertible{};
 
     conversions.push_back(conv);
@@ -183,7 +184,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   Class array_class = array_template.getInstance({ TemplateArgument{element_type} });
 
   for (size_t i(0); i < args.size(); ++i)
-    args[i] = ConversionProcessor::convert(engine(), args.at(i), element_type, conversions.at(i));
+    args[i] = ConversionProcessor::convert(engine(), args.at(i), conversions.at(i));
 
   return program::ArrayExpression::New(array_class.id(), std::move(args));
 }
@@ -243,9 +244,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
   args.push_back(obj);
   args.push_back(index);
 
-  const auto & conversions = resol.conversionSequence();
-
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), conversions);
+  ValueConstructor::prepare(engine(), args, selected.prototype(), resol.initializations());
 
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -347,8 +346,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (selected.hasImplicitObject() && object != nullptr)
     args.insert(args.begin(), object);
 
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
     return generateVirtualCall(call, selected, std::move(args));
@@ -389,8 +388,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
 
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -400,17 +399,17 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
   auto function_type = engine()->getFunctionType(functor->type());
   const Prototype & proto = function_type.prototype();
 
-  std::vector<ConversionSequence> conversions;
+  std::vector<Initialization> inits;
   for (size_t i(0); i < args.size(); ++i)
   {
     const auto & a = args.at(i);
-    ConversionSequence conv = ConversionSequence::compute(a, proto.at(i), engine());
-    if (conv == ConversionSequence::NotConvertible())
+    Initialization init = Initialization::compute(proto.at(i), a, engine());
+    if (!init.isValid())
       throw CouldNotConvert{ dpos(call->arguments.at(i)), a->type(), proto.at(i) };
-    conversions.push_back(conv);
+    inits.push_back(init);
   }
 
-  ConversionProcessor::prepare(engine(), args, proto, conversions);
+  ValueConstructor::prepare(engine(), args, proto, inits);
   return program::FunctionVariableCall::New(functor, proto.returnType(), std::move(args));
 }
 
@@ -469,8 +468,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
     throw CouldNotFindValidLiteralOperator{ dpos(udl) };
 
   Function selected = resol.selectedOverload();
-  const auto & convs = resol.conversionSequence();
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
 
   return program::FunctionCall::New(selected, std::move(args));
 }
@@ -555,9 +554,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
     throw CouldNotFindValidOperator{ dpos(operation) };
 
   Operator selected = resol.selectedOverload().toOperator();
-  const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ lhs, rhs };
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
@@ -584,9 +583,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
   else if (!Accessibility::check(caller(), selected))
     throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), selected.accessibility() };
 
-  const auto & convs = resol.conversionSequence();
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
-  ConversionProcessor::prepare(engine(), args, selected.prototype(), convs);
+  const auto & inits = resol.initializations();
+  ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   return program::FunctionCall::New(selected, std::move(args));
 }
 
@@ -602,8 +601,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpr
   if (common_type.isNull())
     throw CouldNotFindCommonType{ dpos(ce), tru->type(), fal->type() };
 
-  tru = ConversionProcessor::convert(engine(), tru, common_type, ConversionSequence::compute(tru, common_type, engine()));
-  fal = ConversionProcessor::convert(engine(), fal, common_type, ConversionSequence::compute(fal, common_type, engine()));
+  tru = ConversionProcessor::convert(engine(), tru, Conversion::compute(tru, common_type, engine()));
+  fal = ConversionProcessor::convert(engine(), fal, Conversion::compute(fal, common_type, engine()));
 
   return program::ConditionalExpression::New(con, tru, fal);
 }
