@@ -48,7 +48,6 @@ public:
   inline bool failure() const { return !success(); }
 
   Function selectedOverload() const;
-  [[deprecated("use initializations() instead")]] const std::vector<ConversionSequence> & conversionSequence() const;
   const std::vector<Initialization> & initializations() const;
 
   Function ambiguousOverload() const;
@@ -61,8 +60,8 @@ public:
     CouldNotConvertArgument,
   };
 
-  ViabilityStatus getViabilityStatus(const Function & f, std::vector<ConversionSequence> *conversions = nullptr) const;
-  ViabilityStatus getViabilityStatus(int candidate_index, std::vector<ConversionSequence> *conversions = nullptr) const;
+  ViabilityStatus getViabilityStatus(const Function & f, std::vector<Initialization> *conversions = nullptr) const;
+  ViabilityStatus getViabilityStatus(int candidate_index, std::vector<Initialization> *conversions = nullptr) const;
 
   class Arguments
   {
@@ -90,7 +89,6 @@ public:
     const std::vector<std::shared_ptr<program::Expression>> & expressions() const;
     
     int size() const;
-    ConversionSequence conversion(int argIndex, const Type & dest, Engine *engine) const;
     Initialization initialization(int argIndex, const Type & parametertype, Engine *e) const;
 
     Arguments & operator=(const Arguments & other);
@@ -111,18 +109,12 @@ public:
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
   
-  bool process2(const std::vector<Function> & candidates, const Arguments & types);
-  bool process2(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
-  bool process2(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
-
   enum OverloadComparison {
     FirstIsBetter = 1,
     SecondIsBetter = 2,
     Indistinguishable = 3,
     NotComparable = 4,
   };
-
-  static OverloadComparison compare(const Function & a, const std::vector<ConversionSequence> & conv_a, const Function & b, const std::vector<ConversionSequence> & conv_b);
 
   /// TODO: is passing an Engine* here absolutely necessary ?
   static OverloadResolution New(Engine *engine, int options = 0);
@@ -146,7 +138,6 @@ public:
 protected:
   static OverloadComparison compare(const Function & a, const std::vector<Initialization> & inits_a, const Function & b, const std::vector<Initialization> & inits_b);
 
-  void processCandidate(const Function & f, std::vector<ConversionSequence> & conversions);
   void processCandidate(const Function & f, std::vector<Initialization> & initializations);
 
   /// TODO: move elsewhere
