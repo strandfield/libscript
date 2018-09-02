@@ -887,6 +887,12 @@ void Engine::applyConversions(std::vector<script::Value> & values, const std::ve
     values[i] = apply_conversion(values.at(i), types.at(i), conversions.at(i), this);
 }
 
+void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
+{
+  for (size_t i(0); i < values.size(); ++i)
+    values[i] = apply_conversion2(values.at(i), conversions.at(i), this);
+}
+
 bool Engine::canCast(const Type & srcType, const Type & destType)
 {
   return conversion2(srcType, destType).rank() != ConversionRank::NotConvertible;

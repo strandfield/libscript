@@ -11,6 +11,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontemplate.h"
 #include "script/functiontype.h"
+#include "script/initialization.h"
 #include "script/private/template_p.h"
 #include "script/script.h"
 #include "script/templateargumentdeduction.h"
@@ -24,14 +25,13 @@
 struct MaxData : public script::UserData
 {
   script::Function less;
-  std::vector<script::Type> types;
-  std::vector<script::ConversionSequence> conversions;
+  std::vector<script::Conversion> conversions;
 
-  MaxData(const script::Function & f, const std::vector<script::ConversionSequence> & convs) :
-    less(f)
-    , conversions(convs)
+  MaxData(const script::Function & f, const std::vector<script::Initialization> & inits) 
+    : less(f)
   {
-    types = less.prototype().parameters();
+    for (const auto & i : inits)
+      conversions.push_back(i.conversion());
   }
   ~MaxData() = default;
 };
@@ -49,7 +49,7 @@ script::Value max_function(script::FunctionCall *c)
   {
     args.push_back(max);
     args.push_back(c->arg(i));
-    e->applyConversions(args, data->types, data->conversions);
+    e->applyConversions(args, data->conversions);
     script::Value is_less = e->invoke(data->less, args);
     if (is_less.toBool())
       max = c->arg(i);
@@ -129,7 +129,7 @@ std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> ma
 
   Function less = resol.selectedOverload();
 
-  return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.conversionSequence()));
+  return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.initializations()));
 }
 
 TEST(TemplateTests, call_with_no_args) {

@@ -91,6 +91,7 @@ public:
   Conversion conversion2(const Type & src, const Type & dest);
 
   void applyConversions(std::vector<script::Value> & values, const std::vector<Type> & types, const std::vector<ConversionSequence> & conversions);
+  void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions);
 
   bool canCast(const Type & srcType, const Type & destType);
   Value cast(const Value & val, const Type & type);
