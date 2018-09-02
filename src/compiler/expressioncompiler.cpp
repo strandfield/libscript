@@ -168,12 +168,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   if (element_type == Type::InitializerList)
     throw InitializerListAsFirstArrayElement{};
 
-  std::vector<ConversionSequence> conversions;
+  std::vector<Conversion> conversions;
   conversions.reserve(args.size());
   for (const auto & arg : args)
   {
-    auto conv = ConversionSequence::compute(arg, element_type, engine());
-    if (conv == ConversionSequence::NotConvertible())
+    auto conv = Conversion::compute(arg, element_type, engine());
+    if (conv == Conversion::NotConvertible())
       throw ArrayElementNotConvertible{};
 
     conversions.push_back(conv);
@@ -183,7 +183,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   Class array_class = array_template.getInstance({ TemplateArgument{element_type} });
 
   for (size_t i(0); i < args.size(); ++i)
-    args[i] = ConversionProcessor::convert(engine(), args.at(i), element_type, conversions.at(i));
+    args[i] = ConversionProcessor::convert(engine(), args.at(i), conversions.at(i));
 
   return program::ArrayExpression::New(array_class.id(), std::move(args));
 }
