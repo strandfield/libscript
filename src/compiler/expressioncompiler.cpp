@@ -19,6 +19,7 @@
 #include "script/datamember.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
+#include "script/initialization.h"
 #include "script/lambda.h"
 #include "script/literals.h"
 #include "script/namelookup.h"
@@ -398,17 +399,17 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
   auto function_type = engine()->getFunctionType(functor->type());
   const Prototype & proto = function_type.prototype();
 
-  std::vector<ConversionSequence> conversions;
+  std::vector<Initialization> inits;
   for (size_t i(0); i < args.size(); ++i)
   {
     const auto & a = args.at(i);
-    ConversionSequence conv = ConversionSequence::compute(a, proto.at(i), engine());
-    if (conv == ConversionSequence::NotConvertible())
+    Initialization init = Initialization::compute(proto.at(i), a, engine());
+    if (!init.isValid())
       throw CouldNotConvert{ dpos(call->arguments.at(i)), a->type(), proto.at(i) };
-    conversions.push_back(conv);
+    inits.push_back(init);
   }
 
-  ConversionProcessor::prepare(engine(), args, proto, conversions);
+  ValueConstructor::prepare(engine(), args, proto, inits);
   return program::FunctionVariableCall::New(functor, proto.returnType(), std::move(args));
 }
 
