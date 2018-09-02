@@ -873,10 +873,10 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 
   auto retval = generate(rs->expression);
 
-  const ConversionSequence conv = ConversionSequence::compute(retval, mFunction.prototype().returnType(), engine());
+  const Conversion conv = Conversion::compute(retval, mFunction.prototype().returnType(), engine());
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
-  retval = ConversionProcessor::convert(engine(), retval, mFunction.prototype().returnType(), conv);
+  retval = ConversionProcessor::convert(engine(), retval, conv);
 
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }
