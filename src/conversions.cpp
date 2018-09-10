@@ -13,6 +13,28 @@
 namespace script
 {
 
+/*!
+ * \class StandardConversion
+ * \brief The StandardConversion class represents a builtin conversion.
+ *
+ * Standard conversions are one of the building blocks of \t{Conversion}s.
+ * 
+ * A standard conversion can represent the following operations:
+ * \begin{list}
+ *   \li a copy
+ *   \li conversions between fundamental types
+ *   \li derived-to-base conversions
+ *   \li enum to int conversions
+ * \end{list}
+ * 
+ * Additionally, a standard conversion can hold two flags for:
+ * \begin{list}
+ *   \li conversion from non-\c{const} to \c{const}
+ *   \li reference conversions
+ * \end{list}
+ * 
+ */
+
 static const int stdconv_table[] = {
                /* bool */ /* char */ /* int */ /* float */ /* double */
   /* bool */         0,         2,        3,          4,           5,
@@ -131,11 +153,26 @@ inline static bool checkNotConvertible(const Type & src, const Type & dest)
     (dest.isReference() && src.isConst() && !dest.isConst());
 }
 
+/*!
+ * \fun StandardConversion()
+ * 
+ * Constructs a reference-conversion that, when applied to a \t Value, 
+ * has no effects.
+ */
 StandardConversion::StandardConversion()
 {
   d = gRefConvStdConv;
 }
 
+/*!
+ * \fun StandardConversion(const Type & src, const Type & dest)
+ * \param a fundamental 'source' type
+ * \param a fundamental 'dest' type
+ * 
+ * Constructs a standard conversion from two fundamental types.
+ * The input types can be references and can have different \c const
+ * qualifications.
+ */
 StandardConversion::StandardConversion(const Type & src, const Type & dest)
 {
   if (!src.isFundamentalType() || !dest.isFundamentalType())
@@ -154,12 +191,25 @@ StandardConversion::StandardConversion(const Type & src, const Type & dest)
     d |= gConstQualAdjustStdConv;
 }
 
+/*!
+ * \fun StandardConversion(QualificationAdjustment qualadjust)
+ * \param a \c const qualification adjustment
+ *
+ * Constructs a reference-conversion with the given qualification 
+ * adjustment.
+ */
 StandardConversion::StandardConversion(QualificationAdjustment qualadjust)
 {
   d = gRefConvStdConv | (gConstQualAdjustStdConv * qualadjust);
 }
 
-
+/*!
+ * \fun bool isNone() const
+ * 
+ * Returns true if this conversion is a reference-conversion 
+ * without qualification adjustment (as constructed by the default 
+ * constructor).
+ */
 bool StandardConversion::isNone() const
 {
   return d == gRefConvStdConv;
@@ -172,11 +222,24 @@ StandardConversion StandardConversion::None()
   return ret;
 }
 
+/*!
+ * \fun bool isNarrowing() const
+ *
+ * Returns true if this is a narrowing conversion.
+ * This is equivalent to \c{isNumericConversion()}.
+ */
 bool StandardConversion::isNarrowing() const
 {
   return isNumericConversion();
 }
 
+/*!
+ * \fun ConversionRank rank() const
+ *
+ * Returns the rank of this standard conversion.
+ * Note that a standard conversion never has \c UserDefinedConversion
+ * rank.
+ */
 ConversionRank StandardConversion::rank() const
 {
   if (isDerivedToBaseConversion())
@@ -187,41 +250,88 @@ ConversionRank StandardConversion::rank() const
   return conversion_ranks[d & gConvIdMask];
 }
 
+/*!
+ * \fun bool isCopy() const
+ *
+ * Returns true if this conversion is a copy (that may have a qualification 
+ * adjustment).
+ */
 bool StandardConversion::isCopy() const
 {
   return (d & gRefConvStdConv) == 0 && (d & gConvIdMask) == 0;
 }
 
+/*!
+ * \fun bool isReferenceConversion() const
+ *
+ * Returns true if this conversion is a reference conversion (that may have 
+ * a qualification adjustment).
+ */
 bool StandardConversion::isReferenceConversion() const
 {
   return d & gRefConvStdConv;
 }
 
+
+/*!
+ * \fun bool isNumericPromotion() const
+ * 
+ * Returns true if this is a conversion from a fundamental type to 
+ * another fundamental type that is able to represent a wider range 
+ * of values (e.g. \c bool to \c int).
+ */
 bool StandardConversion::isNumericPromotion() const
 {
   return numericPromotion() != NumericPromotion::NoNumericPromotion;
 }
 
+/*!
+ * \fun NumericPromotion numericPromotion() const
+ *
+ * Returns a description of this conversion as a \t NumericPromotion.
+ */
 NumericPromotion StandardConversion::numericPromotion() const
 {
   return static_cast<NumericPromotion>(conversion_categories[d & gConvIdMask] & (NumericPromotion::IntegralPromotion | NumericPromotion::FloatingPointPromotion));
 }
 
+/*!
+ * \fun bool isNumericConversion() const
+ *
+ * Returns true if this is a conversion from a fundamental type 
+ * to a smaller fundamental types (i.e. a narrowing conversion).
+ */
 bool StandardConversion::isNumericConversion() const
 {
   return numericConversion() != NumericConversion::NoNumericConversion;
 }
 
+/*!
+* \fun NumericConversion numericConversion() const
+*
+* Returns a description of this conversion as a \t NumericConversion.
+*/
 NumericConversion StandardConversion::numericConversion() const
 {
   return static_cast<NumericConversion>(conversion_categories[d & gConvIdMask] & (NumericConversion::IntegralConversion | NumericConversion::FloatingPointConversion | NumericConversion::BooleanConversion));
 }
 
+/*!
+ * \fun bool hasQualificationAdjustment() const
+ *
+ * Returns true if this conversion contains a qualifcation adjustment, 
+ * i.e. whether this conversion adds a \c const to the converted value.
+ */
 bool StandardConversion::hasQualificationAdjustment() const
 {
   return d & gConstQualAdjustStdConv;
 }
 
+/*!
+ * \fun bool isDerivedToBaseConversion() const
+ *
+ * Returns true if this conversion is a derived-to-base conversion.
+ */
 bool StandardConversion::isDerivedToBaseConversion() const
 {
   return (d & gConvIdMask) == gDerivedToBaseConv;
@@ -229,22 +339,48 @@ bool StandardConversion::isDerivedToBaseConversion() const
   //return ((d >> gDerivedToBaseConvOffset) & g8bitsMask) != 0;
 }
 
+/*!
+ * \fun int derivedToBaseConversionDepth() const
+ *
+ * If this is a derived-to-base conversion, returns the number of times 
+ * the source type is derived from the base type.
+ */
 int StandardConversion::derivedToBaseConversionDepth() const
 {
   return (d >> gDerivedToBaseConvOffset) & g8bitsMask;
 }
 
+/*!
+ * \fun Type srcType() const
+ *
+ * Returns the source type of this conversion.
+ * Note that if this conversion is a copy, a reference-conversion 
+ * or a derived-to-base conversion, this will return \c{Type::Auto}.
+ */
 Type StandardConversion::srcType() const
 {
   return stdconv_srctype_table[d & gConvIdMask];
 }
 
+/*!
+* \fun Type destType() const
+*
+* Returns the dest type of this conversion.
+* Note that if this conversion is a copy, a reference-conversion
+* or a derived-to-base conversion, this will return \c{Type::Auto}.
+*/
 Type StandardConversion::destType() const
 {
   /// TODO : should we add const-qual and ref-specifiers ?
   return stdconv_desttype_table[d & gConvIdMask];
 }
 
+/*!
+ * \fun StandardConversion with(QualificationAdjustment adjust) const
+ *
+ * Returns a copy of this conversion with an additional qualification adjustment.
+ * Note that this function cannot be used to remove an existing qualification adjustment.
+ */
 StandardConversion StandardConversion::with(QualificationAdjustment adjust) const
 {
   StandardConversion conv{ *this };
@@ -252,21 +388,42 @@ StandardConversion StandardConversion::with(QualificationAdjustment adjust) cons
   return conv;
 }
 
+/*!
+ * \fun static StandardConversion Copy()
+ *
+ * Returns a conversion representing a simple copy, without any 
+ * qualification adjustment.
+ */
 StandardConversion StandardConversion::Copy()
 {
   return StandardConversion{ 0 };
 }
 
+/*!
+ * \fun static  StandardConversion EnumToInt()
+ *
+ * Returns a conversion representing an enum-to-int conversion.
+ */
 StandardConversion StandardConversion::EnumToInt()
 {
   return StandardConversion{ gEnumToIntConversion };
 }
 
+/*!
+ * \fun static StandardConversion DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust)
+ *
+ * Returns a conversion representing a derived-to-base conversion with the given \c depth.
+ */
 StandardConversion StandardConversion::DerivedToBaseConversion(int depth, bool is_ref_conv, QualificationAdjustment adjust)
 {
   return StandardConversion{ gDerivedToBaseConv |(depth << gDerivedToBaseConvOffset) | (is_ref_conv ? gRefConvStdConv : 0) | (adjust ? gConstQualAdjustStdConv : 0) };
 }
 
+/*!
+ * \fun static StandardConversion NotConvertible()
+ *
+ * Constructs a standard conversion with rank \c{ConversionRank::NotConvertible}.
+ */
 StandardConversion StandardConversion::NotConvertible()
 {
   StandardConversion seq;
@@ -275,6 +432,17 @@ StandardConversion StandardConversion::NotConvertible()
 }
 
 
+/*!
+ * \fun static StandardConversion compute(const Type & src, const Type & dest, Engine *e)
+ *
+ * Computes, if possible, the standard conversion between \c src and \c dest; or returns 
+ * \c{NotConvertible()}.
+ *
+ * Note that unlike the constructor taking two fundamental \t Type, this function 
+ * can take arbitrary types (hence the last \t Engine parameter).
+ *
+ * This function takes into account the \c{const}-ness and \c{&}.
+ */
 StandardConversion StandardConversion::compute(const Type & src, const Type & dest, Engine *e)
 {
   if (dest.isReference() && src.isConst() && !dest.isConst())
@@ -340,6 +508,17 @@ bool StandardConversion::operator==(const StandardConversion & other) const
   return d == other.d;
 }
 
+/*!
+ * \fun bool operator<(const StandardConversion & other) const
+ *
+ * Compares two standard conversion. 
+ * This comparison is primarily used to perform overload resolution.
+ *
+ * The function first compares the two conversion's rank (with \c ExactMatch being 
+ * the smallest and \c NotConvertible the largest), than the \c{derivedToBaseConversionDepth()},
+ * than if one is a reference conversion and the other is not (reference conversion are considered 
+ * better), than the qualification adjustment (no adjustment is better than one).
+ */
 bool StandardConversion::operator<(const StandardConversion & other) const
 {
   auto this_rank = rank();
