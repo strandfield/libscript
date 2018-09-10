@@ -44,14 +44,7 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
   Engine *e = f.engine();
   const int sp = mExecutionContext->stack.size;
 
-  if (f.isConstructor())
-  {
-    assert(obj == nullptr);
-    mExecutionContext->stack.push(createObject(f.returnType()));
-  }
-  else if (f.isDestructor());
-  else
-    mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value{});
 
   if (obj)
     mExecutionContext->stack.push(*obj);
@@ -92,11 +85,7 @@ Value Interpreter::call(const Function & f, const std::vector<Value> & args)
   Engine *e = f.engine();
   const int sp = mExecutionContext->stack.size;
 
-  if (f.isConstructor())
-    mExecutionContext->stack.push(createObject(f.returnType()));
-  else if (f.isDestructor());
-  else
-    mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value{});
 
   const Prototype & proto = f.prototype();
   const int argc = args.size();
@@ -131,14 +120,7 @@ Value Interpreter::invoke(const Function & f, const Value *obj, const Value *beg
 {
   const int sp = mExecutionContext->stack.size;
   
-  if (f.isConstructor())
-  {
-    assert(obj == nullptr);
-    mExecutionContext->stack.push(createObject(f.returnType()));
-  }
-  else if (f.isDestructor());
-  else
-    mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value{});
 
   if (obj)
     mExecutionContext->stack.push(*obj);
@@ -193,11 +175,6 @@ void Interpreter::invoke(const Function & f)
   }
 }
 
-Value Interpreter::createObject(const Type & t)
-{
-  return mEngine->implementation()->buildValue(t.baseType());
-}
-
 void Interpreter::visit(const program::BreakStatement & bs) 
 {
   for (const auto & s : bs.destruction)
@@ -228,7 +205,7 @@ void Interpreter::visit(const program::ContinueStatement & cs)
 
 void Interpreter::visit(const program::InitObjectStatement & cos)
 {
-  Value & memplace = mExecutionContext->callstack.top()->returnValue();
+  Value & memplace = *mExecutionContext->callstack.top()->args().begin();
   memplace.impl()->init_object();
 }
 
@@ -272,6 +249,7 @@ void Interpreter::visit(const program::IfStatement & is)
 void Interpreter::visit(const program::PlacementStatement & placement)
 {
   const int sp = mExecutionContext->stack.size;
+  mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(eval(placement.object));
   for (const auto & arg : placement.arguments)
     mExecutionContext->stack.push(eval(arg));
@@ -285,7 +263,7 @@ void Interpreter::visit(const program::PlacementStatement & placement)
 
 void Interpreter::visit(const program::PushDataMember & ims)
 {
-  Object obj = mExecutionContext->callstack.top()->returnValue().toObject();
+  Object obj = mExecutionContext->callstack.top()->arg(0).toObject();
   auto impl = obj.impl();
   impl->attributes.push_back(eval(ims.value));
 }
@@ -394,9 +372,10 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 {
   const int sp = mExecutionContext->stack.size;
 
-  Value object = mEngine->implementation()->buildValue(call.constructor.returnType().baseType());
+  Value object = mEngine->implementation()->buildValue(call.allocate->object_type);
   mEngine->manage(object);
 
+  mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(object);
   for (const auto & arg : call.arguments)
     mExecutionContext->stack.push(eval(arg));
@@ -550,6 +529,7 @@ Value Interpreter::visit(const program::VirtualCall & vc)
   Value object = eval(vc.object);
 
   const int sp = mExecutionContext->stack.size;
+  mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(object);
   for (const auto & arg : vc.args)
     mExecutionContext->stack.push(eval(arg));

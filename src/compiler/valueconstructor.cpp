@@ -103,9 +103,10 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
   }
   else if (type.isObjectType())
   {
+    auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
-    if (!resol.process(ctors, args))
+    if (!resol.process(ctors, args, alloc))
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
 
     const Function ctor = resol.selectedOverload();
@@ -117,8 +118,8 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
         throw NarrowingConversionInBraceInitialization{ dp, args.at(i)->type(), ctor.parameter(i) };
     }
 
-    ValueConstructor::prepare(e, args, ctor.prototype(), inits);
-    return program::ConstructorCall::New(ctor, std::move(args));
+    ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
+    return program::ConstructorCall::New(ctor, alloc, std::move(args));
   }
   else
     throw NotImplementedError{ dp, "ValueConstructor::brace_construct() : type not implemented" };
@@ -145,15 +146,16 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   }
   else if (type.isObjectType())
   {
+    auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
-    if (!resol.process(ctors, args))
+    if (!resol.process(ctors, args, alloc))
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
 
     const Function ctor = resol.selectedOverload();
     const auto & inits = resol.initializations();
-    ValueConstructor::prepare(e, args, ctor.prototype(), inits);
-    return program::ConstructorCall::New(ctor, std::move(args));
+    ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
+    return program::ConstructorCall::New(ctor, alloc, std::move(args));
   }
   else
     throw NotImplementedError{ dp, "ValueConstructor::construct() : type not implemented" };
@@ -195,7 +197,7 @@ static std::shared_ptr<program::Expression> make_initializer_list(Class initaliz
 static std::shared_ptr<program::Expression> make_ctor_call(const Function & ctor, std::vector<std::shared_ptr<program::Expression>> && args, const std::vector<Initialization> & inits)
 {
   for (size_t i(0); i < args.size(); ++i)
-    args[i] = ValueConstructor::construct(ctor.engine(), ctor.parameter(i), args[i], inits.at(i));
+    args[i] = ValueConstructor::construct(ctor.engine(), ctor.parameter(i+1), args[i], inits.at(i));
   return program::ConstructorCall::New(ctor, std::move(args));
 }
 
@@ -227,9 +229,9 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   else
   {
     const Function ctor = init.constructor();
-    if (e->isInitializerListType(ctor.parameter(0)))
+    if (e->isInitializerListType(ctor.parameter(1)))
     {
-      make_initializer_list(e->getClass(ctor.parameter(0)), ilist, init.initializations());
+      make_initializer_list(e->getClass(ctor.parameter(1)), ilist, init.initializations());
       return program::ConstructorCall::New(ctor, { arg });
     }
     else
@@ -284,6 +286,12 @@ void ValueConstructor::prepare(Engine *e, std::vector<std::shared_ptr<program::E
 {
   for (size_t i(0); i < args.size(); ++i)
     args[i] = ValueConstructor::construct(e, proto.at(i), args.at(i), inits.at(i));
+}
+
+void ValueConstructor::prepare(Engine *e, std::shared_ptr<program::Expression> object, std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<Initialization> & inits)
+{
+  for (size_t i(0); i < args.size(); ++i)
+    args[i] = ValueConstructor::construct(e, proto.at(i+1), args.at(i), inits.at(i+1));
 }
 
 } // namespace compiler

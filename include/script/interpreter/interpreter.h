@@ -34,11 +34,7 @@ public:
   {
     const int sp = mExecutionContext->stack.size;
 
-    if (f.isConstructor())
-      mExecutionContext->stack.push(createObject(f.returnType()));
-    else if (f.isDestructor());
-    else
-      mExecutionContext->stack.push(Value{});
+    mExecutionContext->stack.push(Value{});
 
     for (auto it = begin; it != end; ++it)
       mExecutionContext->stack.push(*it);
@@ -56,6 +52,7 @@ public:
     assert(ctor.isConstructor());
 
     const int sp = mExecutionContext->stack.size;
+    mExecutionContext->stack.push(Value{});
     mExecutionContext->stack.push(object);
     for (auto it = begin; it != end; ++it)
       mExecutionContext->stack.push(*it);
@@ -75,7 +72,6 @@ public:
 
 protected:
   void invoke(const Function & f);
-  Value createObject(const Type & t);
 
 private:
   // StatementVisitor

@@ -169,7 +169,7 @@ Object EngineImpl::createObject(Class cla)
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
-    return engine->invoke(ctor, { });
+    return engine->invoke(ctor, { buildValue(t.withoutRef()) });
   else
   {
     switch (t.baseType().data())
@@ -547,13 +547,15 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   {
     Class cla = getClass(t);
     const auto & ctors = cla.constructors();
-    Function selected = OverloadResolution::select(ctors, args);
+    Value result = buildValue(t.withoutRef());
+    Function selected = OverloadResolution::select(ctors, args, result);
     if (selected.isNull())
       throw std::runtime_error{ "No valid constructor could be found" };
     else if (selected.isDeleted())
       throw std::runtime_error{ "The selected constructor is deleted" };
 
-    return call(selected, args);
+    d->interpreter->call(selected, &result, args.data(), args.data() + args.size());
+    return result;
   }
   else if (t.isFundamentalType())
   {
@@ -814,7 +816,7 @@ Value Engine::copy(const Value & val)
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw std::runtime_error{ "Value's type is not copy constructible." };
 
-    return invoke(copyCtor, { val });
+    return invoke(copyCtor, { buildValue(cla.id()), val });
   }
   else if (val.type().isFunctionType())
     return Value::fromFunction(val.toFunction(), val.type().baseType());

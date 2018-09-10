@@ -156,17 +156,34 @@ public:
   Value accept(ExpressionVisitor &) override;
 };
 
+struct LIBSCRIPT_API AllocateExpression : public Expression
+{
+  Type object_type;
+
+public:
+  AllocateExpression(const Type & t);
+  ~AllocateExpression() = default;
+
+  Type type() const override;
+
+  static std::shared_ptr<AllocateExpression> New(const Type & t);
+
+  Value accept(ExpressionVisitor &) override;
+};
+
 struct LIBSCRIPT_API ConstructorCall : public Expression
 {
   Function constructor;
+  std::shared_ptr<AllocateExpression> allocate;
   std::vector<std::shared_ptr<Expression>> arguments;
 
 public:
-  ConstructorCall(const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
+  ConstructorCall(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args);
   ~ConstructorCall() = default;
 
   Type type() const override;
 
+  static std::shared_ptr<ConstructorCall> New(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args);
   static std::shared_ptr<ConstructorCall> New(const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
 
   Value accept(ExpressionVisitor &) override;

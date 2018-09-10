@@ -89,7 +89,6 @@ Stack::iterator StackView::end() const
 FunctionCall::FunctionCall()
   : mIndex(0)
   , mStackIndex(0)
-  , mThisOffset(1)
   , mArgc(0)
   , flags(0)
   , ec(nullptr)
@@ -123,7 +122,7 @@ Value & FunctionCall::returnValue()
 
 Value & FunctionCall::thisObject() const
 {
-  return this->ec->stack[this->mStackIndex + this->mThisOffset];
+  return this->ec->stack[this->mStackIndex + 1];
 }
 
 Value FunctionCall::arg(int index) const
@@ -234,7 +233,6 @@ bool ExecutionContext::push(const Function & f, Value *begin, Value *end)
     fc->mCallee = f;
     fc->mArgc = std::distance(begin, end);
     fc->mStackIndex = this->stack.size;
-    fc->mThisOffset = f.isConstructor() || f.isDestructor() ? 0 : 1;
     this->stack.size += 1;
     for (auto it = begin; it != end; ++it)
     {
@@ -259,7 +257,6 @@ bool ExecutionContext::push(const Function & f, int sp)
     fc->mCallee = f;
     fc->mArgc = this->stack.size - sp - 1;
     fc->mStackIndex = sp;
-    fc->mThisOffset = f.isConstructor() || f.isDestructor() ? 0 : 1;
     fc->flags = FunctionCall::NoFlags;
     fc->ec = this;
   }

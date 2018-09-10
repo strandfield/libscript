@@ -195,11 +195,11 @@ static Initialization compute_initializer_list_conv(const Type & vartype, const 
 static Initialization compute_initializer_list_conv(const std::shared_ptr<program::Expression> & expr, const Function & ctor, Engine *engine)
 {
   assert(expr->is<program::InitializerList>());
-  assert(engine->isInitializerListType(ctor.parameter(0)));
+  assert(engine->isInitializerListType(ctor.parameter(1)));
 
   const program::InitializerList & init_list = dynamic_cast<const program::InitializerList &>(*expr);
 
-  Class initializer_list_type = engine->getClass(ctor.parameter(0));
+  Class initializer_list_type = engine->getClass(ctor.parameter(1));
   Type T = initializer_list_type.arguments().front().type;
 
   std::vector<Initialization> inits;
@@ -275,16 +275,16 @@ Initialization Initialization::compute(const Type & vartype, const std::shared_p
   // then perform overload resolution on the other ctos if needed
   for (const auto & ctor : dest_class.constructors())
   {
-    if (ctor.prototype().count() == 1 && engine->isInitializerListType(ctor.parameter(0)))
+    if (ctor.prototype().count() == 2 && engine->isInitializerListType(ctor.parameter(1)))
       return compute_initializer_list_conv(expr, ctor, engine);
 
-    if (ctor.prototype().count() != init_list.elements.size())
+    if (ctor.prototype().count() != init_list.elements.size() + 1)
       continue;
 
     inits.clear();
     for (size_t i(0); i < init_list.elements.size(); ++i)
     {
-      Initialization init = Initialization::compute(ctor.prototype().at(i), init_list.elements.at(i), engine);
+      Initialization init = Initialization::compute(ctor.prototype().at(i+1), init_list.elements.at(i), engine);
       inits.push_back(init);
       if (!init.isValid())
         break;

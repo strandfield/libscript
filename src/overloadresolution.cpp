@@ -336,6 +336,56 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
   return false;
 }
 
+bool OverloadResolution::process(const std::vector<Function> & candidates, const Arguments & arguments, const Type & obj)
+{
+  d->candidates = &candidates;
+  d->arguments = arguments;
+
+  const int argc = arguments.size();
+
+  std::vector<Initialization> initializations;
+
+  for (const auto & func : candidates)
+  {
+    initializations.clear();
+    const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
+
+    if (!func.accepts(actual_argc))
+      continue;
+
+    if (func.hasImplicitObject())
+    {
+      Conversion conv = Conversion::compute(obj, func.parameter(0), d->engine);
+      if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
+        continue;
+      initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
+    }
+
+    const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
+
+    bool ok = true;
+    for (int i(0); i < argc; ++i)
+    {
+      Initialization init = arguments.initialization(i, func.parameter(i + parameter_offset), d->engine);
+      if (init.kind() == Initialization::InvalidInitialization)
+      {
+        ok = false;
+        break;
+      }
+      initializations.push_back(init);
+    }
+
+    if (!ok)
+      continue;
+
+    processCandidate(func, initializations);
+  }
+
+  if (d->ambiguous.isNull() && !d->selected.isNull())
+    return true;
+  return false;
+}
+
 bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments)
 {
   return process(candidates, Arguments{ &arguments });
@@ -485,6 +535,10 @@ OverloadResolution OverloadResolution::New(Engine *engine, int options)
   return ret;
 }
 
+Function OverloadResolution::select(const std::vector<Function> & candidates, const std::vector<Value> & args, const Value & obj)
+{
+  return select(candidates, Arguments(&args), obj.type());
+}
 
 Function OverloadResolution::select(const std::vector<Function> & candidates, const Arguments & arguments)
 {
@@ -493,6 +547,17 @@ Function OverloadResolution::select(const std::vector<Function> & candidates, co
 
   OverloadResolution resol = OverloadResolution::New(candidates.front().engine(), NoOptions);
   if (resol.process(candidates, arguments))
+    return resol.selectedOverload();
+  return Function{};
+}
+
+Function OverloadResolution::select(const std::vector<Function> & candidates, const Arguments & types, const Type & obj)
+{
+  if (candidates.empty())
+    return Function{};
+
+  OverloadResolution resol = OverloadResolution::New(candidates.front().engine(), NoOptions);
+  if (resol.process(candidates, types, obj))
     return resol.selectedOverload();
   return Function{};
 }

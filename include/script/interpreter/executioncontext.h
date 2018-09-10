@@ -103,7 +103,6 @@ private:
   Function mCallee;
   int mIndex; // index in the callstack
   int mStackIndex; // index of return value in the callstack
-  int mThisOffset;
   int mArgc;
   int flags;
   ExecutionContext *ec;

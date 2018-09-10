@@ -43,7 +43,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->set_string(c->arg(0).toString());
+  that.impl()->set_string(c->arg(1).toString());
   return that;
 }
 
@@ -51,7 +51,7 @@ Value copy_ctor(FunctionCall *c)
 Value char_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->set_string(String{ c->arg(0).toChar() });
+  that.impl()->set_string(String{ c->arg(1).toChar() });
   return that;
 }
 

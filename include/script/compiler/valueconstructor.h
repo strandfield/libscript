@@ -43,6 +43,7 @@ public:
 
   /// TODO: maybe rename to initParameters()
   static void prepare(Engine *e, std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<Initialization> & inits);
+  static void prepare(Engine *e, std::shared_ptr<program::Expression> object, std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto, const std::vector<Initialization> & inits);
 };
 
 } // namespace compiler

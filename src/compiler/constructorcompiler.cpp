@@ -150,7 +150,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
   const Class current_class = currentClass();
 
   auto this_object = ec().implicit_object();
-  auto other_object = program::StackValue::New(1, stack()[1].type);
+  auto other_object = program::StackValue::New(2, stack()[2].type);
 
   std::shared_ptr<program::Statement> parent_ctor_call;
   if (!current_class.parent().isNull())
@@ -195,7 +195,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
   const Class obj_type = currentClass();
 
   auto this_object = ec().implicit_object();
-  auto other_object = program::StackValue::New(1, stack()[1].type);
+  auto other_object = program::StackValue::New(2, stack()[2].type);
 
   std::shared_ptr<program::Statement> parent_ctor_call;
   if (!obj_type.parent().isNull())
@@ -274,10 +274,10 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
 
 void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto)
 {
-  for (size_t i(0); i < inits.size(); ++i)
+  for (size_t i(1); i < inits.size(); ++i)
   {
     if (inits.at(i).isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ args.at(i)->type(), proto.at(i) };
+      throw NarrowingConversionInBraceInitialization{ args.at(i-1)->type(), proto.at(i) };
   }
 }
 
@@ -292,10 +292,10 @@ OverloadResolution ConstructorCompiler::getDelegateConstructor(std::vector<std::
 
 std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
+  auto object = program::StackValue::New(1, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
   const auto & inits = resol.initializations();
-  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
+  ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 
@@ -316,17 +316,17 @@ OverloadResolution ConstructorCompiler::getParentConstructor(std::vector<std::sh
 {
   const std::vector<Function> & ctors = currentClass().parent().constructors();
   OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args))
+  if (!resol.process(ctors, args, ec().implicit_object()))
     throw CouldNotFindValidBaseConstructor{};
   return resol;
 }
 
 std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  auto object = program::StackValue::New(0, Type::ref(currentClass().id()));
+  auto object = program::StackValue::New(1, Type::ref(currentClass().id()));
   Function ctor = resol.selectedOverload();
   const auto & inits = resol.initializations();
-  ValueConstructor::prepare(engine(), args, ctor.prototype(), inits);
+  ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
   return program::PlacementStatement::New(object, ctor, std::move(args));
 }
 

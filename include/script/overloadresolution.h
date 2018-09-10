@@ -105,10 +105,11 @@ public:
   diagnostic::Message emitDiagnostic() const;
 
   bool process(const std::vector<Function> & candidates, const Arguments & types);
+  bool process(const std::vector<Function> & candidates, const Arguments & types, const Type & obj);
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
-  
+
   enum OverloadComparison {
     FirstIsBetter = 1,
     SecondIsBetter = 2,
@@ -129,7 +130,10 @@ public:
     return select(candidates, Arguments(&args));
   }
 
+  static Function select(const std::vector<Function> & candidates, const std::vector<Value> & args, const Value & obj);
+
   static Function select(const std::vector<Function> & candidates, const Arguments & types);
+  static Function select(const std::vector<Function> & candidates, const Arguments & types, const Type & obj);
   static Operator select(const std::vector<Function> & candidates, const Type & lhs, const Type & rhs);
 
 

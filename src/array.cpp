@@ -38,7 +38,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  Array other = c->arg(0).toArray();
+  Array other = c->arg(1).toArray();
   other.detach();
   that.impl()->set_array(other);
   return that;
@@ -51,7 +51,7 @@ Value size_ctor(FunctionCall *c)
 
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
 
-  const int size = c->arg(0).toInt();
+  const int size = c->arg(1).toInt();
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
   array_impl->resize(size);
 

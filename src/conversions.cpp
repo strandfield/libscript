@@ -560,13 +560,13 @@ static Conversion select_converting_constructor(const Type & src, const std::vec
 
   for (const auto & c : ctors)
   {
-    if (c.prototype().count() != 1)
+    if (c.prototype().count() != 2)
       continue;
 
     if (c.isExplicit() && policy == Conversion::NoExplicitConversions)
       continue;
 
-    StandardConversion first_conversion = StandardConversion::compute(src, c.prototype().at(0), engine);
+    StandardConversion first_conversion = StandardConversion::compute(src, c.prototype().at(1), engine);
     if (first_conversion == StandardConversion::NotConvertible())
       continue;
 
@@ -670,7 +670,7 @@ Type Conversion::srcType() const
   if (function.isNull())
     return conv1.srcType();
   else if (function.isConstructor())
-    return function.parameter(0).baseType();
+    return function.parameter(1).baseType();
 
   assert(function.isCast());
   if (!conv3.isNone())

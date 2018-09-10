@@ -303,7 +303,7 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
   task.lexpr = le;
   task.scope = ec.scope();
 
-  const int first_capturable = ec.caller().isDestructor() || ec.caller().isConstructor() ? 0 : 1;
+  const int first_capturable = 1;
   LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
 
   LambdaCompiler compiler{ fcomp_->engine() };
@@ -457,7 +457,7 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 
 bool FunctionCompiler::canUseThis() const
 {
-  return mFunction.hasImplicitObject() || mFunction.isConstructor() || mFunction.isDestructor();
+  return mFunction.hasImplicitObject();
 }
 
 void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp)

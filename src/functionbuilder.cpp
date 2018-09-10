@@ -118,7 +118,7 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
   this->proto.setReturnType(Type::Void);
 
   if(k == Function::Constructor)
-    this->proto.setReturnType(Type::cref(cla.id())); /// TODO: make return void instead
+    this->proto = Prototype{ Type::Void, Type::ref(cla.id() | Type::ThisFlag) }; /// TODO : should it be a const-ref or just a ref ?
   else if(k == Function::Destructor)
     this->proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
   else

@@ -36,15 +36,15 @@ TEST(ClassTest, builder_functions) {
   Function ctor_1 = A.Constructor().params(Type::Int).create();
   ASSERT_TRUE(ctor_1.isConstructor());
   ASSERT_EQ(ctor_1.memberOf(), A);
-  ASSERT_EQ(ctor_1.prototype().count(), 1);
-  ASSERT_EQ(ctor_1.parameter(0), Type::Int);
+  ASSERT_EQ(ctor_1.prototype().count(), 2);
+  ASSERT_EQ(ctor_1.parameter(1), Type::Int);
   ASSERT_FALSE(ctor_1.isExplicit());
 
   Function ctor_2 = A.Constructor().setExplicit().params(Type::Boolean).create();
   ASSERT_TRUE(ctor_2.isConstructor());
   ASSERT_EQ(ctor_2.memberOf(), A);
-  ASSERT_EQ(ctor_2.prototype().count(), 1);
-  ASSERT_EQ(ctor_2.parameter(0), Type::Boolean);
+  ASSERT_EQ(ctor_2.prototype().count(), 2);
+  ASSERT_EQ(ctor_2.parameter(1), Type::Boolean);
   ASSERT_TRUE(ctor_2.isExplicit());
 
   ASSERT_EQ(A.constructors().size(), 4);

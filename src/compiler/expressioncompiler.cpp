@@ -138,9 +138,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::implicit_object() const
   /// TODO : add correct const-qualification
   if (caller().isNull())
     return nullptr;
-  if (caller().isDestructor() || caller().isConstructor())
-    return program::StackValue::New(0, Type::ref(caller().memberOf().id()));
-  else if(caller().hasImplicitObject())
+  if(caller().hasImplicitObject())
     return program::StackValue::New(1, Type::ref(caller().memberOf().id()));
   return nullptr;
 }

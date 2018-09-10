@@ -157,21 +157,21 @@ Name ConstructorImpl::get_name() const
 
 bool ConstructorImpl::is_default_ctor() const
 {
-  return this->prototype.count() == 0;
+  return this->prototype.count() == 1;
 }
 
 bool ConstructorImpl::is_copy_ctor() const
 {
-  if (this->prototype.count() != 1)
+  if (this->prototype.count() != 2)
     return false;
-  return this->prototype.at(0) == Type::cref(getClass().id());
+  return this->prototype.at(1) == Type::cref(getClass().id());
 }
 
 bool ConstructorImpl::is_move_ctor() const
 {
-  if (this->prototype.count() != 1)
+  if (this->prototype.count() != 2)
     return false;
-  return this->prototype.at(0) == Type::rref(getClass().id());
+  return this->prototype.at(1) == Type::rref(getClass().id());
 }
 
 DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionImpl::flag_type f)
@@ -384,7 +384,7 @@ bool Function::isSpecial() const
 
 bool Function::hasImplicitObject() const
 {
-  return isNonStaticMemberFunction() && !isConstructor();
+  return isNonStaticMemberFunction();
 }
 
 Class Function::memberOf() const

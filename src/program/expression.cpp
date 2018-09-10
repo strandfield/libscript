@@ -9,6 +9,11 @@ namespace script
 namespace program
 {
 
+Value AllocateExpression::accept(ExpressionVisitor &)
+{
+  throw std::runtime_error{ "AllocateExpression::accept() should never be called" };
+}
+
 Value ArrayExpression::accept(ExpressionVisitor & visitor)
 {
   return visitor.visit(*this);
@@ -253,8 +258,27 @@ std::shared_ptr<ConditionalExpression> ConditionalExpression::New(const std::sha
 
 
 
-ConstructorCall::ConstructorCall(const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
+AllocateExpression::AllocateExpression(const Type & t)
+  : object_type(t)
+{
+
+}
+
+Type AllocateExpression::type() const
+{
+  return object_type;
+}
+
+std::shared_ptr<AllocateExpression> AllocateExpression::New(const Type & t)
+{
+  return std::make_shared<AllocateExpression>(t);
+}
+
+
+
+ConstructorCall::ConstructorCall(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args)
   : constructor(ctor)
+  , allocate(alloc)
   , arguments(std::move(args))
 {
 
@@ -262,13 +286,17 @@ ConstructorCall::ConstructorCall(const Function & ctor, std::vector<std::shared_
 
 Type ConstructorCall::type() const
 {
-  /// TODO : is that correct, should we remove const-ref ?
-  return constructor.returnType();
+  return allocate->object_type;
+}
+
+std::shared_ptr<ConstructorCall> ConstructorCall::New(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args)
+{
+  return std::make_shared<ConstructorCall>(ctor, alloc, std::move(args));
 }
 
 std::shared_ptr<ConstructorCall> ConstructorCall::New(const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
 {
-  return std::make_shared<ConstructorCall>(ctor, std::move(args));
+  return std::make_shared<ConstructorCall>(ctor, program::AllocateExpression::New(ctor.parameter(0).baseType()), std::move(args));
 }
 
 

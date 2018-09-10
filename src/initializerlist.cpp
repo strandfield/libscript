@@ -36,7 +36,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  InitializerList other = c->arg(0).toInitializerList();
+  InitializerList other = c->arg(1).toInitializerList();
   self.impl()->set_initializer_list(other);
   return self;
 }
@@ -97,7 +97,7 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  self.impl()->set_initializer_list(c->arg(0).impl()->get_initializer_list());
+  self.impl()->set_initializer_list(c->arg(1).impl()->get_initializer_list());
   return self;
 }
 
