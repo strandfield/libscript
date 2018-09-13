@@ -63,6 +63,8 @@ private:
   FunctionTemplateProcessor default_templates_;
   FunctionTemplateProcessor *templates_;
 
+  std::shared_ptr<program::Expression> implicit_object_;
+
 public:
   ExpressionCompiler();
   ExpressionCompiler(const Scope & scp);
@@ -71,7 +73,7 @@ public:
   inline void setScope(const Scope & scp) { scope_ = scp; }
 
   inline const Function & caller() const { return caller_; }
-  inline void setCaller(const Function & func) { caller_ = func; }
+  void setCaller(const Function & func);
   
   inline Engine* engine() const { return scope_.engine(); }
 
@@ -88,7 +90,7 @@ public:
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);
   void generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & in, std::vector<std::shared_ptr<program::Expression>> & out);
 
-  std::shared_ptr<program::Expression> implicit_object() const;
+  inline const std::shared_ptr<program::Expression> & implicit_object() const { return implicit_object_; }
 
 protected:
   // diagnostics related (hopefully this is temporary)

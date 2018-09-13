@@ -55,6 +55,18 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   variable_ = &default_variable_;
 }
 
+void ExpressionCompiler::setCaller(const Function & func)
+{
+  caller_ = func;
+
+  /// TODO : is this correct in the body of a Lambda ?
+  /// TODO : add correct const-qualification
+  if (caller_.isNull() || !caller_.isNonStaticMemberFunction())
+    implicit_object_ = nullptr;
+  else
+    implicit_object_ = program::StackValue::New(1, Type::ref(caller_.memberOf().id()));
+}
+
 void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
 {
   templates_ = &ftp;
@@ -130,17 +142,6 @@ std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_t
   }
 
   return result;
-}
-
-std::shared_ptr<program::Expression> ExpressionCompiler::implicit_object() const
-{
-  /// TODO : is this correct in the body of a Lambda ?
-  /// TODO : add correct const-qualification
-  if (caller().isNull())
-    return nullptr;
-  if(caller().hasImplicitObject())
-    return program::StackValue::New(1, Type::ref(caller().memberOf().id()));
-  return nullptr;
 }
 
 std::vector<std::shared_ptr<program::Expression>> ExpressionCompiler::generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions)
