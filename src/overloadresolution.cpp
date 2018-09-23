@@ -16,6 +16,79 @@
 namespace script
 {
 
+struct ORInputs
+{
+public:
+  ORInputs();
+  ORInputs(const ORInputs &) = delete;
+  ~ORInputs() = default;
+
+  inline bool is_null() const { return this->kind == OverloadResolution::NullInputs; }
+
+  void set(const std::vector<Type> & types_)
+  {
+    kind = OverloadResolution::TypeInputs;
+    types = &types_;
+  }
+
+  void set(const std::vector<Value> & vals)
+  {
+    kind = OverloadResolution::ValueInputs;
+    values = &vals;
+  }
+
+  void set(const std::vector<std::shared_ptr<program::Expression>> & expr)
+  {
+    kind = OverloadResolution::ExpressionInputs;
+    expressions = &expr;
+  }
+
+  int size() const
+  {
+    switch (kind)
+    {
+    case OverloadResolution::TypeInputs:
+      return types->size();
+    case OverloadResolution::ValueInputs:
+      return values->size();
+    case OverloadResolution::ExpressionInputs:
+      return expressions->size();
+    }
+
+    return 0;
+  }
+
+  Initialization initialization(int argIndex, const Type & parametertype, Engine *e) const
+  {
+    switch (kind)
+    {
+    case OverloadResolution::TypeInputs:
+      return Initialization::compute(parametertype, types->at(argIndex), e, Initialization::CopyInitialization);
+    case OverloadResolution::ValueInputs:
+      return Initialization::compute(parametertype, values->at(argIndex).type(), e, Initialization::CopyInitialization);
+    case OverloadResolution::ExpressionInputs:
+      return Initialization::compute(parametertype, expressions->at(argIndex), e);
+    }
+
+    return {};
+  }
+
+  int kind;
+  const std::vector<Type> *types;
+  const std::vector<Value> *values;
+  const std::vector<std::shared_ptr<program::Expression>> *expressions;
+};
+
+ORInputs::ORInputs()
+  : kind(OverloadResolution::NullInputs)
+  , types(nullptr)
+  , values(nullptr)
+  , expressions(nullptr)
+{
+
+}
+
+
 struct ORCandidate
 {
   Function function;
@@ -48,8 +121,9 @@ struct OverloadResolutionImpl
   Engine *engine;
   int options;
   std::vector<Function> const *candidates;
-  OverloadResolution::Arguments arguments;
   std::shared_ptr<program::Expression> implicit_object;
+
+  ORInputs inputs;
 
   ORCandidate selected_candidate;
   ORCandidate ambiguous_candidate;
@@ -63,11 +137,94 @@ struct OverloadResolutionImpl
 
   }
 
+  bool processOverloadResolution();
+  bool processORWithoutObject(int nbIgnored);
+
   static OverloadResolution::OverloadComparison compare(const ORCandidate & a, const ORCandidate & b);
   void processCurrentCandidate();
 };
 
+bool OverloadResolutionImpl::processOverloadResolution()
+{
+  if (implicit_object == nullptr)
+    return processORWithoutObject(0);
 
+  const int argc = inputs.size();
+
+  for (const auto & func : *candidates)
+  {
+    current_candidate.set(func);
+    const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
+
+    if (!func.accepts(actual_argc))
+      continue;
+
+    if (func.hasImplicitObject())
+    {
+      Conversion conv = Conversion::compute(implicit_object->type(), func.parameter(0), engine);
+      if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
+        continue;
+      current_candidate.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
+    }
+
+    const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
+
+    bool ok = true;
+    for (int i(0); i < argc; ++i)
+    {
+      Initialization init = inputs.initialization(i, func.parameter(i + parameter_offset), engine);
+      if (init.kind() == Initialization::InvalidInitialization)
+      {
+        ok = false;
+        break;
+      }
+      current_candidate.initializations.push_back(init);
+    }
+
+    if (!ok)
+      continue;
+
+    processCurrentCandidate();
+  }
+
+  if (ambiguous_candidate.function.isNull() && !selected_candidate.function.isNull())
+    return true;
+  return false;
+}
+
+bool OverloadResolutionImpl::processORWithoutObject(int nbIgnored)
+{
+  const int argc = inputs.size() + nbIgnored;
+
+  for (const auto & func : *candidates)
+  {
+    current_candidate.set(func);
+
+    if (!func.accepts(argc))
+      continue;
+
+    bool ok = true;
+    for (int i(nbIgnored); i < argc; ++i)
+    {
+      Initialization init = inputs.initialization(i - nbIgnored, func.parameter(i), engine);
+      if (init.kind() == Initialization::InvalidInitialization)
+      {
+        ok = false;
+        break;
+      }
+      current_candidate.initializations.push_back(init);
+    }
+
+    if (!ok)
+      continue;
+
+    processCurrentCandidate();
+  }
+
+  if (ambiguous_candidate.function.isNull() && !selected_candidate.function.isNull())
+    return true;
+  return false;
+}
 
 OverloadResolution::OverloadComparison OverloadResolutionImpl::compare(const ORCandidate & a, const ORCandidate & b)
 {
@@ -150,90 +307,6 @@ void OverloadResolutionImpl::processCurrentCandidate()
 }
 
 
-OverloadResolution::Arguments::Arguments()
-  : mTypes(nullptr)
-  , mValues(nullptr)
-  , mExpressions(nullptr)
-{
-
-}
-
-OverloadResolution::Arguments::Arguments(const std::vector<Type> *types)
-  : mTypes(types)
-  , mValues(nullptr)
-  , mExpressions(nullptr)
-{
-
-}
-
-OverloadResolution::Arguments::Arguments(const std::vector<Value> *values)
-  : mTypes(nullptr)
-  , mValues(values)
-  , mExpressions(nullptr)
-{
-
-}
-
-OverloadResolution::Arguments::Arguments(const std::vector<std::shared_ptr<program::Expression>> *exprs)
-  : mTypes(nullptr)
-  , mValues(nullptr)
-  , mExpressions(exprs)
-{
-
-}
-
-OverloadResolution::Arguments::Kind OverloadResolution::Arguments::kind() const
-{
-  if (mTypes != nullptr)
-    return TypeArguments;
-  else if (mValues != nullptr)
-    return ValueArguments;
-  else if (mExpressions != nullptr)
-    return ExpressionArguments;
-  return Null;
-}
-
-const std::vector<Type> & OverloadResolution::Arguments::types() const
-{
-  return *mTypes;
-}
-
-const std::vector<Value> & OverloadResolution::Arguments::values() const
-{
-  return *mValues;
-}
-
-const std::vector<std::shared_ptr<program::Expression>> & OverloadResolution::Arguments::expressions() const
-{
-  return *mExpressions;
-}
-
-int OverloadResolution::Arguments::size() const
-{
-  if (mTypes != nullptr)
-    return mTypes->size();
-  else if (mValues != nullptr)
-    return mValues->size();
-  return mExpressions->size();
-}
-
-Initialization OverloadResolution::Arguments::initialization(int argIndex, const Type & parametertype, Engine *engine) const
-{
-  if (mTypes != nullptr)
-    return Initialization::compute(parametertype, mTypes->at(argIndex), engine, Initialization::CopyInitialization);
-  else if (mValues != nullptr)
-    return Initialization::compute(parametertype, mValues->at(argIndex).type(), engine, Initialization::CopyInitialization);
-  return Initialization::compute(parametertype, mExpressions->at(argIndex), engine);
-}
-
-OverloadResolution::Arguments & OverloadResolution::Arguments::operator=(const Arguments & other)
-{
-  this->mTypes = other.mTypes;
-  this->mValues = other.mValues;
-  this->mExpressions = other.mExpressions;
-  return (*this);
-}
-
 
 OverloadResolution::OverloadResolution()
   : d(nullptr)
@@ -294,7 +367,7 @@ OverloadResolution::ViabilityStatus OverloadResolution::getViabilityStatus(const
   conversions->clear();
 
   const int implicit_object_offset = (f.hasImplicitObject() && d->implicit_object != nullptr) ? 1 : 0;
-  const int argc = d->arguments.size() + implicit_object_offset;
+  const int argc = d->inputs.size() + implicit_object_offset;
 
   if (!f.accepts(argc))
     return IncorrectParameterCount;
@@ -309,7 +382,7 @@ OverloadResolution::ViabilityStatus OverloadResolution::getViabilityStatus(const
 
   for (int i(0); i < argc; ++i)
   {
-    Initialization ini = d->arguments.initialization(i, f.parameter(i + implicit_object_offset), d->engine);
+    Initialization ini = d->inputs.initialization(i, f.parameter(i + implicit_object_offset), d->engine);
     conversions->push_back(ini);
     if (!ini.isValid())
       return CouldNotConvertArgument;
@@ -323,9 +396,24 @@ OverloadResolution::ViabilityStatus OverloadResolution::getViabilityStatus(int c
   return getViabilityStatus(d->candidates->at(candidate_index), conversions);
 }
 
-const OverloadResolution::Arguments & OverloadResolution::arguments() const
+OverloadResolution::InputKind OverloadResolution::inputKind() const
 {
-  return d->arguments;
+  return static_cast<InputKind>(d->inputs.kind);
+}
+
+const std::vector<Type> & OverloadResolution::typeInputs() const
+{
+  return *(d->inputs.types);
+}
+
+const std::vector<Value> & OverloadResolution::valueInputs() const
+{
+  return *(d->inputs.values);
+}
+
+const std::vector<std::shared_ptr<program::Expression>> & OverloadResolution::expressionInputs() const
+{
+  return *(d->inputs.expressions);
 }
 
 const std::shared_ptr<program::Expression> & OverloadResolution::implicit_object() const
@@ -354,7 +442,7 @@ diagnostic::Message OverloadResolution::emitDiagnostic() const
     auto status = getViabilityStatus(f, &paraminits);
     write_prototype(diag, f);
     if (status == IncorrectParameterCount)
-      diag << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << d->arguments.size() << " were provided";
+      diag << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << d->inputs.size() << " were provided";
     else if(status == CouldNotConvertArgument)
       diag << "\n" << "Could not convert argument " << paraminits.size();
     diag << "\n";
@@ -406,97 +494,26 @@ void OverloadResolution::write_prototype(diagnostic::MessageBuilder & diag, cons
 
 bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<Type> & types)
 {
-  return process(candidates, Arguments{ &types });
-}
-
-bool OverloadResolution::process(const std::vector<Function> & candidates, const Arguments & arguments)
-{
   d->candidates = &candidates;
-  d->arguments = arguments;
   d->implicit_object = nullptr;
-
-  const int argc = arguments.size();
-
-  for (const auto & func : candidates)
-  {
-    d->current_candidate.set(func);
-    if (!func.accepts(argc))
-      continue;
-
-    bool ok = true;
-    for (int i(0); i < argc; ++i)
-    {
-      Initialization init = arguments.initialization(i, func.parameter(i), d->engine);
-      d->current_candidate.initializations.push_back(init);
-      if (init.kind() == Initialization::InvalidInitialization)
-      {
-        ok = false;
-        break;
-      }
-    }
-
-    if (!ok)
-      continue;
-
-    d->processCurrentCandidate();
-  }
-
-  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
-    return true;
-  return false;
+  d->inputs.set(types);
+  return d->processOverloadResolution();
 }
 
-bool OverloadResolution::process(const std::vector<Function> & candidates, const Arguments & arguments, const Type & obj)
+bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<Value> & values)
 {
   d->candidates = &candidates;
-  d->arguments = arguments;
-
-  const int argc = arguments.size();
-
-  for (const auto & func : candidates)
-  {
-    d->current_candidate.set(func);
-    const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
-
-    if (!func.accepts(actual_argc))
-      continue;
-
-    if (func.hasImplicitObject())
-    {
-      Conversion conv = Conversion::compute(obj, func.parameter(0), d->engine);
-      if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
-        continue;
-      d->current_candidate.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
-    }
-
-    const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
-
-    bool ok = true;
-    for (int i(0); i < argc; ++i)
-    {
-      Initialization init = arguments.initialization(i, func.parameter(i + parameter_offset), d->engine);
-      if (init.kind() == Initialization::InvalidInitialization)
-      {
-        ok = false;
-        break;
-      }
-      d->current_candidate.initializations.push_back(init);
-    }
-
-    if (!ok)
-      continue;
-
-    d->processCurrentCandidate();
-  }
-
-  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
-    return true;
-  return false;
+  d->implicit_object = nullptr;
+  d->inputs.set(values);
+  return d->processOverloadResolution();
 }
 
 bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments)
 {
-  return process(candidates, Arguments{ &arguments });
+  d->candidates = &candidates;
+  d->implicit_object = nullptr;
+  d->inputs.set(arguments);
+  return d->processOverloadResolution();
 }
 
 bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object)
@@ -505,50 +522,19 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
     return process(candidates, arguments);
 
   d->candidates = &candidates;
-  d->arguments = Arguments(&arguments);
   d->implicit_object = object;
+  d->inputs.set(arguments);
+  
+  return d->processOverloadResolution();
+}
 
-  const int argc = arguments.size();
-
-  for (const auto & func : candidates)
-  {
-    d->current_candidate.set(func);
-    const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
-
-    if (!func.accepts(actual_argc))
-      continue;
-
-    if (func.hasImplicitObject())
-    {
-      Conversion conv = Conversion::compute(object->type(), func.parameter(0), d->engine);
-      if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
-        continue;
-      d->current_candidate.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
-    }
-
-    const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
-
-    bool ok = true;
-    for (int i(0); i < argc; ++i)
-    {
-      Initialization init = Initialization::compute(func.parameter(i + parameter_offset), arguments.at(i), d->engine);
-      if (init.kind() == Initialization::InvalidInitialization)
-      {
-        ok = false;
-        break;
-      }
-      d->current_candidate.initializations.push_back(init);
-    }
-
-    if (!ok)
-      continue;
-
-    d->processCurrentCandidate();
-  }
-
-  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
-    return true;
-  return false;
+bool OverloadResolution::processConstructors(const std::vector<Function> & candidates, const std::vector<Value> & values)
+{
+  d->candidates = &candidates;
+  d->implicit_object = nullptr;
+  d->inputs.set(values);
+  const int nbIgnored = 1;
+  return d->processORWithoutObject(nbIgnored);
 }
 
 OverloadResolution OverloadResolution::New(Engine *engine, int options)
@@ -558,42 +544,37 @@ OverloadResolution OverloadResolution::New(Engine *engine, int options)
   return ret;
 }
 
-Function OverloadResolution::select(const std::vector<Function> & candidates, const std::vector<Value> & args, const Value & obj)
-{
-  return select(candidates, Arguments(&args), obj.type());
-}
-
-Function OverloadResolution::select(const std::vector<Function> & candidates, const Arguments & arguments)
+Function OverloadResolution::select(const std::vector<Function> & candidates, const std::vector<Type> & types)
 {
   if (candidates.empty())
     return Function{};
 
   OverloadResolution resol = OverloadResolution::New(candidates.front().engine(), NoOptions);
-  if (resol.process(candidates, arguments))
+  if (resol.process(candidates, types))
     return resol.selectedOverload();
   return Function{};
 }
 
-Function OverloadResolution::select(const std::vector<Function> & candidates, const Arguments & types, const Type & obj)
+Function OverloadResolution::select(const std::vector<Function> & candidates, const std::vector<Value> & args)
 {
   if (candidates.empty())
     return Function{};
 
   OverloadResolution resol = OverloadResolution::New(candidates.front().engine(), NoOptions);
-  if (resol.process(candidates, types, obj))
+  if (resol.process(candidates, args))
     return resol.selectedOverload();
   return Function{};
 }
 
-Operator OverloadResolution::select(const std::vector<Function> & candidates, const Type & lhs, const Type & rhs)
+Function OverloadResolution::selectConstructor(const std::vector<Function> & candidates, const std::vector<Value> & args)
 {
   if (candidates.empty())
-    return Operator{};
+    return Function{};
 
   OverloadResolution resol = OverloadResolution::New(candidates.front().engine(), NoOptions);
-  if (resol.process(candidates, std::vector<Type>{lhs, rhs}))
-    return resol.selectedOverload().toOperator();
-  return Operator{};
+  if (resol.processConstructors(candidates, args))
+    return resol.selectedOverload();
+  return Function{};
 }
 
 } // namespace script

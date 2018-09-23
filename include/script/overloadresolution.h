@@ -63,52 +63,28 @@ public:
   ViabilityStatus getViabilityStatus(const Function & f, std::vector<Initialization> *conversions = nullptr) const;
   ViabilityStatus getViabilityStatus(int candidate_index, std::vector<Initialization> *conversions = nullptr) const;
 
-  class Arguments
-  {
-  public:
-    Arguments();
-    Arguments(const std::vector<Type> *types);
-    Arguments(const std::vector<Value> *values);
-    Arguments(const std::vector<std::shared_ptr<program::Expression>> *exprs);
-    Arguments(const Arguments &) = default;
-    ~Arguments() = default;
-
-    inline bool is_null() const { return mTypes == nullptr && mValues == nullptr && mExpressions == nullptr; }
-
-    enum Kind {
-      Null = 0,
-      TypeArguments,
-      ValueArguments,
-      ExpressionArguments,
-    };
-
-    Kind kind() const;
-
-    const std::vector<Type> & types() const;
-    const std::vector<Value> & values() const;
-    const std::vector<std::shared_ptr<program::Expression>> & expressions() const;
-    
-    int size() const;
-    Initialization initialization(int argIndex, const Type & parametertype, Engine *e) const;
-
-    Arguments & operator=(const Arguments & other);
-
-  private:
-    const std::vector<Type> *mTypes;
-    const std::vector<Value> *mValues;
-    const std::vector<std::shared_ptr<program::Expression>> *mExpressions;
+  enum InputKind {
+    NullInputs = 0,
+    TypeInputs,
+    ValueInputs,
+    ExpressionInputs,
   };
 
-  const Arguments & arguments() const;
+  InputKind inputKind() const;
+  const std::vector<Type> & typeInputs() const;
+  const std::vector<Value> & valueInputs() const;
+  const std::vector<std::shared_ptr<program::Expression>> & expressionInputs() const;
+
   const std::shared_ptr<program::Expression> & implicit_object() const;
 
   diagnostic::Message emitDiagnostic() const;
 
-  bool process(const std::vector<Function> & candidates, const Arguments & types);
-  bool process(const std::vector<Function> & candidates, const Arguments & types, const Type & obj);
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
+  bool process(const std::vector<Function> & candidates, const std::vector<Value> & values);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments);
   bool process(const std::vector<Function> & candidates, const std::vector<std::shared_ptr<program::Expression>> & arguments, const std::shared_ptr<program::Expression> & object);
+
+  bool processConstructors(const std::vector<Function> & candidates, const std::vector<Value> & values);
 
   enum OverloadComparison {
     FirstIsBetter = 1,
@@ -120,22 +96,9 @@ public:
   /// TODO: is passing an Engine* here absolutely necessary ?
   static OverloadResolution New(Engine *engine, int options = 0);
 
-  static Function select(const std::vector<Function> & candidates, const std::vector<Type> & types)
-  {
-    return select(candidates, Arguments(&types));
-  }
-
-  inline static Function select(const std::vector<Function> & candidates, const std::vector<Value> & args)
-  {
-    return select(candidates, Arguments(&args));
-  }
-
-  static Function select(const std::vector<Function> & candidates, const std::vector<Value> & args, const Value & obj);
-
-  static Function select(const std::vector<Function> & candidates, const Arguments & types);
-  static Function select(const std::vector<Function> & candidates, const Arguments & types, const Type & obj);
-  static Operator select(const std::vector<Function> & candidates, const Type & lhs, const Type & rhs);
-
+  static Function select(const std::vector<Function> & candidates, const std::vector<Type> & types);
+  static Function select(const std::vector<Function> & candidates, const std::vector<Value> & args);
+  static Function selectConstructor(const std::vector<Function> & candidates, const std::vector<Value> & args);
 
   OverloadResolution & operator=(const OverloadResolution & other) = default;
 

@@ -547,13 +547,13 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   {
     Class cla = getClass(t);
     const auto & ctors = cla.constructors();
-    Value result = buildValue(t.withoutRef());
-    Function selected = OverloadResolution::select(ctors, args, result);
+    Function selected = OverloadResolution::selectConstructor(ctors, args);
     if (selected.isNull())
       throw std::runtime_error{ "No valid constructor could be found" };
     else if (selected.isDeleted())
       throw std::runtime_error{ "The selected constructor is deleted" };
 
+    Value result = buildValue(t.withoutRef());
     d->interpreter->call(selected, &result, args.data(), args.data() + args.size());
     return result;
   }

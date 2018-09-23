@@ -108,10 +108,10 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
   resol.process(overloads, types);
   ASSERT_FALSE(resol.success());
 
-  ASSERT_EQ(resol.arguments().kind(), OverloadResolution::Arguments::TypeArguments);
-  ASSERT_EQ(resol.arguments().size(), 2);
-  ASSERT_EQ(resol.arguments().types().back(), Type::Float);
- 
+  ASSERT_EQ(resol.inputKind(), OverloadResolution::TypeInputs);
+  ASSERT_EQ(resol.typeInputs().size(), 2);
+  ASSERT_EQ(resol.typeInputs().back(), Type::Float);
+
   diagnostic::Message mssg = resol.emitDiagnostic();
   //std::cout << mssg.to_string() << std::endl;
   ASSERT_TRUE(mssg.message().find("expects 1 but 2 were provided") != std::string::npos);
