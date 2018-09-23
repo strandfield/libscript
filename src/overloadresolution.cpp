@@ -16,17 +16,44 @@
 namespace script
 {
 
+struct ORCandidate
+{
+  Function function;
+  std::vector<Initialization> initializations;
+
+public:
+  ORCandidate() = default;
+  ORCandidate(const ORCandidate &) = delete;
+  ORCandidate(ORCandidate &&) = default;
+  ~ORCandidate() = default;
+
+  ORCandidate & operator=(ORCandidate &) = delete;
+  ORCandidate & operator=(ORCandidate &&) = default;
+
+  inline void set(const Function & f)
+  {
+    function = f;
+    initializations.clear();
+  }
+
+  inline void reset()
+  {
+    function = Function{};
+    initializations.clear();
+  }
+};
+
 struct OverloadResolutionImpl
 {
   Engine *engine;
   int options;
-  Function selected;
-  std::vector<Initialization> selected_initializations;
-  Function ambiguous;
-  std::vector<Initialization> alternative_initializations;
   std::vector<Function> const *candidates;
   OverloadResolution::Arguments arguments;
   std::shared_ptr<program::Expression> implicit_object;
+
+  ORCandidate selected_candidate;
+  ORCandidate ambiguous_candidate;
+  ORCandidate current_candidate;
 
   OverloadResolutionImpl(Engine *e, int opts)
     : engine(e)
@@ -35,7 +62,92 @@ struct OverloadResolutionImpl
   {
 
   }
+
+  static OverloadResolution::OverloadComparison compare(const ORCandidate & a, const ORCandidate & b);
+  void processCurrentCandidate();
 };
+
+
+
+OverloadResolution::OverloadComparison OverloadResolutionImpl::compare(const ORCandidate & a, const ORCandidate & b)
+{
+  if (b.function.isNull() && !a.function.isNull())
+    return OverloadResolution::FirstIsBetter;
+  else if (a.function.isNull() && !b.function.isNull())
+    return OverloadResolution::SecondIsBetter;
+
+  if (a.function.isNull() && b.function.isNull())
+    return OverloadResolution::Indistinguishable;
+
+  assert(!a.function.isNull() && !b.function.isNull());
+  assert(a.initializations.size() == b.initializations.size());
+
+  const ConversionRank rank_a = ranking::worstRank(a.initializations);
+  const ConversionRank rank_b = ranking::worstRank(b.initializations);
+  if (rank_a < rank_b)
+    return OverloadResolution::FirstIsBetter;
+  else if (rank_a > rank_b)
+    return OverloadResolution::SecondIsBetter;
+
+  const int nb_conversions = a.initializations.size();
+  int first_diff = 0;
+  int first_diff_index = -1;
+  for (int i(0); i < nb_conversions; ++i)
+  {
+    first_diff = Initialization::comp(a.initializations.at(i), b.initializations.at(i));
+    if (first_diff)
+    {
+      first_diff_index = i;
+      break;
+    }
+  }
+
+  if (first_diff_index == -1)
+    return OverloadResolution::Indistinguishable;
+
+  for (int i(first_diff_index + 1); i < nb_conversions; ++i)
+  {
+    const int diff = Initialization::comp(a.initializations.at(i), b.initializations.at(i));
+    if (diff == -first_diff)
+      return OverloadResolution::NotComparable;
+  }
+
+  return first_diff == -1 ? OverloadResolution::FirstIsBetter : OverloadResolution::SecondIsBetter;
+}
+
+void OverloadResolutionImpl::processCurrentCandidate()
+{
+  if (current_candidate.function == selected_candidate.function || current_candidate.function == ambiguous_candidate.function)
+    return;
+
+  OverloadResolution::OverloadComparison comp = compare(current_candidate, selected_candidate);
+  if (comp == OverloadResolution::Indistinguishable || comp == OverloadResolution::NotComparable)
+  {
+    std::swap(ambiguous_candidate, current_candidate);
+  }
+  else if (comp == OverloadResolution::FirstIsBetter)
+  {
+    std::swap(selected_candidate, current_candidate);
+
+    if (!ambiguous_candidate.function.isNull())
+    {
+      comp = compare(selected_candidate, ambiguous_candidate);
+      if (comp == OverloadResolution::FirstIsBetter)
+        ambiguous_candidate.reset();
+    }
+  }
+  else if (comp == OverloadResolution::SecondIsBetter)
+  {
+    if (!ambiguous_candidate.function.isNull())
+    {
+      comp = compare(current_candidate, ambiguous_candidate);
+      if (comp == OverloadResolution::FirstIsBetter)
+      {
+        std::swap(ambiguous_candidate, current_candidate);
+      }
+    }
+  }
+}
 
 
 OverloadResolution::Arguments::Arguments()
@@ -150,22 +262,22 @@ int OverloadResolution::options() const
 
 bool OverloadResolution::success() const
 {
-  return !d->selected.isNull() && d->ambiguous.isNull();
+  return !d->selected_candidate.function.isNull() && d->ambiguous_candidate.function.isNull();
 }
 
 Function OverloadResolution::selectedOverload() const
 {
-  return d->selected;
+  return d->selected_candidate.function;
 }
 
 const std::vector<Initialization> & OverloadResolution::initializations() const
 {
-  return d->selected_initializations;
+  return d->selected_candidate.initializations;
 }
 
 Function OverloadResolution::ambiguousOverload() const
 {
-  return d->ambiguous;
+  return d->ambiguous_candidate.function;
 }
 
 const std::vector<Function> & OverloadResolution::candidates() const
@@ -226,12 +338,12 @@ diagnostic::Message OverloadResolution::emitDiagnostic() const
   if (success())
     return diagnostic::info() << "Overload resolution succeeded";
 
-  if (!d->ambiguous.isNull())
+  if (!d->ambiguous_candidate.function.isNull())
   {
     auto diag = diagnostic::info() << "Overload resolution failed because at least two candidates are not comparable or indistinguishable \n";
-    write_prototype(diag, d->selected);
+    write_prototype(diag, d->selected_candidate.function);
     diag << "\n";
-    write_prototype(diag, d->ambiguous);
+    write_prototype(diag, d->ambiguous_candidate.function);
     return diag;
   }
   
@@ -305,11 +417,9 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
 
   const int argc = arguments.size();
 
-  std::vector<Initialization> initializations;
-
   for (const auto & func : candidates)
   {
-    initializations.clear();
+    d->current_candidate.set(func);
     if (!func.accepts(argc))
       continue;
 
@@ -317,7 +427,7 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
     for (int i(0); i < argc; ++i)
     {
       Initialization init = arguments.initialization(i, func.parameter(i), d->engine);
-      initializations.push_back(init);
+      d->current_candidate.initializations.push_back(init);
       if (init.kind() == Initialization::InvalidInitialization)
       {
         ok = false;
@@ -328,10 +438,10 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
     if (!ok)
       continue;
 
-    processCandidate(func, initializations);
+    d->processCurrentCandidate();
   }
 
-  if (d->ambiguous.isNull() && !d->selected.isNull())
+  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
     return true;
   return false;
 }
@@ -343,11 +453,9 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
 
   const int argc = arguments.size();
 
-  std::vector<Initialization> initializations;
-
   for (const auto & func : candidates)
   {
-    initializations.clear();
+    d->current_candidate.set(func);
     const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
 
     if (!func.accepts(actual_argc))
@@ -358,7 +466,7 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
       Conversion conv = Conversion::compute(obj, func.parameter(0), d->engine);
       if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
         continue;
-      initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
+      d->current_candidate.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
     }
 
     const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
@@ -372,16 +480,16 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
         ok = false;
         break;
       }
-      initializations.push_back(init);
+      d->current_candidate.initializations.push_back(init);
     }
 
     if (!ok)
       continue;
 
-    processCandidate(func, initializations);
+    d->processCurrentCandidate();
   }
 
-  if (d->ambiguous.isNull() && !d->selected.isNull())
+  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
     return true;
   return false;
 }
@@ -402,11 +510,9 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
 
   const int argc = arguments.size();
 
-  std::vector<Initialization> initializations;
-
   for (const auto & func : candidates)
   {
-    initializations.clear();
+    d->current_candidate.set(func);
     const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
 
     if (!func.accepts(actual_argc))
@@ -417,7 +523,7 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
       Conversion conv = Conversion::compute(object->type(), func.parameter(0), d->engine);
       if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
         continue;
-      initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
+      d->current_candidate.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
     }
 
     const int parameter_offset = func.hasImplicitObject() ? 1 : 0;
@@ -431,101 +537,18 @@ bool OverloadResolution::process(const std::vector<Function> & candidates, const
         ok = false;
         break;
       }
-      initializations.push_back(init);
+      d->current_candidate.initializations.push_back(init);
     }
 
     if (!ok)
       continue;
 
-    processCandidate(func, initializations);
+    d->processCurrentCandidate();
   }
 
-  if (d->ambiguous.isNull() && !d->selected.isNull())
+  if (d->ambiguous_candidate.function.isNull() && !d->selected_candidate.function.isNull())
     return true;
   return false;
-}
-
-OverloadResolution::OverloadComparison OverloadResolution::compare(const Function & a, const std::vector<Initialization> & inits_a, const Function & b, const std::vector<Initialization> & inits_b)
-{
-  if (b.isNull() && !a.isNull())
-    return FirstIsBetter;
-  else if (a.isNull() && !b.isNull())
-    return SecondIsBetter;
-
-  if (a.isNull() && b.isNull())
-    return Indistinguishable;
-
-  assert(!a.isNull() && !b.isNull());
-  assert(inits_a.size() == inits_b.size());
-
-  const ConversionRank rank_a = ranking::worstRank(inits_a);
-  const ConversionRank rank_b = ranking::worstRank(inits_b);
-  if (rank_a < rank_b)
-    return FirstIsBetter;
-  else if (rank_a > rank_b)
-    return SecondIsBetter;
-
-  const int nb_conversions = inits_a.size();
-  int first_diff = 0;
-  int first_diff_index = -1;
-  for (int i(0); i < nb_conversions; ++i)
-  {
-    first_diff = Initialization::comp(inits_a.at(i), inits_b.at(i));
-    if (first_diff)
-    {
-      first_diff_index = i;
-      break;
-    }
-  }
-
-  if (first_diff_index == -1)
-    return Indistinguishable;
-
-  for (int i(first_diff_index + 1); i < nb_conversions; ++i)
-  {
-    const int diff = Initialization::comp(inits_a.at(i), inits_b.at(i));
-    if (diff == -first_diff)
-      return NotComparable;
-  }
-
-  return first_diff == -1 ? FirstIsBetter : SecondIsBetter;
-}
-
-void OverloadResolution::processCandidate(const Function & f, std::vector<Initialization> & initializations)
-{
-  if (f == d->selected || f == d->ambiguous)
-    return;
-
-  OverloadComparison comp = compare(f, initializations, d->selected, d->selected_initializations);
-  if (comp == Indistinguishable || comp == NotComparable)
-  {
-    d->ambiguous = f;
-    std::swap(d->alternative_initializations, initializations);
-  }
-  else if (comp == FirstIsBetter)
-  {
-    d->selected = f;
-    std::swap(d->selected_initializations, initializations);
-
-    if (!d->ambiguous.isNull())
-    {
-      comp = compare(d->selected, d->selected_initializations, d->ambiguous, d->alternative_initializations);
-      if (comp == FirstIsBetter)
-        d->ambiguous = Function{};
-    }
-  }
-  else if (comp == SecondIsBetter)
-  {
-    if (!d->ambiguous.isNull())
-    {
-      comp = compare(f, initializations, d->ambiguous, d->alternative_initializations);
-      if (comp == FirstIsBetter)
-      {
-        d->ambiguous = f;
-        std::swap(d->alternative_initializations, initializations);
-      }
-    }
-  }
 }
 
 OverloadResolution OverloadResolution::New(Engine *engine, int options)

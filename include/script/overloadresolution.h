@@ -140,10 +140,6 @@ public:
   OverloadResolution & operator=(const OverloadResolution & other) = default;
 
 protected:
-  static OverloadComparison compare(const Function & a, const std::vector<Initialization> & inits_a, const Function & b, const std::vector<Initialization> & inits_b);
-
-  void processCandidate(const Function & f, std::vector<Initialization> & initializations);
-
   /// TODO: move elsewhere
   std::string dtype(const Type & t) const;
   void write_prototype(diagnostic::MessageBuilder & diag, const Function & f) const;
