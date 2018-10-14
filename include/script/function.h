@@ -81,7 +81,9 @@ public:
   bool accepts(int argc) const;
   bool hasDefaultArguments() const;
   size_t defaultArgumentCount() const;
+  [[deprecated("default arguments should be processed before the Function object is constructed")]]
   void addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+  [[deprecated("default arguments should be processed before the Function object is constructed")]]
   void addDefaultArgument(const script::Value & val, ParameterPolicy policy = ParameterPolicy::Copy);
   const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const;
 

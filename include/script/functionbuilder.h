@@ -23,6 +23,7 @@ public:
   Symbol symbol;
   OperatorName operation;
   std::shared_ptr<UserData> data;
+  std::vector<std::shared_ptr<program::Expression>> defaultargs;
 
 public:
   struct LiteralOperatorTag {};
@@ -65,6 +66,8 @@ public:
     addParam(arg);
     return params(args...);
   }
+
+  FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
   script::Function create();
 

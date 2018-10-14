@@ -35,6 +35,7 @@ public:
   size_t size() const;
   void push_back(const DefaultArgument & value);
 
+  void set(std::vector<DefaultArgument> && defargs);
   std::vector<DefaultArgument> & get();
   const std::vector<DefaultArgument> & get() const;
 

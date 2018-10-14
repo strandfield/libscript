@@ -63,6 +63,11 @@ void DefaultArgumentList::push_back(const DefaultArgument & value)
   get().push_back(value);
 }
 
+void DefaultArgumentList::set(std::vector<DefaultArgument> && defargs)
+{
+  data.reset(new std::vector<DefaultArgument>{ std::move(defargs) });
+}
+
 std::vector<DefaultArgument> & DefaultArgumentList::get()
 {
   if (isEmpty())

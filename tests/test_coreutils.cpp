@@ -825,18 +825,22 @@ static script::Value incr_callback(script::FunctionCall *c)
   return c->arg(0);
 }
 
+#include "script/program/expression.h"
+
 TEST(CoreUtilsTests, default_arguments) {
   using namespace script;
 
   Engine e;
   e.setup();
 
+  Value default_arg = e.newInt(1);
+  e.manage(default_arg);
+
   Function incr = Symbol{ e.rootNamespace() }.Function("incr")
     .returns(Type::ref(Type::Int))
     .params(Type::ref(Type::Int), Type::cref(Type::Int))
+    .addDefaultArgument(program::VariableAccess::New(default_arg))
     .setCallback(incr_callback).create();
-
-  incr.addDefaultArgument(e.newInt(1), Value::Take);
 
   const char *src =
     "  int a = 0;     \n"

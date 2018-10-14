@@ -18,6 +18,13 @@
 namespace script
 {
 
+/*!
+* \class FunctionBuilder
+* \brief The FunctionBuilder class is an utility class used to build \t{Function}s.
+*
+*/
+
+
 static void fill(const std::shared_ptr<FunctionImpl> & impl, const FunctionBuilder & opts)
 {
   impl->implementation.callback = opts.callback;
@@ -298,6 +305,20 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
   return *(this);
 }
 
+/*!
+ * \fun FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value)
+ * \brief Provides an additional default argument for the function.
+ * \param the parameter default value
+ * 
+ * Note that default arguments must be provided in the opposite order of parameters; that is, 
+ * the default value for the last parameter is provided first, than the penultimate, and so on.
+ */
+FunctionBuilder & FunctionBuilder::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
+{
+  this->defaultargs.push_back(value);
+  return *this;
+}
+
 script::Function FunctionBuilder::create()
 {
   if (this->engine == nullptr)
@@ -311,6 +332,7 @@ script::Function FunctionBuilder::create()
     Class cla = member_of();
     script::Function f = build_function(*this);
     f.impl()->enclosing_symbol = cla.impl();
+
     if (f.isOperator())
       cla.impl()->operators.push_back(f.toOperator());
     else if (f.isCast())
@@ -321,6 +343,9 @@ script::Function FunctionBuilder::create()
       cla.impl()->destructor = f;
     else
       cla.impl()->register_function(f);
+
+    f.impl()->default_arguments.set(std::move(defaultargs));
+
     return f;
   }
   else if (this->symbol.isNamespace())
@@ -328,12 +353,16 @@ script::Function FunctionBuilder::create()
     Namespace ns = this->symbol.toNamespace();
     script::Function f = build_function(*this);
     f.impl()->enclosing_symbol = ns.impl();
+
     if (f.isOperator())
       ns.impl()->operators.push_back(f.toOperator());
     else if (f.isLiteralOperator())
       ns.impl()->literal_operators.push_back(f.toLiteralOperator());
     else
       ns.impl()->functions.push_back(f);
+
+    f.impl()->default_arguments.set(std::move(defaultargs));
+
     return f;
   }
 
