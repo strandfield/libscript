@@ -17,6 +17,27 @@ namespace script
 namespace compiler
 {
 
+void DefaultArgumentProcessor::process(const std::vector<ast::FunctionParameter> & params, FunctionBuilder & builder, const Scope & scp)
+{
+  const int param_offset = (builder.symbol.isClass() && !builder.isStatic()) ? 1 : 0;
+
+  size_t first_default_index = 0;
+  while (first_default_index < params.size() && params.at(first_default_index).defaultValue == nullptr)
+    ++first_default_index;
+
+  if (first_default_index == params.size())
+    return;
+
+  size_t i = params.size();
+  while (i-- > first_default_index)
+  {
+    if (params.at(i).defaultValue == nullptr)
+      throw InvalidUseOfDefaultArgument{ dpos(params.at(i).name) };
+
+    builder.addDefaultArgument(generateDefaultArgument(scp, params.at(i), builder.proto.parameter(i + param_offset)));
+  }
+}
+
 void DefaultArgumentProcessor::process(const std::vector<ast::FunctionParameter> & params, Function & f, const Scope & scp)
 {
   const int param_offset = f.hasImplicitObject() ? 1 : 0;

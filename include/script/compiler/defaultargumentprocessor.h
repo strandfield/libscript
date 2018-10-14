@@ -6,7 +6,8 @@
 #define LIBSCRIPT_DEFAULT_ARGUMENT_PROCESSOR_H
 
 #include "script/ast/forwards.h"
-#include "script/function.h"
+#include "script/function.h" // ideally this should be removed
+#include "script/functionbuilder.h"
 #include "script/scope.h"
 
 namespace script
@@ -19,6 +20,9 @@ class LIBSCRIPT_API DefaultArgumentProcessor
 {
 public:
 
+  void process(const std::vector<ast::FunctionParameter> & params, FunctionBuilder & builder, const Scope & scp);
+
+  [[deprecated("default arguments should be processed before the Function object is constructed")]] 
   void process(const std::vector<ast::FunctionParameter> & params, Function & f, const Scope & scp);
 
 protected:

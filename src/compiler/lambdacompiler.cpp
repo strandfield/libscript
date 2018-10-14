@@ -190,7 +190,11 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
   const Prototype proto = computePrototype();
-  Function function = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto).create();
+  auto builder = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto);
+  DefaultArgumentProcessor default_arguments;
+  default_arguments.process(task.lexpr->params, builder, task.scope);
+
+  Function function = builder.create();
 
   mFunction = function;
   expr_.setCaller(function);
@@ -208,9 +212,6 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
   function.impl()->set_impl(body);
-
-  DefaultArgumentProcessor default_arguments;
-  default_arguments.process(task.lexpr->params, function, task.scope);
 
   removeUnusedCaptures();
 

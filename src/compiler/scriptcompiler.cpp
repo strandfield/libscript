@@ -524,6 +524,7 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
   Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
   function_processor_.fill(builder, fundecl, scp);
+  default_arguments_.process(fundecl->params, builder, scp);
   Function function = builder.create();
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
@@ -542,6 +543,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   FunctionBuilder b = current_class.Constructor();
   function_processor_.fill(b, decl, scp);
+  default_arguments_.process(decl->params, b, scp);
   Function ctor = b.create();
 
   schedule(ctor, decl, scp);
@@ -580,6 +582,8 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   FunctionBuilder b = scp.asNamespace().UserDefinedLiteral(suffix_name);
   function_processor_.fill(b, decl, currentScope());
+
+  /// TODO: check that the user does not declare any default arguments
 
   Function function = b.create();
 
@@ -625,6 +629,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (Operator::onlyAsMember(builder.operation) && !is_member)
     throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
 
+  /// TODO: check that the user does not declare any default arguments
+
   Function function = builder.create();
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
@@ -642,7 +648,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
 
   FunctionBuilder builder = scp.symbol().toClass().Conversion(Type::Null);
   function_processor_.fill(builder, decl, scp);
-
+  /// TODO: check that the user does not declare any default arguments
   Function cast = builder.create();
   
   schedule(cast, decl, scp);
@@ -839,6 +845,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
+  /// TODO: handle default arguments
   auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name, builder.proto, engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;
@@ -879,8 +886,6 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 {
   if (function_processor_.prototype_.type_.relax)
     mIncompleteFunctions.push(IncompleteFunction{ scp, fundecl, f });
-  else
-    default_arguments_.process(fundecl->params, f, scp);
 
   function_processor_.prototype_.type_.relax = false;
 
