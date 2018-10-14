@@ -26,6 +26,12 @@
 namespace script
 {
 
+/*!
+ * \class Function
+ * \brief The Function class represents a function.
+ *
+ */
+
 DefaultArgumentList::DefaultArgumentList()
   : data(nullptr)
 {
@@ -242,6 +248,10 @@ bool Function::accepts(int argc) const
   return parameter_count - default_count <= argc && argc <= parameter_count;
 }
 
+/*!
+* \fun bool hasDefaultArguments() const
+* \brief Returns whether the function has default arguments.
+*/
 bool Function::hasDefaultArguments() const
 {
   return !d->default_arguments.isEmpty();
@@ -275,6 +285,19 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
   }
 }
 
+/*!
+ * \fun const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
+ * \brief Returns the function's default arguments.
+ *
+ * Note that you cannot concatenate this list to an existing list of arguments to make 
+ * a valid call as the default arguments are stored in reverse order; i.e. \c{defaultArguments()[0]} 
+ * is the default value for the last parameter, \c{defaultArguments()[1]} is the default value 
+ * for the penultimate parameter and so on.
+ *
+ * Currently this function throws an std::runtime_error if there are no default arguments.
+ *
+ * \sa hasDefaultArguments()
+ */
 const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
 {
   return d->default_arguments.get();

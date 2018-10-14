@@ -2072,3 +2072,36 @@ TEST(CompilerTests, class_initializer_list) {
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 10);
 }
+
+
+TEST(CompilerTests, default_function_arguments) {
+  using namespace script;
+
+  const char *source =
+    "  int sum(int a, int b = 1, int c = 2)  "
+    "  {                                     "
+    "    return a + b + c;                   "
+    "  }                                     "
+    "                                        "
+    "  int n = sum(1, 2, 3);                 "
+    "  int m = sum(1, 2);                    "
+    "  int p = sum(0);                       ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  ASSERT_EQ(s.globals().size(), 3);
+  Value n = s.globals().front();
+  ASSERT_EQ(n.toInt(), 6);
+  Value m = s.globals().at(1);
+  ASSERT_EQ(m.toInt(), 5);
+  Value p = s.globals().back();
+  ASSERT_EQ(p.toInt(), 3);
+}

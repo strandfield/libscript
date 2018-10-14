@@ -21,21 +21,20 @@ void DefaultArgumentProcessor::process(const std::vector<ast::FunctionParameter>
 {
   const int param_offset = f.hasImplicitObject() ? 1 : 0;
 
-  size_t i = 0;
-  while (i < params.size() && params.at(i).defaultValue == nullptr)
-    ++i;
+  size_t first_default_index = 0;
+  while (first_default_index < params.size() && params.at(first_default_index).defaultValue == nullptr)
+    ++first_default_index;
 
-  if (i == params.size())
+  if (first_default_index == params.size())
     return;
 
-  while (i < params.size())
+  size_t i = params.size();
+  while (i-- > first_default_index)
   {
     if (params.at(i).defaultValue == nullptr)
       throw InvalidUseOfDefaultArgument{ dpos(params.at(i).name) };
 
     f.addDefaultArgument(generateDefaultArgument(scp, params.at(i), f.parameter(i + param_offset)));
-
-    ++i;
   }
 }
 

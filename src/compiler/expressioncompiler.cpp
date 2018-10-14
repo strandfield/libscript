@@ -499,11 +499,15 @@ NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & 
 void ExpressionCompiler::complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   size_t diff = size_t(f.prototype().count()) - args.size();
+
   if (diff == 0)
     return;
 
   const auto & defaults = f.defaultArguments();
-  args.insert(args.end(), defaults.end() - diff, defaults.end());
+  while (diff-- > 0)
+  {
+    args.push_back(defaults.at(diff));
+  }
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateOperation(const std::shared_ptr<ast::Expression> & in_op)
