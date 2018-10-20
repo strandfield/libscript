@@ -45,7 +45,7 @@ DefaultArgumentList::~DefaultArgumentList()
 
 bool DefaultArgumentList::isEmpty() const
 {
-  return data == nullptr;
+  return data == nullptr || (data->size() == 0);
 }
 
 size_t DefaultArgumentList::size() const
@@ -58,26 +58,29 @@ size_t DefaultArgumentList::size() const
 void DefaultArgumentList::push_back(const DefaultArgument & value)
 {
   if (isEmpty())
-    data.reset(new std::vector<DefaultArgument>{});
-
-  get().push_back(value);
+    data.reset(new std::vector<DefaultArgument>{ value });
+  else
+    get().push_back(value);
 }
 
 void DefaultArgumentList::set(std::vector<DefaultArgument> && defargs)
 {
-  data.reset(new std::vector<DefaultArgument>{ std::move(defargs) });
+  if (defargs.empty())
+    data.reset();
+  else
+    data.reset(new std::vector<DefaultArgument>{ std::move(defargs) });
 }
 
 std::vector<DefaultArgument> & DefaultArgumentList::get()
 {
-  if (isEmpty())
+  if (data == nullptr)
     throw std::runtime_error{ "Function has no default parameters" };
   return *data.get();
 }
 
 const std::vector<DefaultArgument> & DefaultArgumentList::get() const
 {
-  if (isEmpty())
+  if (data == nullptr)
     throw std::runtime_error{ "Function has no default parameters" };
   return *data.get();
 }
