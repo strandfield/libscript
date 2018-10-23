@@ -24,27 +24,6 @@ class SymbolImpl;
 
 typedef std::shared_ptr<program::Expression> DefaultArgument;
 
-class DefaultArgumentList
-{
-public:
-  DefaultArgumentList();
-  DefaultArgumentList(const DefaultArgumentList &) = delete;
-  ~DefaultArgumentList();
-
-  bool isEmpty() const;
-  size_t size() const;
-  void push_back(const DefaultArgument & value);
-
-  void set(std::vector<DefaultArgument> && defargs);
-  std::vector<DefaultArgument> & get();
-  const std::vector<DefaultArgument> & get() const;
-
-private:
-  std::unique_ptr<std::vector<DefaultArgument>> data;
-};
-
-static_assert(sizeof(DefaultArgumentList) == sizeof(std::unique_ptr<std::vector<DefaultArgument>>), "haa");
-
 class LIBSCRIPT_API FunctionImpl
 {
 public:
@@ -65,7 +44,10 @@ public:
     NativeFunctionSignature callback;
     std::shared_ptr<program::Statement> program;
   }implementation;
-  DefaultArgumentList default_arguments;
+
+  virtual const std::vector<DefaultArgument> & default_arguments() const;
+  virtual void set_default_arguments(std::vector<DefaultArgument> && defaults);
+  virtual void add_default_argument(const DefaultArgument & da);
 
   void force_virtual();
   void set_impl(NativeFunctionSignature callback);
@@ -77,6 +59,7 @@ class RegularFunctionImpl : public FunctionImpl
 public:
   RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   std::string mName;
+  std::vector<DefaultArgument> mDefaultArguments;
 public:
   const std::string & name() const override
   {
@@ -84,6 +67,10 @@ public:
   }
 
   Name get_name() const override;
+
+  const std::vector<DefaultArgument> & default_arguments() const override;
+  void set_default_arguments(std::vector<DefaultArgument> && defaults) override;
+  void add_default_argument(const DefaultArgument & da) override;
 };
 
 class ScriptFunctionImpl : public FunctionImpl
@@ -97,12 +84,18 @@ class ConstructorImpl : public FunctionImpl
 {
 public:
   ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  
+  std::vector<DefaultArgument> mDefaultArguments;
 public:
   
   Class getClass() const;
 
   const std::string & name() const override;
   Name get_name() const override;
+
+  const std::vector<DefaultArgument> & default_arguments() const override;
+  void set_default_arguments(std::vector<DefaultArgument> && defaults) override;
+  void add_default_argument(const DefaultArgument & da) override;
 
   bool is_default_ctor() const;
   bool is_copy_ctor() const;

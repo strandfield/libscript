@@ -32,60 +32,6 @@ namespace script
  *
  */
 
-DefaultArgumentList::DefaultArgumentList()
-  : data(nullptr)
-{
-
-}
-
-DefaultArgumentList::~DefaultArgumentList()
-{
-  data = nullptr;
-}
-
-bool DefaultArgumentList::isEmpty() const
-{
-  return data == nullptr || (data->size() == 0);
-}
-
-size_t DefaultArgumentList::size() const
-{
-  if (isEmpty())
-    return 0;
-  return get().size();
-}
-
-void DefaultArgumentList::push_back(const DefaultArgument & value)
-{
-  if (isEmpty())
-    data.reset(new std::vector<DefaultArgument>{ value });
-  else
-    get().push_back(value);
-}
-
-void DefaultArgumentList::set(std::vector<DefaultArgument> && defargs)
-{
-  if (defargs.empty())
-    data.reset();
-  else
-    data.reset(new std::vector<DefaultArgument>{ std::move(defargs) });
-}
-
-std::vector<DefaultArgument> & DefaultArgumentList::get()
-{
-  if (data == nullptr)
-    throw std::runtime_error{ "Function has no default parameters" };
-  return *data.get();
-}
-
-const std::vector<DefaultArgument> & DefaultArgumentList::get() const
-{
-  if (data == nullptr)
-    throw std::runtime_error{ "Function has no default parameters" };
-  return *data.get();
-}
-
-
 FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : prototype(p)
   , engine(e)
@@ -107,6 +53,25 @@ const std::string & FunctionImpl::name() const
 Name FunctionImpl::get_name() const
 {
   throw std::runtime_error{ "This kind of function does not implement get_name()" };
+}
+
+const std::vector<DefaultArgument> & FunctionImpl::default_arguments() const
+{
+  static const std::vector<DefaultArgument> defaults = {};
+  return defaults;
+}
+
+void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+{
+  if (defaults.empty())
+    return;
+
+  throw std::runtime_error{ "Function does not support default arguments" };
+}
+
+void FunctionImpl::add_default_argument(const DefaultArgument &)
+{
+  throw std::runtime_error{ "Function does not support default arguments" };
 }
 
 void FunctionImpl::force_virtual()
@@ -140,6 +105,21 @@ Name RegularFunctionImpl::get_name() const
   return mName;
 }
 
+const std::vector<DefaultArgument> & RegularFunctionImpl::default_arguments() const
+{
+  return mDefaultArguments;
+}
+
+void RegularFunctionImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+{
+  mDefaultArguments = std::move(defaults);
+}
+
+void RegularFunctionImpl::add_default_argument(const DefaultArgument & da)
+{
+  mDefaultArguments.push_back(da);
+}
+
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
   : FunctionImpl(Prototype{ Type::Void }, e)
@@ -167,6 +147,21 @@ const std::string & ConstructorImpl::name() const
 Name ConstructorImpl::get_name() const 
 {
   return name();
+}
+
+const std::vector<DefaultArgument> & ConstructorImpl::default_arguments() const
+{
+  return mDefaultArguments;
+}
+
+void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+{
+  mDefaultArguments = std::move(defaults);
+}
+
+void ConstructorImpl::add_default_argument(const DefaultArgument & da)
+{
+  mDefaultArguments.push_back(da);
 }
 
 bool ConstructorImpl::is_default_ctor() const
@@ -248,34 +243,65 @@ const Type & Function::returnType() const
   return prototype().returnType();
 }
 
+/*!
+ * \fn bool accepts(int argc) const
+ * \brief Returns whether the function could be called with a certain number of arguments.
+ * \param number of arguments
+ * 
+ * This function is deprecated and might be removed in future versions as 
+ * it conveys misleading information about the behavior of functions.
+ * A function shall always be called with \c{prototype().parameterCount()} arguments -
+ * and therefore only accepts as many - but default arguments may be used at the call 
+ * site to complete the argument list if some are missing.
+ */
 bool Function::accepts(int argc) const
 {
   const int parameter_count = prototype().parameterCount();
-  const int default_count = d->default_arguments.size();
+  const int default_count = d->default_arguments().size();
 
   return parameter_count - default_count <= argc && argc <= parameter_count;
 }
 
 /*!
-* \fun bool hasDefaultArguments() const
-* \brief Returns whether the function has default arguments.
-*/
+ * \fun bool hasDefaultArguments() const
+ * \brief Returns whether the function has default arguments.
+ *
+ * This function is deprecated and might be removed in future versions; 
+ * use this alternative \c{defaultArguments().size() != 0} instead.
+ */
 bool Function::hasDefaultArguments() const
 {
-  return !d->default_arguments.isEmpty();
+  return !d->default_arguments().empty();
 }
 
+/*!
+* \fun size_t defaultArgumentCount() const
+* \brief Returns the number of default arguments of the function.
+*
+* This function is deprecated and might be removed in future versions;
+* use this alternative \c{defaultArguments().size()} instead.
+*/
 size_t Function::defaultArgumentCount() const
 {
-  return d->default_arguments.size();
+  return d->default_arguments().size();
 }
 
 void Function::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
 {
   /// TODO: add type-checking
-  d->default_arguments.push_back(value);
+  d->add_default_argument(value);
 }
 
+/*!
+ * \fn void addDefaultArgument(const script::Value & val, ParameterPolicy policy) 
+ * \brief Adds a default argument to the function.
+ * \param the value of the default argument
+ * \param policy describing how the value is to be treated
+ *
+ * This function is deprecated and might be removed in future versions.
+ * It is recommended to provide the default arguments at construction-time using the 
+ * \t FunctionBuilder class.
+ */
 void Function::addDefaultArgument(const script::Value & val, ParameterPolicy policy)
 {
   /// TODO: add type-checking
@@ -283,13 +309,13 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
   if (policy == Value::Take)
   {
     engine()->manage(val);
-    d->default_arguments.push_back(program::VariableAccess::New(val));
+    d->add_default_argument(program::VariableAccess::New(val));
   }
   else if (policy == Value::Copy || policy == Value::Move) // move not well supported yet
   {
     Value v = engine()->copy(val);
     engine()->manage(v);
-    d->default_arguments.push_back(program::VariableAccess::New(val));
+    d->add_default_argument(program::VariableAccess::New(val));
   }
 }
 
@@ -308,7 +334,7 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
  */
 const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
 {
-  return d->default_arguments.get();
+  return d->default_arguments();
 }
 
 

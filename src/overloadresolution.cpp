@@ -156,7 +156,7 @@ bool OverloadResolutionImpl::processOverloadResolution()
     current_candidate.set(func);
     const int actual_argc = func.hasImplicitObject() ? argc + 1 : argc;
 
-    if (!func.accepts(actual_argc))
+    if (actual_argc > func.prototype().count() || actual_argc + int(func.defaultArguments().size()) < func.prototype().count())
       continue;
 
     if (func.hasImplicitObject())
@@ -200,7 +200,7 @@ bool OverloadResolutionImpl::processORWithoutObject(int nbIgnored)
   {
     current_candidate.set(func);
 
-    if (!func.accepts(argc))
+    if (argc > func.prototype().count() || argc + int(func.defaultArguments().size()) < func.prototype().count())
       continue;
 
     bool ok = true;
@@ -369,7 +369,7 @@ OverloadResolution::ViabilityStatus OverloadResolution::getViabilityStatus(const
   const int implicit_object_offset = (f.hasImplicitObject() && d->implicit_object != nullptr) ? 1 : 0;
   const int argc = d->inputs.size() + implicit_object_offset;
 
-  if (!f.accepts(argc))
+  if (argc > f.prototype().count() || argc + int(f.defaultArguments().size()) < f.prototype().count())
     return IncorrectParameterCount;
 
   if (implicit_object_offset)

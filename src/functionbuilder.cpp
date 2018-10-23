@@ -344,7 +344,7 @@ script::Function FunctionBuilder::create()
     else
       cla.impl()->register_function(f);
 
-    f.impl()->default_arguments.set(std::move(defaultargs));
+    f.impl()->set_default_arguments(std::move(defaultargs));
 
     return f;
   }
@@ -361,7 +361,7 @@ script::Function FunctionBuilder::create()
     else
       ns.impl()->functions.push_back(f);
 
-    f.impl()->default_arguments.set(std::move(defaultargs));
+    f.impl()->set_default_arguments(std::move(defaultargs));
 
     return f;
   }
