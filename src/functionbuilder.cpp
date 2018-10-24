@@ -19,10 +19,20 @@ namespace script
 {
 
 /*!
-* \class FunctionBuilder
-* \brief The FunctionBuilder class is an utility class used to build \t{Function}s.
-*
-*/
+ * \class FunctionBuilder
+ * \brief The FunctionBuilder class is an utility class used to build \t{Function}s.
+ *
+ */
+
+/*!
+ * \fun FunctionBuilder & apply(Func && func)
+ * \brief Applies a function to the function builder.
+ * \param the callable object to be applied
+ * \returns a reference to the FunctionBuilder object
+ *
+ * This template function requires that \c{func(builder)} is a valid 
+ * expression (with \c builder a \t FunctionBuilder).
+ */
 
 
 static void fill(const std::shared_ptr<FunctionImpl> & impl, const FunctionBuilder & opts)

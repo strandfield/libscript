@@ -69,6 +69,13 @@ public:
 
   FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
+  template<typename Func>
+  FunctionBuilder & apply(Func && func)
+  {
+    func(*this);
+    return *this;
+  }
+
   script::Function create();
 
 protected:
