@@ -2105,3 +2105,33 @@ TEST(CompilerTests, default_function_arguments) {
   Value p = s.globals().back();
   ASSERT_EQ(p.toInt(), 3);
 }
+
+TEST(CompilerTests, static_local_variables) {
+  using namespace script;
+
+  const char *source =
+    "  int counter()         "
+    "  {                     "
+    "    static int n = 0;   "
+    "    return ++n;         "
+    "  }                     "
+    "                        "
+    "  int a = counter();    "
+    "  int b = counter();    ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto & errors = s.messages();
+  ASSERT_FALSE(success);
+
+ /* s.run();
+
+  ASSERT_EQ(s.globals().size(), 2);
+  Value a = s.globals().front();
+  ASSERT_EQ(a.toInt(), 1);
+  Value b = s.globals().back();
+  ASSERT_EQ(b.toInt(), 2);*/
+}

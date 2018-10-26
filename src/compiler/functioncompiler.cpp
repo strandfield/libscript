@@ -885,6 +885,9 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 {
   const Type var_type = type_.resolve(var_decl->variable_type, mCurrentScope);
 
+  if (var_decl->staticSpecifier.isValid())
+    throw NotImplementedError{ dpos(var_decl), "Static variables not implemented yet" };
+
   if (var_decl->init == nullptr)
     return processVariableDeclaration(var_decl, var_type, nullptr);
 
