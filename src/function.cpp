@@ -32,17 +32,8 @@ namespace script
  *
  */
 
-FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : prototype_(p)
-  , engine(e)
-  , flags(f)
-{
-
-}
-
-FunctionImpl::FunctionImpl(DynamicPrototype&& p, Engine *e, flag_type f)
-  : prototype_(std::move(p))
-  , engine(e)
+FunctionImpl::FunctionImpl(Engine *e, flag_type f)
+  : engine(e)
   , flags(f)
 {
 
@@ -82,14 +73,9 @@ void FunctionImpl::add_default_argument(const DefaultArgument &)
   throw std::runtime_error{ "Function does not support default arguments" };
 }
 
-const Prototype & FunctionImpl::prototype() const
-{
-  return this->prototype_;
-}
-
 void FunctionImpl::set_return_type(const Type & t)
 {
-  this->prototype_.setReturnType(t);
+  throw std::runtime_error{ "Bad call to FunctionImpl::set_return_type()" };
 }
 
 void FunctionImpl::force_virtual()
@@ -112,14 +98,16 @@ void FunctionImpl::set_impl(const std::shared_ptr<program::Statement> program)
 }
 
 RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : FunctionImpl(p, e, f)
+  : FunctionImpl(e, f)
+  , prototype_(p)
   , mName(name)
 {
 
 }
 
 RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f)
-  : FunctionImpl(std::move(p), e, f)
+  : FunctionImpl(e, f)
+  , prototype_(std::move(p))
   , mName(name)
 {
 
@@ -128,6 +116,16 @@ RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicProtot
 Name RegularFunctionImpl::get_name() const
 {
   return mName;
+}
+
+const Prototype & RegularFunctionImpl::prototype() const
+{
+  return prototype_;
+}
+
+void RegularFunctionImpl::set_return_type(const Type & t)
+{
+  prototype_.setReturnType(t);
 }
 
 const std::vector<DefaultArgument> & RegularFunctionImpl::default_arguments() const
@@ -147,14 +145,21 @@ void RegularFunctionImpl::add_default_argument(const DefaultArgument & da)
 
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
-  : FunctionImpl(Prototype{ Type::Void }, e)
+  : FunctionImpl(e)
 {
 
 }
 
+const Prototype & ScriptFunctionImpl::prototype() const
+{
+  return this->prototype_;
+}
+
+
 
 ConstructorImpl::ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : FunctionImpl(p, e, f)
+  : FunctionImpl(e, f)
+  , prototype_(p)
 {
 
 }
@@ -167,6 +172,11 @@ Class ConstructorImpl::getClass() const
 const std::string & ConstructorImpl::name() const
 {
   return getClass().name();
+}
+
+const Prototype & ConstructorImpl::prototype() const
+{
+  return this->prototype_;
 }
 
 Name ConstructorImpl::get_name() const 
@@ -209,10 +219,17 @@ bool ConstructorImpl::is_move_ctor() const
 }
 
 DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionImpl::flag_type f)
-  : FunctionImpl(p, e, f)
+  : FunctionImpl(e, f)
+  , proto_{p.returnType(), p.at(0)}
 {
 
 }
+
+const Prototype & DestructorImpl::prototype() const
+{
+  return this->proto_;
+}
+
 
 FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : RegularFunctionImpl(name, p, e, f)

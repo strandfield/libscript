@@ -10,6 +10,54 @@
 namespace script
 {
 
+class LIBSCRIPT_API SingleParameterPrototype : public Prototype
+{
+public:
+  SingleParameterPrototype();
+  SingleParameterPrototype(const Type & rt, const Type & param);
+  SingleParameterPrototype(const SingleParameterPrototype & other);
+  ~SingleParameterPrototype() = default;
+
+private:
+  Type mParameter;
+};
+
+class LIBSCRIPT_API TwoParametersPrototype : public Prototype
+{
+public:
+  TwoParametersPrototype();
+  TwoParametersPrototype(const Type & rt, const Type & p1, const Type & p2);
+  TwoParametersPrototype(const TwoParametersPrototype & other);
+  ~TwoParametersPrototype() = default;
+
+private:
+  Type mParameters[2];
+};
+
+class LIBSCRIPT_API CastPrototype : public SingleParameterPrototype
+{
+public:
+  using SingleParameterPrototype::SingleParameterPrototype;
+};
+
+class LIBSCRIPT_API DestructorPrototype : public SingleParameterPrototype
+{
+public:
+  using SingleParameterPrototype::SingleParameterPrototype;
+};
+
+class LIBSCRIPT_API UnaryOperatorPrototype : public SingleParameterPrototype
+{
+public:
+  using SingleParameterPrototype::SingleParameterPrototype;
+};
+
+class LIBSCRIPT_API BinaryOperatorPrototype : public TwoParametersPrototype
+{
+public:
+  using TwoParametersPrototype::TwoParametersPrototype;
+};
+
 class LIBSCRIPT_API DynamicPrototype : public Prototype
 {
 public:

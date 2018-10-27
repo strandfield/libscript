@@ -86,6 +86,50 @@ bool Prototype::operator==(const Prototype & other) const
 
 
 
+SingleParameterPrototype::SingleParameterPrototype()
+  : Prototype(Type::Void, &mParameter, &mParameter + 1)
+{
+
+}
+
+SingleParameterPrototype::SingleParameterPrototype(const Type & rt, const Type & param)
+  : Prototype(rt, &mParameter, &mParameter + 1)
+  , mParameter(param)
+{
+
+}
+
+SingleParameterPrototype::SingleParameterPrototype(const SingleParameterPrototype & other)
+  : Prototype(other.returnType(), &mParameter, &mParameter + 1)
+  , mParameter(other.mParameter)
+{
+
+}
+
+
+
+TwoParametersPrototype::TwoParametersPrototype()
+  : Prototype(Type::Void, &mParameters[0], &mParameters[0] + 2)
+{
+
+}
+
+TwoParametersPrototype::TwoParametersPrototype(const Type & rt, const Type & p1, const Type & p2)
+  : Prototype(rt, &mParameters[0], &mParameters[0] + 2)
+{
+  mParameters[0] = p1;
+  mParameters[1] = p2;
+}
+
+TwoParametersPrototype::TwoParametersPrototype(const TwoParametersPrototype & other)
+  : Prototype(other.returnType(), &mParameters[0], &mParameters[0] + 2)
+{
+  mParameters[0] = other.mParameters[0];
+  mParameters[1] = other.mParameters[1];
+}
+
+
+
 DynamicPrototype::DynamicPrototype(const DynamicPrototype & other)
   : Prototype{other.returnType()}
   , mParameters(other.mParameters)

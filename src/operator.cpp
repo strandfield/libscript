@@ -12,15 +12,17 @@ namespace script
 
 
 OperatorImpl::OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
-  : FunctionImpl(proto, engine, flags)
+  : FunctionImpl(engine, flags)
   , operatorId(op)
+  , proto_(proto)
 {
 
 }
 
 OperatorImpl::OperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags)
-  : FunctionImpl(std::move(proto), engine, flags)
+  : FunctionImpl(engine, flags)
   , operatorId(op)
+  , proto_(std::move(proto))
 {
 
 }
@@ -29,6 +31,17 @@ Name OperatorImpl::get_name() const
 {
   return operatorId;
 }
+
+const Prototype & OperatorImpl::prototype() const
+{
+  return this->proto_;
+}
+
+void OperatorImpl::set_return_type(const Type & t)
+{
+  this->proto_.setReturnType(t);
+}
+
 
 BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine)
   : OperatorImpl(op, proto, engine)

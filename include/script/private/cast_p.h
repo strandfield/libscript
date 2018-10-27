@@ -13,10 +13,14 @@ namespace script
 class CastImpl : public FunctionImpl
 {
 public:
+  CastPrototype proto_;
+
+public:
   CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   ~CastImpl() = default;
 
   Name get_name() const override;
+  const Prototype & prototype() const override;
 };
 
 } // namespace script

@@ -11,15 +11,22 @@ namespace script
 {
 
 CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : FunctionImpl(p, e, f)
+  : FunctionImpl(e, f)
+  , proto_(p.returnType(), p.at(0))
 {
 
 }
 
 Name CastImpl::get_name() const
 {
-  return Name{ Name::CastTag{}, prototype_.returnType() };
+  return Name{ Name::CastTag{}, proto_.returnType() };
 }
+
+const Prototype & CastImpl::prototype() const
+{
+  return this->proto_;
+}
+
 
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)
   : Function(impl)

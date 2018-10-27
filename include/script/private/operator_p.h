@@ -16,12 +16,15 @@ class OperatorImpl : public FunctionImpl
 {
 public:
   OperatorName operatorId;
+  DynamicPrototype proto_;
 public:
   OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   OperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
 
   Name get_name() const override;
+  const Prototype & prototype() const override;
+  void set_return_type(const Type & t) override;
 };
 
 class BuiltInOperatorImpl : public OperatorImpl

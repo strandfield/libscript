@@ -11,8 +11,9 @@ namespace script
 {
 
 LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
-  : FunctionImpl(proto, engine, flags)
+  : FunctionImpl(engine, flags)
   , suffix(std::move(suffix))
+  , proto_(proto)
 {
 
 }
@@ -21,6 +22,12 @@ Name LiteralOperatorImpl::get_name() const
 {
   return Name{ Name::LiteralOperatorTag{}, suffix };
 }
+
+const Prototype & LiteralOperatorImpl::prototype() const
+{
+  return this->proto_;
+}
+
 
 LiteralOperator::LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl)
   : Function(impl)

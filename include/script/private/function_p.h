@@ -29,14 +29,12 @@ class LIBSCRIPT_API FunctionImpl
 public:
   typedef int flag_type;
 
-  FunctionImpl(const Prototype &p, Engine *e, flag_type f = 0);
-  FunctionImpl(DynamicPrototype&& p, Engine *e, flag_type f = 0);
+  FunctionImpl(Engine *e, flag_type f = 0);
   virtual ~FunctionImpl();
 
   virtual const std::string & name() const;
   virtual Name get_name() const;
 
-  DynamicPrototype prototype_;
   Engine *engine;
   std::shared_ptr<UserData> data;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
@@ -50,7 +48,7 @@ public:
   virtual void set_default_arguments(std::vector<DefaultArgument> && defaults);
   virtual void add_default_argument(const DefaultArgument & da);
 
-  virtual const Prototype & prototype() const;
+  virtual const Prototype & prototype() const = 0;
   virtual void set_return_type(const Type & t);
 
   void force_virtual();
@@ -63,6 +61,8 @@ class RegularFunctionImpl : public FunctionImpl
 public:
   RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f = 0);
+
+  DynamicPrototype prototype_;
   std::string mName;
   std::vector<DefaultArgument> mDefaultArguments;
 public:
@@ -73,6 +73,9 @@ public:
 
   Name get_name() const override;
 
+  const Prototype & prototype() const override;
+  void set_return_type(const Type & t) override;
+
   const std::vector<DefaultArgument> & default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> && defaults) override;
   void add_default_argument(const DefaultArgument & da) override;
@@ -81,8 +84,13 @@ public:
 class ScriptFunctionImpl : public FunctionImpl
 {
 public:
+  DynamicPrototype prototype_;
+
+public:
   ScriptFunctionImpl(Engine *e);
   ~ScriptFunctionImpl() = default;
+
+  const Prototype & prototype() const override;
 };
 
 class ConstructorImpl : public FunctionImpl
@@ -90,6 +98,7 @@ class ConstructorImpl : public FunctionImpl
 public:
   ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
   
+  DynamicPrototype prototype_;
   std::vector<DefaultArgument> mDefaultArguments;
 public:
   
@@ -97,6 +106,8 @@ public:
 
   const std::string & name() const override;
   Name get_name() const override;
+
+  const Prototype & prototype() const override;
 
   const std::vector<DefaultArgument> & default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> && defaults) override;
@@ -111,7 +122,14 @@ public:
 class DestructorImpl : public FunctionImpl
 {
 public:
+  DestructorPrototype proto_;
+
+public:
   DestructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+
+  DynamicPrototype prototype_;
+
+  const Prototype & prototype() const override;
 };
 
 
