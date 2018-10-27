@@ -18,6 +18,7 @@ public:
   OperatorName operatorId;
 public:
   OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  OperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags = 0);
   ~OperatorImpl() = default;
 
   Name get_name() const override;
@@ -27,6 +28,7 @@ class BuiltInOperatorImpl : public OperatorImpl
 {
 public:
   BuiltInOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine);
+  BuiltInOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine);
   ~BuiltInOperatorImpl() = default;
 };
 

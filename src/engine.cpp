@@ -961,10 +961,10 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   const int id = d->prototypes.size();
   Type type{ id | Type::PrototypeFlag };
 
-  Prototype assign_proto;
+  DynamicPrototype assign_proto;
   assign_proto.setReturnType(Type::ref(type));
-  assign_proto.addParameter(Type::ref(type));
-  assign_proto.addParameter(Type::cref(type));
+  assign_proto.push(Type::ref(type));
+  assign_proto.push(Type::cref(type));
   auto assign_op = std::make_shared<OperatorImpl>(AssignmentOperator, assign_proto, this);
   assign_op->set_impl(callbacks::function_variable_assignment);
 

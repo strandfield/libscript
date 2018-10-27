@@ -78,22 +78,22 @@ public:
 protected:
   Type handle_function(const std::shared_ptr<ast::FunctionType> & ft, const Scope & scp)
   {
-    Prototype proto;
+    DynamicPrototype proto;
     proto.setReturnType(resolve(ft->returnType, scp));
 
     for (const auto & p : ft->params)
-      proto.addParameter(resolve(p, scp));
+      proto.push(resolve(p, scp));
 
     return scp.engine()->getFunctionType(proto).type();
   }
 
   Type handle_function(const std::shared_ptr<ast::FunctionType> & ft)
   {
-    Prototype proto;
+    DynamicPrototype proto;
     proto.setReturnType(resolve(qt.functionType->returnType));
 
     for (const auto & p : qt.functionType->params)
-      proto.addParameter(resolve(p));
+      proto.push(resolve(p));
 
     return scp.engine()->getFunctionType(proto).type();
   }

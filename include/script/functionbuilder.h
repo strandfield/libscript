@@ -6,6 +6,7 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/function.h" /// TODO: remove this include
+#include "script/prototypes.h"
 #include "script/symbol.h"
 
 namespace script
@@ -18,7 +19,7 @@ public:
   NativeFunctionSignature callback;
   Function::Kind kind;
   std::string name;
-  Prototype proto;
+  DynamicPrototype proto;
   int flags;
   Symbol symbol;
   OperatorName operation;

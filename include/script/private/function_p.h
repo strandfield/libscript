@@ -6,8 +6,8 @@
 #define LIBSCRIPT_FUNCTION_P_H
 
 #include "script/engine.h"
-#include "script/prototype.h"
 #include "script/functiontemplate.h"
+#include "script/prototypes.h"
 
 namespace script
 {
@@ -30,12 +30,13 @@ public:
   typedef int flag_type;
 
   FunctionImpl(const Prototype &p, Engine *e, flag_type f = 0);
+  FunctionImpl(DynamicPrototype&& p, Engine *e, flag_type f = 0);
   virtual ~FunctionImpl();
 
   virtual const std::string & name() const;
   virtual Name get_name() const;
 
-  Prototype prototype;
+  DynamicPrototype prototype;
   Engine *engine;
   std::shared_ptr<UserData> data;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
@@ -58,6 +59,7 @@ class RegularFunctionImpl : public FunctionImpl
 {
 public:
   RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f = 0);
   std::string mName;
   std::vector<DefaultArgument> mDefaultArguments;
 public:

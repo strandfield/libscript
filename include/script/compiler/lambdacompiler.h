@@ -95,7 +95,7 @@ protected:
   void processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs) override;
 
 protected:
-  Prototype computePrototype();
+  DynamicPrototype computePrototype();
 
 protected:
   CompileLambdaTask const *mCurrentTask;

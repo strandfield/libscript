@@ -189,7 +189,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
-  const Prototype proto = computePrototype();
+  DynamicPrototype proto = computePrototype();
   auto builder = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto);
   DefaultArgumentProcessor default_arguments;
   default_arguments.process(task.lexpr->params, builder, task.scope);
@@ -322,22 +322,22 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
   write(program::ReturnStatement::New(retval, std::move(statements)));
 }
 
-Prototype LambdaCompiler::computePrototype()
+DynamicPrototype LambdaCompiler::computePrototype()
 {
   const auto & lexpr = task().lexpr;
 
-  Prototype result;
+  DynamicPrototype result;
 
   // Warning : return type is set later
   result.setReturnType(Type::Null);
 
   Type closure_type{ mLambda.id(), Type::ReferenceFlag | Type::ThisFlag };
-  result.addParameter(closure_type);
+  result.push(closure_type);
 
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
     Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
-    result.addParameter(paramtype);
+    result.push(paramtype);
   }
 
   return result;

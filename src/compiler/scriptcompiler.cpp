@@ -620,7 +620,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
       && (builder.proto.count() == 2 && builder.proto.at(1) == Type::Int))
     {
-      builder.proto.popParameter();
+      builder.proto.pop();
       builder.operation = over_decl.name->name == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
     }
     else

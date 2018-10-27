@@ -268,7 +268,7 @@ TEST(Conversions, function_type) {
   Engine e;
   e.setup();
 
-  auto ft = e.getFunctionType(Prototype{ Type::Void, Type::Int });
+  auto ft = e.getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} });
 
   Conversion conv = Conversion::compute(ft.type(), ft.type(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -280,7 +280,7 @@ TEST(Conversions, function_type) {
   ASSERT_FALSE(conv.isUserDefinedConversion());
   ASSERT_TRUE(conv.firstStandardConversion().isReferenceConversion());
 
-  auto ft2 = e.getFunctionType(Prototype{ Type::Void, Type::Float });
+  auto ft2 = e.getFunctionType(DynamicPrototype{ Type::Void, { Type::Float } });
 
   conv = Conversion::compute(ft.type(), ft2.type(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());

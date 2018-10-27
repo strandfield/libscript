@@ -885,10 +885,16 @@ Type script_type()
   return ret;
 }
 
-template<typename...Args>
-Prototype proto()
+template<typename R, typename P>
+DynamicPrototype proto()
 {
-  return Prototype{ script_type<Args>()... };
+  return DynamicPrototype{ script_type<R>(), std::vector<Type>{script_type<P>()} };
+}
+
+template<typename R, typename P1, typename P2>
+DynamicPrototype proto()
+{
+  return DynamicPrototype{ script_type<R>(), std::vector<Type>{script_type<P1>(), script_type<P2>()} };
 }
 
 

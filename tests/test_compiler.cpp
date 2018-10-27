@@ -1121,7 +1121,7 @@ TEST(CompilerTests, function_variable) {
 
   Value func = s.globals().back();
 
-  Prototype proto{ Type::Int, Type::Int };
+  DynamicPrototype proto{ Type::Int, {Type::Int} };
   ASSERT_EQ(func.type(), engine.getFunctionType(proto).type());
 }
 
@@ -1176,7 +1176,7 @@ TEST(CompilerTests, function_variable_assignment) {
   ASSERT_EQ(s.globals().size(), 1);
   Value func = s.globals().back();
 
-  Prototype proto{ Type::Int, Type::Int };
+  DynamicPrototype proto{ Type::Int, {Type::Int} };
   ASSERT_EQ(func.type(), engine.getFunctionType(proto).type());
 
   ASSERT_EQ(func.toFunction(), bar);

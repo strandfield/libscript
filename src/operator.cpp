@@ -18,6 +18,13 @@ OperatorImpl::OperatorImpl(OperatorName op, const Prototype & proto, Engine *eng
 
 }
 
+OperatorImpl::OperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags)
+  : FunctionImpl(std::move(proto), engine, flags)
+  , operatorId(op)
+{
+
+}
+
 Name OperatorImpl::get_name() const
 {
   return operatorId;
@@ -29,6 +36,11 @@ BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, const Prototype & prot
 
 }
 
+BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine)
+  : OperatorImpl(op, std::move(proto), engine)
+{
+
+}
 
 Operator::Operator(const std::shared_ptr<OperatorImpl> & impl)
   : Function(impl)

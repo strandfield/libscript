@@ -40,6 +40,14 @@ FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_typ
 
 }
 
+FunctionImpl::FunctionImpl(DynamicPrototype&& p, Engine *e, flag_type f)
+  : prototype(std::move(p))
+  , engine(e)
+  , flags(f)
+{
+
+}
+
 FunctionImpl::~FunctionImpl()
 {
 
@@ -95,6 +103,13 @@ void FunctionImpl::set_impl(const std::shared_ptr<program::Statement> program)
 
 RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
   : FunctionImpl(p, e, f)
+  , mName(name)
+{
+
+}
+
+RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f)
+  : FunctionImpl(std::move(p), e, f)
   , mName(name)
 {
 

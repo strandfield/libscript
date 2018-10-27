@@ -135,11 +135,11 @@ FunctionBuilder::FunctionBuilder(Class cla, Function::Kind k)
   this->proto.setReturnType(Type::Void);
 
   if(k == Function::Constructor)
-    this->proto = Prototype{ Type::Void, Type::ref(cla.id() | Type::ThisFlag) }; /// TODO : should it be a const-ref or just a ref ?
+    this->proto.push(Type::ref(cla.id()).withFlag(Type::ThisFlag)); /// TODO : should it be a const-ref or just a ref ?
   else if(k == Function::Destructor)
-    this->proto = Prototype{ Type::Void, Type::cref(cla.id() | Type::ThisFlag) }; /// TODO : not sure about that
+    this->proto.push(Type::cref(cla.id()).withFlag(Type::ThisFlag)); /// TODO : not sure about that
   else
-    this->proto.addParameter(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+    this->proto.push(Type::ref(cla.id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Class cla, OperatorName op)
@@ -151,7 +151,7 @@ FunctionBuilder::FunctionBuilder(Class cla, OperatorName op)
   , operation(op)
 {
   this->proto.setReturnType(Type::Void);
-  this->proto.addParameter(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+  this->proto.push(Type::ref(cla.id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Namespace ns)
@@ -232,7 +232,8 @@ FunctionBuilder & FunctionBuilder::setExplicit()
 
 FunctionBuilder & FunctionBuilder::setPrototype(const Prototype & proto)
 {
-  this->proto = proto;
+  this->proto.setReturnType(proto.returnType());
+  this->proto.set(proto.parameters());
   return *(this);
 }
 
@@ -293,7 +294,7 @@ FunctionBuilder & FunctionBuilder::setStatic()
 
   for (int i(0); i < proto.count() - 1; ++i)
     proto.setParameter(i, proto.at(i+1));
-  proto.popParameter();
+  proto.pop();
 
   return *this;
 }
@@ -311,7 +312,7 @@ FunctionBuilder & FunctionBuilder::setReturnType(const Type & t)
 
 FunctionBuilder & FunctionBuilder::addParam(const Type & t)
 {
-  this->proto.addParameter(t);
+  this->proto.push(t);
   return *(this);
 }
 

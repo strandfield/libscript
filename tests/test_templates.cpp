@@ -418,7 +418,7 @@ TEST(TemplateTests, argument_deduction_4) {
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
     .get();
 
-  Prototype proto{ Type::Boolean, Type::Int };
+  DynamicPrototype proto{ Type::Boolean, {Type::Int} };
   FunctionType function_type = engine.getFunctionType(proto);
 
   std::vector<TemplateArgument> arguments;
@@ -460,7 +460,7 @@ TEST(TemplateTests, argument_deduction_5) {
   FunctionTemplate bar = s.rootNamespace().templates().back().asFunctionTemplate();
 
   auto create_func_type = [&engine](const Type & t) -> Type {
-    Prototype proto{ Type::Void , t };
+    DynamicPrototype proto{ Type::Void , {t} };
     return engine.getFunctionType(proto).type();
   };
 
@@ -1136,7 +1136,7 @@ TEST(TemplateTests, partial_specializations_selec) {
   ASSERT_EQ(result.second.front().type, Type::Int);
   ASSERT_EQ(result.second.back().type, Type::Boolean);
 
-  Type void_int = engine.getFunctionType(Prototype{ Type::Void, Type::Int }).type();
+  Type void_int = engine.getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} }).type();
   targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Int }, TemplateArgument{ void_int } };
   result = selector.select(foo, targs);
   ASSERT_EQ(result.first, foo_T_UT);
@@ -1144,7 +1144,7 @@ TEST(TemplateTests, partial_specializations_selec) {
   ASSERT_EQ(result.second.front().type, Type::Int);
   ASSERT_EQ(result.second.back().type, Type::Void);
 
-  Type int_int = engine.getFunctionType(Prototype{ Type::Int, Type::Int }).type();
+  Type int_int = engine.getFunctionType(DynamicPrototype{ Type::Int, {Type::Int} }).type();
   targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Void }, TemplateArgument{ int_int } };
   result = selector.select(foo, targs);
   ASSERT_TRUE(result.first.isNull());
@@ -1185,29 +1185,29 @@ TEST(TemplateTests, full_spec_overload_selec) {
 
   compiler::TemplateOverloadSelector selector;
   std::vector<TemplateArgument> targs;
-  Prototype proto;
+  DynamicPrototype proto;
   std::pair<FunctionTemplate, std::vector<TemplateArgument>> result;
 
-  proto = Prototype{ Type::Void, Type{Type::Int} };
+  proto = DynamicPrototype{ Type::Void, {Type{Type::Int}} };
   result = selector.select(candidates, targs, proto);
   ASSERT_EQ(result.first, foo_T);
   ASSERT_EQ(result.second.size(), 1);
   ASSERT_EQ(result.second.front().type, Type::Int);
 
-  proto = Prototype{ Type::Void, Type{ Type::Int, Type::ConstFlag } };
+  proto = DynamicPrototype{ Type::Void, {Type{ Type::Int, Type::ConstFlag }} };
   result = selector.select(candidates, targs, proto);
   ASSERT_EQ(result.first, foo_cT);
   ASSERT_EQ(result.second.size(), 1);
   ASSERT_EQ(result.second.front().type, Type::Int);
 
-  proto = Prototype{ Type::Void, Type{ Type::Int, Type::ReferenceFlag } };
+  proto = DynamicPrototype{ Type::Void, {Type{ Type::Int, Type::ReferenceFlag }} };
   result = selector.select(candidates, targs, proto);
   ASSERT_EQ(result.first, foo_T);
   ASSERT_EQ(result.second.size(), 1);
   ASSERT_EQ(result.second.front().type, Type(Type::Int, Type::ReferenceFlag));
 
   Type array_int = engine.newArray(Engine::ElementType{ Type::Int }).typeId();
-  proto = Prototype{ Type::Void, array_int };
+  proto = DynamicPrototype{ Type::Void, {array_int} };
   result = selector.select(candidates, targs, proto);
   ASSERT_EQ(result.first, foo_ArrayT);
   ASSERT_EQ(result.second.size(), 1);

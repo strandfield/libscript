@@ -29,7 +29,7 @@ public:
     return scp.isClass() ? scp.asClass() : (scp.type() == Scope::TemplateArgumentScope ? getClass(scp.parent()) : Class{});
   }
 
-  void fill(Prototype & proto, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
+  void fill(DynamicPrototype & proto, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
     const Class class_scope = getClass(scp);
 
@@ -41,7 +41,7 @@ public:
     for (size_t i(0); i < fundecl->params.size(); ++i)
     {
       Type argtype = type_.resolve(fundecl->params.at(i).type, scp);
-      proto.addParameter(argtype);
+      proto.push(argtype);
     }
   }
 };
