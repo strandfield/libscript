@@ -282,14 +282,14 @@ void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement
 
   if (val == nullptr)
   {
-    mFunction.impl()->prototype.setReturnType(Type::Void);
+    mFunction.impl()->set_return_type(Type::Void);
     return;
   }
 
   if (val->type() == Type::InitializerList)
     throw CannotDeduceLambdaReturnType{ dpos(rs) };
 
-  mFunction.impl()->prototype.setReturnType(val->type().baseType());
+  mFunction.impl()->set_return_type(val->type().baseType());
 }
 
 void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)

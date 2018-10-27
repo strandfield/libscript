@@ -36,7 +36,7 @@ public:
   virtual const std::string & name() const;
   virtual Name get_name() const;
 
-  DynamicPrototype prototype;
+  DynamicPrototype prototype_;
   Engine *engine;
   std::shared_ptr<UserData> data;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
@@ -49,6 +49,9 @@ public:
   virtual const std::vector<DefaultArgument> & default_arguments() const;
   virtual void set_default_arguments(std::vector<DefaultArgument> && defaults);
   virtual void add_default_argument(const DefaultArgument & da);
+
+  virtual const Prototype & prototype() const;
+  virtual void set_return_type(const Type & t);
 
   void force_virtual();
   void set_impl(NativeFunctionSignature callback);

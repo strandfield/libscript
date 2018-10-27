@@ -18,7 +18,7 @@ CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
 
 Name CastImpl::get_name() const
 {
-  return Name{ Name::CastTag{}, prototype.returnType() };
+  return Name{ Name::CastTag{}, prototype_.returnType() };
 }
 
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)
@@ -29,12 +29,12 @@ Cast::Cast(const std::shared_ptr<CastImpl> & impl)
 
 Type Cast::sourceType() const
 {
-  return d->prototype.at(0);
+  return d->prototype().at(0);
 }
 
 Type Cast::destType() const
 {
-  return d->prototype.returnType();
+  return d->prototype().returnType();
 }
 
 

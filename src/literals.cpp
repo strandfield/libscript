@@ -30,12 +30,12 @@ LiteralOperator::LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & im
 
 Type LiteralOperator::input() const
 {
-  return d->prototype.at(0);
+  return d->prototype().at(0);
 }
 
 Type LiteralOperator::output() const
 {
-  return d->prototype.returnType();
+  return d->prototype().returnType();
 }
 
 const std::string & LiteralOperator::suffix() const

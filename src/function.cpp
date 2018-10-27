@@ -33,7 +33,7 @@ namespace script
  */
 
 FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
-  : prototype(p)
+  : prototype_(p)
   , engine(e)
   , flags(f)
 {
@@ -41,7 +41,7 @@ FunctionImpl::FunctionImpl(const Prototype &p, Engine *e, FunctionImpl::flag_typ
 }
 
 FunctionImpl::FunctionImpl(DynamicPrototype&& p, Engine *e, flag_type f)
-  : prototype(std::move(p))
+  : prototype_(std::move(p))
   , engine(e)
   , flags(f)
 {
@@ -80,6 +80,16 @@ void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> && default
 void FunctionImpl::add_default_argument(const DefaultArgument &)
 {
   throw std::runtime_error{ "Function does not support default arguments" };
+}
+
+const Prototype & FunctionImpl::prototype() const
+{
+  return this->prototype_;
+}
+
+void FunctionImpl::set_return_type(const Type & t)
+{
+  this->prototype_.setReturnType(t);
 }
 
 void FunctionImpl::force_virtual()
@@ -181,21 +191,21 @@ void ConstructorImpl::add_default_argument(const DefaultArgument & da)
 
 bool ConstructorImpl::is_default_ctor() const
 {
-  return this->prototype.count() == 1;
+  return this->prototype_.count() == 1;
 }
 
 bool ConstructorImpl::is_copy_ctor() const
 {
-  if (this->prototype.count() != 2)
+  if (this->prototype_.count() != 2)
     return false;
-  return this->prototype.at(1) == Type::cref(getClass().id());
+  return this->prototype_.at(1) == Type::cref(getClass().id());
 }
 
 bool ConstructorImpl::is_move_ctor() const
 {
-  if (this->prototype.count() != 2)
+  if (this->prototype_.count() != 2)
     return false;
-  return this->prototype.at(1) == Type::rref(getClass().id());
+  return this->prototype_.at(1) == Type::rref(getClass().id());
 }
 
 DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionImpl::flag_type f)
@@ -245,7 +255,7 @@ Name Function::getName() const
 
 const Prototype & Function::prototype() const
 {
-  return d->prototype;
+  return d->prototype();
 }
 
 const Type & Function::parameter(int index) const
@@ -366,10 +376,10 @@ Script Function::script() const
 bool Function::isConstructor() const
 {
   // THe following is incorrect I believe
-  // return d->prototype.count() >= 1
-  //   & d->prototype.at(0).testFlag(Type::ThisFlag)
-  //   & d->prototype.returnType().isConstRef()
-  //   & d->prototype.returnType().baseType() == d->prototype.at(0).baseType();
+  // return d->prototype_.count() >= 1
+  //   & d->prototype_.at(0).testFlag(Type::ThisFlag)
+  //   & d->prototype_.returnType().isConstRef()
+  //   & d->prototype_.returnType().baseType() == d->prototype_.at(0).baseType();
   
   // correct implementation
   return dynamic_cast<ConstructorImpl *>(d.get()) != nullptr;
@@ -378,9 +388,9 @@ bool Function::isConstructor() const
 bool Function::isDestructor() const
 {
   // This is also incorrect
-  /*return d->prototype.count() == 1
-    && d->prototype.at(0).testFlag(Type::ThisFlag)
-    && d->prototype.returnType() == Type::Void;*/
+  /*return d->prototype_.count() == 1
+    && d->prototype_.at(0).testFlag(Type::ThisFlag)
+    && d->prototype_.returnType() == Type::Void;*/
 
   // correct implementation
   return dynamic_cast<DestructorImpl *>(d.get()) != nullptr;
@@ -416,7 +426,7 @@ bool Function::isExplicit() const
 
 bool Function::isConst() const
 {
-  return isNonStaticMemberFunction() && d->prototype.at(0).isConstRef();
+  return isNonStaticMemberFunction() && d->prototype().at(0).isConstRef();
 }
 
 bool Function::isVirtual() const
