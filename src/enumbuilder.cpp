@@ -41,8 +41,8 @@ Enum EnumBuilder::get()
   
   symbol.engine()->implementation()->register_enum(result, id);
 
-  DynamicPrototype proto{ Type::ref(result.id()), {Type::ref(result.id()), Type::cref(result.id())} };
-  auto op = std::make_shared<OperatorImpl>(AssignmentOperator, std::move(proto), symbol.engine());
+  BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
+  auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine());
   op->implementation.callback = callbacks::enum_assignment;
   impl->assignment = Operator{ op };
 

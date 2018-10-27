@@ -34,7 +34,6 @@ public:
 
   BuiltInOperator operatorId() const;
   bool isBinary() const;
-  bool isBuiltin() const;
 
   static bool isBinary(BuiltInOperator op);
   static bool isUnary(BuiltInOperator op);

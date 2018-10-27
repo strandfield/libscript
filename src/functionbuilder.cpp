@@ -78,7 +78,15 @@ static Function build_literal_operator(const FunctionBuilder & opts)
 
 static Function build_operator(const FunctionBuilder & opts)
 {
-  auto impl = std::make_shared<OperatorImpl>(opts.operation, opts.proto, opts.engine, opts.flags);
+  std::shared_ptr<OperatorImpl> impl;
+
+  if (opts.operation == OperatorName::FunctionCallOperator)
+    impl = std::make_shared<FunctionCallOperatorImpl>(opts.operation, opts.proto, opts.engine, opts.flags);
+  else if(opts.proto.count() == 2)
+    impl = std::make_shared<BinaryOperatorImpl>(opts.operation, opts.proto, opts.engine, opts.flags);
+  else
+    impl = std::make_shared<UnaryOperatorImpl>(opts.operation, opts.proto, opts.engine, opts.flags);
+
   fill(impl, opts);
   return Function{ impl };
 }

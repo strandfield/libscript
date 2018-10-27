@@ -10,19 +10,9 @@
 namespace script
 {
 
-
-OperatorImpl::OperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionImpl::flag_type flags)
   : FunctionImpl(engine, flags)
   , operatorId(op)
-  , proto_(proto)
-{
-
-}
-
-OperatorImpl::OperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags)
-  : FunctionImpl(engine, flags)
-  , operatorId(op)
-  , proto_(std::move(proto))
 {
 
 }
@@ -32,28 +22,66 @@ Name OperatorImpl::get_name() const
   return operatorId;
 }
 
-const Prototype & OperatorImpl::prototype() const
+
+UnaryOperatorImpl::UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+  : OperatorImpl(op, engine, flags)
+  , proto_(proto.returnType(), proto.at(0))
+{
+
+}
+
+const Prototype & UnaryOperatorImpl::prototype() const
 {
   return this->proto_;
 }
 
-void OperatorImpl::set_return_type(const Type & t)
+void UnaryOperatorImpl::set_return_type(const Type & t)
+{
+  this->proto_.setReturnType(t);
+}
+
+BinaryOperatorImpl::BinaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+  : OperatorImpl(op, engine, flags)
+  , proto_(proto.returnType(), proto.at(0), proto.at(1))
+{
+
+}
+
+const Prototype & BinaryOperatorImpl::prototype() const
+{
+  return this->proto_;
+}
+
+void BinaryOperatorImpl::set_return_type(const Type & t)
+{
+  this->proto_.setReturnType(t);
+}
+
+FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+  : OperatorImpl(op, engine, flags)
+  , proto_(proto)
+{
+
+}
+
+FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags)
+  : OperatorImpl(op, engine, flags)
+  , proto_(std::move(proto))
+{
+
+}
+
+const Prototype & FunctionCallOperatorImpl::prototype() const
+{
+  return this->proto_;
+}
+
+void FunctionCallOperatorImpl::set_return_type(const Type & t)
 {
   this->proto_.setReturnType(t);
 }
 
 
-BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine)
-  : OperatorImpl(op, proto, engine)
-{
-
-}
-
-BuiltInOperatorImpl::BuiltInOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine)
-  : OperatorImpl(op, std::move(proto), engine)
-{
-
-}
 
 Operator::Operator(const std::shared_ptr<OperatorImpl> & impl)
   : Function(impl)
@@ -71,11 +99,6 @@ OperatorName Operator::operatorId() const
 bool Operator::isBinary() const
 {
   return d->prototype().count() == 2;
-}
-
-bool Operator::isBuiltin() const
-{
-  return dynamic_cast<const BuiltInOperatorImpl*>(d.get()) != nullptr;
 }
 
 bool Operator::isBinary(BuiltInOperator op)

@@ -961,11 +961,8 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   const int id = d->prototypes.size();
   Type type{ id | Type::PrototypeFlag };
 
-  DynamicPrototype assign_proto;
-  assign_proto.setReturnType(Type::ref(type));
-  assign_proto.push(Type::ref(type));
-  assign_proto.push(Type::cref(type));
-  auto assign_op = std::make_shared<OperatorImpl>(AssignmentOperator, assign_proto, this);
+  BinaryOperatorPrototype assign_proto{ Type::ref(type), Type::ref(type), Type::cref(type) };
+  auto assign_op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, assign_proto, this);
   assign_op->set_impl(callbacks::function_variable_assignment);
 
   FunctionType ret{ type, proto, Operator{ assign_op } };

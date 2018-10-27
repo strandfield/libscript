@@ -886,15 +886,15 @@ Type script_type()
 }
 
 template<typename R, typename P>
-DynamicPrototype proto()
+UnaryOperatorPrototype proto()
 {
-  return DynamicPrototype{ script_type<R>(), std::vector<Type>{script_type<P>()} };
+  return UnaryOperatorPrototype{ script_type<R>(), script_type<P>() };
 }
 
 template<typename R, typename P1, typename P2>
-DynamicPrototype proto()
+BinaryOperatorPrototype proto()
 {
-  return DynamicPrototype{ script_type<R>(), std::vector<Type>{script_type<P1>(), script_type<P2>()} };
+  return BinaryOperatorPrototype{ script_type<R>(), script_type<P1>(), script_type<P2>() };
 }
 
 
@@ -910,7 +910,13 @@ void register_builtin_operators(Namespace root)
 
     inline void operator()(const Prototype & p, NativeFunctionSignature impl)
     {
-      auto ret = std::make_shared<BuiltInOperatorImpl>(operation, p, engine);
+      std::shared_ptr<OperatorImpl> ret;
+
+      if(p.count() == 1)
+        ret = std::make_shared<UnaryOperatorImpl>(operation, p, engine);
+      else
+        ret = std::make_shared<BinaryOperatorImpl>(operation, p, engine);
+
       ret->implementation.callback = impl;
       ret->enclosing_symbol = engine->rootNamespace().impl();
       engine->rootNamespace().impl()->operators.push_back(Operator{ ret });
