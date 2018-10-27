@@ -22,9 +22,6 @@ public:
 
   void process(const std::vector<ast::FunctionParameter> & params, FunctionBuilder & builder, const Scope & scp);
 
-  [[deprecated("default arguments should be processed before the Function object is constructed")]] 
-  void process(const std::vector<ast::FunctionParameter> & params, Function & f, const Scope & scp);
-
 protected:
   std::shared_ptr<program::Expression> generateDefaultArgument(const Scope & scp, const ast::FunctionParameter & param, const Type & t);
 

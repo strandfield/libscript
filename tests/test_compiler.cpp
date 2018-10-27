@@ -1925,12 +1925,13 @@ TEST(CompilerTests, unknown_type) {
   bool success = s.compile();
   const auto & errors = s.messages();
 
-  // When processing get_size() the first time, size_t is not defined 
-  // and get_size() is added to a list of function that needs a second pass.
-  // The second pass correctly resolved size_t.
-  // The old system worked with only a single pass by recording all functions 
-  // and processing them later, but it could not handle using declarations and 
-  // other constructs correctly. 
+  // When processing get_size() the first time, size_t is not defined and the
+  // building process fails. The declaration is scheduled to be re-processed later.
+  // The second pass correctly resolves size_t.
+  // If a using declaration is made, it will not find get_size() because it does 
+  // not exist until the second pass : this is a known limitation of the compilation 
+  // process. Using declarations made inside function bodies do not suffer from 
+  // this limitation and are generaly considered a better alternative anyway.
   ASSERT_TRUE(success);
 
   s.run();

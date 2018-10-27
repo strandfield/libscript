@@ -141,21 +141,21 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
 bool ScriptCompiler::done() const
 {
-  return mIncompleteFunctions.empty()
+  return mIncompleteFunctionDeclarations.empty()
     && mProcessingQueue.empty();
 }
 
 void ScriptCompiler::processNext()
 {
-  if (!mIncompleteFunctions.empty())
+  if (!mIncompleteFunctionDeclarations.empty())
   {
-    while (!mIncompleteFunctions.empty())
+    do
     {
-      auto task = mIncompleteFunctions.front();
-      mIncompleteFunctions.pop();
+      auto task = mIncompleteFunctionDeclarations.front();
+      mIncompleteFunctionDeclarations.pop();
 
       reprocess(task);
-    }
+    } while (!mIncompleteFunctionDeclarations.empty());
 
     return;
   }
@@ -295,15 +295,11 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
     processImportDirective(std::static_pointer_cast<ast::ImportDirective>(declaration));
     break;
   case ast::NodeType::FunctionDeclaration:
-    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(declaration));
   case ast::NodeType::ConstructorDeclaration:
-    return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(declaration));
   case ast::NodeType::DestructorDeclaration:
-    return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(declaration));
   case ast::NodeType::OperatorOverloadDeclaration:
-    return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(declaration));
   case ast::NodeType::CastDeclaration:
-    return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(declaration));
+    return processFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(declaration));
   case ast::NodeType::VariableDeclaration:
   case ast::NodeType::ClassFriendDecl:
     return collectDeclaration(declaration);
@@ -317,22 +313,6 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
 void ScriptCompiler::collectDeclaration(const std::shared_ptr<ast::Declaration> & decl)
 {
   mProcessingQueue.push(ScopedDeclaration{ currentScope(), decl });
-}
-
-void ScriptCompiler::resolveIncompleteTypes()
-{
-  ScopeGuard guard{ mCurrentScope };
-
-  //for (auto & f : mIncompleteFunctions)
-  //  reprocess(f);
-
-  //mIncompleteFunctions.clear();
-  while (!mIncompleteFunctions.empty())
-  {
-    auto task = mIncompleteFunctions.front();
-    mIncompleteFunctions.pop();
-    reprocess(task);
-  }
 }
 
 void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl)
@@ -519,7 +499,34 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(imported);
 }
 
-void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
+void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & declaration)
+{
+  try
+  {
+    switch (declaration->type())
+    {
+    case ast::NodeType::FunctionDeclaration:
+      return processBasicFunctionDeclaration(std::static_pointer_cast<ast::FunctionDecl>(declaration));
+    case ast::NodeType::ConstructorDeclaration:
+      return processConstructorDeclaration(std::static_pointer_cast<ast::ConstructorDecl>(declaration));
+    case ast::NodeType::DestructorDeclaration:
+      return processDestructorDeclaration(std::static_pointer_cast<ast::DestructorDecl>(declaration));
+    case ast::NodeType::OperatorOverloadDeclaration:
+      return processOperatorOverloadingDeclaration(std::static_pointer_cast<ast::OperatorOverloadDecl>(declaration));
+    case ast::NodeType::CastDeclaration:
+      return processCastOperatorDeclaration(std::static_pointer_cast<ast::CastDecl>(declaration));
+    default:
+      throw std::runtime_error{ "Bad call to ScriptCompiler::processFunctionDeclaration()" };
+    }
+  }
+  catch (compiler::InvalidTypeName &)
+  {
+    log(diagnostic::warning() << dpos(declaration) << "Type name could not be resolved, function will be reprocessed later");
+    mIncompleteFunctionDeclarations.push(ScopedDeclaration{ currentScope(), declaration });
+  }
+}
+
+void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
@@ -834,9 +841,8 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
 
   FunctionBuilder builder{ Function::StandardFunction };
   function_processor_.fill(builder, fundecl, scp);
-  /// TODO : to avoid this error, process all specializations at the end !
-  if(function_processor_.prototype_.type_.relax)
-    throw NotImplementedError{ dpos(fundecl), "Could not resolve some types in full specialization" };
+  /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
+  // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
   auto selection = selector.select(tmplts, args, builder.proto);
@@ -858,37 +864,16 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   selection.first.impl()->instances[selection.second] = result;
 }
 
-void ScriptCompiler::reprocess(IncompleteFunction & func)
+void ScriptCompiler::reprocess(ScopedDeclaration & func)
 {
-  /// TODO: Would this be useful ?
-  // ScopeGuard guard{ mCurrentScope };
-
-  const auto & decl = std::static_pointer_cast<ast::FunctionDecl>(func.declaration);
+  ScopeGuard guard{ mCurrentScope };
   mCurrentScope = func.scope;
 
-  auto impl = func.function.impl();
-  Prototype & proto = impl->prototype;
-  if (proto.returnType().testFlag(Type::UnknownFlag))
-    proto.setReturnType(resolve(decl->returnType));
-
-  const int offset = proto.count() > 0 && proto.at(0).testFlag(Type::ThisFlag) ? 1 : 0;
-
-  for (int i(offset); i < proto.count(); ++i)
-  {
-    if (proto.at(i).testFlag(Type::UnknownFlag))
-      proto.setParameter(i, resolve(decl->params.at(i-offset).type));
-  }
-
-  default_arguments_.process(func.declaration->as<ast::FunctionDecl>().params, func.function, func.scope);
+  processOrCollectDeclaration(func.declaration);
 }
 
 void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
 {
-  if (function_processor_.prototype_.type_.relax)
-    mIncompleteFunctions.push(IncompleteFunction{ scp, fundecl, f });
-
-  function_processor_.prototype_.type_.relax = false;
-
   if (f.isDeleted() || f.isPureVirtual())
     return;
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });

@@ -45,13 +45,6 @@ struct ScopedDeclaration
   std::shared_ptr<ast::Declaration> declaration;
 };
 
-struct IncompleteFunction : public ScopedDeclaration
-{
-  Function function;
-  IncompleteFunction(const Scope & scp, const std::shared_ptr<ast::Declaration> & decl, const Function & func) 
-    : ScopedDeclaration(scp, decl), function(func) { }
-};
-
 
 class ScriptCompiler
 {
@@ -87,7 +80,6 @@ protected:
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration, const Scope & scp);
   void processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration);
   void collectDeclaration(const std::shared_ptr<ast::Declaration> & decl);
-  void resolveIncompleteTypes();
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
 
@@ -102,6 +94,7 @@ protected:
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
+  void processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
   void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl);
   void processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl);
   void processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
@@ -119,7 +112,7 @@ protected:
   void processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl);
 
   // function-related functions
-  void reprocess(IncompleteFunction & func);
+  void reprocess(ScopedDeclaration & func);
 
 protected:
   void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
@@ -159,12 +152,13 @@ protected:
 
   VariableProcessor variable_;
 
-  std::queue<IncompleteFunction> mIncompleteFunctions;
+  /// TODO: maybe merge this with 'mProcessingQueue'
+  std::queue<ScopedDeclaration> mIncompleteFunctionDeclarations;
 
   ExtendedNameResolver name_resolver;
   TypeResolver<ExtendedNameResolver> type_resolver;
 
-  typedef BasicPrototypeResolver<LenientTypeResolver<ExtendedNameResolver>> PrototypeResolver;
+  typedef BasicPrototypeResolver<TypeResolver<ExtendedNameResolver>> PrototypeResolver;
   FunctionProcessor<PrototypeResolver> function_processor_;
 
   ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
