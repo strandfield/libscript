@@ -463,15 +463,15 @@ inline static void set_default_args(Function & fun, std::vector<DefaultArgument>
 OperatorBuilder::OperatorBuilder(const Symbol & s, OperatorName op)
   : GenericFunctionBuilder<OperatorBuilder>(s)
   , operation(op)
-  , proto{ Type::Void, Type::Null, Type::Null }
+  , proto_{ Type::Void, Type::Null, Type::Null }
 {
   if (symbol.isClass())
-    this->proto.setParameter(0, Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+    this->proto_.setParameter(0, Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
 }
 
 OperatorBuilder & OperatorBuilder::setConst()
 {
-  this->proto.setParameter(0, Type::cref(this->proto.at(0)));
+  this->proto_.setParameter(0, Type::cref(this->proto_.at(0)));
   return *(this);
 }
 
@@ -489,16 +489,16 @@ OperatorBuilder & OperatorBuilder::setDefaulted()
 
 inline OperatorBuilder & OperatorBuilder::setReturnType(const Type & t)
 {
-  this->proto.setReturnType(t);
+  this->proto_.setReturnType(t);
   return *(this);
 }
 
 OperatorBuilder & OperatorBuilder::addParam(const Type & t)
 {
-  if (this->proto.at(0).isNull())
-    this->proto.setParameter(0, t);
+  if (this->proto_.at(0).isNull())
+    this->proto_.setParameter(0, t);
   else
-    this->proto.setParameter(1, t);
+    this->proto_.setParameter(1, t);
 
   return *(this);
 }
@@ -513,9 +513,9 @@ script::Operator OperatorBuilder::get()
   std::shared_ptr<OperatorImpl> impl;
 
   if (Operator::isBinary(operation))
-    impl = std::make_shared<BinaryOperatorImpl>(operation, proto, engine, flags);
+    impl = std::make_shared<BinaryOperatorImpl>(operation, proto_, engine, flags);
   else
-    impl = std::make_shared<UnaryOperatorImpl>(operation, proto, engine, flags);
+    impl = std::make_shared<UnaryOperatorImpl>(operation, proto_, engine, flags);
 
   generic_fill(impl, *this);
   add_to_parent(Function{ impl }, symbol);
@@ -731,6 +731,12 @@ DestructorBuilder::DestructorBuilder(const Symbol & s)
     throw std::runtime_error{ "Destructor can only be members" };
 
   proto_.setParameter(0, Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
+}
+
+DestructorBuilder & DestructorBuilder::setDefaulted()
+{
+  this->flags |= (Function::Default << 2);
+  return *(this);
 }
 
 DestructorBuilder & DestructorBuilder::setVirtual()

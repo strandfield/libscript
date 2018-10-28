@@ -99,6 +99,7 @@ protected:
   void processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl);
   void processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
+  void processFunctionCallOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);

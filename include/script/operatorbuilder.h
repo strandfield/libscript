@@ -21,7 +21,7 @@ public:
 
 public:
   OperatorName operation;
-  prototype_t proto;
+  prototype_t proto_;
 
 public:
   OperatorBuilder(const Symbol & s, OperatorName op);

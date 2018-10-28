@@ -9,7 +9,9 @@
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
 #include "script/functionbuilder.h"
+#include "script/literaloperatorbuilder.h"
 #include "script/name.h"
+#include "script/operatorbuilder.h"
 #include "script/script.h"
 
 #include "script/private/class_p.h"
@@ -202,21 +204,17 @@ FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSign
   return builder;
 }
 
-FunctionBuilder Namespace::Operation(OperatorName op, NativeFunctionSignature func) const
+OperatorBuilder Namespace::Operation(OperatorName op, NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, op };
-  builder.callback = func;
-  return builder;
+  return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-FunctionBuilder Namespace::UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, FunctionBuilder::LiteralOperatorTag{}, suffix };
-  builder.callback = func;
-  return builder;
+  return LiteralOperatorBuilder{ Symbol{*this}, std::string{suffix} }.setCallback(func);
 }
 
-FunctionBuilder Namespace::UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
 {
   return UserDefinedLiteral(suffix, func).returns(output).params(input);
 }

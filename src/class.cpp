@@ -4,13 +4,17 @@
 
 #include "script/class.h"
 
+#include "script/castbuilder.h"
 #include "script/classbuilder.h"
+#include "script/constructorbuilder.h"
 #include "script/datamember.h"
+#include "script/destructorbuilder.h"
 #include "script/engine.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/object.h"
+#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/userdata.h"
@@ -387,18 +391,14 @@ Function Class::destructor() const
   return d->destructor;
 }
 
-FunctionBuilder Class::Constructor(NativeFunctionSignature func) const
+ConstructorBuilder Class::Constructor(NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, Function::Constructor };
-  builder.callback = func;
-  return builder;
+  return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
 }
 
-FunctionBuilder Class::Destructor(NativeFunctionSignature func) const
+DestructorBuilder Class::Destructor(NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, Function::Destructor };
-  builder.callback = func;
-  return builder;
+  return DestructorBuilder{ Symbol{*this} }.setCallback(func);
 }
 
 FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature func) const
@@ -409,19 +409,20 @@ FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature 
   return builder;
 }
 
-FunctionBuilder Class::Operation(OperatorName op, NativeFunctionSignature func) const
+OperatorBuilder Class::Operation(OperatorName op, NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, op };
-  builder.callback = func;
-  return builder;
+  return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-FunctionBuilder Class::Conversion(const Type & dest, NativeFunctionSignature func) const
+FunctionCallOperatorBuilder Class::FunctionCall(NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, Function::CastFunction };
-  builder.callback = func;
-  builder.returns(dest);
-  return builder;
+  return FunctionCallOperatorBuilder{ Symbol{ *this } }.setCallback(func);
+}
+
+
+CastBuilder Class::Conversion(const Type & dest, NativeFunctionSignature func) const
+{
+  return CastBuilder{ Symbol{*this}, dest }.setCallback(func);
 }
 
 ClassBuilder Class::NestedClass(const std::string & name) const

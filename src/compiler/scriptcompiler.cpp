@@ -19,9 +19,12 @@
 
 #include "script/program/expression.h"
 
+#include "script/castbuilder.h"
 #include "script/classbuilder.h"
 #include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
+#include "script/constructorbuilder.h"
+#include "script/destructorbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
@@ -30,6 +33,8 @@
 #include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
+#include "script/literaloperatorbuilder.h"
+#include "script/operatorbuilder.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 #include "script/symbol.h"
@@ -548,10 +553,10 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = current_class.Constructor();
-  function_processor_.fill(b, decl, scp);
-  default_arguments_.process(decl->params, b, scp);
-  Function ctor = b.create();
+  auto b = current_class.Constructor();
+  function_processor_.generic_fill(b, decl, scp);
+  default_arguments_.generic_process(decl->params, b, scp);
+  Function ctor = b.get();
 
   schedule(ctor, decl, scp);
 }
@@ -562,8 +567,8 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const auto & dtor_decl = *decl;
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = current_class.Destructor();
-  function_processor_.fill(b, decl, scp);
+  auto b = current_class.Destructor();
+  function_processor_.generic_fill(b, decl, scp);
 
   if (!current_class.parent().isNull())
   {
@@ -573,7 +578,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   }
 
   /// TODO : check if a destructor already exists
-  Function dtor = b.create();
+  Function dtor = b.get();
   
   schedule(dtor, decl, scp);
 }
@@ -587,12 +592,12 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  FunctionBuilder b = scp.asNamespace().UserDefinedLiteral(suffix_name);
-  function_processor_.fill(b, decl, currentScope());
+  auto b = scp.asNamespace().UserDefinedLiteral(suffix_name);
+  function_processor_.generic_fill(b, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = b.create();
+  Function function = b.get();
 
   scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
 
@@ -607,41 +612,58 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (over_decl.name->is<ast::LiteralOperatorName>())
     return processLiteralOperatorDecl(decl);
 
-  FunctionBuilder builder = scp.symbol().Operation(Operator::Null);
-  function_processor_.fill(builder, decl, scp);
-  
-  const bool is_member = currentScope().isClass();
-  
-  auto arity = builder.proto.count() == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::UnaryOp;
-  builder.operation = ast::OperatorName::getOperatorId(over_decl.name->name, arity);
-  if (builder.operation == Operator::Null)
+  size_t arity = (scp.isClass() ? 1 : 0) + decl->params.size();
+  auto search_option = arity == 1 ? ast::OperatorName::BuiltInOpResol::UnaryOp :
+    (arity == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::BuiltInOpResol::All);
+  OperatorName opname = ast::OperatorName::getOperatorId(over_decl.name->name, search_option);
+
+  if (opname == Operator::Null)
   {
     // operator++(int) and operator++() trick
     if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
-      && (builder.proto.count() == 2 && builder.proto.at(1) == Type::Int))
+      && (arity == 2 && decl->params.at(0).type.type->name == parser::Token::Int))
     {
-      builder.proto.pop();
-      builder.operation = over_decl.name->name == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
+      opname = over_decl.name->name == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
     }
     else
       throw CouldNotResolveOperatorName{ dpos(over_decl) };
   }
 
-  if (Operator::isBinary(builder.operation) && builder.proto.count() != 2)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 2, builder.proto.count() };
-  else if (Operator::isUnary(builder.operation) && builder.proto.count() != 1)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 1, builder.proto.count() };
+  if (opname == OperatorName::FunctionCallOperator)
+    return processFunctionCallOperatorDecl(decl);
 
+  auto builder = scp.symbol().Operation(opname);
+  function_processor_.generic_fill(builder, decl, scp);
   
+  const bool is_member = currentScope().isClass();
+
+  if (Operator::isBinary(builder.operation) && arity != 2)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 2, int(arity) };
+  else if (Operator::isUnary(builder.operation) && builder.proto_.count() != 1)
+    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 1, int(arity) };
+
   if (Operator::onlyAsMember(builder.operation) && !is_member)
     throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = builder.create();
+  Function function = builder.get();
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
 
+  schedule(function, decl, scp);
+}
+
+void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
+{
+  Scope scp = currentScope();
+
+  auto builder = scp.symbol().toClass().FunctionCall();
+  function_processor_.generic_fill(builder, decl, scp);
+  default_arguments_.generic_process(decl->params, builder, scp);
+
+  Function function = builder.get();
+  scp.invalidateCache(Scope::InvalidateOperatorCache);
   schedule(function, decl, scp);
 }
 
@@ -653,10 +675,10 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  FunctionBuilder builder = scp.symbol().toClass().Conversion(Type::Null);
-  function_processor_.fill(builder, decl, scp);
+  auto builder = scp.symbol().toClass().Conversion(Type::Null);
+  function_processor_.generic_fill(builder, decl, scp);
   /// TODO: check that the user does not declare any default arguments
-  Function cast = builder.create();
+  Function cast = builder.get();
   
   schedule(cast, decl, scp);
 }

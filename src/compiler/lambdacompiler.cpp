@@ -16,6 +16,7 @@
 
 #include "script/engine.h"
 #include "script/functionbuilder.h"
+#include "script/operatorbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
 
@@ -189,21 +190,21 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
-  DynamicPrototype proto = computePrototype();
-  auto builder = Class{ mLambda.impl() }.Operation(FunctionCallOperator).setPrototype(proto);
+  auto builder = Class{ mLambda.impl() }.FunctionCall();
+  builder.proto_ = computePrototype();
   DefaultArgumentProcessor default_arguments;
-  default_arguments.process(task.lexpr->params, builder, task.scope);
+  default_arguments.generic_process(task.lexpr->params, builder, task.scope);
 
-  Function function = builder.create();
+  Function function = builder.get();
 
   mFunction = function;
   expr_.setCaller(function);
 
   /// TODO : where is the return value ?
   EnterScope guard{ this, FunctionScope::FunctionArguments };
-  mStack.addVar(proto.at(0), "lambda-object");
-  for (int i(1); i < proto.count(); ++i)
-    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), proto.at(i));
+  mStack.addVar(function.prototype().at(0), "lambda-object");
+  for (int i(1); i < function.prototype().count(); ++i)
+    std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(task.lexpr->parameterName(i - 1), function.parameter(i));
 
   std::shared_ptr<program::CompoundStatement> body = this->generateCompoundStatement(task.lexpr->body, FunctionScope::FunctionBody);
 

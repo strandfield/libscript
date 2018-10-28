@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_FUNCTION_BUILDER_H
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
+#include "script/accessspecifier.h"
 #include "script/function.h" /// TODO: remove this include
 #include "script/prototypes.h"
 #include "script/symbol.h"
@@ -106,6 +107,11 @@ public:
   Derived & setStatic()
   {
     throw std::runtime_error{ "Builder does not support 'static' specifier" };
+  }
+
+  bool isStatic() const
+  {
+    return (flags >> 2) & Function::Static;
   }
 
   inline Derived & returns(const Type & t) { return static_cast<Derived*>(this)->setReturnType(t); }

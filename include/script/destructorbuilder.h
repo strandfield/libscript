@@ -22,7 +22,8 @@ public:
 
 public:
   DestructorBuilder(const Symbol & s);
-
+  
+  DestructorBuilder & setDefaulted();
   DestructorBuilder & setVirtual();
 
   DestructorBuilder & setReturnType(const Type & t);

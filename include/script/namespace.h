@@ -25,8 +25,10 @@ class EnumBuilder;
 class Function;
 class FunctionBuilder;
 class LiteralOperator;
+class LiteralOperatorBuilder;
 class Module;
 class Operator;
+class OperatorBuilder;
 class Script;
 class Template;
 class Type;
@@ -79,9 +81,9 @@ public:
   ClassBuilder Class(const std::string & name) const;
   EnumBuilder Enum(const std::string & name) const;
   FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
+  OperatorBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   Engine * engine() const;
   inline const std::shared_ptr<NamespaceImpl> & impl() const { return d; }

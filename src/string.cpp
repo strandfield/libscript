@@ -11,11 +11,14 @@
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
+#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/constructorbuilder.h"
+#include "script/destructorbuilder.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
-#include "script/symbol.h"
+#include "script/operatorbuilder.h"
 
 #include "script/interpreter/executioncontext.h"
 #include "script/private/value_p.h"

@@ -7,6 +7,7 @@
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/literals.h"
+#include "script/literaloperatorbuilder.h"
 #include "script/namespace.h"
 
 
@@ -18,7 +19,7 @@ TEST(NamespaceTest, user_defined_literals) {
 
   Namespace ns = engine.rootNamespace();
 
-  LiteralOperator lop = ns.UserDefinedLiteral("s", Type::Int, Type::Double).create().toLiteralOperator();
+  LiteralOperator lop = ns.UserDefinedLiteral("s", Type::Int, Type::Double).get();
   ASSERT_EQ(lop.suffix(), "s");
   ASSERT_EQ(lop.returnType(), Type::Double);
   ASSERT_EQ(lop.input(), Type::Int);

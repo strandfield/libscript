@@ -16,18 +16,23 @@ namespace script
 {
 
 class Cast;
+class CastBuilder;
 class ClassBuilder;
 class ClassImpl;
 class ClassTemplate;
 class ClosureType;
+class ConstructorBuilder;
 class DataMember;
+class DestructorBuilder;
 class Engine;
 class Enum;
 class EnumBuilder;
 class Function;
+class FunctionCallOperatorBuilder;
 class FunctionBuilder;
 class Namespace;
 class Operator;
+class OperatorBuilder;
 class Script;
 class StaticDataMember;
 class Template;
@@ -98,11 +103,12 @@ public:
   [[deprecated("Use Destructor() instead")]] Function newDestructor(NativeFunctionSignature func);
   Function destructor() const;
   
-  FunctionBuilder Constructor(NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Destructor(NativeFunctionSignature func = nullptr) const;
+  ConstructorBuilder Constructor(NativeFunctionSignature func = nullptr) const;
+  DestructorBuilder Destructor(NativeFunctionSignature func = nullptr) const;
   FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
+  OperatorBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
+  FunctionCallOperatorBuilder FunctionCall(NativeFunctionSignature func = nullptr) const;
+  CastBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
   ClassBuilder NestedClass(const std::string & name) const;
 

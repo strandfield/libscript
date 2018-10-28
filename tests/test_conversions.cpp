@@ -5,9 +5,11 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
+#include "script/constructorbuilder.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
@@ -126,7 +128,7 @@ TEST(Conversions, comparisons) {
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_float = A.Constructor().params(Type::Float).create();
+  Function ctor_float = A.Constructor().params(Type::Float).get();
   convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
 
@@ -216,7 +218,7 @@ TEST(Conversions, user_defined_conv_cast) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
+  Cast to_int = A.Conversion(Type::Int).setConst().get();
 
   Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -234,7 +236,7 @@ TEST(Conversions, user_defined_converting_constructor) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(Type::Float).create();
+  Function ctor = A.Constructor().params(Type::Float).get();
 
   Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -251,8 +253,8 @@ TEST(Conversions, converting_constructor_selection) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_int = A.Constructor().params(Type::Int).create();
-  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+  Function ctor_int = A.Constructor().params(Type::Int).get();
+  Function ctor_bool = A.Constructor().params(Type::Boolean).get();
 
   Conversion conv = Conversion::compute(Type::Boolean, A.id(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -306,12 +308,12 @@ TEST(Conversions, explicit_ctor) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_int = A.Constructor().setExplicit().params(Type::Int).create();
+  Function ctor_int = A.Constructor().setExplicit().params(Type::Int).get();
 
   Conversion conv = Conversion::compute(Type::Int, A.id(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
 
-  Function ctor_bool = A.Constructor().params(Type::Boolean).create();
+  Function ctor_bool = A.Constructor().params(Type::Boolean).get();
   conv = Conversion::compute(Type::Int, A.id(), &e);
   ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
 
@@ -390,7 +392,7 @@ TEST(Initializations, list_initialization_ctor) {
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).create();
+  Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);
@@ -440,7 +442,7 @@ TEST(Initializations, list_initialization_initializer_list_ctor) {
     .getInstance({ TemplateArgument{ Type::Int } }).id();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(initializer_list_int).create();
+  Function ctor = A.Constructor().params(initializer_list_int).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);

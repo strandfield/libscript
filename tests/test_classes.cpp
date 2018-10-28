@@ -5,8 +5,10 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
+#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/constructorbuilder.h"
 #include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/namespace.h"
@@ -23,24 +25,24 @@ TEST(ClassTest, builder_functions) {
 
   /* Constructors */
 
-  Function default_ctor = A.Constructor().create();
+  Function default_ctor = A.Constructor().get();
   ASSERT_TRUE(default_ctor.isConstructor());
   ASSERT_EQ(default_ctor.memberOf(), A);
   ASSERT_EQ(default_ctor, A.defaultConstructor());
 
-  Function copy_ctor = A.Constructor().params(Type::cref(A_type)).create();
+  Function copy_ctor = A.Constructor().params(Type::cref(A_type)).get();
   ASSERT_TRUE(copy_ctor.isConstructor());
   ASSERT_EQ(copy_ctor.memberOf(), A);
   ASSERT_EQ(copy_ctor, A.copyConstructor());
 
-  Function ctor_1 = A.Constructor().params(Type::Int).create();
+  Function ctor_1 = A.Constructor().params(Type::Int).get();
   ASSERT_TRUE(ctor_1.isConstructor());
   ASSERT_EQ(ctor_1.memberOf(), A);
   ASSERT_EQ(ctor_1.prototype().count(), 2);
   ASSERT_EQ(ctor_1.parameter(1), Type::Int);
   ASSERT_FALSE(ctor_1.isExplicit());
 
-  Function ctor_2 = A.Constructor().setExplicit().params(Type::Boolean).create();
+  Function ctor_2 = A.Constructor().setExplicit().params(Type::Boolean).get();
   ASSERT_TRUE(ctor_2.isConstructor());
   ASSERT_EQ(ctor_2.memberOf(), A);
   ASSERT_EQ(ctor_2.prototype().count(), 2);
@@ -51,7 +53,7 @@ TEST(ClassTest, builder_functions) {
 
   /* Conversion functions */
 
-  Cast cast_1 = A.Conversion(Type::cref(Type::Int)).setConst().create().toCast();
+  Cast cast_1 = A.Conversion(Type::cref(Type::Int)).setConst().get();
   ASSERT_TRUE(cast_1.isMemberFunction());
   ASSERT_EQ(cast_1.memberOf(), A);
   ASSERT_TRUE(cast_1.isConst());
@@ -59,7 +61,7 @@ TEST(ClassTest, builder_functions) {
   ASSERT_EQ(cast_1.destType(), cast_1.returnType());
   ASSERT_FALSE(cast_1.isExplicit());
 
-  Cast cast_2 = A.Conversion(Type::ref(Type::Int)).setExplicit().create().toCast();
+  Cast cast_2 = A.Conversion(Type::ref(Type::Int)).setExplicit().get();
   ASSERT_TRUE(cast_2.isMemberFunction());
   ASSERT_EQ(cast_2.memberOf(), A);
   ASSERT_FALSE(cast_2.isConst());

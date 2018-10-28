@@ -11,8 +11,10 @@
 
 #include "script/array.h"
 #include "script/cast.h"
+#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/constructorbuilder.h"
 #include "script/datamember.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
@@ -20,10 +22,13 @@
 #include "script/enumerator.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/literals.h"
+#include "script/literaloperatorbuilder.h"
 #include "script/name.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/namespacealias.h"
+#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/sourcefile.h"
 #include "script/staticdatamember.h"
@@ -554,7 +559,7 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(foo.prototype().at(0), Type::Int);
   ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
 
-  Operator assign = A.Operation(AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().create().toOperator();
+  Operator assign = A.Operation(AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get();
   ASSERT_EQ(assign.operatorId(), AssignmentOperator);
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.memberOf(), A);
@@ -566,7 +571,7 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_TRUE(assign.isDeleted());
 
   Namespace ops = root.newNamespace("ops");
-  assign = ops.Operation(AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).create().toOperator();
+  assign = ops.Operation(AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get();
   ASSERT_EQ(assign.operatorId(), AdditionOperator);
   ASSERT_FALSE(assign.isMemberFunction());
   ASSERT_EQ(ops.operators().size(), 1);
@@ -575,7 +580,7 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(assign.prototype().at(0), Type::cref(A.id()));
   ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
 
-  Cast to_int = A.Conversion(Type::Int).setConst().create().toCast();
+  Cast to_int = A.Conversion(Type::Int).setConst().get();
   ASSERT_EQ(to_int.destType(), Type::Int);
   ASSERT_EQ(to_int.sourceType(), Type::cref(A.id()));
   ASSERT_TRUE(to_int.isMemberFunction());
@@ -745,12 +750,12 @@ TEST(CoreUtilsTests, function_names) {
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
 
   Function foo = A.Method("foo").create();
-  Function eq = A.Operation(EqualOperator).params(Type::Int).create();
-  Function to_int = A.Conversion(Type::Int).create();
-  Function ctor = A.Constructor().create();
+  Function eq = A.Operation(EqualOperator).params(Type::Int).get();
+  Function to_int = A.Conversion(Type::Int).get();
+  Function ctor = A.Constructor().get();
   Function a = A.Method("A").create();
 
-  Function km = e.rootNamespace().UserDefinedLiteral("km").create();
+  Function km = e.rootNamespace().UserDefinedLiteral("km").get();
 
   ASSERT_NE(foo.getName(), eq.getName());
   ASSERT_NE(eq.getName(), a.getName());
@@ -801,7 +806,7 @@ TEST(CoreUtilsTests, symbols) {
   ASSERT_TRUE(length.isMemberFunction());
   ASSERT_EQ(length.memberOf(), string);
 
-  Function assign = s.Operation(AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).create();
+  Function assign = s.Operation(AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).get();
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.prototype().count(), 2);
   ASSERT_EQ(assign.memberOf(), string);
@@ -811,7 +816,7 @@ TEST(CoreUtilsTests, symbols) {
   ASSERT_FALSE(max.isMemberFunction());
   ASSERT_EQ(max.enclosingNamespace(), ns);
 
-  Function eq = s.Operation(EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).create();
+  Function eq = s.Operation(EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).get();
   ASSERT_FALSE(eq.isMemberFunction());
   ASSERT_EQ(eq.enclosingNamespace(), ns);
   ASSERT_EQ(eq.prototype().count(), 2);

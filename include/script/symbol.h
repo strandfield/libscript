@@ -21,6 +21,7 @@ class FunctionBuilder;
 class FunctionTemplateBuilder;
 class Name;
 class Namespace;
+class OperatorBuilder;
 class Script;
 class SymbolImpl;
 class TypedefBuilder;
@@ -59,7 +60,7 @@ public:
   FunctionBuilder Function(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(const std::string & name);
   FunctionTemplateBuilder FunctionTemplate(std::string && name);
-  FunctionBuilder Operation(OperatorName op);
+  OperatorBuilder Operation(OperatorName op);
   TypedefBuilder Typedef(const Type & t, const std::string & name);
   TypedefBuilder Typedef(const Type & t, std::string && name);
 
