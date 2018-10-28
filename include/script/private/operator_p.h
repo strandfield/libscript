@@ -17,7 +17,7 @@ class OperatorImpl : public FunctionImpl
 public:
   OperatorName operatorId;
 public:
-  OperatorImpl(OperatorName op, Engine *engine, FunctionImpl::flag_type flags = 0);
+  OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags);
   ~OperatorImpl() = default;
 
   Name get_name() const override;
@@ -29,7 +29,7 @@ public:
   UnaryOperatorPrototype proto_;
 
 public:
-  UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags);
   ~UnaryOperatorImpl() = default;
 
   const Prototype & prototype() const override;
@@ -42,7 +42,7 @@ public:
   BinaryOperatorPrototype proto_;
 
 public:
-  BinaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  BinaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags);
   ~BinaryOperatorImpl() = default;
 
   const Prototype & prototype() const override;
@@ -56,8 +56,8 @@ public:
   std::vector<DefaultArgument> defaultargs_;
 
 public:
-  FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
-  FunctionCallOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags);
+  FunctionCallOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionFlags flags);
   ~FunctionCallOperatorImpl() = default;
 
   const Prototype & prototype() const override;

@@ -10,7 +10,7 @@
 namespace script
 {
 
-CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , proto_(p.returnType(), p.at(0))
 {

@@ -913,9 +913,9 @@ void register_builtin_operators(Namespace root)
       std::shared_ptr<OperatorImpl> ret;
 
       if(p.count() == 1)
-        ret = std::make_shared<UnaryOperatorImpl>(operation, p, engine);
+        ret = std::make_shared<UnaryOperatorImpl>(operation, p, engine, FunctionFlags{});
       else
-        ret = std::make_shared<BinaryOperatorImpl>(operation, p, engine);
+        ret = std::make_shared<BinaryOperatorImpl>(operation, p, engine, FunctionFlags{});
 
       ret->implementation.callback = impl;
       ret->enclosing_symbol = engine->rootNamespace().impl();

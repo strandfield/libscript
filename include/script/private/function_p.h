@@ -6,6 +6,7 @@
 #define LIBSCRIPT_FUNCTION_P_H
 
 #include "script/engine.h"
+#include "script/functionflags.h"
 #include "script/functiontemplate.h"
 #include "script/prototypes.h"
 
@@ -27,9 +28,7 @@ typedef std::shared_ptr<program::Expression> DefaultArgument;
 class LIBSCRIPT_API FunctionImpl
 {
 public:
-  typedef int flag_type;
-
-  FunctionImpl(Engine *e, flag_type f = 0);
+  FunctionImpl(Engine *e, FunctionFlags f = FunctionFlags{});
   virtual ~FunctionImpl();
 
   virtual const std::string & name() const;
@@ -38,7 +37,7 @@ public:
   Engine *engine;
   std::shared_ptr<UserData> data;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
-  flag_type flags;
+  FunctionFlags flags;
   struct {
     NativeFunctionSignature callback;
     std::shared_ptr<program::Statement> program;
@@ -59,8 +58,8 @@ public:
 class RegularFunctionImpl : public FunctionImpl
 {
 public:
-  RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
-  RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f = 0);
+  RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
+  RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionFlags f = FunctionFlags{});
 
   DynamicPrototype prototype_;
   std::string mName;
@@ -96,7 +95,7 @@ public:
 class ConstructorImpl : public FunctionImpl
 {
 public:
-  ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  ConstructorImpl(const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
   
   DynamicPrototype prototype_;
   std::vector<DefaultArgument> mDefaultArguments;
@@ -125,7 +124,7 @@ public:
   DestructorPrototype proto_;
 
 public:
-  DestructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  DestructorImpl(const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
 
   DynamicPrototype prototype_;
 
@@ -136,7 +135,7 @@ public:
 class FunctionTemplateInstance : public RegularFunctionImpl
 {
 public:
-  FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
   ~FunctionTemplateInstance() = default;
 
   FunctionTemplate mTemplate;

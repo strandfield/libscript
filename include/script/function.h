@@ -37,38 +37,6 @@ public:
 
   explicit Function(const std::shared_ptr<FunctionImpl> & impl);
 
-  /// TODO: move outside of this file
-  // maybe rename to enum class FunctionCategory
-  enum Kind {
-    StandardFunction = 0,
-    Constructor = 1,
-    Destructor = 2,
-    OperatorFunction = 3,
-    CastFunction = 4,
-    Root = 5,
-    LiteralOperatorFunction = 6,
-  };
-
-  /// TODO: move outside this file
-  // maybe rename to enum class FunctionFlag or FunctionSpecifier
-  enum Flag {
-    NoFlags = 0,
-    Static = 1,
-    Explicit = 2,
-    Virtual = 4,
-    Pure = 8,
-    ConstExpr = 16,
-    Default = 32,
-    Delete = 64,
-    Protected = 128,
-    Private = 256,
-  };
-
-  enum ImplementationMethod {
-    NativeFunction = 0,
-    InterpretedFunction = 1
-  };
-
   bool isNull() const;
 
   const std::string & name() const;

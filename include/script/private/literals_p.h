@@ -16,7 +16,7 @@ public:
   std::string suffix;
   DynamicPrototype proto_;
 public:
-  LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags = 0);
+  LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionFlags flags);
   ~LiteralOperatorImpl() = default;
 
   Name get_name() const override;

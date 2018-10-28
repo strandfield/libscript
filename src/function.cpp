@@ -32,7 +32,7 @@ namespace script
  *
  */
 
-FunctionImpl::FunctionImpl(Engine *e, flag_type f)
+FunctionImpl::FunctionImpl(Engine *e, FunctionFlags f)
   : engine(e)
   , flags(f)
 {
@@ -80,24 +80,22 @@ void FunctionImpl::set_return_type(const Type & t)
 
 void FunctionImpl::force_virtual()
 {
-  this->flags |= (Function::Virtual << 2);
+  this->flags.set(FunctionSpecifier::Virtual);
 }
 
 void FunctionImpl::set_impl(NativeFunctionSignature callback)
 {
   this->implementation.callback = callback;
-  this->flags &= ~Function::InterpretedFunction;
-  this->flags |= Function::NativeFunction;
+  this->flags.set(ImplementationMethod::NativeFunction);
 }
 
 void FunctionImpl::set_impl(const std::shared_ptr<program::Statement> program)
 {
   this->implementation.program = program;
-  this->flags &= ~Function::NativeFunction;
-  this->flags |= Function::InterpretedFunction;
+  this->flags.set(ImplementationMethod::InterpretedFunction);
 }
 
-RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(p)
   , mName(name)
@@ -105,7 +103,7 @@ RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototy
 
 }
 
-RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionImpl::flag_type f)
+RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(std::move(p))
   , mName(name)
@@ -157,7 +155,7 @@ const Prototype & ScriptFunctionImpl::prototype() const
 
 
 
-ConstructorImpl::ConstructorImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+ConstructorImpl::ConstructorImpl(const Prototype &p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(p)
 {
@@ -218,7 +216,7 @@ bool ConstructorImpl::is_move_ctor() const
   return this->prototype_.at(1) == Type::rref(getClass().id());
 }
 
-DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionImpl::flag_type f)
+DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , proto_{p.returnType(), p.at(0)}
 {
@@ -231,7 +229,7 @@ const Prototype & DestructorImpl::prototype() const
 }
 
 
-FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionImpl::flag_type f)
+FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionFlags f)
   : RegularFunctionImpl(name, p, e, f)
   , mTemplate(ft)
   , mArgs(targs)
@@ -433,12 +431,12 @@ bool Function::isMoveConstructor() const
 
 bool Function::isNative() const
 {
-  return (d->flags & 0x3) == NativeFunction;
+  return d->flags.test(ImplementationMethod::NativeFunction);
 }
 
 bool Function::isExplicit() const
 {
-  return (d->flags >> 2) & Explicit;
+  return d->flags.test(FunctionSpecifier::Explicit);
 }
 
 bool Function::isConst() const
@@ -448,22 +446,22 @@ bool Function::isConst() const
 
 bool Function::isVirtual() const
 {
-  return (d->flags >> 2) & Virtual;
+  return d->flags.test(FunctionSpecifier::Virtual);
 }
 
 bool Function::isPureVirtual() const
 {
-  return (d->flags >> 2) & Pure;
+  return d->flags.test(FunctionSpecifier::Pure);
 }
 
 bool Function::isDefaulted() const
 {
-  return (d->flags >> 2) & Default;
+  return d->flags.test(FunctionSpecifier::Default);
 }
 
 bool Function::isDeleted() const
 {
-  return (d->flags >> 2) & Delete;
+  return d->flags.test(FunctionSpecifier::Delete);
 }
 
 bool Function::isMemberFunction() const
@@ -473,7 +471,7 @@ bool Function::isMemberFunction() const
 
 bool Function::isStatic() const
 {
-  return d->flags & (Static << 2);
+  return d->flags.test(FunctionSpecifier::Static);
 }
 
 bool Function::isSpecial() const
@@ -493,7 +491,7 @@ Class Function::memberOf() const
 
 AccessSpecifier Function::accessibility() const
 {
-  return static_cast<AccessSpecifier>(3 & (d->flags >> 9));
+  return d->flags.getAccess();
 }
 
 Namespace Function::enclosingNamespace() const

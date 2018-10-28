@@ -121,19 +121,20 @@ FunctionBuilder & FunctionBuilder::setConst()
 
 FunctionBuilder & FunctionBuilder::setVirtual()
 {
-  this->flags |= (Function::Virtual << 2);
+  this->flags.set(FunctionSpecifier::Virtual);
   return *(this);
 }
 
 FunctionBuilder & FunctionBuilder::setPureVirtual()
 {
-  this->flags |= (Function::Virtual << 2) | (Function::Pure << 2);
+  this->flags.set(FunctionSpecifier::Virtual);
+  this->flags.set(FunctionSpecifier::Pure);
   return *(this);
 }
 
 FunctionBuilder & FunctionBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 
@@ -145,7 +146,7 @@ FunctionBuilder & FunctionBuilder::setPrototype(const Prototype & proto)
 
 FunctionBuilder & FunctionBuilder::setStatic()
 {
-  flags |= (Function::Static << 2);
+  this->flags.set(FunctionSpecifier::Static);
 
   if (proto_.count() == 0 || !proto_.at(0).testFlag(Type::ThisFlag))
     return *this;
@@ -221,13 +222,13 @@ OperatorBuilder & OperatorBuilder::setConst()
 
 OperatorBuilder & OperatorBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 
 OperatorBuilder & OperatorBuilder::setDefaulted()
 {
-  this->flags |= (Function::Default << 2);
+  this->flags.set(FunctionSpecifier::Default);
   return *(this);
 }
 
@@ -291,7 +292,7 @@ FunctionCallOperatorBuilder & FunctionCallOperatorBuilder::setConst()
 
 FunctionCallOperatorBuilder & FunctionCallOperatorBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 
@@ -356,13 +357,13 @@ CastBuilder & CastBuilder::setConst()
 
 CastBuilder & CastBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 
 CastBuilder & CastBuilder::setExplicit()
 {
-  this->flags |= (Function::Explicit << 2);
+  this->flags.set(FunctionSpecifier::Explicit);
   return *(this);
 }
 
@@ -409,19 +410,19 @@ ConstructorBuilder::ConstructorBuilder(const Symbol & s)
 
 ConstructorBuilder & ConstructorBuilder::setDefaulted()
 {
-  this->flags |= (Function::Default << 2);
+  this->flags.set(FunctionSpecifier::Default);
   return *(this);
 }
 
 ConstructorBuilder & ConstructorBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 
 ConstructorBuilder & ConstructorBuilder::setExplicit()
 {
-  this->flags |= (Function::Explicit << 2);
+  this->flags.set(FunctionSpecifier::Explicit);
   return *(this);
 }
 
@@ -479,13 +480,13 @@ DestructorBuilder::DestructorBuilder(const Symbol & s)
 
 DestructorBuilder & DestructorBuilder::setDefaulted()
 {
-  this->flags |= (Function::Default << 2);
+  this->flags.set(FunctionSpecifier::Default);
   return *(this);
 }
 
 DestructorBuilder & DestructorBuilder::setVirtual()
 {
-  this->flags |= (Function::Virtual << 2);
+  this->flags.set(FunctionSpecifier::Virtual);
   return *(this);
 }
 
@@ -532,7 +533,7 @@ LiteralOperatorBuilder::LiteralOperatorBuilder(const Symbol & s, std::string && 
 
 LiteralOperatorBuilder & LiteralOperatorBuilder::setDeleted()
 {
-  this->flags |= (Function::Delete << 2);
+  this->flags.set(FunctionSpecifier::Delete);
   return *(this);
 }
 

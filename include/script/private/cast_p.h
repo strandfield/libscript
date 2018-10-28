@@ -16,7 +16,7 @@ public:
   CastPrototype proto_;
 
 public:
-  CastImpl(const Prototype &p, Engine *e, FunctionImpl::flag_type f = 0);
+  CastImpl(const Prototype &p, Engine *e, FunctionFlags f);
   ~CastImpl() = default;
 
   Name get_name() const override;

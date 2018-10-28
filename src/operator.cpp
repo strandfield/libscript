@@ -10,7 +10,7 @@
 namespace script
 {
 
-OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionImpl::flag_type flags)
+OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags)
   : FunctionImpl(engine, flags)
   , operatorId(op)
 {
@@ -23,7 +23,7 @@ Name OperatorImpl::get_name() const
 }
 
 
-UnaryOperatorImpl::UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+UnaryOperatorImpl::UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags)
   : OperatorImpl(op, engine, flags)
   , proto_(proto.returnType(), proto.at(0))
 {
@@ -40,7 +40,7 @@ void UnaryOperatorImpl::set_return_type(const Type & t)
   this->proto_.setReturnType(t);
 }
 
-BinaryOperatorImpl::BinaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+BinaryOperatorImpl::BinaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags)
   : OperatorImpl(op, engine, flags)
   , proto_(proto.returnType(), proto.at(0), proto.at(1))
 {
@@ -57,14 +57,14 @@ void BinaryOperatorImpl::set_return_type(const Type & t)
   this->proto_.setReturnType(t);
 }
 
-FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionImpl::flag_type flags)
+FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags)
   : OperatorImpl(op, engine, flags)
   , proto_(proto)
 {
 
 }
 
-FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionImpl::flag_type flags)
+FunctionCallOperatorImpl::FunctionCallOperatorImpl(OperatorName op, DynamicPrototype && proto, Engine *engine, FunctionFlags flags)
   : OperatorImpl(op, engine, flags)
   , proto_(std::move(proto))
 {

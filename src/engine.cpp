@@ -962,7 +962,7 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   Type type{ id | Type::PrototypeFlag };
 
   BinaryOperatorPrototype assign_proto{ Type::ref(type), Type::ref(type), Type::cref(type) };
-  auto assign_op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, assign_proto, this);
+  auto assign_op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, assign_proto, this, FunctionFlags{});
   assign_op->set_impl(callbacks::function_variable_assignment);
 
   FunctionType ret{ type, proto, Operator{ assign_op } };

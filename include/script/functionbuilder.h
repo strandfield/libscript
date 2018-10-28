@@ -6,9 +6,11 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/accessspecifier.h"
-#include "script/function.h" /// TODO: remove this include
+#include "script/callbacks.h"
+#include "script/functionflags.h"
 #include "script/prototypes.h"
 #include "script/symbol.h"
+#include "script/userdata.h"
 
 namespace script
 {
@@ -19,7 +21,7 @@ class GenericFunctionBuilder
 public:
   Engine *engine;
   NativeFunctionSignature callback;
-  int flags;
+  FunctionFlags flags;
   Symbol symbol;
   std::shared_ptr<UserData> data;
 
@@ -27,7 +29,6 @@ public:
   GenericFunctionBuilder(const Symbol & s)
     : symbol(s) 
     , callback(nullptr)
-    , flags(0)
   {
     engine = s.engine(); 
   }
@@ -81,22 +82,7 @@ public:
 
   Derived & setAccessibility(AccessSpecifier aspec)
   {
-    // erase old access specifier
-    this->flags = (this->flags & ~((Function::Private | Function::Protected) << 2));
-    int f = 0;
-    switch (aspec)
-    {
-    case script::AccessSpecifier::Public:
-      break;
-    case script::AccessSpecifier::Protected:
-      f = Function::Protected;
-      break;
-    case script::AccessSpecifier::Private:
-      f = Function::Private;
-      break;
-    }
-
-    this->flags |= (f << 2);
+    this->flags.set(aspec);
     return *(static_cast<Derived*>(this));
   }
 
@@ -111,7 +97,7 @@ public:
 
   bool isStatic() const
   {
-    return (flags >> 2) & Function::Static;
+    return flags.test(FunctionSpecifier::Static);
   }
 
   inline Derived & returns(const Type & t) { return static_cast<Derived*>(this)->setReturnType(t); }
