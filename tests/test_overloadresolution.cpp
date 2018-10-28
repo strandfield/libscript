@@ -26,12 +26,12 @@ TEST(OverloadResolution, test1) {
   std::vector<Function> overloads;
 
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").get());
 
   OverloadResolution resol = OverloadResolution::New(&e);
   ASSERT_FALSE(resol.process(overloads, std::vector<Type>{ Type::Int }));
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).get());
 
   resol = OverloadResolution::New(&e);
   ASSERT_TRUE(resol.process(overloads, std::vector<Type>{ Type::Int }));
@@ -39,7 +39,7 @@ TEST(OverloadResolution, test1) {
   auto inits = resol.initializations();
   ASSERT_TRUE(inits.at(0).conversion().firstStandardConversion().isCopy());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Char).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Char).get());
   resol = OverloadResolution::New(&e);
   bool result = resol.process(overloads, std::vector<Type>{ Type::Float });
   ASSERT_FALSE(result);
@@ -74,9 +74,9 @@ TEST(OverloadResolution, failure_indistinguishable) {
 
   std::vector<Function> overloads;
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").get());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).get());
 
   auto resol = OverloadResolution::New(&e);
   std::vector<Type> types{ };
@@ -96,12 +96,12 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
 
   std::vector<Function> overloads;
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).get());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Float).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Float).get());
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Boolean, A.id()).create());
+  overloads.push_back(Symbol{ e.rootNamespace() }.Function("foo").returns(Type::Int).params(Type::Boolean, A.id()).get());
 
   auto resol = OverloadResolution::New(&e);
   std::vector<Type> types{Type::Int, Type::Float};

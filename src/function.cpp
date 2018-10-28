@@ -242,7 +242,7 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 /// TODO: maybe move this to functionbuilder.cpp
 std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
 {
-  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name, builder.proto, ft.engine(), builder.flags);
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name_, builder.proto_, ft.engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;
   impl->enclosing_symbol = ft.enclosingSymbol().impl();

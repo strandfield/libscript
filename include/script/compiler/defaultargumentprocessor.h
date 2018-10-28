@@ -20,8 +20,6 @@ class LIBSCRIPT_API DefaultArgumentProcessor
 {
 public:
 
-  void process(const std::vector<ast::FunctionParameter> & params, FunctionBuilder & builder, const Scope & scp);
-
   template<typename Builder>
   void generic_process(const std::vector<ast::FunctionParameter> & params, Builder & builder, const Scope & scp)
   {

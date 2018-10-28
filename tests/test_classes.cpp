@@ -121,7 +121,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
 
-  Function foo = A.Method("foo").setPureVirtual().create();
+  Function foo = A.Method("foo").setPureVirtual().get();
 
   ASSERT_TRUE(foo.isVirtual());
   ASSERT_TRUE(foo.isPureVirtual());
@@ -139,7 +139,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo);
 
-  Function foo_B = B.Method("foo").create();
+  Function foo_B = B.Method("foo").get();
 
   ASSERT_TRUE(foo_B.isVirtual());
   ASSERT_FALSE(foo_B.isPureVirtual());
@@ -160,7 +160,7 @@ TEST(ClassTest, static_member_functions) {
 
   Function foo = A.Method("foo")
     .setStatic()
-    .params(Type::Int).create();
+    .params(Type::Int).get();
 
   ASSERT_TRUE(foo.isMemberFunction());
   ASSERT_FALSE(foo.isNonStaticMemberFunction());

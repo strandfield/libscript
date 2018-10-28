@@ -138,76 +138,32 @@ public:
   }
 };
 
-class LIBSCRIPT_API FunctionBuilder
+class LIBSCRIPT_API FunctionBuilder : public GenericFunctionBuilder<FunctionBuilder>
 {
 public:
-  Engine *engine;
-  NativeFunctionSignature callback;
-  Function::Kind kind;
-  std::string name;
-  DynamicPrototype proto;
-  int flags;
-  Symbol symbol;
-  OperatorName operation;
-  std::shared_ptr<UserData> data;
-  std::vector<std::shared_ptr<program::Expression>> defaultargs;
+  std::string name_;
+  DynamicPrototype proto_;
+  std::vector<std::shared_ptr<program::Expression>> defaultargs_;
 
 public:
-  struct LiteralOperatorTag {};
-
-public:
-  FunctionBuilder(Function::Kind k);
-  FunctionBuilder(Class cla, Function::Kind k);
-  FunctionBuilder(Class cla, OperatorName op);
-  FunctionBuilder(Namespace ns);
-  FunctionBuilder(Namespace ns, OperatorName op);
-  FunctionBuilder(Namespace ns, LiteralOperatorTag, const std::string & suffix);
+  FunctionBuilder(Class cla, std::string && name);
+  FunctionBuilder(Namespace ns, std::string && name);
+  FunctionBuilder(Symbol s, std::string && name);
 
   FunctionBuilder & setConst();
   FunctionBuilder & setVirtual();
   FunctionBuilder & setPureVirtual();
   FunctionBuilder & setDeleted();
-  FunctionBuilder & setDefaulted();
-  FunctionBuilder & setConstExpr();
-  FunctionBuilder & setExplicit();
   FunctionBuilder & setPrototype(const Prototype & proto);
-  FunctionBuilder & setCallback(NativeFunctionSignature impl);
-  FunctionBuilder & setData(const std::shared_ptr<UserData> & data);
-  FunctionBuilder & setAccessibility(AccessSpecifier aspec);
-  FunctionBuilder & setPublic();
-  FunctionBuilder & setProtected();
-  FunctionBuilder & setPrivate();
   FunctionBuilder & setStatic();
 
-  bool isStatic() const;
-
   FunctionBuilder & setReturnType(const Type & t);
-  inline FunctionBuilder & returns(const Type & t) { return setReturnType(t); }
-
   FunctionBuilder & addParam(const Type & t);
-  inline FunctionBuilder & params(const Type & arg) { return addParam(arg); }
-
-  template<typename...Args>
-  FunctionBuilder & params(const Type & arg, const Args &... args)
-  {
-    addParam(arg);
-    return params(args...);
-  }
 
   FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
-  template<typename Func>
-  FunctionBuilder & apply(Func && func)
-  {
-    func(*this);
-    return *this;
-  }
-
-  script::Function create();
-
-protected:
-  bool is_member_function() const;
-  Class member_of() const;
+  void create();
+  script::Function get();
 };
 
 } // namespace script

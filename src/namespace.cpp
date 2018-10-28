@@ -198,10 +198,7 @@ EnumBuilder Namespace::Enum(const std::string & name) const
 
 FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this };
-  builder.name = name;
-  builder.callback = func;
-  return builder;
+  return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
 }
 
 OperatorBuilder Namespace::Operation(OperatorName op, NativeFunctionSignature func) const

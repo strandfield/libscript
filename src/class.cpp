@@ -380,10 +380,7 @@ bool Class::isMoveConstructible() const
 
 Function Class::newDestructor(NativeFunctionSignature func)
 {
-  auto builder = FunctionBuilder{ *this, Function::Destructor };
-  builder.setCallback(func);
-  d->destructor = builder.create();
-  return d->destructor;
+  return DestructorBuilder{ Symbol{*this} }.setCallback(func).get();
 }
 
 Function Class::destructor() const
@@ -403,10 +400,7 @@ DestructorBuilder Class::Destructor(NativeFunctionSignature func) const
 
 FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature func) const
 {
-  FunctionBuilder builder{ *this, Function::StandardFunction };
-  builder.name = name;
-  builder.callback = func;
-  return builder;
+  return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
 }
 
 OperatorBuilder Class::Operation(OperatorName op, NativeFunctionSignature func) const

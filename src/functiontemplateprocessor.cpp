@@ -165,7 +165,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
     auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
 
     auto tparamscope = ft.argumentScope(*template_args);
-    fp.fill(builder, fundecl, tparamscope);
+    fp.generic_fill(builder, fundecl, tparamscope);
   }
 
   // We construct the function manually.

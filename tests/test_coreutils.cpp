@@ -398,11 +398,11 @@ TEST(CoreUtilsTests, scope_namespace_injection) {
   Namespace foo = e.rootNamespace().newNamespace("foo");
   Class foo_A = Symbol{ foo }.Class("A").get();
   Class foo_B = Symbol{ foo }.Class("B").get();
-  Function foo_max_int = foo.Function("max").returns(Type::Int).params(Type::Int, Type::Int).create();
-  Function foo_max_double = foo.Function("max").returns(Type::Double).params(Type::Double, Type::Double).create();
+  Function foo_max_int = foo.Function("max").returns(Type::Int).params(Type::Int, Type::Int).get();
+  Function foo_max_double = foo.Function("max").returns(Type::Double).params(Type::Double, Type::Double).get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
-  Function bar_max_float = bar.Function("max").returns(Type::Float).params(Type::Float, Type::Float).create();
+  Function bar_max_float = bar.Function("max").returns(Type::Float).params(Type::Float, Type::Float).get();
 
   Scope s{ e.rootNamespace() };
 
@@ -446,11 +446,11 @@ TEST(CoreUtilsTests, scope_merge) {
 
   Namespace anon_1 = e.rootNamespace().newNamespace("anon1");
   Namespace anon_1_bar = anon_1.newNamespace("bar");
-  Function anon_1_bar_func = anon_1_bar.Function("func").create();
+  Function anon_1_bar_func = anon_1_bar.Function("func").get();
 
   Namespace anon_2 = e.rootNamespace().newNamespace("anon2");
   Namespace anon_2_bar = anon_2.newNamespace("bar");
-  Function anon_2_bar_func = anon_2_bar.Function("func").create();
+  Function anon_2_bar_func = anon_2_bar.Function("func").get();
 
   Scope base{ anon_1 };
 
@@ -494,7 +494,7 @@ TEST(CoreUtilsTests, scope_namespace_alias) {
   Namespace bar = foo.newNamespace("bar");
   Namespace qux = bar.newNamespace("qux");
 
-  Function func = qux.Function("func").create();
+  Function func = qux.Function("func").get();
 
   Scope base{ e.rootNamespace() };
   Scope s = base.child("foo");
@@ -536,7 +536,7 @@ TEST(CoreUtilsTests, function_builder) {
   Namespace root = e.rootNamespace();
   Class A = Symbol{ root }.Class("A").get();
 
-  Function foo = A.Method("foo").create();
+  Function foo = A.Method("foo").get();
   ASSERT_EQ(foo.name(), "foo");
   ASSERT_TRUE(foo.isMemberFunction());
   ASSERT_EQ(foo.memberOf(), A);
@@ -545,12 +545,12 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(foo.prototype().count(), 1);
   ASSERT_TRUE(foo.prototype().at(0).testFlag(Type::ThisFlag));
 
-  Function bar = A.Method("bar").setConst().create();
+  Function bar = A.Method("bar").setConst().get();
   ASSERT_EQ(bar.name(), "bar");
   ASSERT_EQ(A.memberFunctions().size(), 2);
   ASSERT_TRUE(bar.isConst());
 
-  foo = root.Function("foo").returns(Type::Int).params(Type::Int, Type::Boolean).create();
+  foo = root.Function("foo").returns(Type::Int).params(Type::Int, Type::Boolean).get();
   ASSERT_EQ(foo.name(), "foo");
   ASSERT_FALSE(foo.isMemberFunction());
   ASSERT_EQ(root.functions().size(), 1);
@@ -646,17 +646,17 @@ TEST(CoreUtilsTests, access_specifiers) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function foo = A.Method("foo").setProtected().create();
-  Function bar = A.Method("bar").setPrivate().create();
-  Function qux = A.Method("qux").create();
+  Function foo = A.Method("foo").setProtected().get();
+  Function bar = A.Method("bar").setPrivate().get();
+  Function qux = A.Method("qux").get();
 
   ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
   Class B = Symbol{ e.rootNamespace() }.Class("B").setBase(A).get();
-  Function slurm = B.Method("slurm").create();
-  Function bender = B.Method("bender").create();
+  Function slurm = B.Method("slurm").get();
+  Function bender = B.Method("bender").get();
 
   ASSERT_TRUE(Accessibility::check(slurm, qux));
   ASSERT_TRUE(Accessibility::check(slurm, foo));
@@ -749,11 +749,11 @@ TEST(CoreUtilsTests, function_names) {
 
   Class A = Symbol{ e.rootNamespace() }.Class("A").get();
 
-  Function foo = A.Method("foo").create();
+  Function foo = A.Method("foo").get();
   Function eq = A.Operation(EqualOperator).params(Type::Int).get();
   Function to_int = A.Conversion(Type::Int).get();
   Function ctor = A.Constructor().get();
-  Function a = A.Method("A").create();
+  Function a = A.Method("A").get();
 
   Function km = e.rootNamespace().UserDefinedLiteral("km").get();
 
@@ -802,7 +802,7 @@ TEST(CoreUtilsTests, symbols) {
   /* Testing builder functions */
 
   s = Symbol{ string };
-  Function length = s.Function("length").returns(Type::Int).setConst().create();
+  Function length = s.Function("length").returns(Type::Int).setConst().get();
   ASSERT_TRUE(length.isMemberFunction());
   ASSERT_EQ(length.memberOf(), string);
 
@@ -812,7 +812,7 @@ TEST(CoreUtilsTests, symbols) {
   ASSERT_EQ(assign.memberOf(), string);
 
   s = Symbol{ ns };
-  Function max = s.Function("max").returns(Type::Int).params(Type::Int, Type::Int).create();
+  Function max = s.Function("max").returns(Type::Int).params(Type::Int, Type::Int).get();
   ASSERT_FALSE(max.isMemberFunction());
   ASSERT_EQ(max.enclosingNamespace(), ns);
 
@@ -845,7 +845,7 @@ TEST(CoreUtilsTests, default_arguments) {
     .returns(Type::ref(Type::Int))
     .params(Type::ref(Type::Int), Type::cref(Type::Int))
     .addDefaultArgument(program::VariableAccess::New(default_arg))
-    .setCallback(incr_callback).create();
+    .setCallback(incr_callback).get();
 
   const char *src =
     "  int a = 0;     \n"

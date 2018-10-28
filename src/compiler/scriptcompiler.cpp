@@ -535,9 +535,9 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
-  function_processor_.fill(builder, fundecl, scp);
-  default_arguments_.process(fundecl->params, builder, scp);
-  Function function = builder.create();
+  function_processor_.generic_fill(builder, fundecl, scp);
+  default_arguments_.generic_process(fundecl->params, builder, scp);
+  Function function = builder.get();
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
@@ -861,20 +861,20 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
   }
 
-  FunctionBuilder builder{ Function::StandardFunction };
-  function_processor_.fill(builder, fundecl, scp);
+  FunctionBuilder builder{ scp.symbol(), std::string{} };
+  function_processor_.generic_fill(builder, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
-  auto selection = selector.select(tmplts, args, builder.proto);
+  auto selection = selector.select(tmplts, args, builder.proto_);
 
   if(selection.first.isNull())
     throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
-  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name, builder.proto, engine(), builder.flags);
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name_, builder.proto_, engine(), builder.flags);
   impl->implementation.callback = builder.callback;
   impl->data = builder.data;
   impl->enclosing_symbol = scp.symbol().impl();
