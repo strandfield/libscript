@@ -24,6 +24,210 @@
 namespace script
 {
 
+/*!
+ * \class GenericFunctionBuilder
+ * \brief Template class providing common functionalities of builder classes.
+ * \tparam{Derived}{derived type}
+ * 
+ * The GenericFunctionBuilder is a template class that provides defaults for all 
+ * the functionalities of a function builder.
+ * Function builders are used to create \t{Function}s or other derived types.
+ *
+ * This class is never used directly; you only use the derived types, depending 
+ * on the kind of function you want to create.
+ * \begin{list}
+ *   \li \t FunctionBuilder
+ *   \li \t ConstructorBuilder
+ *   \li \t DestructorBuilder
+ *   \li \t OperatorBuilder
+ *   \li \t LiteralOperatorBuilder
+ *   \li \t FunctionCallOperatorBuilder
+ *   \li \t CastBuilder
+ * \end{list}
+ *
+ * The curiously recurring template is used to inject the behavior of the derived class
+ * into its base and to allow calls to the member functions to be chained (sometimes referred 
+ * to as a "fluent" API).
+ *
+ * \begin[cpp]{code}
+ * Class c = ...;
+ * c.Method("foo", callback)
+ *   .setStatic()
+ *   .returns(Type::Int)
+ *   .params(Type::Int, Type::Boolean)
+ *   .create();
+ * \end{code}
+ *
+ * Relevant function builders can be obtained directly from a \t Class or \t Namespace, 
+ * as in the above example, so you will rarely ever need to type the name of the builders.
+ *
+ * The builder classes do not have any common base class (different instances of a 
+ * class template do not share a common base; i.e., \c{std::vector<int>} and 
+ * \c{std::vector<float>} are not part of a common class hierarchy), so the correct way 
+ * to use the similarities between all builder classes is through templates.
+ *
+ * \begin[cpp]{code}
+ * template<typename Builder>
+ * void foo(Builder & b)
+ * {
+ *   b.setStatic().returns(Type::Void);
+ * }
+ * \end{code}
+ *
+ * Each builder class is optimized for its use case and will exhibit a behavior that 
+ * is consistent with the object it is supposed to create. 
+ * For example, calling \m setStatic on a \t DestructorBuilder will throw an exception.
+ *
+ * Functionalities provided by all builder classes are presented in this class, even 
+ * though they may only be implemented in the derived classes.
+ * The GenericFunctionBuilder class only provides defaults, some of which are hidden 
+ * by derived classes (through C++ function hiding).
+ */
+
+
+/*!
+ * \fn Derived & setConst()
+ * \brief Makes the function \c const.
+ *
+ * This only works for member functions, member operators and conversion functions 
+ * and will throw if called for another target.
+ */
+
+/*!
+ * \fn Derived & setVirtual()
+ * \brief Makes the function \c virtual.
+ *
+ * This only works for member functions and destructors
+ * and will throw if called for another target.
+ */
+
+/*!
+ * \fn Derived & setPureVirtual()
+ * \brief Makes the function a \c virtual pure function.
+ *
+ * This only works for member functions and will throw if called for another target.
+ */
+
+/*!
+ * \fn Derived & setDeleted()
+ * \brief Marks the function with the \c delete specifier.
+ *
+ */
+
+/*!
+ * \fn Derived & setDefaulted()
+ * \brief Makes the function \c{= default}.
+ *
+ * This can only be used for default, copy & move constructors, for destructors 
+ * and assignment operator.
+ */
+
+/*!
+ * \fn Derived & setConstExpr()
+ * \brief Makes the function a \c constexpr function.
+ *
+ * Not implemented yet, will throw.
+ */
+
+/*!
+ * \fn Derived & setExplicit()
+ * \brief Makes the function \c explicit.
+ *
+ * This can only be used for single-parameter constructors and conversion functions.
+ */
+
+/*!
+ * \fn Derived & setCallback(NativeFunctionSignature impl)
+ * \brief Sets the callback of the function.
+ *
+ */
+
+/*!
+ * \fn Derived & setData(const std::shared_ptr<UserData> & d)
+ * \brief Sets the function user data.
+ *
+ */
+
+/*!
+ * \fn Derived & setAccessibility(AccessSpecifier aspec)
+ * \brief Sets the function accessibility.
+ *
+ */
+
+/*!
+ * \fn Derived & setPublic()
+ * \brief Sets the function accessibility to \c public.
+ *
+ */
+
+/*!
+ * \fn Derived & setProtected()
+ * \brief Sets the function accessibility to \c protected.
+ *
+ */
+
+/*!
+ * \fn Derived & setPrivate()
+ * \brief Sets the function accessibility to \c private.
+ *
+ */
+
+/*!
+ * \fn Derived & setStatic()
+ * \brief Makes the function \c static.
+ *
+ * Only makes sense for member functions.
+ */
+
+/*!
+ * \fn Derived & returns(const Type & t)
+ * \brief Sets the return type of the function.
+ *
+ * If not specified, the return type is \c void.
+ */
+
+/*!
+ * \fn Derived & params(const Type & arg, const Args &... args)
+ * \brief Adds parameters to the function.
+ *
+ * Note that this function does not set the parameter list but rather adds
+ * parameters.
+ */
+
+/*!
+ * \fn Derived & addDefaultArgument(const std::shared_ptr<program::Expression> & value)
+ * \brief Adds a default argument to the function.
+ *
+ * Default arguments must be provided in reverse order as the parameters; i.e., 
+ * the last parameter gets a default first, than the penultimate parameter and so on.
+ *
+ * Currently this function does not perform any type checking, but will probably in the future.
+ */
+
+/*!
+ * \fn Derived & apply(Func && func)
+ * \tparam{Func}{a callable object}
+ * \brief Applies a function to the builder.
+ *
+ * Note that the callable object must either be targeted at a specific builder class 
+ * or use template (e.g. generic lambdas).
+ */
+
+/*!
+ * \fn T get()
+ * \brief Creates and return the function object.
+ *
+ * The return type corresponds to the object you want to create.
+ */
+
+ /*!
+ * \fn void create()
+ * \brief Creates the function object.
+ *
+ * Creates the function object, without returning it.
+ * This simply calls \m get.
+ * This method allows you to create the object without having its complete definition.
+ */
 
 template<typename Builder>
 static void generic_fill(const std::shared_ptr<FunctionImpl> & impl, const Builder & opts)
@@ -73,19 +277,11 @@ inline static void set_default_args(Function & fun, std::vector<DefaultArgument>
 
 
 /*!
+ * \endclass
  * \class FunctionBuilder
  * \brief The FunctionBuilder class is an utility class used to build \t{Function}s.
  *
- */
-
-/*!
- * \fun FunctionBuilder & apply(Func && func)
- * \brief Applies a function to the function builder.
- * \param the callable object to be applied
- * \returns a reference to the FunctionBuilder object
- *
- * This template function requires that \c{func(builder)} is a valid 
- * expression (with \c builder a \t FunctionBuilder).
+ * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
 FunctionBuilder::FunctionBuilder(Class cla, std::string && name)
@@ -170,14 +366,6 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
   return *(this);
 }
 
-/*!
- * \fun FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value)
- * \brief Provides an additional default argument for the function.
- * \param the parameter default value
- * 
- * Note that default arguments must be provided in the opposite order of parameters; that is, 
- * the default value for the last parameter is provided first, than the penultimate, and so on.
- */
 FunctionBuilder & FunctionBuilder::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
 {
   this->defaultargs_.push_back(value);
@@ -203,6 +391,9 @@ script::Function FunctionBuilder::get()
 /*!
  * \endclass
  * \class OperatorBuilder
+ * \brief The OperatorBuilder class is an utility class used to build \t{Operator}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
 OperatorBuilder::OperatorBuilder(const Symbol & s, OperatorName op)
@@ -270,9 +461,12 @@ script::Operator OperatorBuilder::get()
 
 
 /*!
-* \endclass
-* \class FunctionCallOperatorBuilder
-*/
+ * \endclass
+ * \class FunctionCallOperatorBuilder
+ * \brief The FunctionCallOperatorBuilder class is an utility class used to build a function call \t{Operator}.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
 
 FunctionCallOperatorBuilder::FunctionCallOperatorBuilder(const Symbol & s)
   : GenericFunctionBuilder<FunctionCallOperatorBuilder>(s)
@@ -333,9 +527,12 @@ script::Operator FunctionCallOperatorBuilder::get()
 
 
 /*!
-* \endclass
-* \class CastBuilder
-*/
+ * \endclass
+ * \class CastBuilder
+ * \brief The CastBuilder class is an utility class used to build \t{Cast}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
 
 CastBuilder::CastBuilder(const Symbol & s, const Type & dest)
   : GenericFunctionBuilder<CastBuilder>(s)
@@ -394,9 +591,12 @@ script::Cast CastBuilder::get()
 
 
 /*!
-* \endclass
-* \class ConstructorBuilder
-*/
+ * \endclass
+ * \class ConstructorBuilder
+ * \brief The ConstructorBuilder class is an utility class used to build constructors.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
 
 ConstructorBuilder::ConstructorBuilder(const Symbol & s)
   : GenericFunctionBuilder<ConstructorBuilder>(s)
@@ -464,9 +664,12 @@ script::Function ConstructorBuilder::get()
 
 
 /*!
-* \endclass
-* \class DestructorBuilder
-*/
+ * \endclass
+ * \class DestructorBuilder
+ * \brief The DestructorBuilder class is an utility class used to build destructors.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
 
 DestructorBuilder::DestructorBuilder(const Symbol & s)
   : GenericFunctionBuilder<DestructorBuilder>(s)
@@ -519,9 +722,12 @@ script::Function DestructorBuilder::get()
 
 
 /*!
-* \endclass
-* \class LiteralOperatorBuilder
-*/
+ * \endclass
+ * \class LiteralOperatorBuilder
+ * \brief The LiteralOperatorBuilder class is an utility class used to build \t{LiteralOperator}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
 
 LiteralOperatorBuilder::LiteralOperatorBuilder(const Symbol & s, std::string && suffix)
   : GenericFunctionBuilder<LiteralOperatorBuilder>(s)
