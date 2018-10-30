@@ -25,11 +25,16 @@ public:
   bool isNull() const;
   Class instanceOf() const;
 
-  int attributeCount() const;
-  Value getAttribute(int index) const;
-  Value getAttribute(const std::string & attrName) const;
+  void push(const Value & val);
+  Value pop();
+  const Value & at(size_t i) const;
+  size_t size() const;
+
+  Value get(const std::string & attrName) const;
 
   Engine* engine() const;
+
+  static Object create(const Class & c);
 
   inline const std::shared_ptr<ObjectImpl> & impl() const { return d; }
 

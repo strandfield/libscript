@@ -73,9 +73,6 @@ public:
 public:
   Value buildValue(Type t);
 
-  Object createObject(Type t);
-  Object createObject(Class cla);
-
   /// TODO: move elsewhere, perhaps a namespace 'optimisation'
   Value default_construct(const Type & t, const Function & ctor);
   Value copy(const Value & val, const Function & copyctor);

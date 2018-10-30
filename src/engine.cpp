@@ -155,17 +155,6 @@ EngineImpl::EngineImpl(Engine *e)
   this->search_dir = support::filesystem::current_path();
 }
 
-Object EngineImpl::createObject(Type t)
-{
-  return createObject(engine->getClass(t));
-}
-
-Object EngineImpl::createObject(Class cla)
-{
-  auto impl = std::make_shared<ObjectImpl>(cla);
-  return Object{ impl };
-}
-
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
