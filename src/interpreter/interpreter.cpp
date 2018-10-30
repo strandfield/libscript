@@ -263,9 +263,8 @@ void Interpreter::visit(const program::PlacementStatement & placement)
 
 void Interpreter::visit(const program::PushDataMember & ims)
 {
-  Object obj = mExecutionContext->callstack.top()->arg(0).toObject();
-  auto impl = obj.impl();
-  impl->attributes.push_back(eval(ims.value));
+  Value member = eval(ims.value);
+  mExecutionContext->callstack.top()->arg(0).impl()->push_member(member);
 }
 
 void Interpreter::visit(const program::ReturnStatement & rs) 
@@ -293,12 +292,8 @@ void Interpreter::visit(const program::PushValue & push)
 
 void Interpreter::visit(const program::PopDataMember & pop)
 {
-  const int object_offset = mExecutionContext->callstack.top()->stackOffset();
-  Value object = mExecutionContext->stack[object_offset];
-  auto impl = object.toObject().impl();
-  Value member = impl->attributes.back();
-  mEngine->implementation()->destroy(member, pop.destructor);
-  impl->attributes.pop_back();
+  Value object = mExecutionContext->callstack.top()->arg(0);
+  mEngine->implementation()->destroy(object.impl()->pop_member(), pop.destructor);
 }
 
 void Interpreter::visit(const program::PopValue & pop) 
@@ -510,8 +505,8 @@ Value Interpreter::visit(const program::LogicalOr & lo)
 
 Value Interpreter::visit(const program::MemberAccess & ma)
 {
-  Object obj = eval(ma.object).toObject();
-  return obj.getAttribute(ma.offset);
+  Value object = eval(ma.object);
+  return object.impl()->get_member(ma.offset);
 }
 
 Value Interpreter::visit(const program::StackValue & sv)

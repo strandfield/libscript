@@ -7,14 +7,16 @@
 #include "script/compiler/diagnostichelper.h"
 
 #include "script/array.h"
-#include "script/private/array_p.h"
 #include "script/class.h"
-#include "script/private/class_p.h"
 #include "script/engine.h"
-#include "script/private/engine_p.h"
 #include "script/namespace.h"
-#include "script/private/namespace_p.h"
 #include "script/object.h"
+
+#include "script/private/array_p.h"
+#include "script/private/class_p.h"
+#include "script/private/engine_p.h"
+#include "script/private/namespace_p.h"
+#include "script/private/value_p.h"
 
 namespace script
 {
@@ -306,8 +308,8 @@ Value VariableProcessor::visit(const program::LogicalOr & lo)
 
 Value VariableProcessor::visit(const program::MemberAccess & ma)
 {
-  Object obj = eval(ma.object).toObject();
-  return obj.getAttribute(ma.offset);
+  Value object = eval(ma.object);
+  return object.impl()->get_member(ma.offset);
 }
 
 Value VariableProcessor::visit(const program::StackValue &)

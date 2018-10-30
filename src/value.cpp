@@ -49,6 +49,23 @@ void ValueImpl::init_object()
   data.object = Object{ impl };
 }
 
+void ValueImpl::push_member(const Value & val)
+{
+  data.object.impl()->attributes.push_back(val);
+}
+
+Value ValueImpl::pop_member()
+{
+  auto ret = data.object.impl()->attributes.back();
+  data.object.impl()->attributes.pop_back();
+  return ret;
+}
+
+Value ValueImpl::get_member(size_t i) const
+{
+  return data.object.impl()->attributes.at(i);
+}
+
 bool ValueImpl::is_array() const
 {
   return !data.array.isNull();

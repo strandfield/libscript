@@ -85,6 +85,9 @@ struct LIBSCRIPT_API ValueImpl
   bool is_object() const;
   const Object & get_object() const;
   void init_object();
+  void push_member(const Value & val);
+  Value pop_member();
+  Value get_member(size_t i) const;
 
   bool is_array() const;
   const Array & get_array() const;
