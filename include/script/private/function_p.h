@@ -6,6 +6,7 @@
 #define LIBSCRIPT_FUNCTION_P_H
 
 #include "script/engine.h"
+#include "script/functionbody.h"
 #include "script/functionflags.h"
 #include "script/functiontemplate.h"
 #include "script/prototypes.h"
@@ -38,10 +39,7 @@ public:
   std::shared_ptr<UserData> data;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
   FunctionFlags flags;
-  struct {
-    NativeFunctionSignature callback;
-    std::shared_ptr<program::Statement> program;
-  }implementation;
+  FunctionBody implementation;
 
   virtual const std::vector<DefaultArgument> & default_arguments() const;
   virtual void set_default_arguments(std::vector<DefaultArgument> && defaults);

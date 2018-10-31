@@ -232,7 +232,7 @@ namespace script
 template<typename Builder>
 static void generic_fill(const std::shared_ptr<FunctionImpl> & impl, const Builder & opts)
 {
-  impl->implementation.callback = opts.callback;
+  impl->implementation = opts.body;
   impl->data = opts.data;
   impl->enclosing_symbol = opts.symbol.impl();
 }

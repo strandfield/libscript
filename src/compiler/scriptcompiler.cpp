@@ -875,7 +875,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
   auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name_, builder.proto_, engine(), builder.flags);
-  impl->implementation.callback = builder.callback;
+  impl->implementation = builder.body;
   impl->data = builder.data;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };

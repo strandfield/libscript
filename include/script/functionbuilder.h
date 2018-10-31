@@ -6,7 +6,7 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/accessspecifier.h"
-#include "script/callbacks.h"
+#include "script/functionbody.h"
 #include "script/functionflags.h"
 #include "script/prototypes.h"
 #include "script/symbol.h"
@@ -20,7 +20,7 @@ class GenericFunctionBuilder
 {
 public:
   Engine *engine;
-  NativeFunctionSignature callback;
+  FunctionBody body;
   FunctionFlags flags;
   Symbol symbol;
   std::shared_ptr<UserData> data;
@@ -28,7 +28,6 @@ public:
 public:
   GenericFunctionBuilder(const Symbol & s)
     : symbol(s) 
-    , callback(nullptr)
   {
     engine = s.engine(); 
   }
@@ -70,7 +69,15 @@ public:
   
   Derived & setCallback(NativeFunctionSignature impl)
   {
-    callback = impl;
+    body.callback = impl;
+    flags.set(ImplementationMethod::NativeFunction);
+    return *(static_cast<Derived*>(this));
+  }
+
+  Derived & setProgram(const std::shared_ptr<program::Statement> & prog)
+  {
+    body.program = prog;
+    flags.set(ImplementationMethod::InterpretedFunction);
     return *(static_cast<Derived*>(this));
   }
 

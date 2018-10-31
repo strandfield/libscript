@@ -241,7 +241,7 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
 {
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name_, builder.proto_, ft.engine(), builder.flags);
-  impl->implementation.callback = builder.callback;
+  impl->implementation = builder.body;
   impl->data = builder.data;
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
