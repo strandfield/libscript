@@ -79,6 +79,11 @@ public:
   StackView args() const;
   Value arg(int index) const;
 
+  void initObject();
+  void push(const Value & val);
+  Value pop();
+  void destroyObject();
+
   ExecutionContext * executionContext() const;
   Engine * engine() const;
 

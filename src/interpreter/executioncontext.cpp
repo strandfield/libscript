@@ -4,7 +4,9 @@
 
 #include "script/interpreter/executioncontext.h"
 
+#include "script/engine.h"
 #include "script/value.h"
+#include "script/private/value_p.h"
 
 namespace script
 {
@@ -128,6 +130,32 @@ Value & FunctionCall::thisObject() const
 Value FunctionCall::arg(int index) const
 {
   return this->ec->stack[this->mStackIndex + index + 1];
+}
+
+void FunctionCall::initObject()
+{
+  thisObject().impl()->init_object();
+}
+
+void FunctionCall::push(const Value & val)
+{
+  thisObject().impl()->push_member(val);
+}
+
+Value FunctionCall::pop()
+{
+  return thisObject().impl()->pop_member();
+}
+
+void FunctionCall::destroyObject()
+{
+  size_t n = thisObject().impl()->member_count();
+
+  while (n > 0)
+  {
+    engine()->destroy(thisObject().impl()->pop_member());
+    --n;
+  }
 }
 
 StackView FunctionCall::args() const

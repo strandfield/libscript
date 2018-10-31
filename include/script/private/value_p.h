@@ -88,6 +88,7 @@ struct LIBSCRIPT_API ValueImpl
   void push_member(const Value & val);
   Value pop_member();
   Value get_member(size_t i) const;
+  size_t member_count() const;
 
   bool is_array() const;
   const Array & get_array() const;

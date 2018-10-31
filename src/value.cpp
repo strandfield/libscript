@@ -45,25 +45,27 @@ void ValueImpl::init_object()
   if (!data.object.isNull())
     return;
 
-  auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
-  data.object = Object{ impl };
+  data.object = Object::create(this->engine->getClass(this->type));
 }
 
 void ValueImpl::push_member(const Value & val)
 {
-  data.object.impl()->attributes.push_back(val);
+  data.object.push(val);
 }
 
 Value ValueImpl::pop_member()
 {
-  auto ret = data.object.impl()->attributes.back();
-  data.object.impl()->attributes.pop_back();
-  return ret;
+  return data.object.pop();
 }
 
 Value ValueImpl::get_member(size_t i) const
 {
-  return data.object.impl()->attributes.at(i);
+  return data.object.at(i);
+}
+
+size_t ValueImpl::member_count() const
+{
+  return data.object.size();
 }
 
 bool ValueImpl::is_array() const
