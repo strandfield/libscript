@@ -29,6 +29,8 @@ public:
   DestructorBuilder & setReturnType(const Type & t);
   DestructorBuilder & addParam(const Type & t);
 
+  DestructorBuilder & compile();
+
   void create();
   script::Function get();
 };

@@ -131,6 +131,11 @@ public:
     throw std::runtime_error{ "Builder does not support default arguments" };
   }
 
+  Derived & compile()
+  {
+    throw std::runtime_error{ "Builder does not support 'compile' method" };
+  }
+
   template<typename Func>
   Derived & apply(Func && func)
   {

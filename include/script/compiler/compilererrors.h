@@ -185,6 +185,8 @@ DECLARE_COMPILER_ERROR(CallToDeletedFunction, "Call to deleted function.");
 
 DECLARE_COMPILER_ERROR(FunctionCannotBeDefaulted, "Function cannot be defaulted.");
 
+DECLARE_COMPILER_ERROR(ParentHasNoDefaultConstructor, "Cannot generate defaulted default constructor because parent has no default constructor.");
+DECLARE_COMPILER_ERROR(ParentHasDeletedDefaultConstructor, "Cannot generate defaulted default constructor because parent default constructor is deleted.");
 DECLARE_COMPILER_ERROR(ParentHasNoCopyConstructor, "Cannot generate defaulted copy constructor because parent has no copy constructor.");
 DECLARE_COMPILER_ERROR(ParentHasDeletedCopyConstructor, "Cannot generate defaulted copy constructor because parent copy constructor is deleted.");
 DECLARE_COMPILER_ERROR(DataMemberIsNotCopyable, "Cannot generate defaulted copy constructor because at least one data member is not copyable.");

@@ -6,7 +6,6 @@
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/expressioncompiler.h"
-#include "script/compiler/stack.h" /// TODO: we could avoid using this
 #include "script/compiler/valueconstructor.h"
 
 #include "script/ast/node.h"
@@ -140,22 +139,52 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
   return program::CompoundStatement::New(std::move(statements));
 }
 
-std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefaultConstructor()
+std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefaultConstructor(const Class & cla)
 {
-  return generateHeader();
-}
-
-std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyConstructor()
-{
-  const Class current_class = currentClass();
-
-  auto this_object = ec().implicit_object();
-  auto other_object = program::StackValue::New(2, stack()[2].type);
+  auto this_object = program::StackValue::New(1, Type::ref(cla.id()));
 
   std::shared_ptr<program::Statement> parent_ctor_call;
-  if (!current_class.parent().isNull())
+  if (!cla.parent().isNull())
   {
-    Function parent_copy_ctor = current_class.parent().copyConstructor();
+    Function parent_default_ctor = cla.parent().defaultConstructor();
+    if (parent_default_ctor.isNull())
+      throw ParentHasNoDefaultConstructor{};
+    else if (parent_default_ctor.isDeleted())
+      throw ParentHasDeletedDefaultConstructor{};
+
+    parent_ctor_call = program::PlacementStatement::New(this_object, parent_default_ctor, { });
+  }
+
+  // Initializating data members
+  const auto & data_members = cla.dataMembers();
+  const int data_members_offset = cla.attributesOffset();
+  std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
+  for (size_t i(0); i < data_members.size(); ++i)
+  {
+    const auto & dm = data_members.at(i);
+
+    std::shared_ptr<program::Expression> default_constructed_value = ValueConstructor::construct(cla.engine(), dm.type, {}, Initialization{});
+    members_initialization[i] = program::PushDataMember::New(default_constructed_value);
+  }
+
+  std::vector<std::shared_ptr<program::Statement>> statements;
+  if (parent_ctor_call)
+    statements.push_back(parent_ctor_call);
+  else
+    statements.push_back(program::InitObjectStatement::New(cla.id()));
+  statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
+  return program::CompoundStatement::New(std::move(statements));
+}
+
+std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyConstructor(const Class & cla)
+{
+  auto this_object = program::StackValue::New(1, Type::ref(cla.id()));
+  auto other_object = program::StackValue::New(2, Type::cref(cla.id()));
+
+  std::shared_ptr<program::Statement> parent_ctor_call;
+  if (!cla.parent().isNull())
+  {
+    Function parent_copy_ctor = cla.parent().copyConstructor();
     if (parent_copy_ctor.isNull())
       throw ParentHasNoCopyConstructor{};
     else if (parent_copy_ctor.isDeleted())
@@ -165,8 +194,8 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
   }
 
   // Initializating data members
-  const auto & data_members = current_class.dataMembers();
-  const int data_members_offset = current_class.attributesOffset();
+  const auto & data_members = cla.dataMembers();
+  const int data_members_offset = cla.attributesOffset();
   std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
   for (size_t i(0); i < data_members.size(); ++i)
   {
@@ -174,33 +203,31 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
 
     const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
 
-    const Initialization init = Initialization::compute(dm.type, member_access, engine());
+    const Initialization init = Initialization::compute(dm.type, member_access, cla.engine());
     if (!init.isValid())
       throw DataMemberIsNotCopyable{};
 
-    members_initialization[i] = program::PushDataMember::New(ValueConstructor::construct(engine(), dm.type, member_access, init));
+    members_initialization[i] = program::PushDataMember::New(ValueConstructor::construct(cla.engine(), dm.type, member_access, init));
   }
 
   std::vector<std::shared_ptr<program::Statement>> statements;
   if (parent_ctor_call)
     statements.push_back(parent_ctor_call);
   else
-    statements.push_back(program::InitObjectStatement::New(current_class.id()));
+    statements.push_back(program::InitObjectStatement::New(cla.id()));
   statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
   return program::CompoundStatement::New(std::move(statements));
 }
 
-std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveConstructor()
+std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveConstructor(const Class & cla)
 {
-  const Class obj_type = currentClass();
-
-  auto this_object = ec().implicit_object();
-  auto other_object = program::StackValue::New(2, stack()[2].type);
+  auto this_object = program::StackValue::New(1, Type::ref(cla.id()));
+  auto other_object = program::StackValue::New(2, Type::rref(cla.id()));
 
   std::shared_ptr<program::Statement> parent_ctor_call;
-  if (!obj_type.parent().isNull())
+  if (!cla.parent().isNull())
   {
-    Function parent_move_ctor = obj_type.parent().moveConstructor();
+    Function parent_move_ctor = cla.parent().moveConstructor();
     if (!parent_move_ctor.isNull())
     {
       if (parent_move_ctor.isDeleted())
@@ -209,7 +236,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
     }
     else
     {
-      Function parent_copy_ctor = obj_type.parent().copyConstructor();
+      Function parent_copy_ctor = cla.parent().copyConstructor();
       if (parent_copy_ctor.isNull())
         throw ParentHasNoCopyConstructor{};
       else if (parent_copy_ctor.isDeleted())
@@ -220,8 +247,8 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
   }
 
   // Initializating data members
-  const auto & data_members = obj_type.dataMembers();
-  const int data_members_offset = obj_type.attributesOffset();
+  const auto & data_members = cla.dataMembers();
+  const int data_members_offset = cla.attributesOffset();
   std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
   for (size_t i(0); i < data_members.size(); ++i)
   {
@@ -235,7 +262,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
     {
       if (dm.type.isObjectType())
       {
-        Function dm_move_ctor = engine()->getClass(dm.type).moveConstructor();
+        Function dm_move_ctor = cla.engine()->getClass(dm.type).moveConstructor();
         if (!dm_move_ctor.isNull())
         {
           if (dm_move_ctor.isDeleted())
@@ -244,7 +271,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
         }
         else
         {
-          Function dm_copy_ctor = engine()->getClass(dm.type).copyConstructor();
+          Function dm_copy_ctor = cla.engine()->getClass(dm.type).copyConstructor();
           if (dm_copy_ctor.isNull() || dm_copy_ctor.isDeleted())
             throw DataMemberIsNotMovable{};
           member_value = program::ConstructorCall::New(dm_copy_ctor, { member_access });
@@ -252,11 +279,11 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
       }
       else
       {
-        const Initialization init = Initialization::compute(dm.type, member_access, engine());
+        const Initialization init = Initialization::compute(dm.type, member_access, cla.engine());
         if (!init.isValid())
           throw DataMemberIsNotCopyable{};
 
-        member_value = ValueConstructor::construct(engine(), dm.type, member_access, init);
+        member_value = ValueConstructor::construct(cla.engine(), dm.type, member_access, init);
       }
     }
 
@@ -267,7 +294,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
   if (parent_ctor_call)
     statements.push_back(parent_ctor_call);
   else
-    statements.push_back(program::InitObjectStatement::New(obj_type.id()));
+    statements.push_back(program::InitObjectStatement::New(cla.id()));
   statements.insert(statements.end(), members_initialization.begin(), members_initialization.end());
   return program::CompoundStatement::New(std::move(statements));
 }
@@ -281,11 +308,11 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initializa
   }
 }
 
-OverloadResolution ConstructorCompiler::getDelegateConstructor(std::vector<std::shared_ptr<program::Expression>> & args)
+OverloadResolution ConstructorCompiler::getDelegateConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  const std::vector<Function> & ctors = currentClass().constructors();
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args))
+  const std::vector<Function> & ctors = cla.constructors();
+  OverloadResolution resol = OverloadResolution::New(cla.engine());
+  if (!resol.process(ctors, args, program::AllocateExpression::New(cla.id())))
     throw NoDelegatingConstructorFound{};
   return resol;
 }
@@ -301,22 +328,22 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructor
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  return makeDelegateConstructorCall(getDelegateConstructor(args), args);
+  return makeDelegateConstructorCall(getDelegateConstructor(currentClass(), args), args);
 }
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  auto resol = getDelegateConstructor(args);
+  auto resol = getDelegateConstructor(currentClass(), args);
   checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeDelegateConstructorCall(resol, args);
 }
 
 
-OverloadResolution ConstructorCompiler::getParentConstructor(std::vector<std::shared_ptr<program::Expression>> & args)
+OverloadResolution ConstructorCompiler::getParentConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  const std::vector<Function> & ctors = currentClass().parent().constructors();
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(ctors, args, ec().implicit_object()))
+  const std::vector<Function> & ctors = cla.parent().constructors();
+  OverloadResolution resol = OverloadResolution::New(cla.engine());
+  if (!resol.process(ctors, args, program::AllocateExpression::New(cla.parent().id())))
     throw CouldNotFindValidBaseConstructor{};
   return resol;
 }
@@ -332,12 +359,12 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCa
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  return makeParentConstructorCall(getParentConstructor(args), args);
+  return makeParentConstructorCall(getParentConstructor(currentClass(), args), args);
 }
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
-  auto resol = getParentConstructor(args);
+  auto resol = getParentConstructor(currentClass(), args);
   checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
   return makeParentConstructorCall(resol, args);
 }

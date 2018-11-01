@@ -579,17 +579,17 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDestructor
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDefaultConstructor()
 {
-  return generateConstructorHeader();
+  return ConstructorCompiler::generateDefaultConstructor(classScope());
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCopyConstructor()
 {
-  return ConstructorCompiler{ this }.generateCopyConstructor();
+  return ConstructorCompiler::generateCopyConstructor(classScope());
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateMoveConstructor()
 {
-  return ConstructorCompiler{ this }.generateMoveConstructor();
+  return ConstructorCompiler::generateMoveConstructor(classScope());
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateDestructor()

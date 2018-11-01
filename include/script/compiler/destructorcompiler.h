@@ -28,10 +28,10 @@ public:
 
   std::shared_ptr<program::CompoundStatement> generateFooter();
 
-  std::shared_ptr<program::CompoundStatement> generateDestructor();
+  static std::shared_ptr<program::CompoundStatement> generateDestructor(const Class & cla);
 
 protected:
-  Function getDestructor(const Type & t);
+  static Function getDestructor(Engine *e, const Type & t);
 };
 
 } // namespace compiler

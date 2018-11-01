@@ -33,6 +33,8 @@ public:
 
   ConstructorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
+  ConstructorBuilder & compile();
+
   void create();
   script::Function get();
 };

@@ -15,6 +15,10 @@
 #include "script/private/namespace_p.h"
 #include "script/operator.h"
 
+#include "script/compiler/constructorcompiler.h"
+#include "script/compiler/destructorcompiler.h"
+#include "script/program/statements.h"
+
 #include "script/castbuilder.h"
 #include "script/constructorbuilder.h"
 #include "script/destructorbuilder.h"
@@ -202,6 +206,15 @@ namespace script
  * the last parameter gets a default first, than the penultimate parameter and so on.
  *
  * Currently this function does not perform any type checking, but will probably in the future.
+ */
+
+/*!
+ * \fn Derived & compile()
+ * \brief Generates the body of a defaulted function.
+ *
+ * After calling \m setDefaulted, you may call this function to make the 
+ * library generate the function body.
+ * Currently this only works for destructors, default, copy & move constructors.
  */
 
 /*!
@@ -646,6 +659,41 @@ ConstructorBuilder & ConstructorBuilder::addDefaultArgument(const std::shared_pt
   return *this;
 }
 
+ConstructorBuilder & ConstructorBuilder::compile()
+{
+  if (!flags.test(FunctionSpecifier::Default))
+    throw std::runtime_error{ "ConstructorBuilder : only defaulted function can be compiled" };
+
+
+  if (proto_.count() > 2)
+    throw std::runtime_error{ "ConstructorBuilder : function cannot be defaulted" };
+
+  if (proto_.count() == 1)
+  {
+    this->body.program = compiler::ConstructorCompiler::generateDefaultConstructor(symbol.toClass());
+    this->flags.set(ImplementationMethod::InterpretedFunction);
+  }
+  else
+  {
+    if (proto_.at(1) == Type::cref(symbol.toClass().id()))
+    {
+      this->body.program = compiler::ConstructorCompiler::generateCopyConstructor(symbol.toClass());
+      this->flags.set(ImplementationMethod::InterpretedFunction);
+    }
+    else if (proto_.at(1) == Type::rref(symbol.toClass().id()))
+    {
+      this->body.program = compiler::ConstructorCompiler::generateMoveConstructor(symbol.toClass());
+      this->flags.set(ImplementationMethod::InterpretedFunction);
+    }
+    else
+    {
+      throw std::runtime_error{ "ConstructorBuilder : function cannot be defaulted" };
+    }
+  }
+
+  return *this;
+}
+
 void ConstructorBuilder::create()
 {
   get();
@@ -704,6 +752,17 @@ DestructorBuilder & DestructorBuilder::setReturnType(const Type & t)
 DestructorBuilder & DestructorBuilder::addParam(const Type & t)
 {
   throw std::runtime_error{ "Cannot add parameter to destructor" };
+}
+
+DestructorBuilder & DestructorBuilder::compile()
+{
+  if (!flags.test(FunctionSpecifier::Default))
+    throw std::runtime_error{ "DestructorBuilder : only defaulted function can be compiled" };
+
+  this->body.program = compiler::DestructorCompiler::generateDestructor(symbol.toClass());
+  this->flags.set(ImplementationMethod::InterpretedFunction);
+
+  return *this;
 }
 
 void DestructorBuilder::create()

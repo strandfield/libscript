@@ -30,36 +30,34 @@ DestructorCompiler::DestructorCompiler(FunctionCompiler *c)
 
 std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateFooter()
 {
-  Class current_class = currentClass();
+  return generateDestructor(currentClass());
+}
 
+std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateDestructor(const Class & cla)
+{
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  const auto & data_members = current_class.dataMembers();
+  const auto & data_members = cla.dataMembers();
   for (int i(data_members.size() - 1); i >= 0; --i)
-    statements.push_back(program::PopDataMember::New(getDestructor(data_members.at(i).type)));
+    statements.push_back(program::PopDataMember::New(getDestructor(cla.engine(), data_members.at(i).type)));
 
-  if (!current_class.parent().isNull())
+  if (!cla.parent().isNull())
   {
     /// TODO : check if dtor exists and is not deleted
-    auto this_object = ec().implicit_object();
+    auto this_object = program::StackValue::New(1, Type::ref(cla.id()));
     std::vector<std::shared_ptr<program::Expression>> args{ this_object };
-    auto dtor_call = program::FunctionCall::New(current_class.parent().destructor(), std::move(args));
+    auto dtor_call = program::FunctionCall::New(cla.parent().destructor(), std::move(args));
     statements.push_back(program::ExpressionStatement::New(dtor_call));
   }
 
   return program::CompoundStatement::New(std::move(statements));
 }
 
-std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateDestructor()
-{
-  return generateFooter();
-}
 
-
-Function DestructorCompiler::getDestructor(const Type & t)
+Function DestructorCompiler::getDestructor(Engine *e, const Type & t)
 {
   if (t.isObjectType())
-    return engine()->getClass(t).destructor();
+    return e->getClass(t).destructor();
   return Function{};
 }
 

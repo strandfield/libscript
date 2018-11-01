@@ -173,6 +173,26 @@ TEST(Builders, constructor) {
 }
 
 
+TEST(Builders, defaultconstructor) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Class A = e.rootNamespace().Class("A")
+    .addMember(DataMember{Type::Int, "n"})
+    .get();
+
+  A.Constructor().setDefaulted().compile().get();
+  A.Destructor().setDefaulted().compile().get();
+
+  Value a = e.construct(A.id(), {});
+  ASSERT_EQ(a.type(), A.id());
+
+  e.destroy(a);
+}
+
+
 TEST(Builders, destructors) {
   using namespace script;
 
