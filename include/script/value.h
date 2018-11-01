@@ -69,6 +69,9 @@ public:
   Lambda toLambda() const;
   InitializerList toInitializerList() const;
 
+  size_t dataMemberCount() const;
+  Value getDataMember(size_t i) const;
+   
   static Value fromEnumerator(const Enumerator & ev);
   static Value fromFunction(const Function & f, const Type & ft);
   static Value fromLambda(const Lambda & obj);

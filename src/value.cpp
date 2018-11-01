@@ -336,6 +336,16 @@ InitializerList Value::toInitializerList() const
   return d->get_initializer_list();
 }
 
+size_t Value::dataMemberCount() const
+{
+  return d->member_count();
+}
+
+Value Value::getDataMember(size_t i) const
+{
+  return d->get_member(i);
+}
+
 Value Value::fromEnumerator(const Enumerator & ev)
 {
   if (ev.isNull())
