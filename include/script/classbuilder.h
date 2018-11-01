@@ -9,6 +9,9 @@
 #include "script/symbol.h"
 #include "script/userdata.h"
 
+#include <memory>
+#include <vector>
+
 namespace script
 {
 

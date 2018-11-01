@@ -8,6 +8,7 @@
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
 #include "script/engine.h"
+#include "script/function.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"

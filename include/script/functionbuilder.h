@@ -12,8 +12,16 @@
 #include "script/symbol.h"
 #include "script/userdata.h"
 
+#include <memory>
+#include <vector>
+
 namespace script
 {
+
+namespace program
+{
+class Expression;
+} // namespace program
 
 template<typename Derived>
 class GenericFunctionBuilder
