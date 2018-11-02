@@ -81,6 +81,8 @@ struct LIBSCRIPT_API ValueImpl
       data.builtin.string = new String{ sval };
     *data.builtin.string = sval;
   }
+  CharRef get_charref();
+  void set_charref(const CharRef & val);
 
   bool is_object() const;
   const Object & get_object() const;

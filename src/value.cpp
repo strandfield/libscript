@@ -30,6 +30,16 @@ ValueImpl::Storage::Storage()
   initlistEnd = nullptr;
 }
 
+CharRef ValueImpl::get_charref()
+{
+  return data.builtin.charref;
+}
+
+void ValueImpl::set_charref(const CharRef & val)
+{
+  data.builtin.charref = val;
+}
+
 bool ValueImpl::is_object() const
 {
   return !data.object.isNull();

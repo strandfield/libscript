@@ -266,7 +266,7 @@ Value subscript(FunctionCall *c)
   const int pos = c->arg(1).toInt();
 
   Value ret = c->engine()->implementation()->buildValue(charref_id);
-  ret.impl()->data.builtin.charref = CharRef{ &self, (size_t)pos };
+  ret.impl()->set_charref(CharRef{ &self, (size_t)pos });
   return ret;
 }
 
@@ -285,7 +285,7 @@ Value ctor(FunctionCall *c)
   auto & str = c->arg(0).impl()->get_string();
   const int pos = c->arg(1).toInt();
 
-  that.impl()->data.builtin.charref = CharRef{ &str, (size_t)pos };
+  that.impl()->set_charref(CharRef{ &str, (size_t)pos });
 
   return that;
 }
@@ -294,9 +294,9 @@ Value ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const CharRef & other = c->arg(0).impl()->data.builtin.charref;
+  const CharRef & other = c->arg(0).impl()->get_charref();
 
-  that.impl()->data.builtin.charref = other;
+  that.impl()->set_charref(other);
 
   return that;
 }
@@ -306,7 +306,7 @@ Value dtor(FunctionCall *c)
 {
   Value that = c->thisObject();
 
-  that.impl()->data.builtin.charref.string = nullptr;
+  that.impl()->set_charref(CharRef{ nullptr, (size_t)0 });
 
   return that;
 }
@@ -315,17 +315,16 @@ Value dtor(FunctionCall *c)
 Value operator_char(FunctionCall *c)
 {
   Value that = c->thisObject();
-  String & str = that.impl()->get_string();
-  return c->engine()->newChar(static_cast<char>(str.at(that.impl()->data.builtin.charref.pos)));
+  CharRef value = that.impl()->get_charref();
+  return c->engine()->newChar(value.string->at(value.pos));
 }
 
 // charref & operator=(char c);
 Value assign(FunctionCall *c)
 {
   Value that = c->thisObject();
-  String & self = *(that.impl()->data.builtin.charref.string);
-  char character = c->arg(1).toChar();
-  self[that.impl()->data.builtin.charref.pos] = character;
+  CharRef value = that.impl()->get_charref();
+  (*value.string)[value.pos] = c->arg(1).toChar();
 
   return that;
 }
