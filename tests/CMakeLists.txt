@@ -1,5 +1,12 @@
 
-set(GTEST_DIR "" CACHE PATH "Root directory for GoogleTest")
+
+configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/googletest-download")
+execute_process(COMMAND "${CMAKE_COMMAND}" --build .
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/googletest-download" )
+
+set(GTEST_DIR "${CMAKE_BINARY_DIR}/googletest-src/googletest" CACHE PATH "Root directory for GoogleTest")
 
 enable_testing()
 
