@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.9)
 project(libscript)
 
+set (CMAKE_CXX_STANDARD 11)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # disables warning about DLL export 
   # this is annoying when using C++ STL
