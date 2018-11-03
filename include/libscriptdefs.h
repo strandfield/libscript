@@ -9,10 +9,14 @@
 #include <cassert>
 #include <memory>
 
+#if defined(WIN32) || defined(_WIN32)
 #if defined(LIBSCRIPT_COMPILE_LIBRARY)
 #  define LIBSCRIPT_API __declspec(dllexport)
 #else
 #  define LIBSCRIPT_API __declspec(dllimport)
+#endif
+#else
+#define LIBSCRIPT_API
 #endif
 
 #if defined(LIBSCRIPT_HAS_CONFIG)
