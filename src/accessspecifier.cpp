@@ -7,6 +7,8 @@
 #include "script/class.h"
 #include "script/function.h"
 
+#include <algorithm>
+
 namespace script
 {
 

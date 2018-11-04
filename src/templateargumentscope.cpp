@@ -8,6 +8,8 @@
 #include "script/template.h"
 #include "script/private/namelookup_p.h"
 
+#include <algorithm>
+
 namespace script
 {
 

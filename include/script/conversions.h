@@ -8,6 +8,8 @@
 #include "script/function.h"
 #include "script/types.h"
 
+#include <algorithm>
+
 namespace script
 {
 

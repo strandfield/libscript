@@ -17,6 +17,7 @@
 #include "script/private/engine_p.h"
 #include "script/private/value_p.h"
 
+#include <algorithm>
 
 namespace script
 {

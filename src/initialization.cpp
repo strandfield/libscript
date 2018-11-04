@@ -10,6 +10,8 @@
 
 #include "script/program/expression.h"
 
+#include <algorithm>
+
 namespace script
 {
 
