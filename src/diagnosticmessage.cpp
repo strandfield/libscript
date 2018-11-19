@@ -8,6 +8,8 @@
 #include "script/engine.h"
 #include "script/types.h"
 
+#include <cstring>
+
 namespace script
 {
 
