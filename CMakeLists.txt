@@ -32,6 +32,11 @@ endforeach()
 #  add_definitions(-DLIBSCRIPT_HAS_CONFIG)
 #endif()
 
+set(LIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB TRUE CACHE BOOL "Set to true unless you have the filesystem TS or C++17")
+if(${LIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB})
+  add_definitions(-DLIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB)
+endif()
+
 target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
 #add_definitions(-DLIBSCRIPT_COMPILE_LIBRARY)
 
