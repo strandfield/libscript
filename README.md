@@ -2,6 +2,8 @@
 
 # `libscript` - A scripting library written in C++
 
+[![Build Status](https://api.travis-ci.org/RugessNome/libscript.svg?branch=master)](https://travis-ci.org/RugessNome/libscript)
+
 `libscript` is a scripting library written in C++. 
 It aims at providing all the building blocks necessary to create 
 statically typed languages that interface well with C++ : its goal
