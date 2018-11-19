@@ -39,7 +39,7 @@ public:
 
   void clear();
 
-  const std::string & Script::path() const;
+  const std::string & path() const;
   const SourceFile & source() const;
   const std::map<std::string, int> & globalNames() const;
   const std::vector<Value> & globals() const;
