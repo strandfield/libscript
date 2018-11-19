@@ -37,6 +37,7 @@ inline const std::string & repr(const std::string & str) { return str; }
 inline std::string repr(bool b, Engine *) { return repr(b); }
 inline std::string repr(char c, Engine *) { return repr(c); }
 inline std::string repr(unsigned int n, Engine *) { return repr(int(n)); }
+inline std::string repr(unsigned long n, Engine *) { return repr(int(n)); }
 inline std::string repr(int n, Engine *) { return repr(n); }
 inline const std::string & repr(const std::string & str, Engine *) { return str; }
 
