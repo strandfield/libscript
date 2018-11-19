@@ -7,6 +7,7 @@
 
 #include <string>
 #include <tuple>
+#include <utility>
 
 #include "script/accessspecifier.h"
 #include "script/diagnosticmessage.h"
