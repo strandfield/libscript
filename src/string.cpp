@@ -340,57 +340,57 @@ std::string get_string_typename()
 
 Type register_charref_type(Engine *e)
 {
-  Class charref = Symbol{ e->rootNamespace() }.Class("charref").get();
+  Class charref = Symbol{ e->rootNamespace() }.newClass("charref").get();
 
   charref_id = charref.id();
 
-  charref.Constructor(callbacks::charref::ctor).params(Type::ref(Type::String), Type::Int).create();
+  charref.newConstructor(callbacks::charref::ctor).params(Type::ref(Type::String), Type::Int).create();
 
-  charref.Constructor(callbacks::charref::copy_ctor).params(Type::cref(charref.id())).create();
+  charref.newConstructor(callbacks::charref::copy_ctor).params(Type::cref(charref.id())).create();
 
-  charref.Destructor(callbacks::charref::dtor).create();
+  charref.newDestructor(callbacks::charref::dtor).create();
 
-  charref.Operation(AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
+  charref.newOperator(AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
 
-  charref.Conversion(Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char).setConst().create();
+  charref.newConversion(Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char).setConst().create();
 
   return charref.id();
 }
 
 void register_string_type(Class string)
 {
-  string.Constructor(callbacks::string::default_ctor).create();
-  string.Constructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
-  string.Constructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
+  string.newConstructor(callbacks::string::default_ctor).create();
+  string.newConstructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
+  string.newConstructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
-  string.Destructor(callbacks::string::dtor).create();
+  string.newDestructor(callbacks::string::dtor).create();
 
-  string.Method("at", callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
-  string.Method("capacity", callbacks::string::capacity).setConst().returns(Type::Int).create();
-  string.Method("clear", callbacks::string::clear).create();
-  string.Method("empty", callbacks::string::empty).setConst().returns(Type::Boolean).create();
-  string.Method("erase", callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
-  string.Method("insert", callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
-  string.Method("length", callbacks::string::length).setConst().returns(Type::Int).create();
-  string.Method("size", callbacks::string::length).setConst().returns(Type::Int).create();
-  string.Method("replace", callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
-  string.Method("swap", callbacks::string::swap).params(Type::ref(string.id())).create();
+  string.newMethod("at", callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  string.newMethod("capacity", callbacks::string::capacity).setConst().returns(Type::Int).create();
+  string.newMethod("clear", callbacks::string::clear).create();
+  string.newMethod("empty", callbacks::string::empty).setConst().returns(Type::Boolean).create();
+  string.newMethod("erase", callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
+  string.newMethod("insert", callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
+  string.newMethod("length", callbacks::string::length).setConst().returns(Type::Int).create();
+  string.newMethod("size", callbacks::string::length).setConst().returns(Type::Int).create();
+  string.newMethod("replace", callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
+  string.newMethod("swap", callbacks::string::swap).params(Type::ref(string.id())).create();
 
-  string.Operation(EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(GreaterOperator, callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(GreaterEqualOperator, callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(LessOperator, callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  string.Operation(LessEqualOperator, callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(GreaterOperator, callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(GreaterEqualOperator, callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(LessOperator, callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  string.newOperator(LessEqualOperator, callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
 
-  string.Operation(AssignmentOperator, callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
+  string.newOperator(AssignmentOperator, callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
 
-  string.Operation(AdditionOperator, callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
+  string.newOperator(AdditionOperator, callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
 
-  string.Operation(SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  string.newOperator(SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
 
   const Type charref = register_charref_type(string.engine());
-  string.Operation(SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
+  string.newOperator(SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
 }
 
 } // namespace script

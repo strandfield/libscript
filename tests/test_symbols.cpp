@@ -26,7 +26,7 @@ TEST(Symbols, enum_create) {
 
   const auto nb_enums = e.rootNamespace().enums().size();
 
-  Enum Foo = s.Enum("Foo").setEnumClass(true).setId(15 | Type::EnumFlag).get();
+  Enum Foo = s.newEnum("Foo").setEnumClass(true).setId(15 | Type::EnumFlag).get();
 
   ASSERT_EQ(Foo.name(), "Foo");
   ASSERT_TRUE(Foo.isEnumClass());
@@ -53,7 +53,7 @@ TEST(Symbols, function_template_create) {
   const auto nb_templates = e.rootNamespace().templates().size();
 
   // We cannot use get() here because FunctionTemplate has not been defined yet
-  s.FunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+  s.newFunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
     .setScope(e.rootNamespace()).create();
 
   ASSERT_EQ(e.rootNamespace().templates().size(), nb_templates + 1);
@@ -69,7 +69,7 @@ TEST(Symbols, function_template_get) {
 
   Symbol s{ e.rootNamespace() };
 
-  FunctionTemplate foo = s.FunctionTemplate("foo").params(
+  FunctionTemplate foo = s.newFunctionTemplate("foo").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
     .setScope(e.rootNamespace()).get();
@@ -97,7 +97,7 @@ TEST(Symbols, class_template_create) {
   const auto nb_templates = e.rootNamespace().templates().size();
 
   // We cannot use get() here because ClassTemplate has not been defined yet
-  s.ClassTemplate("Bar").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+  s.newClassTemplate("Bar").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
     .setScope(e.rootNamespace()).create();
 
   ASSERT_EQ(e.rootNamespace().templates().size(), nb_templates + 1);
@@ -113,7 +113,7 @@ TEST(Symbols, class_template_get) {
 
   Symbol s{ e.rootNamespace() };
 
-  ClassTemplate Bar = s.ClassTemplate("Bar").params(
+  ClassTemplate Bar = s.newClassTemplate("Bar").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
     .setScope(e.rootNamespace()).get();

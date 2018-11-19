@@ -426,7 +426,7 @@ void Engine::setup()
   d->reservations.enum_type = Enum{ std::make_shared<EnumImpl>(0, "__reserved_enum__", nullptr) };
   d->enums.push_back(d->reservations.enum_type);
 
-  Class string = Symbol{ d->rootNamespace }.Class(get_string_typename()).setId(Type::String).get();
+  Class string = Symbol{ d->rootNamespace }.newClass(get_string_typename()).setId(Type::String).get();
   register_string_type(string);
 
   d->templates.array = ArrayImpl::register_array_template(this);

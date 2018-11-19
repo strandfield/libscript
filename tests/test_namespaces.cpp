@@ -19,7 +19,7 @@ TEST(NamespaceTest, user_defined_literals) {
 
   Namespace ns = engine.rootNamespace();
 
-  LiteralOperator lop = ns.UserDefinedLiteral("s", Type::Int, Type::Double).get();
+  LiteralOperator lop = ns.newUserDefinedLiteral("s", Type::Int, Type::Double).get();
   ASSERT_EQ(lop.suffix(), "s");
   ASSERT_EQ(lop.returnType(), Type::Double);
   ASSERT_EQ(lop.input(), Type::Int);

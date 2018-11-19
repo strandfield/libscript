@@ -20,29 +20,29 @@ TEST(ClassTest, builder_functions) {
   Engine engine;
   engine.setup();
   
-  Class A = Symbol{ engine.rootNamespace() }.Class("A").get();
+  Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
   Type A_type = A.id();
 
   /* Constructors */
 
-  Function default_ctor = A.Constructor().get();
+  Function default_ctor = A.newConstructor().get();
   ASSERT_TRUE(default_ctor.isConstructor());
   ASSERT_EQ(default_ctor.memberOf(), A);
   ASSERT_EQ(default_ctor, A.defaultConstructor());
 
-  Function copy_ctor = A.Constructor().params(Type::cref(A_type)).get();
+  Function copy_ctor = A.newConstructor().params(Type::cref(A_type)).get();
   ASSERT_TRUE(copy_ctor.isConstructor());
   ASSERT_EQ(copy_ctor.memberOf(), A);
   ASSERT_EQ(copy_ctor, A.copyConstructor());
 
-  Function ctor_1 = A.Constructor().params(Type::Int).get();
+  Function ctor_1 = A.newConstructor().params(Type::Int).get();
   ASSERT_TRUE(ctor_1.isConstructor());
   ASSERT_EQ(ctor_1.memberOf(), A);
   ASSERT_EQ(ctor_1.prototype().count(), 2);
   ASSERT_EQ(ctor_1.parameter(1), Type::Int);
   ASSERT_FALSE(ctor_1.isExplicit());
 
-  Function ctor_2 = A.Constructor().setExplicit().params(Type::Boolean).get();
+  Function ctor_2 = A.newConstructor().setExplicit().params(Type::Boolean).get();
   ASSERT_TRUE(ctor_2.isConstructor());
   ASSERT_EQ(ctor_2.memberOf(), A);
   ASSERT_EQ(ctor_2.prototype().count(), 2);
@@ -53,7 +53,7 @@ TEST(ClassTest, builder_functions) {
 
   /* Conversion functions */
 
-  Cast cast_1 = A.Conversion(Type::cref(Type::Int)).setConst().get();
+  Cast cast_1 = A.newConversion(Type::cref(Type::Int)).setConst().get();
   ASSERT_TRUE(cast_1.isMemberFunction());
   ASSERT_EQ(cast_1.memberOf(), A);
   ASSERT_TRUE(cast_1.isConst());
@@ -61,7 +61,7 @@ TEST(ClassTest, builder_functions) {
   ASSERT_EQ(cast_1.destType(), cast_1.returnType());
   ASSERT_FALSE(cast_1.isExplicit());
 
-  Cast cast_2 = A.Conversion(Type::ref(Type::Int)).setExplicit().get();
+  Cast cast_2 = A.newConversion(Type::ref(Type::Int)).setExplicit().get();
   ASSERT_TRUE(cast_2.isMemberFunction());
   ASSERT_EQ(cast_2.memberOf(), A);
   ASSERT_FALSE(cast_2.isConst());
@@ -76,7 +76,7 @@ TEST(ClassTest, datamembers) {
   Engine engine;
   engine.setup();
 
-  auto b = Symbol{ engine.rootNamespace() }.Class("A")
+  auto b = Symbol{ engine.rootNamespace() }.newClass("A")
     .addMember(Class::DataMember{ Type::Int, "a" });
 
   Class A = b.get();
@@ -88,7 +88,7 @@ TEST(ClassTest, datamembers) {
   ASSERT_EQ(A.cumulatedDataMemberCount(), 1);
   ASSERT_EQ(A.attributesOffset(), 0);
 
-  b = Symbol{ engine.rootNamespace() }.Class("B")
+  b = Symbol{ engine.rootNamespace() }.newClass("B")
     .setBase(A.id())
     .addMember(Class::DataMember{ Type::Boolean, "b" })
     .setFinal();
@@ -114,14 +114,14 @@ TEST(ClassTest, virtual_members) {
   Engine engine;
   engine.setup();
 
-  auto b = Symbol{ engine.rootNamespace() }.Class("A");
+  auto b = Symbol{ engine.rootNamespace() }.newClass("A");
 
   Class A = b.get();
 
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
 
-  Function foo = A.Method("foo").setPureVirtual().get();
+  Function foo = A.newMethod("foo").setPureVirtual().get();
 
   ASSERT_TRUE(foo.isVirtual());
   ASSERT_TRUE(foo.isPureVirtual());
@@ -130,7 +130,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(A.vtable().size(), 1);
 
 
-  b = Symbol{ engine.rootNamespace() }.Class("B")
+  b = Symbol{ engine.rootNamespace() }.newClass("B")
     .setBase(A.id());
 
   Class B = b.get();
@@ -139,7 +139,7 @@ TEST(ClassTest, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo);
 
-  Function foo_B = B.Method("foo").get();
+  Function foo_B = B.newMethod("foo").get();
 
   ASSERT_TRUE(foo_B.isVirtual());
   ASSERT_FALSE(foo_B.isPureVirtual());
@@ -156,9 +156,9 @@ TEST(ClassTest, static_member_functions) {
   Engine engine;
   engine.setup();
 
-  Class A = Symbol{ engine.rootNamespace() }.Class("A").get();
+  Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
 
-  Function foo = A.Method("foo")
+  Function foo = A.newMethod("foo")
     .setStatic()
     .params(Type::Int).get();
 
@@ -178,10 +178,10 @@ TEST(ClassTest, inheritance) {
 
   Namespace ns = engine.rootNamespace();
 
-  Class A = ns.Class("A").get();
-  Class B = ns.Class("B").setBase(A).get();
-  Class C = ns.Class("C").setBase(B).get();
-  Class D = ns.Class("D").setBase(C).get();
+  Class A = ns.newClass("A").get();
+  Class B = ns.newClass("B").setBase(A).get();
+  Class C = ns.newClass("C").setBase(B).get();
+  Class D = ns.newClass("D").setBase(C).get();
 
   ASSERT_EQ(A.parent(), Class{});
   ASSERT_EQ(D.parent(), C);

@@ -55,7 +55,7 @@ namespace script
  *
  * \begin[cpp]{code}
  * Class c = ...;
- * c.Method("foo", callback)
+ * c.newMethod("foo", callback)
  *   .setStatic()
  *   .returns(Type::Int)
  *   .params(Type::Int, Type::Boolean)

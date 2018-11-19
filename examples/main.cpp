@@ -41,8 +41,8 @@ int main(int argc, char *argv)
 
     Namespace ns = engine.rootNamespace();
 
-    ns.Function("print", print_callback).params(Type::cref(Type::String)).create();
-    ns.Function("scan", scan_callback).returns(Type::cref(Type::String)).create();
+    ns.newFunction("print", print_callback).params(Type::cref(Type::String)).create();
+    ns.newFunction("scan", scan_callback).returns(Type::cref(Type::String)).create();
 
     ex->init(&engine);
 

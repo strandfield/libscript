@@ -78,12 +78,12 @@ public:
   Namespace findNamespace(const std::string & name) const;
   std::vector<Function> findFunctions(const std::string & name) const;
 
-  ClassBuilder Class(const std::string & name) const;
-  EnumBuilder Enum(const std::string & name) const;
-  FunctionBuilder Function(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  OperatorBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
+  ClassBuilder newClass(const std::string & name) const;
+  EnumBuilder newEnum(const std::string & name) const;
+  FunctionBuilder newFunction(const std::string & name, NativeFunctionSignature func = nullptr) const;
+  OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder newUserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder newUserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   Engine * engine() const;
   inline const std::shared_ptr<NamespaceImpl> & impl() const { return d; }

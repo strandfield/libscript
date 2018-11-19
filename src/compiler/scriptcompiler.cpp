@@ -384,7 +384,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 {
   assert(class_decl != nullptr);
 
-  ClassBuilder builder = currentScope().symbol().Class("");
+  ClassBuilder builder = currentScope().symbol().newClass("");
   fill(builder, class_decl);
 
   Class cla = builder.get();
@@ -439,7 +439,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   Symbol symbol = scp.symbol();
 
-  Enum e = symbol.Enum(enum_decl.name->getName()).get();
+  Enum e = symbol.newEnum(enum_decl.name->getName()).get();
 
   mCurrentScope.invalidateCache(Scope::InvalidateEnumCache);
 
@@ -460,7 +460,7 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   const std::string & name = tdef.name->getName();
 
   Symbol s = currentScope().symbol();
-  s.Typedef(t, name).create();
+  s.newTypedef(t, name).create();
 
   mCurrentScope.invalidateCache(Scope::InvalidateTypedefCache);
 }
@@ -534,7 +534,7 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
-  FunctionBuilder builder = scp.symbol().Function(fundecl->name->getName());
+  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->getName());
   function_processor_.generic_fill(builder, fundecl, scp);
   default_arguments_.generic_process(fundecl->params, builder, scp);
   Function function = builder.get();
@@ -553,7 +553,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  auto b = current_class.Constructor();
+  auto b = current_class.newConstructor();
   function_processor_.generic_fill(b, decl, scp);
   default_arguments_.generic_process(decl->params, b, scp);
   Function ctor = b.get();
@@ -567,7 +567,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const auto & dtor_decl = *decl;
   Class current_class = scp.asClass();
 
-  auto b = current_class.Destructor();
+  auto b = current_class.newDestructor();
   function_processor_.generic_fill(b, decl, scp);
 
   if (!current_class.parent().isNull())
@@ -592,7 +592,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  auto b = scp.asNamespace().UserDefinedLiteral(suffix_name);
+  auto b = scp.asNamespace().newUserDefinedLiteral(suffix_name);
   function_processor_.generic_fill(b, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
@@ -632,7 +632,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (opname == OperatorName::FunctionCallOperator)
     return processFunctionCallOperatorDecl(decl);
 
-  auto builder = scp.symbol().Operation(opname);
+  auto builder = scp.symbol().newOperator(opname);
   function_processor_.generic_fill(builder, decl, scp);
   
   const bool is_member = currentScope().isClass();
@@ -658,7 +658,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  auto builder = scp.symbol().toClass().FunctionCall();
+  auto builder = scp.symbol().toClass().newFunctionCallOperator();
   function_processor_.generic_fill(builder, decl, scp);
   default_arguments_.generic_process(decl->params, builder, scp);
 
@@ -675,7 +675,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  auto builder = scp.symbol().toClass().Conversion(Type::Null);
+  auto builder = scp.symbol().toClass().newConversion(Type::Null);
   function_processor_.generic_fill(builder, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();
@@ -741,7 +741,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   std::string name = classdecl->name->getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  ClassTemplate ct = scp.symbol().ClassTemplate(std::move(name))
+  ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .setCallback(nullptr)
@@ -759,7 +759,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   std::string name = fundecl->name->getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  FunctionTemplate ft = scp.symbol().FunctionTemplate(std::move(name))
+  FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)

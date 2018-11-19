@@ -378,50 +378,45 @@ bool Class::isMoveConstructible() const
   return !d->moveConstructor.isNull() && !d->moveConstructor.isDeleted();
 }
 
-Function Class::newDestructor(NativeFunctionSignature func)
-{
-  return DestructorBuilder{ Symbol{*this} }.setCallback(func).get();
-}
-
 Function Class::destructor() const
 {
   return d->destructor;
 }
 
-ConstructorBuilder Class::Constructor(NativeFunctionSignature func) const
+ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
 {
   return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
 }
 
-DestructorBuilder Class::Destructor(NativeFunctionSignature func) const
+DestructorBuilder Class::newDestructor(NativeFunctionSignature func) const
 {
   return DestructorBuilder{ Symbol{*this} }.setCallback(func);
 }
 
-FunctionBuilder Class::Method(const std::string & name, NativeFunctionSignature func) const
+FunctionBuilder Class::newMethod(const std::string & name, NativeFunctionSignature func) const
 {
   return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
 }
 
-OperatorBuilder Class::Operation(OperatorName op, NativeFunctionSignature func) const
+OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const
 {
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-FunctionCallOperatorBuilder Class::FunctionCall(NativeFunctionSignature func) const
+FunctionCallOperatorBuilder Class::newFunctionCallOperator(NativeFunctionSignature func) const
 {
   return FunctionCallOperatorBuilder{ Symbol{ *this } }.setCallback(func);
 }
 
 
-CastBuilder Class::Conversion(const Type & dest, NativeFunctionSignature func) const
+CastBuilder Class::newConversion(const Type & dest, NativeFunctionSignature func) const
 {
   return CastBuilder{ Symbol{*this}, dest }.setCallback(func);
 }
 
-ClassBuilder Class::NestedClass(const std::string & name) const
+ClassBuilder Class::newNestedClass(const std::string & name) const
 {
-  return Symbol{ *this }.Class(name);
+  return Symbol{ *this }.newClass(name);
 }
 
 void Class::addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec)

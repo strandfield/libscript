@@ -127,8 +127,8 @@ TEST(Conversions, comparisons) {
   };
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_float = A.Constructor().params(Type::Float).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor_float = A.newConstructor().params(Type::Float).get();
   convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
 
@@ -146,7 +146,7 @@ TEST(Conversions, std_conv_enums) {
   Engine e;
   e.setup();
 
-  Enum A = e.rootNamespace().Enum("A").get();
+  Enum A = e.rootNamespace().newEnum("A").get();
 
   StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
   ASSERT_EQ(conv, StandardConversion::EnumToInt());
@@ -170,10 +170,10 @@ TEST(Conversions, std_conv_classes) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().Class("A").get();
-  A.Constructor().params(Type::cref(A.id())).create();
-  Class B = e.rootNamespace().Class("B").setBase(A.id()).get();
-  Class C = e.rootNamespace().Class("C").setBase(B.id()).get();
+  Class A = e.rootNamespace().newClass("A").get();
+  A.newConstructor().params(Type::cref(A.id())).create();
+  Class B = e.rootNamespace().newClass("B").setBase(A.id()).get();
+  Class C = e.rootNamespace().newClass("C").setBase(B.id()).get();
 
   StandardConversion conv = StandardConversion::compute(A.id(), Type::Int, &e);
   ASSERT_EQ(conv, StandardConversion::NotConvertible());
@@ -217,8 +217,8 @@ TEST(Conversions, user_defined_conv_cast) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Cast to_int = A.Conversion(Type::Int).setConst().get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Cast to_int = A.newConversion(Type::Int).setConst().get();
 
   Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -235,8 +235,8 @@ TEST(Conversions, user_defined_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(Type::Float).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor = A.newConstructor().params(Type::Float).get();
 
   Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -252,9 +252,9 @@ TEST(Conversions, converting_constructor_selection) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_int = A.Constructor().params(Type::Int).get();
-  Function ctor_bool = A.Constructor().params(Type::Boolean).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor_int = A.newConstructor().params(Type::Int).get();
+  Function ctor_bool = A.newConstructor().params(Type::Boolean).get();
 
   Conversion conv = Conversion::compute(Type::Boolean, A.id(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -295,7 +295,7 @@ TEST(Conversions, no_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
 
   Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
@@ -307,13 +307,13 @@ TEST(Conversions, explicit_ctor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor_int = A.Constructor().setExplicit().params(Type::Int).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor_int = A.newConstructor().setExplicit().params(Type::Int).get();
 
   Conversion conv = Conversion::compute(Type::Int, A.id(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
 
-  Function ctor_bool = A.Constructor().params(Type::Boolean).get();
+  Function ctor_bool = A.newConstructor().params(Type::Boolean).get();
   conv = Conversion::compute(Type::Int, A.id(), &e);
   ASSERT_EQ(conv.userDefinedConversion(), ctor_bool);
 
@@ -331,14 +331,14 @@ TEST(Conversions, engine_functions) {
   ASSERT_FALSE(e.canCast(Type::String, Type::Int));
 
   Namespace ns = e.rootNamespace();
-  Class A = ns.Class("A").get();
-  A.Constructor().params(Type::cref(A.id())).create();
+  Class A = ns.newClass("A").get();
+  A.newConstructor().params(Type::cref(A.id())).create();
   ASSERT_TRUE(e.canCopy(A.id()));
   ASSERT_TRUE(e.canCast(A.id(), A.id()));
 
-  Class B = ns.Class("B").get();
+  Class B = ns.newClass("B").get();
   ASSERT_FALSE(e.canCopy(B.id()));
-  B.Constructor().params(Type::cref(B.id())).setDeleted().create();
+  B.newConstructor().params(Type::cref(B.id())).setDeleted().create();
   ASSERT_FALSE(e.canCopy(B.id()));
 }
 
@@ -391,8 +391,8 @@ TEST(Initializations, list_initialization_ctor) {
   auto listexpr = parse_list_expr(&e, "{1, \"Hello\", 3.14}");
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(Type::Int, Type::String, Type::Double).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor = A.newConstructor().params(Type::Int, Type::String, Type::Double).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);
@@ -441,8 +441,8 @@ TEST(Initializations, list_initialization_initializer_list_ctor) {
   Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
     .getInstance({ TemplateArgument{ Type::Int } }).id();
 
-  Class A = Symbol{ e.rootNamespace() }.Class("A").get();
-  Function ctor = A.Constructor().params(initializer_list_int).get();
+  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Function ctor = A.newConstructor().params(initializer_list_int).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);
@@ -486,7 +486,7 @@ TEST(Initializations, list_initialization_not_convertible) {
   auto initlist = std::static_pointer_cast<program::InitializerList>(listexpr);
   initlist->elements.clear();
 
-  Enum Foo = Symbol{ e.rootNamespace() }.Enum("Foo").get();
+  Enum Foo = Symbol{ e.rootNamespace() }.newEnum("Foo").get();
 
   init = Initialization::compute(Foo.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);

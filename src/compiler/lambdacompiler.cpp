@@ -190,7 +190,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
-  auto builder = Class{ mLambda.impl() }.FunctionCall();
+  auto builder = Class{ mLambda.impl() }.newFunctionCallOperator();
   builder.proto_ = computePrototype();
   DefaultArgumentProcessor default_arguments;
   default_arguments.generic_process(task.lexpr->params, builder, task.scope);

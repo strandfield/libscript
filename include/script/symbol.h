@@ -52,17 +52,17 @@ public:
   Symbol parent() const;
   Script script() const;
 
-  ClassBuilder Class(const std::string & name);
-  ClassBuilder Class(std::string && name);
-  ClassTemplateBuilder ClassTemplate(const std::string & name);
-  ClassTemplateBuilder ClassTemplate(std::string && name);
-  EnumBuilder Enum(std::string && name);
-  FunctionBuilder Function(const std::string & name);
-  FunctionTemplateBuilder FunctionTemplate(const std::string & name);
-  FunctionTemplateBuilder FunctionTemplate(std::string && name);
-  OperatorBuilder Operation(OperatorName op);
-  TypedefBuilder Typedef(const Type & t, const std::string & name);
-  TypedefBuilder Typedef(const Type & t, std::string && name);
+  ClassBuilder newClass(const std::string & name);
+  ClassBuilder newClass(std::string && name);
+  ClassTemplateBuilder newClassTemplate(const std::string & name);
+  ClassTemplateBuilder newClassTemplate(std::string && name);
+  EnumBuilder newEnum(std::string && name);
+  FunctionBuilder newFunction(const std::string & name);
+  FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
+  FunctionTemplateBuilder newFunctionTemplate(std::string && name);
+  OperatorBuilder newOperator(OperatorName op);
+  TypedefBuilder newTypedef(const Type & t, const std::string & name);
+  TypedefBuilder newTypedef(const Type & t, std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

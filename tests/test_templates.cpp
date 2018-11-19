@@ -146,7 +146,7 @@ TEST(TemplateTests, call_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
@@ -173,7 +173,7 @@ TEST(TemplateTests, call_to_template_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
@@ -199,7 +199,7 @@ TEST(TemplateTests, call_to_template_with_one_arg) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
@@ -225,7 +225,7 @@ TEST(TemplateTests, call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
@@ -251,7 +251,7 @@ TEST(TemplateTests, invalid_call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
@@ -283,7 +283,7 @@ TEST(TemplateTests, argument_deduction_1) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("abs")
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("abs")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
@@ -326,7 +326,7 @@ TEST(TemplateTests, argument_deduction_2) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("swap")
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("swap")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
@@ -368,7 +368,7 @@ TEST(TemplateTests, argument_deduction_3) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("max")
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
@@ -412,7 +412,7 @@ TEST(TemplateTests, argument_deduction_4) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "A" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.FunctionTemplate("apply")
+  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("apply")
     .setParams(std::move(params))
     .setScope(Scope{})
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)

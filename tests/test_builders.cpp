@@ -27,7 +27,7 @@ TEST(Builders, classes) {
 
   Symbol s{ e.rootNamespace() };
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   ASSERT_EQ(A.name(), "A");
   ASSERT_EQ(A.enclosingNamespace(), e.rootNamespace());
@@ -41,7 +41,7 @@ TEST(Builders, operators) {
 
   Symbol s{ e.rootNamespace() };
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   OperatorBuilder b{ s, OperatorName::AdditionOperator };
   
@@ -73,7 +73,7 @@ TEST(Builders, functioncalloperator) {
 
   Symbol s{ e.rootNamespace() };
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   FunctionCallOperatorBuilder b{ Symbol{A} };
 
@@ -125,7 +125,7 @@ TEST(Builders, conversionfunction) {
     ASSERT_TRUE(true);
   }
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   CastBuilder b{ Symbol{ A }, Type::Int };
 
@@ -156,7 +156,7 @@ TEST(Builders, constructor) {
     ASSERT_TRUE(true);
   }
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   ConstructorBuilder b{ Symbol{ A } };
 
@@ -179,12 +179,12 @@ TEST(Builders, defaultconstructor) {
   Engine e;
   e.setup();
 
-  Class A = e.rootNamespace().Class("A")
+  Class A = e.rootNamespace().newClass("A")
     .addMember(DataMember{Type::Int, "n"})
     .get();
 
-  A.Constructor().setDefaulted().compile().get();
-  A.Destructor().setDefaulted().compile().get();
+  A.newConstructor().setDefaulted().compile().get();
+  A.newDestructor().setDefaulted().compile().get();
 
   Value a = e.construct(A.id(), {});
   ASSERT_EQ(a.type(), A.id());
@@ -210,7 +210,7 @@ TEST(Builders, destructors) {
     ASSERT_TRUE(true);
   }
 
-  Class A = e.rootNamespace().Class("A").get();
+  Class A = e.rootNamespace().newClass("A").get();
 
   DestructorBuilder b{ Symbol{ A } };
 

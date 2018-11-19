@@ -20,7 +20,7 @@ TEST(NameLookup, simple_function) {
   Engine e;
   e.setup();
 
-  Symbol{ e.rootNamespace() }.Function("foo").create();
+  Symbol{ e.rootNamespace() }.newFunction("foo").create();
 
   NameLookup lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -29,7 +29,7 @@ TEST(NameLookup, simple_function) {
   lookup = NameLookup::resolve("bar", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::UnknownName);
 
-  Symbol{ e.rootNamespace() }.Function("foo").params(Type::Int).create();
+  Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).create();
 
   lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -191,11 +191,11 @@ TEST(NameLookup, member_lookup) {
 
   Symbol gns{ e.rootNamespace() };
 
-  Class foo = gns.Class("foo").get();
-  foo.Method("f").create();
+  Class foo = gns.newClass("foo").get();
+  foo.newMethod("f").create();
 
-  Class bar = gns.Class("bar").setBase(foo).get();
-  bar.Method("g").create();
+  Class bar = gns.newClass("bar").setBase(foo).get();
+  bar.newMethod("g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);

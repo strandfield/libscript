@@ -100,17 +100,16 @@ public:
   bool isCopyConstructible() const;
   bool isMoveConstructible() const;
 
-  [[deprecated("Use Destructor() instead")]] Function newDestructor(NativeFunctionSignature func);
   Function destructor() const;
   
-  ConstructorBuilder Constructor(NativeFunctionSignature func = nullptr) const;
-  DestructorBuilder Destructor(NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder Method(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  OperatorBuilder Operation(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  FunctionCallOperatorBuilder FunctionCall(NativeFunctionSignature func = nullptr) const;
-  CastBuilder Conversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
+  ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
+  DestructorBuilder newDestructor(NativeFunctionSignature func = nullptr) const;
+  FunctionBuilder newMethod(const std::string & name, NativeFunctionSignature func = nullptr) const;
+  OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
+  FunctionCallOperatorBuilder newFunctionCallOperator(NativeFunctionSignature func = nullptr) const;
+  CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
-  ClassBuilder NestedClass(const std::string & name) const;
+  ClassBuilder newNestedClass(const std::string & name) const;
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }

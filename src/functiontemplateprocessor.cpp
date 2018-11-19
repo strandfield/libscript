@@ -144,7 +144,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   if (ft.hasInstance(*template_args, &f))
     return f;
   
-  FunctionBuilder builder = Symbol{ ft.impl()->enclosing_symbol.lock() }.Function(std::string{});
+  FunctionBuilder builder = Symbol{ ft.impl()->enclosing_symbol.lock() }.newFunction(std::string{});
 
   if (is_native)
   {

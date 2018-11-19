@@ -186,34 +186,34 @@ std::vector<script::Function> Namespace::findFunctions(const std::string & name)
   return ret;
 }
 
-ClassBuilder Namespace::Class(const std::string & name) const
+ClassBuilder Namespace::newClass(const std::string & name) const
 {
   return ClassBuilder{ Symbol{ *this }, name };
 }
 
-EnumBuilder Namespace::Enum(const std::string & name) const
+EnumBuilder Namespace::newEnum(const std::string & name) const
 {
   return EnumBuilder{ Symbol{*this}, name };
 }
 
-FunctionBuilder Namespace::Function(const std::string & name, NativeFunctionSignature func) const
+FunctionBuilder Namespace::newFunction(const std::string & name, NativeFunctionSignature func) const
 {
   return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
 }
 
-OperatorBuilder Namespace::Operation(OperatorName op, NativeFunctionSignature func) const
+OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature func) const
 {
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-LiteralOperatorBuilder Namespace::UserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::newUserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
 {
   return LiteralOperatorBuilder{ Symbol{*this}, std::string{suffix} }.setCallback(func);
 }
 
-LiteralOperatorBuilder Namespace::UserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::newUserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
 {
-  return UserDefinedLiteral(suffix, func).returns(output).params(input);
+  return newUserDefinedLiteral(suffix, func).returns(output).params(input);
 }
 
 Engine * Namespace::engine() const

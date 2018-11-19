@@ -89,65 +89,65 @@ Script Symbol::script() const
   return parent().script();
 }
 
-ClassBuilder Symbol::Class(const std::string & name)
+ClassBuilder Symbol::newClass(const std::string & name)
 {
   return ClassBuilder{ *this, name };
 }
 
-ClassBuilder Symbol::Class(std::string && name)
+ClassBuilder Symbol::newClass(std::string && name)
 {
   return ClassBuilder{ *this, std::move(name) };
 }
 
-ClassTemplateBuilder Symbol::ClassTemplate(const std::string & name)
+ClassTemplateBuilder Symbol::newClassTemplate(const std::string & name)
 {
   return ClassTemplateBuilder{ *this, name };
 }
 
-ClassTemplateBuilder Symbol::ClassTemplate(std::string && name)
+ClassTemplateBuilder Symbol::newClassTemplate(std::string && name)
 {
   return ClassTemplateBuilder{ *this, std::move(name) };
 }
 
-EnumBuilder Symbol::Enum(std::string && name)
+EnumBuilder Symbol::newEnum(std::string && name)
 {
   return EnumBuilder{ *this, std::move(name) };
 }
 
-FunctionBuilder Symbol::Function(const std::string & name)
+FunctionBuilder Symbol::newFunction(const std::string & name)
 {
   if (isClass())
-    return toClass().Method(name);
+    return toClass().newMethod(name);
   else if (isNamespace())
-    return toNamespace().Function(name);
+    return toNamespace().newFunction(name);
   throw std::runtime_error{ "Cannot add function on null symbol" };
 }
 
-FunctionTemplateBuilder Symbol::FunctionTemplate(const std::string & name)
+FunctionTemplateBuilder Symbol::newFunctionTemplate(const std::string & name)
 {
   return FunctionTemplateBuilder{ *this, name };
 }
 
-FunctionTemplateBuilder Symbol::FunctionTemplate(std::string && name)
+FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
 {
   return FunctionTemplateBuilder{ *this, std::move(name) };
 }
 
-OperatorBuilder Symbol::Operation(OperatorName op)
+OperatorBuilder Symbol::newOperator(OperatorName op)
 {
   if (isClass())
-    return toClass().Operation(op);
+    return toClass().newOperator(op);
   else if (isNamespace())
-    return toNamespace().Operation(op);
+    return toNamespace().newOperator(op);
   throw std::runtime_error{ "Cannot add operator on null symbol" };
 }
 
-TypedefBuilder Symbol::Typedef(const Type & t, const std::string & name)
+TypedefBuilder Symbol::newTypedef(const Type & t, const std::string & name)
 {
   return TypedefBuilder{ *this, name, t };
 }
 
-TypedefBuilder Symbol::Typedef(const Type & t, std::string && name)
+TypedefBuilder Symbol::newTypedef(const Type & t, std::string && name)
 {
   return TypedefBuilder{ *this, std::move(name), t };
 }

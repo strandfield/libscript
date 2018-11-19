@@ -155,29 +155,29 @@ Class instantiate_array_class(ClassTemplateInstanceBuilder & builder)
   shared_data->data.typeId = array_class.id();
   Type array_type = array_class.id();
 
-  array_class.Constructor(callbacks::array::default_ctor).create();
+  array_class.newConstructor(callbacks::array::default_ctor).create();
 
-  array_class.Constructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
+  array_class.newConstructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
 
-  array_class.Constructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
+  array_class.newConstructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
 
-  array_class.Destructor(callbacks::array::dtor).create();
+  array_class.newDestructor(callbacks::array::dtor).create();
 
-  array_class.Method("size", callbacks::array::size)
+  array_class.newMethod("size", callbacks::array::size)
     .setConst().returns(Type::Int).create();
 
-  array_class.Method("resize", callbacks::array::resize)
+  array_class.newMethod("resize", callbacks::array::resize)
     .params(Type::cref(Type::Int)).create();
 
-  array_class.Operation(AssignmentOperator, callbacks::array::assign)
+  array_class.newOperator(AssignmentOperator, callbacks::array::assign)
     .returns(Type::ref(array_type))
     .params(Type::cref(array_type)).create();
 
-  array_class.Operation(SubscriptOperator, callbacks::array::subscript)
+  array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
     .returns(Type::ref(element_type))
     .params(Type::cref(Type::Int)).create();
 
-  array_class.Operation(SubscriptOperator, callbacks::array::subscript)
+  array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
     .setConst()
     .returns(Type::cref(element_type))
     .params(Type::cref(Type::Int)).create();
@@ -193,7 +193,7 @@ ClassTemplate ArrayImpl::register_array_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate array_template = Symbol{ root }.ClassTemplate("Array")
+  ClassTemplate array_template = Symbol{ root }.newClassTemplate("Array")
     .setParams(std::move(params))
     .setScope(Scope{ root })
     .setCallback(instantiate_array_class)

@@ -168,37 +168,37 @@ Value neq(FunctionCall *c)
 
 static Class register_ilist_iterator(Class & ilist)
 {
-  Class iter = ilist.NestedClass("iterator").setFinal(true).get();
+  Class iter = ilist.newNestedClass("iterator").setFinal(true).get();
 
-  iter.Constructor(callbacks::initializer_list::iterator::default_ctor).create();
-  iter.Constructor(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
+  iter.newConstructor(callbacks::initializer_list::iterator::default_ctor).create();
+  iter.newConstructor(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
 
-  iter.Destructor(callbacks::initializer_list::iterator::dtor).create();
+  iter.newDestructor(callbacks::initializer_list::iterator::dtor).create();
 
-  iter.Method("get", callbacks::initializer_list::iterator::get)
+  iter.newMethod("get", callbacks::initializer_list::iterator::get)
     .setConst()
     .returns(Type::cref(ilist.arguments().at(0).type))
     .create();
 
-  iter.Operation(AssignmentOperator, callbacks::initializer_list::iterator::assign)
+  iter.newOperator(AssignmentOperator, callbacks::initializer_list::iterator::assign)
     .returns(Type::ref(iter.id()))
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.Operation(PreIncrementOperator, callbacks::initializer_list::iterator::pre_increment)
+  iter.newOperator(PreIncrementOperator, callbacks::initializer_list::iterator::pre_increment)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.Operation(PreDecrementOperator, callbacks::initializer_list::iterator::pre_decrement)
+  iter.newOperator(PreDecrementOperator, callbacks::initializer_list::iterator::pre_decrement)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.Operation(EqualOperator, callbacks::initializer_list::iterator::eq)
+  iter.newOperator(EqualOperator, callbacks::initializer_list::iterator::eq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.Operation(InequalOperator, callbacks::initializer_list::iterator::neq)
+  iter.newOperator(InequalOperator, callbacks::initializer_list::iterator::neq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
@@ -229,22 +229,22 @@ Class instantiate_initializer_list_class(ClassTemplateInstanceBuilder & builder)
 
   Class iter_type = register_ilist_iterator(ilist_class);
   
-  ilist_class.Constructor(callbacks::initializer_list::default_ctor).create();
+  ilist_class.newConstructor(callbacks::initializer_list::default_ctor).create();
 
-  ilist_class.Constructor(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
+  ilist_class.newConstructor(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
 
-  ilist_class.Destructor(callbacks::initializer_list::dtor).create();
+  ilist_class.newDestructor(callbacks::initializer_list::dtor).create();
 
-  ilist_class.Method("size", callbacks::initializer_list::size)
+  ilist_class.newMethod("size", callbacks::initializer_list::size)
     .setConst().returns(Type::Int).create();
 
-  ilist_class.Method("begin", callbacks::initializer_list::begin)
+  ilist_class.newMethod("begin", callbacks::initializer_list::begin)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.Method("end", callbacks::initializer_list::end)
+  ilist_class.newMethod("end", callbacks::initializer_list::end)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.Operation(AssignmentOperator, callbacks::initializer_list::assign)
+  ilist_class.newOperator(AssignmentOperator, callbacks::initializer_list::assign)
     .returns(Type::ref(ilist_type))
     .params(Type::cref(ilist_type)).create();
 
@@ -260,7 +260,7 @@ ClassTemplate register_initialize_list_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate ilist_template = Symbol{ root }.ClassTemplate("InitializerList")
+  ClassTemplate ilist_template = Symbol{ root }.newClassTemplate("InitializerList")
     .setParams(std::move(params))
     .setScope(Scope{ root })
     .setCallback(instantiate_initializer_list_class)
