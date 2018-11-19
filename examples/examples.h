@@ -2,6 +2,7 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
+#include <memory>
 #include <string>
 #include <vector>
 
