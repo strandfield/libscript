@@ -163,7 +163,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefault
   {
     const auto & dm = data_members.at(i);
 
-    std::shared_ptr<program::Expression> default_constructed_value = ValueConstructor::construct(cla.engine(), dm.type, {}, Initialization{});
+    std::shared_ptr<program::Expression> default_constructed_value = ValueConstructor::construct(cla.engine(), dm.type, std::vector<std::shared_ptr<program::Expression>>{}, Initialization{});
     members_initialization[i] = program::PushDataMember::New(default_constructed_value);
   }
 
