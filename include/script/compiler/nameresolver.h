@@ -37,8 +37,10 @@ class ExtendedNameResolver
 public:
   TemplateNameProcessor *tnp_;
 
-  ExtendedNameResolver()
-    : tnp_(nullptr) { }
+  ExtendedNameResolver() : tnp_(nullptr) {}
+  explicit ExtendedNameResolver(TemplateNameProcessor *tnp) : tnp_(tnp) { }
+  ExtendedNameResolver(const ExtendedNameResolver &) = default;
+  ~ExtendedNameResolver() = default;
 
   inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
   {
@@ -46,6 +48,8 @@ public:
   }
 
   void set_tnp(TemplateNameProcessor & tnp) { tnp_ = &tnp; }
+
+  ExtendedNameResolver & operator=(const ExtendedNameResolver &) = default;
 };
 
 } // namespace compiler

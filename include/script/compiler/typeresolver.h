@@ -63,18 +63,6 @@ public:
     return complete(lookup.typeResult(), qt);
   }
 
-  Type resolve(const ast::QualifiedType & qt)
-  {
-    if (qt.isFunctionType())
-      return complete(handle_function(qt.functionType), qt);
-
-    NameLookup lookup = name_.resolve(qt.type);
-    if (lookup.resultType() != NameLookup::TypeName)
-      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
-
-    return complete(lookup.typeResult(), qt);
-  }
-
 protected:
   Type handle_function(const std::shared_ptr<ast::FunctionType> & ft, const Scope & scp)
   {
@@ -83,17 +71,6 @@ protected:
 
     for (const auto & p : ft->params)
       proto.push(resolve(p, scp));
-
-    return scp.engine()->getFunctionType(proto).type();
-  }
-
-  Type handle_function(const std::shared_ptr<ast::FunctionType> & ft)
-  {
-    DynamicPrototype proto;
-    proto.setReturnType(resolve(qt.functionType->returnType));
-
-    for (const auto & p : qt.functionType->params)
-      proto.push(resolve(p));
 
     return scp.engine()->getFunctionType(proto).type();
   }

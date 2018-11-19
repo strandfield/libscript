@@ -16,30 +16,12 @@
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/functionprocessor.h"
+#include "script/compiler/nameresolver.h"
 
 #include <algorithm>
 
 namespace script
 {
-
-class NameResolver
-{
-public:
-  TemplateNameProcessor *template_;
-public:
-  NameResolver() : template_(nullptr) {}
-  explicit NameResolver(TemplateNameProcessor *tnp) : template_(tnp) { }
-  NameResolver(const NameResolver &) = default;
-  ~NameResolver() = default;
-
-  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-  {
-    return NameLookup::resolve(name, scp, *template_);
-  }
-
-  NameResolver & operator=(const NameResolver &) = default;
-};
-
 
 FunctionTemplateProcessor::FunctionTemplateProcessor()
 {
@@ -152,8 +134,8 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   }
   else
   {
-    NameResolver nr{ name_ };
-    using TypeResolver = compiler::TypeResolver<NameResolver>;
+    compiler::ExtendedNameResolver nr{ name_ };
+    using TypeResolver = compiler::TypeResolver<compiler::ExtendedNameResolver>;
     TypeResolver tr;
     tr.name_resolver() = nr;
     using PrototypeResolver = compiler::BasicPrototypeResolver<TypeResolver>;
