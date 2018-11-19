@@ -13,6 +13,8 @@
 
 #include "script/compiler/compilererrors.h"
 
+#include <algorithm>
+
 namespace script
 {
 
