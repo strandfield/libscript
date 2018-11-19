@@ -5,8 +5,9 @@
 #ifndef LIBSCRIPT_DEFAULT_ARGUMENT_PROCESSOR_H
 #define LIBSCRIPT_DEFAULT_ARGUMENT_PROCESSOR_H
 
-#include "script/ast/forwards.h"
-#include "script/function.h" // ideally this should be removed
+#include "script/ast/node.h"
+#include "script/compiler/compilererrors.h"
+#include "script/compiler/diagnostichelper.h"
 #include "script/functionbuilder.h"
 #include "script/scope.h"
 
