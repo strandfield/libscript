@@ -436,7 +436,7 @@ OperatorBuilder & OperatorBuilder::setDefaulted()
   return *(this);
 }
 
-inline OperatorBuilder & OperatorBuilder::setReturnType(const Type & t)
+OperatorBuilder & OperatorBuilder::setReturnType(const Type & t)
 {
   this->proto_.setReturnType(t);
   return *(this);
