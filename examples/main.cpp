@@ -30,7 +30,7 @@ script::Value scan_callback(script::FunctionCall *c)
   return c->engine()->newString(ret);
 }
 
-int main(int argc, char *argv)
+int main(int argc, char **argv)
 {
   using namespace script;
 
