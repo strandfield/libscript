@@ -805,7 +805,9 @@ Value Engine::copy(const Value & val)
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw std::runtime_error{ "Value's type is not copy constructible." };
 
-    return invoke(copyCtor, { buildValue(cla.id()), val });
+    Value object = buildValue(cla.id());
+    invoke(copyCtor, { object, val });
+    return object;
   }
   else if (val.type().isFunctionType())
     return Value::fromFunction(val.toFunction(), val.type().baseType());
