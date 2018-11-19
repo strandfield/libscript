@@ -960,7 +960,7 @@ public:
   static std::shared_ptr<FunctionDecl> New(const std::shared_ptr<Identifier> & name);
   static std::shared_ptr<FunctionDecl> New(const std::shared_ptr<AST> a);
 
-  parser::Lexer::Position pos() const;
+  parser::Lexer::Position pos() const override;
   
   static const NodeType type_code = NodeType::FunctionDeclaration;
   inline NodeType type() const override { return type_code; }

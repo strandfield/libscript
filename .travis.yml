@@ -22,4 +22,5 @@ matrix:
     script:
       - cmake -DCMAKE_C_COMPILER=clang-4.0 -DCMAKE_CXX_COMPILER=clang++-4.0 ..
       - make
-      - make test
+      - cd tests
+	  - ./libscript_tests --gtest_output="xml:gtest-report.xml"

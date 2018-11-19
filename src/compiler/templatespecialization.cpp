@@ -166,14 +166,14 @@ TemplatePartialOrdering TemplateSpecialization::compare_from_qual(const ast::Qua
 {
   if (a.constQualifier.isValid() && !b.constQualifier.isValid())
   {
-    if (a.reference.isValid() && !b.reference.isValid() || a.reference.isValid() == b.reference.isValid())
+    if ((a.reference.isValid() && !b.reference.isValid()) || a.reference.isValid() == b.reference.isValid())
       return TemplatePartialOrdering::FirstIsMoreSpecialized;
 
     return TemplatePartialOrdering::NotComparable;
   }
   else if (!a.constQualifier.isValid() && b.constQualifier.isValid())
   {
-    if (b.reference.isValid() && !b.reference.isValid() || a.reference.isValid() == b.reference.isValid())
+    if ((b.reference.isValid() && !b.reference.isValid()) || a.reference.isValid() == b.reference.isValid())
       return TemplatePartialOrdering::SecondIsMoreSpecialized;
 
     return TemplatePartialOrdering::NotComparable;

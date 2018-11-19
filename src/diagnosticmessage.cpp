@@ -23,7 +23,7 @@ inline static bool is_digit(const char c)
 
 inline static bool is_letter(const char c)
 {
-  return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 inline static bool is_alphanumeric(const char c)

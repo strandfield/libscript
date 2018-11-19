@@ -9,6 +9,7 @@
 #include "script/compiler/typeresolver.h"
 
 #include "script/class.h"
+#include "script/symbol.h"
 
 #include <vector>
 
