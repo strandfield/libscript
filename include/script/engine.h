@@ -10,6 +10,7 @@
 #include "script/scope.h"
 #include "script/string.h"
 #include "script/types.h"
+#include "script/value.h"
 
 #include "script/modulecallbacks.h"
 
