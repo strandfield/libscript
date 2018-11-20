@@ -24,3 +24,21 @@ matrix:
       - make
       - cd tests
       - ./libscript_tests --gtest_output="xml:gtest-report.xml"
+  - os: linux
+    env:
+      - TEST="Codecov"
+    addons:
+      apt:
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-6
+          - g++-6
+    script:
+      - cmake -DENABLE_COVERAGE=ON -DCMAKE_CXX_COMPILER="g++-6" ..
+      - make
+      - cd tests
+      - ./libscript_tests
+      - cd ..
+      - cd ..
+      - bash <(curl -s https://codecov.io/bash)
