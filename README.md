@@ -4,6 +4,7 @@
 
 [![Build Status](https://api.travis-ci.org/RugessNome/libscript.svg?branch=master)](https://travis-ci.org/RugessNome/libscript)
 [![codecov](https://codecov.io/gh/RugessNome/libscript/branch/master/graph/badge.svg)](https://codecov.io/gh/RugessNome/libscript)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a090f609f8944a28d0103b11c9d2d92)](https://www.codacy.com/app/RugessNome/libscript?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RugessNome/libscript&amp;utm_campaign=Badge_Grade)
 
 `libscript` is a scripting library written in C++. 
 It aims at providing all the building blocks necessary to create 
