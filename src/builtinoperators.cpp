@@ -106,7 +106,7 @@ Value char_div_assign(FunctionCall *c)
 // char & operator%=(char & a, const char & b)
 Value char_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->set_char(c->arg(0).toChar() + c->arg(1).toChar());
+  c->arg(0).impl()->set_char(c->arg(0).toChar() % c->arg(1).toChar());
   return c->arg(0);
 }
 
@@ -330,7 +330,7 @@ Value int_div_assign(FunctionCall *c)
 // int & operator%=(int & a, const int & b)
 Value int_mod_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->set_int(c->arg(0).toInt() + c->arg(1).toInt());
+  c->arg(0).impl()->set_int(c->arg(0).toInt() % c->arg(1).toInt());
   return c->arg(0);
 }
 
@@ -552,13 +552,6 @@ Value float_div_assign(FunctionCall *c)
   return c->arg(0);
 }
 
-// float & operator%=(float & a, const float & b)
-Value float_mod_assign(FunctionCall *c)
-{
-  c->arg(0).impl()->set_float(c->arg(0).toFloat() + c->arg(1).toFloat());
-  return c->arg(0);
-}
-
 // const float operator+(const float & a, const float & b)
 Value float_add(FunctionCall *c)
 {
@@ -698,13 +691,6 @@ Value double_mul_assign(FunctionCall *c)
 Value double_div_assign(FunctionCall *c)
 {
   c->arg(0).impl()->set_double(c->arg(0).toDouble() / c->arg(1).toDouble());
-  return c->arg(0);
-}
-
-// double & operator%=(double & a, const double & b)
-Value double_mod_assign(FunctionCall *c)
-{
-  c->arg(0).impl()->set_double(c->arg(0).toDouble() + c->arg(1).toDouble());
   return c->arg(0);
 }
 
