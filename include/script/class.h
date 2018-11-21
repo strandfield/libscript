@@ -83,7 +83,7 @@ public:
 
   const std::vector<Class> & classes() const;
 
-  EnumBuilder Enum(const std::string & name);
+  EnumBuilder newEnum(const std::string & name);
   const std::vector<script::Enum> & enums() const;
 
   const std::vector<Template> & templates() const;

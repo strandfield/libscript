@@ -197,7 +197,7 @@ const std::vector<Class> & Class::classes() const
   return d->classes;
 }
 
-EnumBuilder Class::Enum(const std::string & name)
+EnumBuilder Class::newEnum(const std::string & name)
 {
   return EnumBuilder{ Symbol{*this}, name };
 }
