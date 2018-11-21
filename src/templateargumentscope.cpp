@@ -46,7 +46,6 @@ TemplateArgumentScope * TemplateArgumentScope::clone() const
 bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
   const auto & params = template_.parameters();
-  size_t size = std::min(params.size(), arguments_.size());
   for (size_t i(0); i < params.size(); ++i)
   {
     if (params.at(i).name() != name)

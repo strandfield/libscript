@@ -20,7 +20,6 @@ TEST(StringTests, construction) {
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
-  const auto & errors = s.messages();
   ASSERT_TRUE(success);
 
   s.run();

@@ -453,7 +453,6 @@ void CFunctionTemplateProcessor::instantiate(Function & f)
   }
   else
   {
-    Engine *e = ft.engine();
     auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
     compiler_->instantiate(decl, f, ft.argumentScope(f.arguments()));
   }

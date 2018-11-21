@@ -566,7 +566,6 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
 {
   const Scope scp = currentScope();
-  const auto & dtor_decl = *decl;
   Class current_class = scp.asClass();
 
   auto b = current_class.newDestructor();
@@ -672,7 +671,6 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl)
 {
   const Scope scp = currentScope();
-  const ast::CastDecl & cast_decl = *decl;
 
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)

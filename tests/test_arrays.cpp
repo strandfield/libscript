@@ -80,7 +80,6 @@ TEST(Arrays, binding) {
 
   Script s = engine.newScript(SourceFile::fromString(src));
   bool success = s.compile();
-  const auto & errors = s.messages();
   ASSERT_TRUE(success);
 
   s.run();

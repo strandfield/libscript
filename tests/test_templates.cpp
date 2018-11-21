@@ -102,8 +102,6 @@ void max_function_template_substitution(script::FunctionBuilder & result, script
 {
   using namespace script;
 
-  Engine *e = t.engine();
-
   Type T = t.get("T", args).type;
   int N = t.get("N", args).integer;
 

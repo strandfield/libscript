@@ -107,7 +107,7 @@ int TemplateArgumentComparison::compare(const TemplateArgument & a, const Templa
 {
   if (a.kind < b.kind)
     return -1;
-  else if (b.kind > a.kind)
+  else if (a.kind > b.kind)
     return 1;
 
   const TemplateArgument::Kind common_kind = a.kind;

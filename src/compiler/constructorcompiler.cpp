@@ -157,7 +157,6 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefault
 
   // Initializating data members
   const auto & data_members = cla.dataMembers();
-  const int data_members_offset = cla.attributesOffset();
   std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
   for (size_t i(0); i < data_members.size(); ++i)
   {

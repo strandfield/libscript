@@ -24,7 +24,7 @@ class ScopeParentGuard
   std::shared_ptr<ScopeImpl> guarded_scope;
   std::shared_ptr<ScopeImpl> parent_value;
 public:
-  ScopeParentGuard(const Scope & s)
+  explicit ScopeParentGuard(const Scope & s)
   {
     guarded_scope = s.impl();
     parent_value = guarded_scope->parent;
