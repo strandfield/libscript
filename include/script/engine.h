@@ -16,9 +16,9 @@
 
 #include "script/support/filesystem.h"
 
-#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS)
-#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS
-#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_HEADERS)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/engine.h"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 namespace script
 {
@@ -165,9 +165,9 @@ public:
 
   Engine & operator=(const Engine & other) = delete;
 
-#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS)
-#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS
-#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_METHODS)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/engine-methods.incl"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 protected:
   Value buildValue(Type t);

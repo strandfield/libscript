@@ -8,9 +8,9 @@
 #include "script/types.h"
 #include "script/string.h"
 
-#if defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_HEADER)
-#include LIBSCRIPT_CONFIG_VALUE_INJECTED_HEADER
-#endif // defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_HEADER)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/value.h"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 namespace script
 {
@@ -86,9 +86,9 @@ public:
 
   inline ValueImpl * impl() const { return d; }
 
-#if defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_METHODS)
-#include LIBSCRIPT_CONFIG_VALUE_INJECTED_METHODS
-#endif // defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_METHODS)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/value-members.incl"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 private:
   ValueImpl *d;

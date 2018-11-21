@@ -20,7 +20,7 @@
 #endif
 
 #if defined(LIBSCRIPT_HAS_CONFIG)
-#include LIBSCRIPT_CONFIG_HEADER
+#include "config/libscript/config.h"
 #endif //defined(LIBSCRIPT_HAS_CONFIG)
 
 namespace script

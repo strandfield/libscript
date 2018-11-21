@@ -7,8 +7,8 @@
 
 #include "libscriptdefs.h"
 
-#if defined(LIBSCRIPT_CONFIG_STRING_HEADER)
-#include LIBSCRIPT_CONFIG_STRING_HEADER
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/string.h"
 #else 
 
 #include <string>
@@ -18,6 +18,6 @@ namespace script
 using String = std::string;
 } // namespace script
 
-#endif // defined(LIBSCRIPT_CONFIG_STRING_HEADER)
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 #endif // LIBSCRIPT_STRING_H

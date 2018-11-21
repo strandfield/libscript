@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_STRING_P_H
 #define LIBSCRIPT_STRING_P_H
 
-#if defined(LIBSCRIPT_CONFIG_STRING_IMPL_HEADER)
-#include LIBSCRIPT_CONFIG_STRING_IMPL_HEADER
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/stringimpl.h"
 #else
 
 #include <string>
@@ -31,6 +31,6 @@ inline String convert(const std::string & str) { return str; }
 
 } // namespace script
 
-#endif // defined(LIBSCRIPT_CONFIG_STRING_IMPL_HEADER)
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 #endif // LIBSCRIPT_STRING_P_H

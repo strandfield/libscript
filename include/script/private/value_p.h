@@ -5,8 +5,8 @@
 #ifndef LIBSCRIPT_VALUE_P_H
 #define LIBSCRIPT_VALUE_P_H
 
-#if defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
-#include LIBSCRIPT_CONFIG_VALUEIMPL_HEADER
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/valueimpl.h"
 #else
 
 #include "script/array.h"
@@ -114,6 +114,6 @@ struct LIBSCRIPT_API ValueImpl
 
 } // namespace script
 
-#endif // defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 #endif // LIBSCRIPT_VALUE_P_H

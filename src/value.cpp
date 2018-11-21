@@ -15,14 +15,14 @@
 #include "script/object.h"
 #include "script/private/object_p.h"
 
-#if defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE)
-#include LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE
-#endif // defined(LIBSCRIPT_CONFIG_VALUE_INJECTED_SOURCE)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/value.cpp"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 namespace script
 {
 
-#if !defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
+#if !defined(LIBSCRIPT_HAS_CONFIG)
 
 ValueImpl::Storage::Storage()
 {
@@ -170,7 +170,7 @@ void ValueImpl::clear()
   this->type = Type::Null;
 }
 
-#endif // !defined(LIBSCRIPT_CONFIG_VALUEIMPL_HEADER)
+#endif // !defined(LIBSCRIPT_HAS_CONFIG)
 
 
 static ValueImpl construct_void()

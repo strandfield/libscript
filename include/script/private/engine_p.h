@@ -19,9 +19,9 @@
 
 #include "script/support/filesystem.h"
 
-#if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS)
-#include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS
-#endif // defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_HEADERS)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/engineimpl.h"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 
 namespace script
@@ -96,9 +96,9 @@ public:
   void unregister_closure(ClosureType &c);
 
 
-#if defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
-#include LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS
-#endif // defined(LIBSCRIPT_CONFIG_ENGINE_IMPL_INJECTED_MEMBERS)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/engineimpl-members.incl"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 };
 

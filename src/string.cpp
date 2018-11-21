@@ -5,8 +5,8 @@
 #include "libscriptdefs.h"
 #include "script/private/string_p.h"
 
-#if defined(LIBSCRIPT_CONFIG_STRING_SOURCE)
-#include LIBSCRIPT_CONFIG_STRING_SOURCE
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/string.cpp"
 #else 
 
 #include "script/engine.h"
@@ -395,4 +395,4 @@ void register_string_type(Class string)
 
 } // namespace script
 
-#endif // defined(LIBSCRIPT_CONFIG_STRING_SOURCE)
+#endif // defined(LIBSCRIPT_HAS_CONFIG)

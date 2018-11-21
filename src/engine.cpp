@@ -47,9 +47,9 @@
 #include "script/private/value_p.h"
 
 
-#if defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE)
-#include LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE
-#endif // defined(LIBSCRIPT_CONFIG_ENGINE_INJECTED_SOURCE)
+#if defined(LIBSCRIPT_HAS_CONFIG)
+#include "config/libscript/engine.cpp"
+#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 namespace script
 {
