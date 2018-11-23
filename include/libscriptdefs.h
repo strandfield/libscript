@@ -9,7 +9,7 @@
 #include <cassert>
 #include <memory>
 
-#if defined(WIN32) || defined(_WIN32)
+#if (defined(WIN32) || defined(_WIN32)) && !defined(LIBSCRIPT_STATIC_LINKING)
 #if defined(LIBSCRIPT_COMPILE_LIBRARY)
 #  define LIBSCRIPT_API __declspec(dllexport)
 #else
