@@ -1193,6 +1193,7 @@ TEST(CompilerTests, brace_initialization) {
     "    int n;                    "
     "    A(const A &) = default;   "
     "    A(int val) : n(val) { }   "
+    "    ~A() = default;           "
     "  };                          "
     "  A b{5};                     "
     "  A c = A{5};                 ";
@@ -1218,6 +1219,7 @@ TEST(CompilerTests, ctor_initialization) {
     "    int n;                    "
     "    A(const A &) = default;   "
     "    A(int val) : n(val) { }   "
+    "    ~A() = default;           "
     "  };                          "
     "  A b(5);                     "
     "  A c = A(5);                 ";

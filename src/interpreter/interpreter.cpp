@@ -44,7 +44,7 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
   Engine *e = f.engine();
   const int sp = mExecutionContext->stack.size;
 
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
 
   if (obj)
     mExecutionContext->stack.push(*obj);
@@ -85,7 +85,7 @@ Value Interpreter::call(const Function & f, const std::vector<Value> & args)
   Engine *e = f.engine();
   const int sp = mExecutionContext->stack.size;
 
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
 
   const Prototype & proto = f.prototype();
   const int argc = args.size();
@@ -120,7 +120,7 @@ Value Interpreter::invoke(const Function & f, const Value *obj, const Value *beg
 {
   const int sp = mExecutionContext->stack.size;
   
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
 
   if (obj)
     mExecutionContext->stack.push(*obj);
@@ -284,7 +284,7 @@ void Interpreter::visit(const program::IfStatement & is)
 void Interpreter::visit(const program::PlacementStatement & placement)
 {
   const int sp = mExecutionContext->stack.size;
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
   mExecutionContext->stack.push(eval(placement.object));
   for (const auto & arg : placement.arguments)
     mExecutionContext->stack.push(eval(arg));
@@ -402,7 +402,7 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 
   Value object = mEngine->implementation()->buildValue(call.allocate->object_type);
 
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
   mExecutionContext->stack.push(object);
   for (const auto & arg : call.arguments)
     mExecutionContext->stack.push(inner_eval(arg));
@@ -433,7 +433,7 @@ Value Interpreter::visit(const program::FetchGlobal & fetch)
 Value Interpreter::visit(const program::FunctionCall & fc)
 {
   const int sp = mExecutionContext->stack.size;
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
   for (const auto & arg : fc.args)
     mExecutionContext->stack.push(inner_eval(arg));
 
@@ -451,7 +451,7 @@ Value Interpreter::visit(const program::FunctionVariableCall & fvc)
   Function f = callee.toFunction();
 
   const int sp = mExecutionContext->stack.size;
-  mExecutionContext->stack.push(Value{});
+  mExecutionContext->stack.push(Value::Void);
   for (const auto & arg : fvc.arguments)
     mExecutionContext->stack.push(inner_eval(arg));
 

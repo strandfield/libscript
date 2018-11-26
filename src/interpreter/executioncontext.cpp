@@ -44,7 +44,9 @@ const Value & Stack::top() const
 
 Value Stack::pop()
 {
-  return this->data[--this->size];
+  Value ret = this->data[--this->size];
+  this->data[this->size] = Value{};
+  return ret;
 }
 
 Value & Stack::operator[](int index)
@@ -261,11 +263,10 @@ bool ExecutionContext::push(const Function & f, Value *begin, Value *end)
     fc->mCallee = f;
     fc->mArgc = std::distance(begin, end);
     fc->mStackIndex = this->stack.size;
-    this->stack.size += 1;
+    this->stack[this->stack.size++] = Value::Void;
     for (auto it = begin; it != end; ++it)
     {
-      this->stack[this->stack.size] = *it;
-      this->stack.size += 1;
+      this->stack[this->stack.size++] = *it;
     }
     fc->flags = FunctionCall::NoFlags;
     fc->ec = this;
@@ -299,12 +300,12 @@ bool ExecutionContext::push(const Function & f, int sp)
 Value ExecutionContext::pop()
 {
   FunctionCall *fc = this->callstack.top();
-  this->stack.size -= (fc->mArgc);
+  for (int i = 0; i < fc->mArgc; ++i)
+    this->stack.pop();
+  //this->stack.size -= (fc->mArgc);
   this->callstack.pop();
-  /// TODO : generate implicit return statement in functions instead of this
+
   Value ret = this->stack.pop();
-  if (ret.isNull())
-    return Value::Void;
   return ret;
 }
 

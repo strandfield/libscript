@@ -34,7 +34,7 @@ public:
   {
     const int sp = mExecutionContext->stack.size;
 
-    mExecutionContext->stack.push(Value{});
+    mExecutionContext->stack.push(Value::Void);
 
     for (auto it = begin; it != end; ++it)
       mExecutionContext->stack.push(*it);
@@ -52,7 +52,7 @@ public:
     assert(ctor.isConstructor());
 
     const int sp = mExecutionContext->stack.size;
-    mExecutionContext->stack.push(Value{});
+    mExecutionContext->stack.push(Value::Void);
     mExecutionContext->stack.push(object);
     for (auto it = begin; it != end; ++it)
       mExecutionContext->stack.push(*it);
