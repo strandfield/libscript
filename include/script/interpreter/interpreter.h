@@ -64,13 +64,16 @@ public:
     mExecutionContext->pop();
   }
 
-  Value eval(program::Expression & expr);
   Value eval(const std::shared_ptr<program::Expression> & expr);
 
   void exec(program::Statement & s);
   void exec(const std::shared_ptr<program::Statement> & s);
 
 protected:
+  bool evalCondition(const std::shared_ptr<program::Expression> & expr);
+  void evalForSideEffects(const std::shared_ptr<program::Expression> & expr);
+  Value inner_eval(const std::shared_ptr<program::Expression> & expr);
+  Value manage(const Value & val);
   void invoke(const Function & f);
 
 private:

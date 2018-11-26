@@ -134,14 +134,48 @@ Value Interpreter::invoke(const Function & f, const Value *obj, const Value *beg
   return mExecutionContext->pop();
 }
 
-Value Interpreter::eval(program::Expression & expr)
-{
-  return expr.accept(*this);
-}
-
 Value Interpreter::eval(const std::shared_ptr<program::Expression> & expr)
 {
-  return expr->accept(*this);
+  const size_t gcs = mExecutionContext->garbage_collector.size();
+  
+  Value ret = inner_eval(expr);
+
+  while (mExecutionContext->garbage_collector.size() > gcs)
+  {
+    Value & v = mExecutionContext->garbage_collector.back();
+    if(v.impl()->ref == 1)
+      mEngine->destroy(v);
+    mExecutionContext->garbage_collector.pop_back();
+  }
+
+  return ret;
+}
+
+bool Interpreter::evalCondition(const std::shared_ptr<program::Expression> & expr)
+{
+  Value v = eval(expr);
+  const bool ret = v.toBool();
+  if (v.impl()->ref == 1)
+    mEngine->destroy(v);
+  return ret;
+}
+
+void Interpreter::evalForSideEffects(const std::shared_ptr<program::Expression> & expr)
+{
+  Value v = eval(expr);
+  if (v.impl()->ref == 1)
+    mEngine->destroy(v);
+}
+
+Value Interpreter::inner_eval(const std::shared_ptr<program::Expression> & expr)
+{
+  return manage(expr->accept(*this));
+}
+
+Value Interpreter::manage(const Value & val)
+{
+  mExecutionContext->garbage_collector.push_back(val);
+  return val;
 }
 
 void Interpreter::exec(program::Statement & s)
@@ -211,14 +245,15 @@ void Interpreter::visit(const program::InitObjectStatement & cos)
 
 void Interpreter::visit(const program::ExpressionStatement & es) 
 {
-  // TODO : handle destruction
-  eval(es.expr);
+  Value v = eval(es.expr);
+  if (v.impl()->ref == 1)
+    mEngine->destroy(v);
 }
 
 void Interpreter::visit(const program::ForLoop & fl) 
 {
   exec(fl.init);
-  while (eval(fl.cond).toBool())
+  while (evalCondition(fl.cond))
   {
     exec(fl.body);
 
@@ -229,7 +264,7 @@ void Interpreter::visit(const program::ForLoop & fl)
     if (flags == FunctionCall::BreakFlag)
       return; // the break statement should have destroyed the variable in the init-scope.
 
-    eval(fl.loop);
+    evalForSideEffects(fl.loop);
   }
 
   exec(fl.destroy);
@@ -308,7 +343,7 @@ void Interpreter::visit(const program::PopValue & pop)
 
 void Interpreter::visit(const program::WhileLoop & wl) 
 {
-  while (eval(wl.condition).toBool())
+  while (evalCondition(wl.condition))
   {
     exec(wl.body);
     auto flags = mExecutionContext->flags();
@@ -329,15 +364,13 @@ Value Interpreter::visit(const program::ArrayExpression & array)
   auto aimpl = a.impl();
   aimpl->resize(array.elements.size());
   for (size_t i(0); i < array.elements.size(); ++i)
-    aimpl->elements[i] = eval(array.elements.at(i));
-  Value ret = Value::fromArray(a);
-  mEngine->manage(ret);
-  return ret;
+    aimpl->elements[i] = inner_eval(array.elements.at(i));
+  return Value::fromArray(a);
 }
 
 Value Interpreter::visit(const program::BindExpression & bind)
 {
-  auto val = eval(bind.value);
+  auto val = inner_eval(bind.value);
   Context c = bind.context;
   c.addVar(bind.name, val);
   return val;
@@ -345,22 +378,22 @@ Value Interpreter::visit(const program::BindExpression & bind)
 
 Value Interpreter::visit(const program::CaptureAccess & ca)
 {
-  Value value = eval(ca.lambda);
+  Value value = inner_eval(ca.lambda);
   Lambda lambda = value.toLambda();
   return lambda.captures().at(ca.offset);
 }
 
 Value Interpreter::visit(const program::CommaExpression & ce)
 {
-  eval(ce.lhs);
-  return eval(ce.rhs);
+  inner_eval(ce.lhs);
+  return inner_eval(ce.rhs);
 }
 
 Value Interpreter::visit(const program::ConditionalExpression & ce)
 {
-  if (eval(ce.cond).toBool())
-    return eval(ce.onTrue);
-  return eval(ce.onFalse);
+  if (inner_eval(ce.cond).toBool())
+    return inner_eval(ce.onTrue);
+  return inner_eval(ce.onFalse);
 }
 
 Value Interpreter::visit(const program::ConstructorCall & call)
@@ -368,12 +401,11 @@ Value Interpreter::visit(const program::ConstructorCall & call)
   const int sp = mExecutionContext->stack.size;
 
   Value object = mEngine->implementation()->buildValue(call.allocate->object_type);
-  mEngine->manage(object);
 
   mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(object);
   for (const auto & arg : call.arguments)
-    mExecutionContext->stack.push(eval(arg));
+    mExecutionContext->stack.push(inner_eval(arg));
 
   mExecutionContext->push(call.constructor, sp);
 
@@ -386,9 +418,8 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 
 Value Interpreter::visit(const program::Copy & copy)
 {
-  Value val = eval(copy.argument);
+  Value val = inner_eval(copy.argument);
   Value ret = mEngine->copy(val);
-  mEngine->manage(ret);
   return ret;
 }
 
@@ -404,43 +435,38 @@ Value Interpreter::visit(const program::FunctionCall & fc)
   const int sp = mExecutionContext->stack.size;
   mExecutionContext->stack.push(Value{});
   for (const auto & arg : fc.args)
-    mExecutionContext->stack.push(eval(arg));
+    mExecutionContext->stack.push(inner_eval(arg));
 
   mExecutionContext->push(fc.callee, sp);
   
   invoke(fc.callee);
 
   Value ret = mExecutionContext->pop();
-  if (!(fc.callee.returnType().isReference() || fc.callee.returnType().isRefRef()))
-    mEngine->manage(ret);
   return ret;
 }
 
 Value Interpreter::visit(const program::FunctionVariableCall & fvc)
 {
-  Value callee = eval(fvc.callee);
+  Value callee = inner_eval(fvc.callee);
   Function f = callee.toFunction();
 
   const int sp = mExecutionContext->stack.size;
   mExecutionContext->stack.push(Value{});
   for (const auto & arg : fvc.arguments)
-    mExecutionContext->stack.push(eval(arg));
+    mExecutionContext->stack.push(inner_eval(arg));
 
   mExecutionContext->push(f, sp);
 
   invoke(f);
 
   Value ret = mExecutionContext->pop();
-  if (!(f.returnType().isReference() || f.returnType().isRefRef()))
-    mEngine->manage(ret);
   return ret;
 }
 
 Value Interpreter::visit(const program::FundamentalConversion & conv)
 {
-  Value src = eval(conv.argument);
+  Value src = inner_eval(conv.argument);
   Value ret = fundamental_conversion(src, conv.dest_type.baseType().data(), mEngine);
-  mEngine->manage(ret);
   return ret;
 }
 
@@ -450,7 +476,7 @@ Value Interpreter::visit(const program::InitializerList & il)
 
   for (const auto & e : il.elements)
   {
-    Value val = eval(e);
+    Value val = inner_eval(e);
     mExecutionContext->initializer_list_buffer.push_back(val);
   }
 
@@ -460,7 +486,6 @@ Value Interpreter::visit(const program::InitializerList & il)
     mExecutionContext->initializer_list_owner = mExecutionContext->callstack.top()->callee();
 
   Value ret = mEngine->construct(il.initializer_list_type, {});
-  mEngine->manage(ret);
 
   Value* begin = mExecutionContext->initializer_list_buffer.data() + old_size;
   Value* end = mExecutionContext->initializer_list_buffer.data() + new_size;
@@ -474,10 +499,9 @@ Value Interpreter::visit(const program::LambdaExpression & lexpr)
   auto limpl = std::make_shared<LambdaImpl>(closure_type);
 
   for (const auto & cap : lexpr.captures)
-    limpl->captures.push_back(eval(cap));
+    limpl->captures.push_back(inner_eval(cap));
 
   auto ret = Value::fromLambda(Lambda{ limpl });
-  mEngine->manage(ret);
   return ret;
 }
 
@@ -488,24 +512,24 @@ Value Interpreter::visit(const program::Literal & l)
 
 Value Interpreter::visit(const program::LogicalAnd & la)
 {
-  Value cond = eval(la.lhs);
+  Value cond = inner_eval(la.lhs);
   if (!cond.toBool())
     return cond;
 
-  return eval(la.rhs);
+  return inner_eval(la.rhs);
 }
 
 Value Interpreter::visit(const program::LogicalOr & lo)
 {
-  Value cond = eval(lo.lhs);
+  Value cond = inner_eval(lo.lhs);
   if (cond.toBool())
     return cond;
-  return eval(lo.rhs);
+  return inner_eval(lo.rhs);
 }
 
 Value Interpreter::visit(const program::MemberAccess & ma)
 {
-  Value object = eval(ma.object);
+  Value object = inner_eval(ma.object);
   return object.impl()->get_member(ma.offset);
 }
 
@@ -521,13 +545,13 @@ Value Interpreter::visit(const program::VariableAccess & va)
 
 Value Interpreter::visit(const program::VirtualCall & vc)
 {
-  Value object = eval(vc.object);
+  Value object = inner_eval(vc.object);
 
   const int sp = mExecutionContext->stack.size;
   mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(object);
   for (const auto & arg : vc.args)
-    mExecutionContext->stack.push(eval(arg));
+    mExecutionContext->stack.push(inner_eval(arg));
 
   Function callee = mEngine->getClass(object.type()).vtable().at(vc.vtableIndex);
   mExecutionContext->push(callee, sp);
@@ -535,8 +559,6 @@ Value Interpreter::visit(const program::VirtualCall & vc)
   invoke(callee);
 
   Value ret = mExecutionContext->pop();
-  if (!(callee.returnType().isReference() || callee.returnType().isRefRef()))
-    mEngine->manage(ret);
   return ret;
 }
 
