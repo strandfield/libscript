@@ -28,6 +28,7 @@
 #include "script/value.h"
 
 #include "script/compiler/compiler.h"
+#include "script/compiler/compilererrors.h"
 
 #include "script/private/array_p.h"
 #include "script/private/builtinoperators.h"
@@ -394,11 +395,25 @@ void EngineImpl::unregister_closure(ClosureType &c)
 }
 
 
+/*!
+ * \class Engine
+ * \brief Script engine class
+ */
+
 Engine::Engine()
 {
   d = std::unique_ptr<EngineImpl>(new EngineImpl{ this });
 }
 
+/*!
+ * \fn ~Engine()
+ * \brief Destroys the script engine
+ *
+ * This function destroys the global namespace and all the modules.
+ * All variables registered for garbage collection are also destroyed 
+ * in the reverse order they have been added, regarless of the value 
+ * of their reference counter.
+ */
 Engine::~Engine()
 {
   d->rootNamespace = Namespace{};
@@ -407,7 +422,14 @@ Engine::~Engine()
     m.destroy();
   d->modules.clear();
 
-  garbageCollect();
+  {
+    size_t s = d->garbageCollector.size();
+    while (s-- > 0)
+    {
+      destroy(d->garbageCollector[s]);
+    }
+    d->garbageCollector.clear();
+  }
 }
 
 
@@ -436,6 +458,10 @@ void Engine::setup()
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
 }
 
+/*!
+ * \fn Value newBool(bool bval)
+ * \brief Constructs a new value of type bool
+ */
 Value Engine::newBool(bool bval)
 {
   Value v{ new ValueImpl{Type::Boolean, this} };
@@ -443,6 +469,10 @@ Value Engine::newBool(bool bval)
   return v;
 }
 
+/*!
+ * \fn Value newChar(char cval)
+ * \brief Constructs a new value of type char
+ */
 Value Engine::newChar(char cval)
 {
   Value v{ new ValueImpl{ Type::Char, this } };
@@ -450,6 +480,10 @@ Value Engine::newChar(char cval)
   return v;
 }
 
+/*!
+ * \fn Value newInt(int ival)
+ * \brief Constructs a new value of type int
+ */
 Value Engine::newInt(int ival)
 {
   Value v{ new ValueImpl{ Type::Int, this } };
@@ -457,6 +491,10 @@ Value Engine::newInt(int ival)
   return v;
 }
 
+/*!
+ * \fn Value newFloat(float fval)
+ * \brief Constructs a new value of type float
+ */
 Value Engine::newFloat(float fval)
 {
   Value v{ new ValueImpl{ Type::Float, this } };
@@ -464,6 +502,10 @@ Value Engine::newFloat(float fval)
   return v;
 }
 
+/*!
+ * \fn Value newDouble(double dval)
+ * \brief Constructs a new value of type double
+ */
 Value Engine::newDouble(double dval)
 {
   Value v{ new ValueImpl{ Type::Double, this } };
@@ -471,6 +513,10 @@ Value Engine::newDouble(double dval)
   return v;
 }
 
+/*!
+ * \fn Value newString(const String & sval)
+ * \brief Constructs a new value of type String
+ */
 Value Engine::newString(const String & sval)
 {
   Value v{ new ValueImpl{ Type::String, this } };
@@ -478,6 +524,14 @@ Value Engine::newString(const String & sval)
   return v;
 }
 
+/*!
+ * \fn Array newArray(ArrayType array_type)
+ * \param type of the array
+ * \brief Constructs a new array with the given array-type
+ *
+ * This function returns an object of type \t Array, any array
+ * can be converted to a \t Value using \m{Value::fromArray}.
+ */
 Array Engine::newArray(ArrayType array_type)
 {
   Class array_class = getClass(array_type.type);
@@ -486,6 +540,17 @@ Array Engine::newArray(ArrayType array_type)
   return Array{ impl };
 }
 
+/*!
+ * \fn Array newArray(ElementType element_type, ...)
+ * \param element type of the array
+ * \brief Constructs a new array with the given element-type
+ *
+ * If no such array-type with the given element-type exists, it 
+ * is instantiated.
+ * You can call this function with the additional argument 
+ * \c{Engine::FailIfNotInstantiated} to make this function throw in
+ * such case.
+ */
 Array Engine::newArray(ElementType element_type)
 {
   ClassTemplate array = d->templates.array.asClassTemplate();
@@ -530,6 +595,17 @@ static Value default_construct_fundamental(int type, Engine *e)
   throw std::runtime_error{ "default_construct_fundamental : Implementation error" };
 }
 
+/*!
+ * \fn Value construct(Type t, const std::vector<Value> & args)
+ * \param type of the value to construct
+ * \param arguments to be passed the constructor
+ * \brief Constructs a new value of the given type with the provided arguments.
+ *
+ * If \c t is a fundamental type, at most one argument may be provided in \c args.
+ * If \c t is an enum type, a value of the same type must be provided.
+ * If \c t is an object type, overload resolution is performed to select a 
+ * suitable constructor.
+ */
 Value Engine::construct(Type t, const std::vector<Value> & args)
 {
   if (t.isObjectType())
@@ -678,6 +754,14 @@ void Engine::emplace(Value & memory, Function ctor, const std::vector<Value> & a
   memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
 }
 
+/*!
+ * \fn void destroy(Value val)
+ * \param value to destroy
+ * \brief Destroys a value.
+ *
+ * By calling this function, you also implicitly transfer ownership of the value 
+ * back to the engine; this means that you shouldn't use the value any further.
+ */
 void Engine::destroy(Value val)
 {
   auto *impl = val.impl();
@@ -694,6 +778,19 @@ void Engine::destroy(Value val)
   impl->engine = nullptr;
 }
 
+/*!
+ * \fn void manage(Value val)
+ * \param value which lifetime is to be managed
+ * \brief Adds a value to the garbage collector.
+ *
+ * By calling this function, you ask the engine to take care of 
+ * destroying the value when it is no longer used.
+ * Actual destruction takes place any time after the object is no longer 
+ * reachable.
+ * It is safe to call this function multiple times with the same value.
+ *
+ * \sa Value::isManaged
+ */
 void Engine::manage(Value val)
 {
   if (val.isManaged())
@@ -703,6 +800,12 @@ void Engine::manage(Value val)
   val.impl()->type = val.impl()->type.withFlag(Type::ManagedFlag);
 }
 
+/*!
+ * \fn void garbageCollect()
+ * \brief Runs garbage collection.
+ *
+ * The engine destroys all values that are no longer reachable.
+ */
 void Engine::garbageCollect()
 {
   if (d->garbage_collector_running)
@@ -730,6 +833,13 @@ void Engine::garbageCollect()
   d->garbage_collector_running = false;
 }
 
+/*!
+ * \fn bool canCopy(const Type & t)
+ * \param input type
+ * \brief Returns whether a type is copyable.
+ *
+ * Note that the \c const and \c{&} qualifiers of \c t are ignored.
+ */
 bool Engine::canCopy(const Type & t)
 {
   if (t.isFundamentalType())
@@ -792,6 +902,12 @@ static Lambda copy_lambda(const Lambda & l, Engine *e)
   return Lambda{ ret };
 }
 
+/*!
+ * \fn Value copy(const Value & val)
+ * \param input value
+ * \brief Creates a copy of a value.
+ *
+ */
 Value Engine::copy(const Value & val)
 {
   if (val.type().isFundamentalType())
@@ -819,22 +935,50 @@ Value Engine::copy(const Value & val)
   throw std::runtime_error{ "Cannot copy given value" };
 }
 
+/*!
+ * \fn Conversion conversion(const Type & src, const Type & dest)
+ * \param source type
+ * \param dest type
+ * \brief Computes a conversion sequence.
+ *
+ */
 Conversion Engine::conversion(const Type & src, const Type & dest)
 {
   return Conversion::compute(src, dest, this);
 }
 
+/*!
+ * \fn void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
+ * \param input values
+ * \param conversions to be applied
+ * \brief Applies conversions to a range of value.
+ *
+ */
 void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
 {
   for (size_t i(0); i < values.size(); ++i)
     values[i] = apply_conversion(values.at(i), conversions.at(i), this);
 }
 
+/*!
+ * \fn bool canCast(const Type & srcType, const Type & destType)
+ * \param source type
+ * \param dest type
+ * \brief Checks if a conversion is possible.
+ *
+ */
 bool Engine::canCast(const Type & srcType, const Type & destType)
 {
   return conversion(srcType, destType).rank() != ConversionRank::NotConvertible;
 }
 
+/*!
+ * \fn Value cast(const Value & val, const Type & destType)
+ * \param input value
+ * \param dest type
+ * \brief Converts a value to the given type.
+ *
+ */
 Value Engine::cast(const Value & val, const Type & destType)
 {
   Conversion conv = conversion(val.type(), destType);
@@ -844,17 +988,35 @@ Value Engine::cast(const Value & val, const Type & destType)
   return apply_conversion(val, conv, this);
 }
 
+/*!
+ * \fn Namespace rootNamespace() const
+ * \brief Returns the global namespace.
+ *
+ */
 Namespace Engine::rootNamespace() const
 {
   return d->rootNamespace;
 }
 
+/*!
+ * \fn FunctionType getFunctionType(Type id) const
+ * \param function type
+ * \brief Returns type info for the given type id.
+ *
+ */
 FunctionType Engine::getFunctionType(Type id) const
 {
   const int index = id.data() & 0xFFFF;
   return d->prototypes[index];
 }
 
+/*!
+ * \fn FunctionType getFunctionType(const Prototype & proto)
+ * \param prototype
+ * \brief Returns type info for the function type associated with the prototype.
+ *
+ * If no such type exists, it is created.
+ */
 FunctionType Engine::getFunctionType(const Prototype & proto)
 {
   for (const auto & ft : d->prototypes)
@@ -866,6 +1028,12 @@ FunctionType Engine::getFunctionType(const Prototype & proto)
   return newFunctionType(proto);
 }
 
+/*!
+ * \fn bool hasType(const Type & t) const
+ * \param input type
+ * \brief Returns whether a given type exists.
+ *
+ */
 bool Engine::hasType(const Type & t) const
 {
   if (t.isFundamentalType())
@@ -884,6 +1052,12 @@ bool Engine::hasType(const Type & t) const
   return false;
 }
 
+/*!
+ * \fn Class getClass(Type id) const
+ * \param input type
+ * \brief Returns the Class associated with the given type.
+ *
+ */
 Class Engine::getClass(Type id) const
 {
   if (!id.isObjectType())
@@ -893,6 +1067,12 @@ Class Engine::getClass(Type id) const
   return d->classes[index];
 }
 
+/*!
+ * \fn Enum getEnum(Type id) const
+ * \param input type
+ * \brief Returns the Enum associated with the given type.
+ *
+ */
 Enum Engine::getEnum(Type id) const
 {
   if (!id.isEnumType())
@@ -902,6 +1082,12 @@ Enum Engine::getEnum(Type id) const
   return d->enums[index];
 }
 
+/*!
+ * \fn ClosureType getLambda(Type id) const
+ * \param input type
+ * \brief Returns typeinfo associated with the given closure type.
+ *
+ */
 ClosureType Engine::getLambda(Type id) const
 {
   if (!id.isClosureType())
@@ -925,6 +1111,14 @@ void reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t 
   }
 }
 
+/*!
+ * \fn void reserveTypeRange(int begin, int end)
+ * \param first type
+ * \param last type
+ * \brief Reserves a type range.
+ *
+ * Reserved types cannot be attributed unless they are explicitly requested.
+ */
 void Engine::reserveTypeRange(int begin, int end)
 {
   const Type begin_type{ begin };
@@ -947,6 +1141,15 @@ void Engine::reserveTypeRange(int begin, int end)
     reserve_range(d->classes, d->reservations.class_type, begin, end);
 }
 
+/*!
+ * \fn FunctionType newFunctionType(const Prototype & proto)
+ * \param prototype
+ * \brief Creates a new function type.
+ *
+ * This function does not check if such type exists an creates a new one 
+ * anyway.
+ * Use \m getFunctionType instead.
+ */
 FunctionType Engine::newFunctionType(const Prototype & proto)
 {
   const int id = d->prototypes.size();
@@ -961,6 +1164,12 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
   return ret;
 }
 
+/*!
+ * \fn Script newScript(const SourceFile & source)
+ * \param source file
+ * \brief Creates a new script with the given source.
+ *
+ */
 Script Engine::newScript(const SourceFile & source)
 {
   Script ret{ std::make_shared<ScriptImpl>(d->scripts.size(), this, source) };
@@ -968,17 +1177,35 @@ Script Engine::newScript(const SourceFile & source)
   return ret;
 }
 
+/*!
+ * \fn bool compile(Script s)
+ * \param input script
+ * \brief Compiles a script.
+ *
+ */
 bool Engine::compile(Script s)
 {
   compiler::Compiler c{ this };
   return c.compile(s);
 }
 
+/*!
+ * \fn void destroy(Script s)
+ * \param input script
+ * \brief Destroys a script.
+ *
+ */
 void Engine::destroy(Script s)
 {
   d->destroy(s);
 }
 
+/*!
+ * \fn Module newModule(const std::string & name)
+ * \param module name
+ * \brief Creates a new module.
+ *
+ */
 Module Engine::newModule(const std::string & name)
 {
   Module m{ std::make_shared<ModuleImpl>(this, name) };
@@ -986,6 +1213,14 @@ Module Engine::newModule(const std::string & name)
   return m;
 }
 
+/*!
+ * \fn Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
+ * \param module name
+ * \param load function
+ * \param cleanup function
+ * \brief Creates a new module.
+ *
+ */
 Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
   Module m{ std::make_shared<ModuleImpl>(this, name, load, cleanup) };
@@ -993,11 +1228,22 @@ Module Engine::newModule(const std::string & name, ModuleLoadFunction load, Modu
   return m;
 }
 
+/*!
+ * \fn const std::vector<Module> & modules() const
+ * \brief Returns all existing modules.
+ *
+ */
 const std::vector<Module> & Engine::modules() const
 {
   return d->modules;
 }
 
+/*!
+ * \fn Module getModule(const std::string & name)
+ * \param module name
+ * \brief Returns the module with the given name.
+ *
+ */
 Module Engine::getModule(const std::string & name)
 {
   for (const auto & child : d->modules)
@@ -1009,26 +1255,54 @@ Module Engine::getModule(const std::string & name)
   return Module{};
 }
 
+/*!
+ * \fn const std::string & scriptExtension() const
+ * \brief Returns the file extension of script files.
+ *
+ */
 const std::string & Engine::scriptExtension() const
 {
   return d->script_extension;
 }
 
+/*!
+ * \fn void setScriptExtension(const std::string & ex)
+ * \param file extension
+ * \brief Sets the file extension for script files.
+ *
+ */
 void Engine::setScriptExtension(const std::string & ex)
 {
   d->script_extension = ex;
 }
 
+/*!
+ * \fn const support::filesystem::path & searchDirectory() const
+ * \brief Returns the search directory for script modules.
+ *
+ */
 const support::filesystem::path & Engine::searchDirectory() const
 {
   return d->search_dir;
 }
 
+/*!
+ * \fn void setSearchDirectory(const support::filesystem::path & dir)
+ * \param search directory
+ * \brief Sets the search directory for script modules.
+ *
+ */
 void Engine::setSearchDirectory(const support::filesystem::path & dir)
 {
   d->search_dir = dir;
 }
 
+/*!
+ * \fn Namespace enclosingNamespace(Type t) const
+ * \param input type
+ * \brief Return the enclosing namespace of the given type.
+ *
+ */
 Namespace Engine::enclosingNamespace(Type t) const
 {
   if (t.isFundamentalType() || t.isClosureType() || t.isFunctionType())
@@ -1041,6 +1315,13 @@ Namespace Engine::enclosingNamespace(Type t) const
   throw std::runtime_error{ "Engine::enclosingNamespace() : type not supported" };
 }
 
+/*!
+ * \fn Type typeId(const std::string & typeName, const Scope & scope) const
+ * \param type name
+ * \param scope
+ * \brief Searchs for a type by name.
+ *
+ */
 Type Engine::typeId(const std::string & typeName, const Scope & scope) const
 {
   static const std::map<std::string, Type> fundamentalTypes = std::map<std::string, Type>{
@@ -1063,6 +1344,12 @@ Type Engine::typeId(const std::string & typeName, const Scope & scope) const
   return t;
 }
 
+/*!
+ * \fn std::string typeName(Type t) const
+ * \param input type
+ * \brief Returns the name of a type.
+ *
+ */
 std::string Engine::typeName(Type t) const
 {
   if (t.isObjectType())
@@ -1091,6 +1378,11 @@ std::string Engine::typeName(Type t) const
   throw std::runtime_error{ "Engine::typeName() : Unknown type" };
 }
 
+/*!
+ * \fn Context newContext()
+ * \brief Creates a new context.
+ *
+ */
 Context Engine::newContext()
 {
   Context c{ std::make_shared<ContextImpl>(this, d->allContexts.size() + 1, "") };
@@ -1098,44 +1390,112 @@ Context Engine::newContext()
   return c;
 }
 
+/*!
+ * \fn Context currentContext() const
+ * \brief Returns the current context.
+ *
+ */
 Context Engine::currentContext() const
 {
   return d->context;
 }
 
+/*!
+ * \fn void setContext(Context con)
+ * \param the context
+ * \brief Sets the current context.
+ *
+ */
 void Engine::setContext(Context con)
 {
   d->context = con;
 }
 
+/*!
+ * \fn Value eval(const std::string & command, const Scope & scp)
+ * \param command
+ * \param scope
+ * \brief Evaluates an expression.
+ *
+ */
 Value Engine::eval(const std::string & command, const Scope & scp)
 {
   compiler::Compiler c{ this };
-  auto expr = c.compile(command, d->context, scp);
-  if (expr == nullptr)
-    throw std::runtime_error{ "Could not compile expression" };
+  std::shared_ptr<program::Expression> expr;
+  try
+  {
+    expr = c.compile(command, d->context, scp);
+  }
+  catch (compiler::CompilerException & ex)
+  {
+    diagnostic::MessageBuilder msb{ diagnostic::Error, this };
+    ex.print(msb);
+
+    diagnostic::Message mssg = msb.build();
+
+    throw std::runtime_error{ mssg.to_string().c_str() };
+  }
+
   return d->interpreter->eval(expr);
 }
 
+/*!
+ * \fn Value call(const Function & f, std::initializer_list<Value> && args)
+ * \param function
+ * \param arguments
+ * \brief Calls a function with the given arguments.
+ *
+ */
 Value Engine::call(const Function & f, std::initializer_list<Value> && args)
 {
   return d->interpreter->call(f, nullptr, args.begin(), args.end());
 }
 
+/*!
+ * \fn Value call(const Function & f, const std::vector<Value> & args)
+ * \param function
+ * \param arguments
+ * \brief Calls a function with the given arguments.
+ *
+ */
 Value Engine::call(const Function & f, const std::vector<Value> & args)
 {
   return d->interpreter->call(f, args);
 }
 
+/*!
+ * \fn Value invoke(const Function & f, std::initializer_list<Value> && args)
+ * \param function
+ * \param arguments
+ * \brief Calls a function with the given arguments.
+ *
+ */
 Value Engine::invoke(const Function & f, std::initializer_list<Value> && args)
 {
   return d->interpreter->invoke(f, nullptr, args.begin(), args.end());
 }
 
+/*!
+ * \fn Value invoke(const Function & f, const std::vector<Value> & args)
+ * \param function
+ * \param arguments
+ * \brief Calls a function with the given arguments.
+ *
+ */
+
 Value Engine::invoke(const Function & f, const std::vector<Value> & args)
 {
   return d->interpreter->invoke(f, args.begin(), args.end());
 }
+
+
+/*!
+ * \fn ClassTemplate getTemplate(...) const
+ * \param which template
+ * \brief Returns a built-in class template.
+ *
+ * Currently supported: \c{Engine::ArrayTemplate}, \c{Engine::InitializerListTemplate}.
+ */
 
 const Engine::array_template_t Engine::ArrayTemplate = Engine::array_template_t{};
 
@@ -1151,6 +1511,12 @@ ClassTemplate Engine::getTemplate(initializer_list_template_t) const
   return d->templates.initializer_list;
 }
 
+/*!
+ * \fn bool isInitializerListType(const Type & t) const
+ * \param input type
+ * \brief Returns whether a type is an initializer list type.
+ *
+ */
 bool Engine::isInitializerListType(const Type & t) const
 {
   if (!t.isObjectType())
@@ -1159,6 +1525,11 @@ bool Engine::isInitializerListType(const Type & t) const
   return getClass(t).isTemplateInstance() && getClass(t).instanceOf() == getTemplate(InitializerListTemplate);
 }
 
+/*!
+ * \fn const std::vector<Script> & scripts() const
+ * \brief Returns all list of all existing scripts.
+ *
+ */
 const std::vector<Script> & Engine::scripts() const
 {
   return d->scripts;
