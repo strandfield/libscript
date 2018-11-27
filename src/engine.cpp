@@ -347,6 +347,12 @@ void EngineImpl::destroy(Script s)
   impl->globalNames.clear();
   impl->global_types.clear();
 
+  while (!impl->globals.empty())
+  {
+    engine->destroy(impl->globals.back());
+    impl->globals.pop_back();
+  }
+
   const int index = s.id();
   this->scripts[index] = Script{};
   while (!this->scripts.empty() && this->scripts.back().isNull())
@@ -422,7 +428,11 @@ Engine::~Engine()
     m.destroy();
   d->modules.clear();
 
+  while (!d->scripts.empty())
+    d->destroy(d->scripts.back());
+
   {
+    d->garbage_collector_running = true;
     size_t s = d->garbageCollector.size();
     while (s-- > 0)
     {
