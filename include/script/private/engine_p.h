@@ -71,14 +71,10 @@ public:
   }templates;
 
 public:
-  [[deprecated("Use Engine::allocate")]] Value buildValue(Type t);
-
   /// TODO: move elsewhere, perhaps a namespace 'optimisation'
   Value default_construct(const Type & t, const Function & ctor);
   Value copy(const Value & val, const Function & copyctor);
   void destroy(const Value & val, const Function & dtor);
-
-  void placement(const Function & ctor, Value object, const std::vector<Value> & args);
 
   ClosureType newLambda();
 

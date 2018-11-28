@@ -76,7 +76,7 @@ public:
   template<typename InitFunc>
   Value construct(Type t, InitFunc && f)
   {
-    Value ret = buildValue(t);
+    Value ret = allocate(t);
     f(ret);
     return ret;
   }
@@ -130,7 +130,7 @@ public:
   // Returns the enclosing namespace of the type
   Namespace enclosingNamespace(Type t) const;
 
-  Type typeId(const std::string & typeName, const Scope & scope = Scope()) const;
+  Type typeId(const std::string & typeName, Scope scope = Scope()) const;
   std::string typeName(Type t) const;
 
   Context newContext();
@@ -165,9 +165,6 @@ public:
 #if defined(LIBSCRIPT_HAS_CONFIG)
 #include "config/libscript/engine-methods.incl"
 #endif // defined(LIBSCRIPT_HAS_CONFIG)
-
-protected:
-  [[deprecated("Use Engine::allocate")]] Value buildValue(Type t);
 
 protected:
   std::unique_ptr<EngineImpl> d;

@@ -1342,7 +1342,6 @@ TEST(CompilerTests, static_member_function) {
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
-  const auto & errors = s.messages();
   ASSERT_TRUE(success);
 
   ASSERT_EQ(s.rootNamespace().classes().size(), 1);

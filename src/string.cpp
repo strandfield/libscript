@@ -265,7 +265,7 @@ Value subscript(FunctionCall *c)
 
   const int pos = c->arg(1).toInt();
 
-  Value ret = c->engine()->implementation()->buildValue(charref_id);
+  Value ret = c->engine()->allocate(charref_id);
   ret.impl()->set_charref(CharRef{ &self, (size_t)pos });
   return ret;
 }

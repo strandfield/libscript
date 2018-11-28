@@ -159,7 +159,7 @@ EngineImpl::EngineImpl(Engine *e)
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
-    return engine->invoke(ctor, { buildValue(t.withoutRef()) });
+    return engine->invoke(ctor, { engine->allocate(t.withoutRef()) });
   else
   {
     switch (t.baseType().data())
@@ -199,11 +199,6 @@ void EngineImpl::destroy(const Value & val, const Function & dtor)
 
   impl->type = 0;
   impl->engine = nullptr;
-}
-
-void EngineImpl::placement(const Function & ctor, Value object, const std::vector<Value> & args)
-{
-  this->interpreter->placement(ctor, object, args.begin(), args.end());
 }
 
 ClosureType EngineImpl::newLambda()
@@ -629,7 +624,7 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
     else if (selected.isDeleted())
       throw std::runtime_error{ "The selected constructor is deleted" };
 
-    Value result = buildValue(t.withoutRef());
+    Value result = allocate(t.withoutRef());
     d->interpreter->call(selected, &result, args.data(), args.data() + args.size());
     return result;
   }
@@ -864,7 +859,7 @@ Value Engine::copy(const Value & val)
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw std::runtime_error{ "Value's type is not copy constructible." };
 
-    Value object = buildValue(cla.id());
+    Value object = allocate(cla.id());
     invoke(copyCtor, { object, val });
     return object;
   }
@@ -1265,7 +1260,7 @@ Namespace Engine::enclosingNamespace(Type t) const
  * \brief Searchs for a type by name.
  *
  */
-Type Engine::typeId(const std::string & typeName, const Scope & scope) const
+Type Engine::typeId(const std::string & typeName, Scope scope) const
 {
   static const std::map<std::string, Type> fundamentalTypes = std::map<std::string, Type>{
     std::make_pair(std::string{"void"}, Type{Type::Void}),
@@ -1279,6 +1274,9 @@ Type Engine::typeId(const std::string & typeName, const Scope & scope) const
   auto it = fundamentalTypes.find(typeName);
   if (it != fundamentalTypes.end())
     return it->second;
+
+  if (scope.isNull())
+    scope = Scope{ d->rootNamespace };
 
   NameLookup lookup = NameLookup::resolve(typeName, scope);
   Type t = lookup.typeResult();
@@ -1481,18 +1479,6 @@ const std::vector<Script> & Engine::scripts() const
 EngineImpl * Engine::implementation() const
 {
   return d.get();
-}
-
-
-Value EngineImpl::buildValue(Type t)
-{
-  Value v{ new ValueImpl{ t, this->engine } };
-  return v;
-}
-
-Value Engine::buildValue(Type t)
-{
-  return d->buildValue(t);
 }
 
 } // namespace script

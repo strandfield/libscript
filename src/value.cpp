@@ -356,7 +356,7 @@ Value Value::fromEnumerator(const Enumerator & ev)
   if (ev.isNull())
     return Value{}; // TODO : should we throw
   Engine *e = ev.enumeration().engine();
-  Value ret = e->implementation()->buildValue(ev.enumeration().id());
+  Value ret = e->allocate(ev.enumeration().id());
   ret.impl()->set_enumerator(ev);
   return ret;
 }
@@ -366,7 +366,7 @@ Value Value::fromFunction(const Function & f, const Type & ft)
   if (f.isNull())
     return Value{}; // TODO : should we throw
   Engine *e = f.engine();
-  Value ret = e->implementation()->buildValue(ft);
+  Value ret = e->allocate(ft);
   ret.impl()->set_function(f);
   return ret;
 }
@@ -376,7 +376,7 @@ Value Value::fromArray(const Array & a)
   if (a.isNull())
     return Value{};
   Engine *e = a.engine();
-  Value ret = e->implementation()->buildValue(a.typeId());
+  Value ret = e->allocate(a.typeId());
   ret.impl()->set_array(a);
   return ret;
 }
@@ -386,7 +386,7 @@ Value Value::fromLambda(const Lambda & obj)
   if (obj.isNull())
     return Value{};
   Engine *e = obj.engine();
-  Value ret = e->implementation()->buildValue(obj.closureType().id());
+  Value ret = e->allocate(obj.closureType().id());
   ret.impl()->set_lambda(obj);
   return ret;
 }

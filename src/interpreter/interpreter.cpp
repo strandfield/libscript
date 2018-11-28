@@ -400,7 +400,7 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 {
   const int sp = mExecutionContext->stack.size;
 
-  Value object = mEngine->implementation()->buildValue(call.allocate->object_type);
+  Value object = mEngine->allocate(call.allocate->object_type);
 
   mExecutionContext->stack.push(Value::Void);
   mExecutionContext->stack.push(object);

@@ -46,24 +46,6 @@ public:
     return mExecutionContext->pop();
   }
 
-  template<typename Iter>
-  void placement(const Function & ctor, Value object, Iter begin, Iter end)
-  {
-    assert(ctor.isConstructor());
-
-    const int sp = mExecutionContext->stack.size;
-    mExecutionContext->stack.push(Value::Void);
-    mExecutionContext->stack.push(object);
-    for (auto it = begin; it != end; ++it)
-      mExecutionContext->stack.push(*it);
-
-    mExecutionContext->push(ctor, sp);
-
-    invoke(ctor);
-
-    mExecutionContext->pop();
-  }
-
   Value eval(const std::shared_ptr<program::Expression> & expr);
 
   void exec(program::Statement & s);

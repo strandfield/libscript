@@ -1,5 +1,4 @@
 
-
 # `libscript` - A scripting library written in C++
 
 [![Build Status](https://api.travis-ci.org/RugessNome/libscript.svg?branch=master)](https://travis-ci.org/RugessNome/libscript)
@@ -10,7 +9,6 @@
 It aims at providing all the building blocks necessary to create 
 statically typed languages that interface well with C++ : its goal
 is not to be a full-featured language.
-
 
 ## Compiling and using the library
 
@@ -32,7 +30,6 @@ freely.
 However, it is still under active development and is far from being stable.
 The API is subject to a lot a change.
 Using the library other than for testing is not recommended.
-
 
 ## Example
 
@@ -82,11 +79,11 @@ The idea is to have a good type system that can catch a good number of errors
 before ever running the code.
 
 The language provides 5 fundamental types:
-- `bool` : `true` or `false`;
-- `char` : ASCII characters;
-- `int` : integers;
-- `float` : simple precision floating point numbers like `3.14f`;
-- `double` : double precision floating point numbers (e.g. `3.14`, `1.2345e6`).
+  - `bool` : `true` or `false`;
+  - `char` : ASCII characters;
+  - `int` : integers;
+  - `float` : simple precision floating point numbers like `3.14f`;
+  - `double` : double precision floating point numbers (e.g. `3.14`, `1.2345e6`).
 
 It also provides an `Array` type and a `String` type. 
 ```cpp
@@ -157,9 +154,9 @@ do not hesitate to suggest improvements.
 
 The main task of `libscript` is to execute script files. 
 The processing of scripts is split into three stages:
-- lexical analysis
-- syntactical analysis
-- semantic analysis
+  - lexical analysis
+  - syntactical analysis
+  - semantic analysis
 
 The first step, namely lexical analysis, consists of extracting 
 tokens (sometimes referred to as lexeme) from the input file. 
@@ -170,11 +167,11 @@ Considering the following input,
 int a = 5;
 ```
 the lexer will output the following tokens:
-- `int` : identifier, keyword
-- `a` : user-defined name
-- `=` : operator, equal-sign
-- `5` : literal, integer
-- `;` : punctuator, semicolon
+  - `int` : identifier, keyword
+  - `a` : user-defined name
+  - `=` : operator, equal-sign
+  - `5` : literal, integer
+  - `;` : punctuator, semicolon
 
 The second stage consists of creating a syntactical tree out of the 
 created tokens. This tree is often called an AST, which stands for 
@@ -212,7 +209,6 @@ brace to make the decision.
 
 A program need not be correct to pass this stage; the only requirement 
 is that the syntax matches the language's constructs.
-
 
 The last stage consists of converting the AST into an *executable* tree 
 that is easy to interpret.

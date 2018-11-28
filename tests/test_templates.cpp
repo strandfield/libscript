@@ -117,8 +117,6 @@ std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> ma
 
   Engine *e = t.engine();
 
-  const std::vector<TemplateArgument> & targs = f.arguments();
-
   NameLookup lookup = NameLookup::resolve(LessOperator, e->rootNamespace());
   OverloadResolution resol = OverloadResolution::New(e);
   const Type param_type = f.parameter(0);
@@ -152,7 +150,6 @@ TEST(TemplateTests, call_with_no_args) {
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
-  const auto & errors = s.messages();
   ASSERT_TRUE(success);
 }
 
