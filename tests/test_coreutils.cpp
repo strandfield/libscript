@@ -588,31 +588,6 @@ TEST(CoreUtilsTests, function_builder) {
   ASSERT_EQ(A.casts().size(), 1);
 }
 
-TEST(CoreUtilsTests, uninitialized) {
-  using namespace script;
-
-  Engine e;
-  e.setup();
-
-  Value v = e.uninitialized(Type::Int);
-  ASSERT_EQ(v.type(), Type::Int);
-  ASSERT_FALSE(v.isInitialized());
-
-  e.initialize(v);
-  ASSERT_TRUE(v.isInitialized());
-  e.destroy(v);
-  v = e.uninitialized(Type::Int);
-
-  Value init = e.newInt(3);
-  e.uninitialized_copy(init, v);
-  e.destroy(init);
-
-  ASSERT_TRUE(v.isInitialized());
-  ASSERT_EQ(v.type(), Type::Int);
-  ASSERT_EQ(v.toInt(), 3);
-  e.destroy(v);
-};
-
 TEST(CoreUtilsTests, operator_names) {
   using namespace script;
 

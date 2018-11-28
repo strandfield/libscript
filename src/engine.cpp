@@ -320,10 +320,10 @@ void EngineImpl::destroy(Namespace ns)
 
   for (const auto & e : impl->enums)
     destroy(e);
+  impl->enums.clear();
 
   for (const auto & nns : impl->namespaces)
     destroy(nns);
-
   impl->namespaces.clear();
 
   for (const auto & c : impl->classes)
@@ -342,16 +342,17 @@ void EngineImpl::destroy(Namespace ns)
 void EngineImpl::destroy(Script s)
 {
   auto impl = s.impl();
-  destroy(Namespace{ impl });
-  
-  impl->globalNames.clear();
-  impl->global_types.clear();
 
   while (!impl->globals.empty())
   {
     engine->destroy(impl->globals.back());
     impl->globals.pop_back();
   }
+
+  destroy(Namespace{ impl });
+
+  impl->globalNames.clear();
+  impl->global_types.clear();
 
   const int index = s.id();
   this->scripts[index] = Script{};
@@ -660,110 +661,6 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   throw std::runtime_error{ "Could not construct value of given type with prodived arguments" };
 }
 
-Value Engine::uninitialized(const Type & t)
-{
-  return buildValue(t.withFlag(Type::UninitializedFlag));
-}
-
-void Engine::initialize(Value & memory)
-{
-  const Type & t = memory.type();
-  if (t.isFundamentalType())
-  {
-    switch (t.baseType().data())
-    {
-    case Type::Boolean:
-      memory.impl()->set_bool(false);
-      break;
-    case Type::Char:
-      memory.impl()->set_char('\0');
-      break;
-    case Type::Int:
-      memory.impl()->set_int(0);
-      break;
-    case Type::Float:
-      memory.impl()->set_float(0.f);
-      break;
-    case Type::Double:
-      memory.impl()->set_double(0.);
-      break;
-    default:
-      throw std::runtime_error{ "Engine::initialize() : fundamental type not implemented" };
-    }
-  }
-  else if(t.isObjectType())
-  {
-    Class cla = getClass(t);
-    Function ctor = cla.defaultConstructor();
-    if (ctor.isNull())
-      throw std::runtime_error{ "Class has no default constructor" };
-    else if (ctor.isDeleted())
-      throw std::runtime_error{ "Class has a deleted default constructor" };
-
-    d->interpreter->placement(ctor, memory, &memory, &memory);
-  }
-  else
-    throw std::runtime_error{ "Engine::initialize() : type not supported" };
-
-  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
-}
-
-void Engine::uninitialized_copy(const Value & value, Value & memory)
-{
-  if (value.type() != memory.type())
-    throw std::runtime_error{ "Engine::uninitialized_copy() : types don't match" };
-
-  const Type t = memory.type();
-  if (t.isObjectType())
-  {
-    Class cla = getClass(t);
-    Function copy_ctor = cla.copyConstructor();
-    if(copy_ctor.isNull())
-      throw std::runtime_error{ "Class has no copy constructor" };
-    else if(copy_ctor.isDeleted())
-      throw std::runtime_error{ "Class has a deleted copy constructor" };
-
-    d->interpreter->placement(copy_ctor, memory, &value, (&value)+1);
-  }
-  else if (t.isFundamentalType())
-  {
-    switch (t.baseType().data())
-    {
-    case Type::Boolean:
-      memory.impl()->set_bool(value.toBool());
-      break;
-    case Type::Char:
-      memory.impl()->set_char(value.toChar());
-      break;
-    case Type::Int:
-      memory.impl()->set_int(value.toInt());
-      break;
-    case Type::Float:
-      memory.impl()->set_float(value.toFloat());
-      break;
-    case Type::Double:
-      memory.impl()->set_double(value.toDouble());
-      break;
-    default:
-      throw std::runtime_error{ "Engine::uninitialized_copy() : fundamental type not implemented" };
-    }
-  }
-  else if (t.isEnumType())
-  {
-    memory.impl()->set_enumerator(value.toEnumerator());
-  }
-  else
-    throw std::runtime_error{ "Engine::uninitialized_copy() : case not implemented" };
-
-  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
-}
-
-void Engine::emplace(Value & memory, Function ctor, const std::vector<Value> & args)
-{
-  d->interpreter->placement(ctor, memory, args.begin(), args.end());
-  memory.impl()->type = memory.type().withoutFlag(Type::UninitializedFlag);
-}
-
 /*!
  * \fn void destroy(Value val)
  * \param value to destroy
@@ -841,6 +738,42 @@ void Engine::garbageCollect()
   std::swap(d->garbageCollector, temp);
 
   d->garbage_collector_running = false;
+}
+
+/*!
+ * \fn Value allocate(const Type & t)
+ * \param type of the value
+ * \brief Creates an uninitialized value of the given type
+ *
+ * The returned value is left uninitialized. It is your responsability to 
+ * assign it a value or manually call a constructor on it before using it.
+ * Unless stated otherwise, all functions in the library expect initialized values.
+ * There is no way to detect if a value is initialized or not, you have to remember 
+ * the initialization-state of each value manually.
+ */
+Value Engine::allocate(const Type & t)
+{
+  Value v{ new ValueImpl{ t, this } };
+  return v;
+}
+
+/*!
+ * \fn void free(Value & v)
+ * \param input value
+ * \brief Transfer ownership of the value back to the engine.
+ *
+ * No destructor is called on the value, this function assumes that the value has 
+ * already been destroyed (by manually calling a destructor) or never was initialized 
+ * (for example after a call to \m allocate).
+ */
+void Engine::free(Value & v)
+{
+  auto *impl = v.impl();
+
+  impl->clear();
+
+  impl->type = 0;
+  impl->engine = nullptr;
 }
 
 /*!

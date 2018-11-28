@@ -71,7 +71,7 @@ public:
   }templates;
 
 public:
-  Value buildValue(Type t);
+  [[deprecated("Use Engine::allocate")]] Value buildValue(Type t);
 
   /// TODO: move elsewhere, perhaps a namespace 'optimisation'
   Value default_construct(const Type & t, const Function & ctor);

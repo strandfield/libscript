@@ -38,7 +38,8 @@ Name ClassImpl::get_name() const
 
 Value ClassImpl::add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)
 {
-  Value ret = this->engine->uninitialized(t);
+  Value ret = this->engine->allocate(t);
+  ret.impl()->type.setFlag(Type::UninitializedFlag);
   this->staticMembers[name] = Class::StaticDataMember{ name, ret, aspec };
   return ret;
 }

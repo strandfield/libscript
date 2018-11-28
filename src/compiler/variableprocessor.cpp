@@ -9,6 +9,7 @@
 #include "script/array.h"
 #include "script/class.h"
 #include "script/engine.h"
+#include "script/enumerator.h"
 #include "script/namespace.h"
 #include "script/object.h"
 
@@ -81,7 +82,8 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   }
   else
   {
-    val = e->uninitialized(var_type);
+    val = e->allocate(var_type);
+    val.impl()->type.setFlag(Type::UninitializedFlag);
     uninitialized_variables_.push_back(Variable{ val, decl, scp });
   }
 
@@ -140,49 +142,119 @@ void VariableProcessor::initialize(Variable v)
   auto parsed_initexpr = init->as<ast::AssignmentInitialization>().value;
   if (parsed_initexpr == nullptr)
   {
-    try
-    {
-      Value val = v.variable;
-      engine->initialize(val);
-    }
-    catch (...)
-    {
-      throw FailedToInitializeStaticVariable{};
-    }
+    default_initialization(v);
   }
   else
   {
     std::shared_ptr<program::Expression> initexpr = expr_.generateExpression(parsed_initexpr);
+    copy_initialization(v, initexpr);
+  }
 
-    if (initexpr->is<program::ConstructorCall>())
+  Type t = v.variable.impl()->type.withoutFlag(Type::UninitializedFlag);
+  v.variable.impl()->type = t;
+}
+
+void VariableProcessor::default_initialization(Variable & v)
+{
+  Engine *engine = v.scope.engine();
+
+  Value val = v.variable;
+  if (val.type().isFundamentalType())
+    return;
+  else if (val.type().isEnumType())
+    throw FailedToInitializeStaticVariable{};
+  else if (val.type().isFunctionType() || val.type().isClosureType())
+    throw FailedToInitializeStaticVariable{};
+
+  assert(val.type().isObjectType());
+
+  Function ctor = engine->getClass(val.type()).defaultConstructor();
+  if (ctor.isNull())
+    throw FailedToInitializeStaticVariable{};
+
+  try
+  {
+    engine->invoke(ctor, { val });
+  }
+  catch (...)
+  {
+    throw FailedToInitializeStaticVariable{};
+  }
+}
+
+void VariableProcessor::copy_initialization(Variable & var, const std::shared_ptr<program::Expression> & value)
+{
+  if (value->is<program::ConstructorCall>())
+    return constructor_initialization(var, std::static_pointer_cast<program::ConstructorCall>(value));
+
+  Engine *engine = var.scope.engine();
+
+  Value arg = eval(value);
+  if(var.variable.type() != arg.type())
+    throw FailedToInitializeStaticVariable{};
+
+  const Type t = arg.type();
+
+  if (t.isFundamentalType())
+  {
+    switch (t.baseType().data())
     {
-      auto ctorcall = std::dynamic_pointer_cast<program::ConstructorCall>(initexpr);
-      try
-      {
-        std::vector<Value> args;
-        for (const auto & a : ctorcall->arguments)
-          args.push_back(eval(a));
-        Value val = v.variable;
-        engine->emplace(val, ctorcall->constructor, args);
-      }
-      catch (...)
-      {
-        throw FailedToInitializeStaticVariable{};
-      }
+    case Type::Boolean:
+      var.variable.impl()->set_bool(arg.toBool());
+      break;
+    case Type::Char:
+      var.variable.impl()->set_char(arg.toChar());
+      break;
+    case Type::Int:
+      var.variable.impl()->set_int(arg.toInt());
+      break;
+    case Type::Float:
+      var.variable.impl()->set_float(arg.toFloat());
+      break;
+    case Type::Double:
+      var.variable.impl()->set_double(arg.toDouble());
+      break;
+    default:
+      break;
     }
-    else
-    {
-      try
-      {
-        Value val = v.variable;
-        Value arg = eval(initexpr);
-        engine->uninitialized_copy(arg, val);
-      }
-      catch (...)
-      {
-        throw FailedToInitializeStaticVariable{};
-      }
-    }
+  }
+  else if (t.isEnumType())
+  {
+    var.variable.impl()->set_enumerator(arg.toEnumerator());
+  }
+  else if (t.isFunctionType())
+  {
+    var.variable.impl()->set_function(arg.toFunction());
+  }
+  else if (t.isObjectType())
+  {
+    Function copy_ctor = engine->getClass(t).copyConstructor();
+    if(copy_ctor.isNull())
+      throw FailedToInitializeStaticVariable{};
+
+    engine->invoke(copy_ctor, { var.variable, arg });
+  }
+  else
+  {
+    throw FailedToInitializeStaticVariable{};
+  }
+}
+
+void VariableProcessor::constructor_initialization(Variable & var, const std::shared_ptr<program::ConstructorCall> & call)
+{
+  Engine *engine = var.scope.engine();
+
+  try
+  {
+    std::vector<Value> args;
+    args.push_back(var.variable);
+    for (const auto & a : call->arguments)
+      args.push_back(eval(a));
+    engine->invoke(call->constructor, args);
+  }
+  catch (...)
+  {
+    throw FailedToInitializeStaticVariable{};
   }
 }
 

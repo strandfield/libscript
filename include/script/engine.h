@@ -81,16 +81,13 @@ public:
     return ret;
   }
 
-  [[deprecated("Feature will be removed in future version")]] Value uninitialized(const Type & t);
-  [[deprecated("Feature will be removed in future version")]] void initialize(Value & memory);
-  [[deprecated("Feature will be removed in future version")]] void uninitialized_copy(const Value & value, Value & memory);
-  [[deprecated("Feature will be removed in future version")]] void emplace(Value & memory, Function ctor, const std::vector<Value> & args);
-
-
   void destroy(Value val);
 
   void manage(Value val);
   void garbageCollect();
+
+  Value allocate(const Type & t);
+  void free(Value & v);
 
   bool canCopy(const Type & t);
   Value copy(const Value & val);
@@ -170,7 +167,7 @@ public:
 #endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 protected:
-  Value buildValue(Type t);
+  [[deprecated("Use Engine::allocate")]] Value buildValue(Type t);
 
 protected:
   std::unique_ptr<EngineImpl> d;

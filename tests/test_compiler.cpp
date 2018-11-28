@@ -597,6 +597,7 @@ TEST(CompilerTests, calling_functor) {
     "  class A {                                               "
     "  public:                                                 "
     "    A() { }                                               "
+    "    ~A() { }                                              "
     "    int operator()(int a, int b, int c) { return a-c; }   "
     "  };                                                      "
     "  A a;                                                    "
@@ -817,6 +818,7 @@ TEST(CompilerTests, converting_constructor) {
     "  class A            \n"
     "  {                  \n"
     "    A(float x) { }   \n"
+    "    ~A() { }         \n"
     "  };                 \n"
     "  A a = 3.14f;       \n";
 
@@ -850,6 +852,7 @@ TEST(CompilerTests, generated_default_ctor) {
     "  public:             "
     "    float x;          "
     "    A() = default;    "
+    "    ~A() { }          "
     "  };                  "
     "  A a;                "
     "  float x = a.x;      ";
@@ -1313,13 +1316,11 @@ TEST(CompilerTests, static_data_member) {
   const auto & sdm = A.staticDataMembers();
   auto it = sdm.find("n");
   ASSERT_TRUE(it != sdm.end());
-  ASSERT_TRUE(it->second.value.isInitialized());
   ASSERT_EQ(it->second.value.type(), Type::Int);
   ASSERT_EQ(it->second.value.toInt(), 3);
 
   it = sdm.find("p");
   ASSERT_TRUE(it != sdm.end());
-  ASSERT_TRUE(it->second.value.isInitialized());
   ASSERT_EQ(it->second.value.type(), Type::Int);
   ASSERT_EQ(it->second.value.toInt(), 4);
 }
@@ -1475,7 +1476,6 @@ TEST(CompilerTests, namespace_decl_with_variable) {
 
   auto it = ns.vars().find("n");
   ASSERT_TRUE(it != ns.vars().end());
-  ASSERT_TRUE(it->second.isInitialized());
   ASSERT_EQ(it->second.type(), Type::Int);
   ASSERT_EQ(it->second.toInt(), 4);
 }

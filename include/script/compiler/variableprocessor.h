@@ -57,6 +57,9 @@ protected:
   void process_data_member(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp);
   
   void initialize(Variable v);
+  void default_initialization(Variable & v);
+  void copy_initialization(Variable & var, const std::shared_ptr<program::Expression> & value);
+  void constructor_initialization(Variable & var, const std::shared_ptr<program::ConstructorCall> & call);
 
   Value eval(const std::shared_ptr<program::Expression> & e);
   Value manage(const Value & v);
