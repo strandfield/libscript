@@ -311,12 +311,12 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   }
 }
 
-std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd, const Context & con, const Scope & scp)
+std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd, const Context & con)
 {
   SessionManager manager{ this };
 
   CommandCompiler cc{ engine() };
-  auto result = cc.compile(cmmd, con, scp);
+  auto result = cc.compile(cmmd, con);
 
   if (manager.started_session())
   {

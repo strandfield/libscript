@@ -56,7 +56,7 @@ public:
 
   Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs);
   void instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp);
-  std::shared_ptr<program::Expression> compile(const std::string & cmmd, const Context & con, const Scope & scp);
+  std::shared_ptr<program::Expression> compile(const std::string & cmmd, const Context & con);
 
 private:
   ScriptCompiler * getScriptCompiler();

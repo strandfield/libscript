@@ -208,6 +208,7 @@ public:
   ContextScope(const ContextScope & other);
   ~ContextScope() = default;
 
+  /// TODO: change to a weak reference ?
   Context mContext;
 
   Engine * engine() const override;

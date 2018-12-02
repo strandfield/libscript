@@ -33,7 +33,7 @@ void test_operation(const char *source, script::OperatorName op1, script::Operat
   engine.setup();
 
   compiler::Compiler cmd{ &engine };
-  auto expr = cmd.compile(source, engine.currentContext(), Scope{ engine.rootNamespace() });
+  auto expr = cmd.compile(source, engine.currentContext());
 
   ASSERT_TRUE(expr->is<program::FunctionCall>());
   const program::FunctionCall & call = dynamic_cast<const program::FunctionCall &>(*expr);
@@ -88,7 +88,7 @@ TEST(CompilerTests, bind_expression) {
   engine.setup();
 
   compiler::Compiler cmd{ &engine };
-  auto expr = cmd.compile(source, engine.currentContext(), Scope{ engine.rootNamespace() });
+  auto expr = cmd.compile(source, engine.currentContext());
 
   ASSERT_TRUE(expr->is<program::BindExpression>());
   const program::BindExpression & bind = dynamic_cast<const program::BindExpression &>(*expr);
@@ -328,7 +328,9 @@ TEST(CompilerTests, two_functions1) {
   ASSERT_TRUE(success);
   ASSERT_EQ(s.rootNamespace().functions().size(), 2);
 
-  Value a = engine.eval("clamp_ten(5)", s);
+  engine.currentContext().use(s);
+
+  Value a = engine.eval("clamp_ten(5)");
   ASSERT_EQ(a.type(), Type::Int);
   ASSERT_EQ(a.toInt(), 5);
   engine.destroy(a);

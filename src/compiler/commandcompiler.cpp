@@ -72,33 +72,25 @@ CommandCompiler::CommandCompiler(Engine *e)
   expr_.setLambdaProcessor(lambda_);
 }
 
-
-void CommandCompiler::setScope(const Scope & scp)
-{
-  expr_.setScope(scp);
-}
-
-std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context, Scope scp)
+std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context)
 {
   auto source = SourceFile::fromString(expr);
   parser::Parser parser{ source };
   auto ast = parser.parseExpression(source);
 
+  /// TODO: throw
   if (ast->hasErrors())
     return nullptr;
 
-  if (!scp.isNull())
-    setScope(scp);
-  else
-    setScope(Scope{ engine()->rootNamespace() });
-
-  return compile(ast->expression(), context);
+  expr_.context_ = context;
+  expr_.setScope(context.scope());
+  return expr_.generateExpression(ast->expression());
 }
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)
 {
   expr_.context_ = context;
-  expr_.setScope(Scope{ std::make_shared<ContextScope>(expr_.context_, expr_.scope().impl()) });
+  expr_.setScope(context.scope());
   return expr_.generateExpression(expr);
 }
 

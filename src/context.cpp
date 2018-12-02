@@ -5,6 +5,11 @@
 #include "script/context.h"
 #include "script/private/context_p.h"
 
+#include "script/module.h"
+#include "script/script.h"
+
+#include "script/private/scope_p.h"
+
 namespace script
 {
 
@@ -64,6 +69,20 @@ Value Context::get(const std::string & name) const
   return it->second;
 }
 
+void Context::use(const Module &m)
+{
+  d->scope.merge(m.scope());
+}
+
+void Context::use(const Script &s)
+{
+  d->scope.merge(Scope{ s.rootNamespace() });
+}
+
+Scope Context::scope() const
+{
+  return Scope{ std::make_shared<ContextScope>(*this, d->scope.impl()) };
+}
 
 void Context::clear()
 {

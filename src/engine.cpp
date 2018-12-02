@@ -443,9 +443,8 @@ ClassTemplate register_initialize_list_template(Engine*); // defined in initiali
 
 void Engine::setup()
 {
-  d->context = Context{ std::make_shared<ContextImpl>(this, 0, "main_context") };
-
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
+  d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
   register_builtin_operators(d->rootNamespace);
 
@@ -1353,19 +1352,19 @@ void Engine::setContext(Context con)
 }
 
 /*!
- * \fn Value eval(const std::string & command, const Scope & scp)
- * \param command
- * \param scope
+ * \fn Value eval(const std::string & command)
+ * \param input command
  * \brief Evaluates an expression.
  *
+ * The \m currentContext is used to evaluate the expression.
  */
-Value Engine::eval(const std::string & command, const Scope & scp)
+Value Engine::eval(const std::string & command)
 {
   compiler::Compiler c{ this };
   std::shared_ptr<program::Expression> expr;
   try
   {
-    expr = c.compile(command, d->context, scp);
+    expr = c.compile(command, d->context);
   }
   catch (compiler::CompilerException & ex)
   {

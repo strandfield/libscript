@@ -14,6 +14,10 @@
 namespace script
 {
 
+class Module;
+class Scope;
+class Script;
+
 class ContextImpl;
 
 class LIBSCRIPT_API Context
@@ -37,6 +41,10 @@ public:
   void addVar(const std::string & name, const Value & val);
   bool exists(const std::string & name) const;
   Value get(const std::string & name) const;
+
+  void use(const Module &m);
+  void use(const Script &s);
+  Scope scope() const;
 
   void clear();
 
