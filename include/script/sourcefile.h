@@ -34,12 +34,15 @@ public:
 
   void load();
   bool isLoaded() const;
+  bool isLocked() const;
   void unload();
 
   const char * data() const;
   const std::string & content() const;
 
   static SourceFile fromString(const std::string & src);
+
+  inline const std::shared_ptr<SourceFileImpl> & impl() const { return d; }
 
 private:
   std::shared_ptr<SourceFileImpl> d;

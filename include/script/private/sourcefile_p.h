@@ -14,6 +14,7 @@ struct SourceFileImpl
   std::string filepath;
   std::string content;
   bool open;
+  bool lock;
 
 public:
   SourceFileImpl(const std::string & path);
