@@ -19,11 +19,16 @@ this repository and compile the code yourself.
 git clone http://github.com/RugessNome/libscript.git
 ```
 
-You can then use CMake to generate project files for your favorite build system.
+You can then use CMake to generate project files for your favorite build system 
+with the following commands or using `cmake-gui`.
 
-The library requires a C\++14 compiler with support for the **filesystem TS** 
-(this requirement may be removed in the future but will require the use of 
-platform-dependent code).
+```bash
+mkdir build && cd build
+cmake ..
+```
+
+The library requires a C\++14 compiler. Access to the file system is done through 
+platform-dependent code, but the `filesystem TS` or C\++17 can be used instead.
 
 The library is distributed under the MIT license and can therefore be used 
 freely. 
@@ -43,7 +48,10 @@ And the C++ code required to run it:
 #include <iostream>
 
 #include "script/engine.h"
+#include "script/function.h"
 #include "script/functionbuilder.h"
+#include "script/namespace.h"
+#include "script/script.h"
 #include "script/interpreter/executioncontext.h"
 
 script::Value print_callback(script::FunctionCall *c)
@@ -59,7 +67,7 @@ int main()
   Engine e;
   e.setup();
 
-  e.rootNamespace().Function("print", print_callback)
+  e.rootNamespace().newFunction("print", print_callback)
     .params(Type::cref(Type::String))
     .create();
   
