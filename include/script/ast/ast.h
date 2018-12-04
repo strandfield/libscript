@@ -42,10 +42,10 @@ public:
   const std::vector<diagnostic::Message> & messages() const;
   inline std::vector<diagnostic::Message> && steal_messages() { return std::move(mMessages); }
 
+public:
+  std::shared_ptr<ScriptRootNode> mScriptNode;
 protected:
   SourceFile mSource;
-  std::vector<std::shared_ptr<Statement>> mStatements;
-  std::vector<std::shared_ptr<Declaration>> mDeclarations;
   std::shared_ptr<Expression> mExpression;
   bool mErrors;
   std::vector<diagnostic::Message> mMessages;

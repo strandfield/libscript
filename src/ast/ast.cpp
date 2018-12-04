@@ -24,19 +24,19 @@ AST::AST(const SourceFile & src)
 
 const std::vector<std::shared_ptr<Statement>> & AST::statements() const
 {
-  return mStatements;
+  return mScriptNode->statements;
 }
 
 const std::vector<std::shared_ptr<Declaration>> & AST::declarations() const
 {
-  return mDeclarations;
+  return mScriptNode->declarations;
 }
 
 void AST::add(const std::shared_ptr<Statement> & statement)
 {
-  mStatements.push_back(statement);
+  mScriptNode->statements.push_back(statement);
   if (statement->is<Declaration>())
-    mDeclarations.push_back(std::dynamic_pointer_cast<Declaration>(statement));
+    mScriptNode->declarations.push_back(std::dynamic_pointer_cast<Declaration>(statement));
 }
 
 bool AST::isSingleExpression() const

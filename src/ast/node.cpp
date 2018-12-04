@@ -883,6 +883,17 @@ std::shared_ptr<TemplateDeclaration> TemplateDeclaration::New(const parser::Toke
   return std::make_shared<TemplateDeclaration>(tmplt_k, left_angle_b, std::move(params), right_angle_b, decl, syntaxtree);
 }
 
+ScriptRootNode::ScriptRootNode(const std::shared_ptr<AST> & st)
+  : ast(st)
+{
+
+}
+
+std::shared_ptr<ScriptRootNode> ScriptRootNode::New(const std::shared_ptr<AST> & syntaxtree)
+{
+  return std::make_shared<ScriptRootNode>(syntaxtree);
+}
+
 } // namespace ast
 
 } // namespace script

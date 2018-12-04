@@ -3031,6 +3031,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
+  ret->mScriptNode = ast::ScriptRootNode::New(ret);
   frag.data()->mAst = ret;
 
   try

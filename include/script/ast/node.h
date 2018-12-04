@@ -73,6 +73,7 @@ enum class LIBSCRIPT_API NodeType {
   TypeAliasDecl,
   ImportDirective,
   TemplateDecl,
+  ScriptRoot,
 };
 
 class LIBSCRIPT_API Node
@@ -1292,6 +1293,25 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Lexer::Position pos() const override { return parser::Lexer::position(template_keyword); }
+};
+
+class LIBSCRIPT_API ScriptRootNode : public Node
+{
+public:
+  std::vector<std::shared_ptr<Statement>> statements;
+  std::vector<std::shared_ptr<Declaration>> declarations;
+  std::weak_ptr<AST> ast;
+
+public:
+  ScriptRootNode(const std::shared_ptr<AST> & st);
+  ~ScriptRootNode() = default;
+
+  static std::shared_ptr<ScriptRootNode> New(const std::shared_ptr<AST> & syntaxtree);
+
+  static const NodeType type_code = NodeType::ScriptRoot;
+  inline NodeType type() const override { return type_code; }
+
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::Position{ 0, 0, 0 }; }
 };
 
 } // namespace ast
