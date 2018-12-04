@@ -61,7 +61,7 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   Namespace ns = scp.asNamespace();
   assert(!ns.isNull());
 
-  if (decl->variable_type.type->name == parser::Token::Auto)
+  if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
     throw GlobalVariablesCannotBeAuto{ dpos(decl) };
 
   Type var_type = type_.resolve(decl->variable_type, scp);
@@ -97,7 +97,7 @@ void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableD
   Engine *e = c.engine();
   assert(!c.isNull());
 
-  if (decl->variable_type.type->name == parser::Token::Auto)
+  if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
     throw DataMemberCannotBeAuto{ dpos(decl) };
 
   Type var_type = type_.resolve(decl->variable_type, scp);

@@ -280,7 +280,10 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     auto object = generateExpression(member_access->arg1);
 
     const std::shared_ptr<ast::Identifier> callee_name = std::static_pointer_cast<ast::Identifier>(member_access->arg2);
-    NameLookup lookup = NameLookup::member(callee_name->getName(), engine()->getClass(object->type()));
+    /// TODO: add an overload to NameLookup to pass the identifier directly
+    std::string member_name = callee_name->is<ast::SimpleIdentifier>() ?
+      callee_name->as<ast::SimpleIdentifier>().getName() : callee_name->as<ast::TemplateIdentifier>().getName();
+    NameLookup lookup = NameLookup::member(member_name, engine()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
       auto functor = VariableAccessor::generateMemberAccess(*this, object, lookup.dataMemberIndex(), dpos(call));
@@ -532,7 +535,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
     throw CannotAccessMemberOfNonObject{ dpos(operation) };
 
   Class cla = engine()->getClass(object->type());
-  const int attr_index = cla.attributeIndex(operation->arg2->as<ast::Identifier>().getName());
+  const int attr_index = cla.attributeIndex(operation->arg2->as<ast::SimpleIdentifier>().getName());
   if (attr_index == -1)
     throw NoSuchMember{ dpos(operation) };
 

@@ -31,7 +31,7 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   {
     if (oper.arg1->type() == ast::NodeType::SimpleIdentifier)
     {
-      std::string name = oper.arg1->as<ast::Identifier>().getName();
+      std::string name = oper.arg1->as<ast::SimpleIdentifier>().getName();
 
       auto value = generateExpression(oper.arg2);
       return program::BindExpression::New(std::move(name), context_, value);

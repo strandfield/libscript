@@ -29,7 +29,7 @@ typename Visitor::return_type visit(Visitor & v, const std::shared_ptr<ast::Node
   case NodeType::UserDefinedLiteral:
     return v.visit(std::static_pointer_cast<ast::UserDefinedLiteral>(n));
   case NodeType::SimpleIdentifier:
-    return v.visit(std::static_pointer_cast<ast::Identifier>(n));
+    return v.visit(std::static_pointer_cast<ast::SimpleIdentifier>(n));
   case NodeType::TemplateIdentifier:
     return v.visit(std::static_pointer_cast<ast::TemplateIdentifier>(n));
   case NodeType::QualifiedIdentifier:

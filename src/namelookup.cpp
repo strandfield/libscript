@@ -300,7 +300,7 @@ Scope NameLookup::qualified_scope_lookup(const std::shared_ptr<ast::Identifier> 
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    const std::string & str = name->getName();
+    const std::string & str = name->as<ast::SimpleIdentifier>().getName();
     result = scope.child(str);
   }
   else if (name->is<ast::TemplateIdentifier>())
@@ -329,7 +329,7 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    const std::string & str = name->getName();
+    const std::string & str = name->as<ast::SimpleIdentifier>().getName();
     result = scope.child(str);
   }
   else if (name->is<ast::OperatorName>())
@@ -547,7 +547,7 @@ bool NameLookup::checkBuiltinName()
   if (d->identifier->type() != ast::NodeType::SimpleIdentifier)
     return false;
 
-  switch (d->identifier->name.type)
+  switch (d->identifier->as<ast::SimpleIdentifier>().name.type)
   {
   case parser::Token::Void:
     d->typeResult = Type::Void;
@@ -587,11 +587,11 @@ void NameLookup::process()
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    scope.lookup(name->getName(), d.get());
+    scope.lookup(name->as<ast::SimpleIdentifier>().getName(), d.get());
   }
   else if (name->is<ast::OperatorName>())
   {
-    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().symbol, ast::OperatorName::All);
     const auto & ops = scope.lookup(op);
     d->functions.insert(d->functions.end(), ops.begin(), ops.end());
   }
@@ -635,18 +635,18 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
 
   if (name->type() == ast::NodeType::SimpleIdentifier)
   {
-    s.lookup(name->getName(), d.get());
+    s.lookup(name->as<ast::SimpleIdentifier>().getName(), d.get());
   }
   else if (name->is<ast::OperatorName>())
   {
-    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().name, ast::OperatorName::All);
+    OperatorName op = ast::OperatorName::getOperatorId(name->as<ast::OperatorName>().symbol, ast::OperatorName::All);
     const auto & ops = s.lookup(op);
     d->functions.insert(d->functions.end(), ops.begin(), ops.end());
   }
   else if (name->is<ast::TemplateIdentifier>())
   {
     const auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
-    auto fake_template_name = ast::Identifier::New(tempid->name, tempid->ast.lock());
+    auto fake_template_name = ast::SimpleIdentifier::New(tempid->name, tempid->ast.lock());
     qualified_lookup(fake_template_name, s);
     if (d->classTemplateResult.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };

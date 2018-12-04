@@ -74,7 +74,13 @@ std::string Literal::toString() const
   return this->ast.lock()->text(this->token);
 }
 
-std::string Identifier::getName() const
+std::string SimpleIdentifier::getName() const
+{
+  auto ast = this->ast.lock();
+  return ast->text(this->name);
+}
+
+std::string TemplateIdentifier::getName() const
 {
   auto ast = this->ast.lock();
   return ast->text(this->name);
@@ -161,7 +167,7 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
 
 std::string LiteralOperatorName::suffix_string() const
 {
-  return ast.lock()->text(this->name);
+  return ast.lock()->text(this->suffix);
 }
 
 std::shared_ptr<ScopedIdentifier> ScopedIdentifier::New(const std::vector<std::shared_ptr<Identifier>>::const_iterator & begin, const std::vector<std::shared_ptr<Identifier>>::const_iterator & end)
@@ -472,7 +478,7 @@ std::shared_ptr<ReturnStatement> ReturnStatement::New(const parser::Token & keyw
 }
 
 
-EnumDeclaration::EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<Identifier> & n, const std::vector<EnumValueDeclaration> && vals)
+EnumDeclaration::EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals)
   : enumKeyword(ek)
   , classKeyword(ck)
   , name(n)
@@ -481,7 +487,7 @@ EnumDeclaration::EnumDeclaration(const parser::Token & ek, const parser::Token &
 
 }
 
-std::shared_ptr<EnumDeclaration> EnumDeclaration::New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<Identifier> & n, const std::vector<EnumValueDeclaration> && vals)
+std::shared_ptr<EnumDeclaration> EnumDeclaration::New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals)
 {
   return std::make_shared<EnumDeclaration>(ek, ck, n, std::move(vals));
 }
@@ -526,14 +532,14 @@ std::shared_ptr<AssignmentInitialization> AssignmentInitialization::New(const pa
   return std::make_shared<AssignmentInitialization>(eq, val);
 }
 
-VariableDecl::VariableDecl(const QualifiedType & t, const std::shared_ptr<Identifier> & name)
+VariableDecl::VariableDecl(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name)
   : variable_type(t)
   , name(name)
 {
 
 }
 
-std::shared_ptr<VariableDecl> VariableDecl::New(const QualifiedType & t, const std::shared_ptr<Identifier> & name)
+std::shared_ptr<VariableDecl> VariableDecl::New(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name)
 {
   return std::make_shared<VariableDecl>(t, name);
 }
@@ -542,16 +548,19 @@ bool QualifiedType::isAmbiguous() const
 {
   using namespace parser;
 
-  switch (type->name.type)
+  if (type->is<SimpleIdentifier>())
   {
-  case Token::Bool:
-  case Token::Char:
-  case Token::Int:
-  case Token::Float:
-  case Token::Double:
-    return false;
-  default:
-    break;
+    switch (type->as<SimpleIdentifier>().name.type)
+    {
+    case Token::Bool:
+    case Token::Char:
+    case Token::Int:
+    case Token::Float:
+    case Token::Double:
+      return false;
+    default:
+      break;
+    }
   }
 
   if (this->constQualifier.isValid() || this->reference.isValid() || this->isFunctionType())
@@ -573,8 +582,18 @@ FunctionDecl::FunctionDecl()
 FunctionDecl::FunctionDecl(const std::shared_ptr<AST> & a, const std::shared_ptr<Identifier> & name)
   : name(name)
 {
-  if(name != nullptr)
-    ast = name->ast;
+  if (name != nullptr)
+  {
+    if (name->is<SimpleIdentifier>())
+      ast = name->as<SimpleIdentifier>().ast;
+    else if(name->is<TemplateIdentifier>())
+      ast = name->as<TemplateIdentifier>().ast;
+    else
+    {
+      assert(a != nullptr);
+    }
+  }
+
   if (a != nullptr)
     ast = a;
 }
@@ -599,11 +618,7 @@ MemberInitialization::MemberInitialization(const std::shared_ptr<ast::Identifier
   : name(n)
   , init(i)
 {
-}
-
-std::string MemberInitialization::getMemberName() const
-{
-  return name->getName();
+  assert(n->is<SimpleIdentifier>() || n->is<TemplateIdentifier>());
 }
 
 ConstructorDecl::ConstructorDecl(const std::shared_ptr<Identifier> & name)
@@ -675,7 +690,7 @@ std::shared_ptr<LambdaExpression> LambdaExpression::New(std::shared_ptr<AST> a, 
 }
 
 
-Typedef::Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n)
+Typedef::Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::SimpleIdentifier> & n)
   : typedef_token(typedef_tok)
   , qualified_type(qtype)
   , name(n)
@@ -683,14 +698,14 @@ Typedef::Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype,
 
 }
 
-std::shared_ptr<Typedef> Typedef::New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n)
+std::shared_ptr<Typedef> Typedef::New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::SimpleIdentifier> & n)
 {
   return std::make_shared<Typedef>(typedef_tok, qtype, n);
 }
 
 
 
-NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
+NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
   : namespace_token(ns_tok)
   , namespace_name(n)
   , left_brace(lb)
@@ -700,7 +715,7 @@ NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const s
 
 }
 
-std::shared_ptr<NamespaceDeclaration> NamespaceDeclaration::New(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
+std::shared_ptr<NamespaceDeclaration> NamespaceDeclaration::New(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
 {
   return std::make_shared<NamespaceDeclaration>(ns_tok, n, lb, std::move(stats), rb);
 }
@@ -758,7 +773,7 @@ std::shared_ptr<UsingDirective> UsingDirective::New(const parser::Token & using_
 
 
 
-NamespaceAliasDefinition::NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+NamespaceAliasDefinition::NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
   : namespace_keyword(namespace_tok)
   , alias_name(a)
   , equal_token(equal_tok)
@@ -767,14 +782,14 @@ NamespaceAliasDefinition::NamespaceAliasDefinition(const parser::Token & namespa
 
 }
 
-std::shared_ptr<NamespaceAliasDefinition> NamespaceAliasDefinition::New(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+std::shared_ptr<NamespaceAliasDefinition> NamespaceAliasDefinition::New(const parser::Token & namespace_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
 {
   return std::make_shared<NamespaceAliasDefinition>(namespace_tok, a, equal_tok, b);
 }
 
 
 
-TypeAliasDeclaration::TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+TypeAliasDeclaration::TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
   : using_keyword(using_tok)
   , alias_name(a)
   , equal_token(equal_tok)
@@ -783,7 +798,7 @@ TypeAliasDeclaration::TypeAliasDeclaration(const parser::Token & using_tok, cons
 
 }
 
-std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
+std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::Token & using_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
 {
   return std::make_shared<TypeAliasDeclaration>(using_tok, a, equal_tok, b);
 }

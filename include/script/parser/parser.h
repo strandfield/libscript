@@ -532,7 +532,7 @@ public:
   std::shared_ptr<ast::Declaration> parse();
 
 protected:
-  std::shared_ptr<ast::Identifier> readNamespaceName();
+  std::shared_ptr<ast::SimpleIdentifier> readNamespaceName();
 
 protected:
   std::shared_ptr<ast::NamespaceDeclaration> mNamespaceDecl;

@@ -58,10 +58,10 @@ public:
     while (target->is<ast::ScopedIdentifier>())
     {
       const auto & scpid = target->as<ast::ScopedIdentifier>();
-      nested.push_back(scpid.rhs->getName()); /// TODO : check that all names are simple ids
+      nested.push_back(scpid.rhs->as<ast::SimpleIdentifier>().getName()); /// TODO : check that all names are simple ids
       target = scpid.lhs;
     }
-    nested.push_back(target->getName());
+    nested.push_back(target->as<ast::SimpleIdentifier>().getName());
 
     std::reverse(nested.begin(), nested.end());
     NamespaceAlias alias{ name, std::move(nested) };

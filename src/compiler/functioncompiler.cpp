@@ -348,7 +348,7 @@ ExpressionCompiler & FunctionCompilerExtension::ec()
 
 std::string FunctionCompilerExtension::dstr(const std::shared_ptr<ast::Identifier> & id)
 { 
-  return id->getName(); 
+  return diagnostic::dstr(id); 
 }
 
 NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identifier> & name)

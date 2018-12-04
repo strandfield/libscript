@@ -365,7 +365,7 @@ TEST(ParserTests, vardecl1) {
   ASSERT_TRUE(vardecl->type() == NodeType::VariableDeclaration);
   const VariableDecl & decl = vardecl->as<VariableDecl>();
 
-  ASSERT_TRUE(decl.variable_type.type->name == Token::Int);
+  ASSERT_TRUE(decl.variable_type.type->as<ast::SimpleIdentifier>().name == Token::Int);
   ASSERT_TRUE(decl.init->is<AssignmentInitialization>());
 
   const AssignmentInitialization & init = decl.init->as<AssignmentInitialization>();
@@ -719,7 +719,7 @@ TEST(ParserTests, class_decls_2) {
     ASSERT_EQ(cd.content.size(), 1);
     ASSERT_TRUE(cd.content.front()->is<CastDecl>());
     const CastDecl & cast = cd.content.front()->as<CastDecl>();
-    ASSERT_TRUE(cast.returnType.type->name == Token::Int);
+    ASSERT_TRUE(cast.returnType.type->as<ast::SimpleIdentifier>().name == Token::Int);
   }
 
   actual = parser.parseStatement();
@@ -774,7 +774,7 @@ TEST(ParserTests, user_defined_literal) {
 
   {
     ASSERT_TRUE(decl.name->is<ast::LiteralOperatorName>());
-    ASSERT_EQ(decl.name->getName(), std::string("km"));
+    ASSERT_EQ(decl.name->as<ast::LiteralOperatorName>().suffix_string(), std::string("km"));
   }
 }
 
@@ -816,7 +816,7 @@ TEST(ParserTests, typedefs) {
     const auto & tdef = actual->as<ast::Typedef>();
     ASSERT_FALSE(tdef.qualified_type.constQualifier.isValid());
     ASSERT_TRUE(tdef.qualified_type.type->is<ast::TemplateIdentifier>());
-    ASSERT_EQ(tdef.qualified_type.type->getName(), "Array");
+    ASSERT_EQ(tdef.qualified_type.type->as<ast::TemplateIdentifier>().getName(), "Array");
     ASSERT_EQ(tdef.name->getName(), "AInt");
   }
 }
@@ -874,7 +874,7 @@ TEST(ParserTests, class_friend_decl) {
     ASSERT_EQ(class_decl.content.front()->type(), ast::NodeType::ClassFriendDecl);
     {
       const auto & fdecl = class_decl.content.front()->as<ast::ClassFriendDeclaration>();
-      ASSERT_EQ(fdecl.class_name->getName(), "B");
+      ASSERT_EQ(fdecl.class_name->as<ast::SimpleIdentifier>().getName(), "B");
     }
   }
 }
@@ -895,7 +895,7 @@ TEST(ParserTests, using_parser) {
   ASSERT_EQ(actual->type(), ast::NodeType::UsingDirective);
   {
     const auto & ud = actual->as<ast::UsingDirective>();
-    ASSERT_EQ(ud.namespace_name->getName(), "bar");
+    ASSERT_EQ(ud.namespace_name->as<ast::SimpleIdentifier>().getName(), "bar");
   }
 
   actual = parser.parseStatement();
@@ -904,8 +904,8 @@ TEST(ParserTests, using_parser) {
     const auto & ud = actual->as<ast::UsingDeclaration>();
     ASSERT_TRUE(ud.used_name->is<ast::ScopedIdentifier>());
     const auto & scpid = ud.used_name->as<ast::ScopedIdentifier>();
-    ASSERT_EQ(scpid.lhs->getName(), "bar");
-    ASSERT_EQ(scpid.rhs->getName(), "foo");
+    ASSERT_EQ(scpid.lhs->as<ast::SimpleIdentifier>().getName(), "bar");
+    ASSERT_EQ(scpid.rhs->as<ast::SimpleIdentifier>().getName(), "foo");
   }
 
   actual = parser.parseStatement();
@@ -935,7 +935,7 @@ TEST(ParserTests, namespace_alias) {
     ASSERT_TRUE(ns_alias.aliased_namespace->is<ast::ScopedIdentifier>());
     const auto & scpid = ns_alias.aliased_namespace->as<ast::ScopedIdentifier>();
     ASSERT_TRUE(scpid.lhs->is<ast::ScopedIdentifier>());
-    ASSERT_EQ(scpid.rhs->getName(), "filesystem");
+    ASSERT_EQ(scpid.rhs->as<ast::SimpleIdentifier>().getName(), "filesystem");
   }
 }
 

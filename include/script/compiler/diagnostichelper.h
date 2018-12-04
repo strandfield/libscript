@@ -34,8 +34,10 @@ inline diagnostic::pos_t dpos(const parser::Token & tok)
 
 inline std::string dstr(const std::shared_ptr<ast::Identifier> & node)
 {
-  if (!node->is<ast::ScopedIdentifier>())
-    return node->getName();
+  if (node->is<ast::SimpleIdentifier>())
+    return node->as<ast::SimpleIdentifier>().getName();
+  else if (node->is<ast::TemplateIdentifier>())
+    return node->as<ast::TemplateIdentifier>().getName();
   else
     return dstr(node->as<ast::ScopedIdentifier>().rhs);
 }

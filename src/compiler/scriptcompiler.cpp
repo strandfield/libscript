@@ -397,7 +397,9 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 
 std::string ScriptCompiler::readClassName(const std::shared_ptr<ast::ClassDecl> & decl)
 {
-  return decl->name->getName();
+  if (decl->name->is<ast::SimpleIdentifier>())
+    return decl->name->as<ast::SimpleIdentifier>().getName();
+  return decl->name->as<ast::TemplateIdentifier>().getName();
 }
 
 Type ScriptCompiler::readClassBase(const std::shared_ptr<ast::ClassDecl> & decl)
@@ -536,7 +538,7 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
-  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->getName());
+  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
   function_processor_.generic_fill(builder, fundecl, scp);
   default_arguments_.generic_process(fundecl->params, builder, scp);
   Function function = builder.get();
@@ -613,18 +615,20 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (over_decl.name->is<ast::LiteralOperatorName>())
     return processLiteralOperatorDecl(decl);
 
+  const parser::Token op_symbol = over_decl.name->as<ast::OperatorName>().symbol;
+
   size_t arity = (scp.isClass() ? 1 : 0) + decl->params.size();
   auto search_option = arity == 1 ? ast::OperatorName::BuiltInOpResol::UnaryOp :
     (arity == 2 ? ast::OperatorName::BuiltInOpResol::BinaryOp : ast::OperatorName::BuiltInOpResol::All);
-  OperatorName opname = ast::OperatorName::getOperatorId(over_decl.name->name, search_option);
+  OperatorName opname = ast::OperatorName::getOperatorId(op_symbol, search_option);
 
   if (opname == Operator::Null)
   {
     // operator++(int) and operator++() trick
-    if ((over_decl.name->name == parser::Token::PlusPlus || over_decl.name->name == parser::Token::MinusMinus)
-      && (arity == 2 && decl->params.at(0).type.type->name == parser::Token::Int))
+    if ((op_symbol == parser::Token::PlusPlus || op_symbol == parser::Token::MinusMinus)
+      && (arity == 2 && decl->params.at(0).type.type->as<ast::SimpleIdentifier>().name == parser::Token::Int))
     {
-      opname = over_decl.name->name == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
+      opname = op_symbol == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
     }
     else
       throw CouldNotResolveOperatorName{ dpos(over_decl) };
@@ -738,7 +742,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  std::string name = classdecl->name->getName();
+  std::string name = classdecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
   ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
@@ -756,7 +760,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
 {
   Scope scp = currentScope();
 
-  std::string name = fundecl->name->getName();
+  std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
   FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
@@ -794,10 +798,8 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
 {
   Scope scp = currentScope();
 
-  auto template_name = ast::Identifier::New(classdecl->name->name, classdecl->name->ast.lock());
-  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
   Namespace ns = findEnclosingNamespace(scp);
-  ClassTemplate ct = findClassTemplate(classdecl->name->getName(), ns.templates());
+  ClassTemplate ct = findClassTemplate(classdecl->name->as<ast::TemplateIdentifier>().getName(), ns.templates());
 
   if (ct.isNull())
     throw CouldNotFindPrimaryClassTemplate{dpos(classdecl)};
@@ -822,10 +824,8 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
 
   Scope scp = currentScope();
 
-  auto template_name = ast::Identifier::New(classdecl->name->name, classdecl->name->ast.lock());
-  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
   Namespace ns = findEnclosingNamespace(scp);
-  ClassTemplate ct = findClassTemplate(classdecl->name->getName(), ns.templates());
+  ClassTemplate ct = findClassTemplate(classdecl->name->as<ast::TemplateIdentifier>().getName(), ns.templates());
 
   if (ct.isNull())
     throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
@@ -844,10 +844,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
 
   const Scope scp = currentScope();
 
-  auto template_name = ast::Identifier::New(fundecl->name->name, fundecl->name->ast.lock());
-  /// TODO : set a flag in the name resolver to prevent template instantiation and use the template name directly
   Namespace ns = findEnclosingNamespace(scp);
-  ClassTemplate ct = findClassTemplate(fundecl->name->getName(), ns.templates());
 
   const std::vector<Template> & tmplts = ns.templates();
 

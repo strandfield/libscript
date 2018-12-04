@@ -184,7 +184,7 @@ void TemplateArgumentDeductionEngine::deduce(const ast::QualifiedType & pattern,
   if (pattern.type->is<ast::TemplateIdentifier>())
   {
     auto tmpltid = std::static_pointer_cast<ast::TemplateIdentifier>(pattern.type);
-    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    NameLookup lookup = NameLookup::resolve(tmpltid->getName(), scope_);
     if (lookup.classTemplateResult().isNull())
       return;
 
@@ -204,7 +204,7 @@ void TemplateArgumentDeductionEngine::deduce(const ast::QualifiedType & pattern,
   }
   else if (pattern.type->type() == ast::NodeType::SimpleIdentifier)
   {
-    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    NameLookup lookup = NameLookup::resolve(pattern.type->as<ast::SimpleIdentifier>().getName(), scope_);
     if (lookup.templateParameterIndex() != -1)
     {
       Type t = input;
@@ -262,7 +262,7 @@ void TemplateArgumentDeductionEngine::deduce(const std::shared_ptr<ast::Node> & 
       if (qt.isConst() || qt.reference.isValid())
         return;
 
-      NameLookup lookup = NameLookup::resolve(qt.type->getName(), scope_);
+      NameLookup lookup = NameLookup::resolve(qt.type->as<ast::SimpleIdentifier>().getName(), scope_);
 
       if (lookup.templateParameterIndex() != -1)
         return record_deduction(lookup.templateParameterIndex(), input);
@@ -286,8 +286,8 @@ void TemplateArgumentDeductionEngine::deduce(const std::shared_ptr<ast::ScopedId
 
     ClassTemplate arg_template = object_type.instanceOf();
 
-
-    auto template_name = ast::Identifier::New(pattern->rhs->name, pattern->ast.lock());
+    auto tipattern = std::static_pointer_cast<ast::TemplateIdentifier>(pattern->rhs);
+    auto template_name = ast::SimpleIdentifier::New(tipattern->name, tipattern->ast.lock());
     auto qualid = ast::ScopedIdentifier::New(pattern->lhs, pattern->scopeResolution, template_name);
     NameLookup lookup = NameLookup::resolve(qualid, scope_);
     if (lookup.classTemplateResult().isNull())
@@ -373,7 +373,7 @@ void TemplatePatternMatching::match_(const ast::QualifiedType & pattern, const T
   if (pattern.type->is<ast::TemplateIdentifier>())
   {
     auto tmpltid = std::static_pointer_cast<ast::TemplateIdentifier>(pattern.type);
-    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    NameLookup lookup = NameLookup::resolve(pattern.type->as<ast::TemplateIdentifier>().getName(), scope_);
     if (lookup.classTemplateResult().isNull())
       return fail();
 
@@ -393,7 +393,7 @@ void TemplatePatternMatching::match_(const ast::QualifiedType & pattern, const T
   }
   else if (pattern.type->type() == ast::NodeType::SimpleIdentifier)
   {
-    NameLookup lookup = NameLookup::resolve(pattern.type->getName(), scope_);
+    NameLookup lookup = NameLookup::resolve(pattern.type->as<ast::SimpleIdentifier>().getName(), scope_);
     if (lookup.templateParameterIndex() != -1)
     {
       Type t = input;
@@ -457,7 +457,13 @@ void TemplatePatternMatching::match_(const std::shared_ptr<ast::Node> & pattern,
       if (qt.isConst() || qt.reference.isValid())
         return;
 
-      NameLookup lookup = NameLookup::resolve(qt.type->getName(), scope_);
+      NameLookup lookup;
+      if (qt.type->is<ast::SimpleIdentifier>())
+        lookup = NameLookup::resolve(qt.type->as<ast::SimpleIdentifier>().getName(), scope_);
+      else if (qt.type->is<ast::TemplateIdentifier>())
+        lookup = NameLookup::resolve(qt.type->as<ast::TemplateIdentifier>().getName(), scope_);
+      else
+        throw std::runtime_error{ "Not implemented" }; /// TODO: can this be reached ?
 
       if (lookup.templateParameterIndex() != -1)
         return record_deduction(lookup.templateParameterIndex(), input);
@@ -534,7 +540,7 @@ void TemplatePatternMatching::match_(const std::shared_ptr<ast::ScopedIdentifier
     ClassTemplate arg_template = object_type.instanceOf();
 
 
-    auto template_name = ast::Identifier::New(pattern->rhs->name, pattern->ast.lock());
+    auto template_name = ast::SimpleIdentifier::New(pattern->rhs->as<ast::TemplateIdentifier>().name, pattern->rhs->as<ast::TemplateIdentifier>().ast.lock());
     auto qualid = ast::ScopedIdentifier::New(pattern->lhs, pattern->scopeResolution, template_name);
     NameLookup lookup = NameLookup::resolve(qualid, scope_);
     if (lookup.classTemplateResult().isNull())

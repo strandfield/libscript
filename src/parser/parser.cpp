@@ -962,7 +962,7 @@ ast::LambdaCapture LambdaCaptureParser::parse()
   }
 
   IdentifierParser idpar{ fragment(), IdentifierParser::ParseOnlySimpleId };
-  cap.name = idpar.parse()->name;
+  cap.name = idpar.parse()->as<ast::SimpleIdentifier>().name;
   if (atEnd())
     return cap;
   cap.assignmentSign = readToken<ExpectedEqualSign>(Token::Eq);
@@ -1231,7 +1231,8 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
   const ast::QualifiedType qtype = tp.parse();
 
   IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
-  const std::shared_ptr<ast::Identifier> name = idp.parse();
+  /// TODO: add overload to IdentifierParser that only parses symple identifier.
+  const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
 
   if (peek() != parser::Token::Semicolon)
     throw ExpectedSemicolon{};
@@ -1287,7 +1288,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::parse()
   case Token::Double:
   case Token::Auto:
   case Token::This:
-    return ast::Identifier::New(unsafe_read(), ast());
+    return ast::SimpleIdentifier::New(unsafe_read(), ast());
   case Token::Operator:
     return readOperatorName();
   case Token::UserDefinedName:
@@ -1338,7 +1339,8 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if (op.length != 2)
       throw ExpectedEmptyStringLiteral{};
     IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
-    auto suffixName = idp.parse();
+    /// TODO: add overload to remove this cast
+    auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
     return ast::LiteralOperatorName::New(opkw, op, suffixName->name, ast());
   }
   else if (op.type == Token::UserDefinedLiteral)
@@ -1362,9 +1364,9 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
     throw ExpectedUserDefinedName{};
 
   if(atEnd())
-    return ast::Identifier::New(base, ast());
+    return ast::SimpleIdentifier::New(base, ast());
 
-  std::shared_ptr<ast::Identifier> ret = ast::Identifier::New(base, ast());
+  std::shared_ptr<ast::Identifier> ret = ast::SimpleIdentifier::New(base, ast());
 
   Token t = peek();
   if ((options() & ParseTemplateId) && t == Token::LeftAngle)
@@ -1591,7 +1593,8 @@ ast::FunctionParameter FunctionParamParser::parse()
     return fp;
 
   IdentifierParser ip{ fragment(), IdentifierParser::ParseOnlySimpleId };
-  auto name = ip.parse();
+  /// TODO: add overload that returns SimpleIdentifier
+  auto name = std::static_pointer_cast<ast::SimpleIdentifier>(ip.parse());
   fp.name = name->name;
 
   if (atEnd())
@@ -1851,7 +1854,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   else if (mDecision == ParsingVariable)
   {
     if (mVarDecl == nullptr) /// TODO : is this always true ?
-      mVarDecl = ast::VariableDecl::New(mType, mName);
+      mVarDecl = ast::VariableDecl::New(mType, std::static_pointer_cast<ast::SimpleIdentifier>(mName));
     mVarDecl->staticSpecifier = mStaticKw;
     return parseVarDecl();
   }
@@ -1862,7 +1865,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   {
     mDecision = ParsingVariable;
 
-    mVarDecl = ast::VariableDecl::New(mType, mName);
+    mVarDecl = ast::VariableDecl::New(mType, std::static_pointer_cast<ast::SimpleIdentifier>(mName));
     mVarDecl->staticSpecifier = mStaticKw;
     return parseVarDecl();
   }
@@ -1873,7 +1876,8 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
     mFuncDecl->staticKeyword = mStaticKw;
     mFuncDecl->virtualKeyword = mVirtualKw;
 
-    mVarDecl = ast::VariableDecl::New(mType, mName);
+    assert(mName->is<ast::SimpleIdentifier>());
+    mVarDecl = ast::VariableDecl::New(mType, std::static_pointer_cast<ast::SimpleIdentifier>(mName));
     mVarDecl->staticSpecifier = mStaticKw;
   }
   else
@@ -2477,14 +2481,15 @@ bool compareName(const std::shared_ptr<ast::Identifier> & a, const std::shared_p
   switch (a->type())
   {
   case ast::NodeType::SimpleIdentifier:
-    return a->getName() == b->getName();
+    return a->as<ast::SimpleIdentifier>().getName() == b->as<ast::SimpleIdentifier>().getName();
   case ast::NodeType::OperatorName:
+    return a->as<ast::OperatorName>().symbol.type == b->as<ast::OperatorName>().symbol.type;
   case ast::NodeType::LiteralOperatorName:
-    return a->name.type == b->name.type;
+    return a->as<ast::LiteralOperatorName>().suffix.type == b->as<ast::LiteralOperatorName>().suffix.type;
   case ast::NodeType::TemplateIdentifier:
-    return compare_template_names(std::dynamic_pointer_cast<ast::TemplateIdentifier>(a), std::dynamic_pointer_cast<ast::TemplateIdentifier>(b), data);
+    return compare_template_names(std::static_pointer_cast<ast::TemplateIdentifier>(a), std::static_pointer_cast<ast::TemplateIdentifier>(b), data);
   case ast::NodeType::QualifiedIdentifier:
-    return compare_qualified_names(std::dynamic_pointer_cast<ast::ScopedIdentifier>(a), std::dynamic_pointer_cast<ast::ScopedIdentifier>(b), data);
+    return compare_qualified_names(std::static_pointer_cast<ast::ScopedIdentifier>(a), std::static_pointer_cast<ast::ScopedIdentifier>(b), data);
   default:
     break;
   }
@@ -2512,10 +2517,11 @@ void EnumValueParser::parse()
     }
 
     IdentifierParser idparser{ &frag, IdentifierParser::ParseOnlySimpleId };
+    /// TODO: add overlaod that returns ast::SimpleIdentifier
     auto name = idparser.parse();
     if (frag.atEnd())
     {
-      values.push_back(ast::EnumValueDeclaration{ name, nullptr });
+      values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), nullptr });
       frag.consumeComma();
       continue;
     }
@@ -2528,7 +2534,7 @@ void EnumValueParser::parse()
     ExpressionParser valparser{ &frag };
     auto expr = valparser.parse();
 
-    values.push_back(ast::EnumValueDeclaration{ name, expr });
+    values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), expr });
     frag.consumeComma();
   }
 }
@@ -2548,10 +2554,11 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
   if (peek() == Token::Class)
     ctok = read();
 
-  std::shared_ptr<ast::Identifier> enum_name;
+  std::shared_ptr<ast::SimpleIdentifier> enum_name;
   {
     IdentifierParser idparser{ fragment(), IdentifierParser::ParseOnlySimpleId };
-    enum_name = idparser.parse();
+    /// TODO: add overload to avoid this cast
+    enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(idparser.parse());
   }
 
   if (peek() != Token::LeftBrace)
@@ -2774,10 +2781,10 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
   return ast::NamespaceDeclaration::New(ns_tok, name, lb, std::move(statements), rb);
 }
 
-std::shared_ptr<ast::Identifier> NamespaceParser::readNamespaceName()
+std::shared_ptr<ast::SimpleIdentifier> NamespaceParser::readNamespaceName()
 {
   IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
-  return idp.parse();
+  return std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
 }
 
 
@@ -2841,6 +2848,9 @@ std::shared_ptr<ast::Declaration> UsingParser::parse()
     return ast::UsingDeclaration::New(using_tok, std::static_pointer_cast<ast::ScopedIdentifier>(name));
   }
 
+  /// TODO: throw exception instead
+  assert(name->is<ast::SimpleIdentifier>());
+
   if (peek() != Token::Eq)
     throw ExpectedEqualSign{};
 
@@ -2848,7 +2858,7 @@ std::shared_ptr<ast::Declaration> UsingParser::parse()
 
   std::shared_ptr<ast::Identifier> aliased_type = read_name();
   read_semicolon();
-  return ast::TypeAliasDeclaration::New(using_tok, name, eq_sign, aliased_type);
+  return ast::TypeAliasDeclaration::New(using_tok, std::static_pointer_cast<ast::SimpleIdentifier>(name), eq_sign, aliased_type);
 }
 
 std::shared_ptr<ast::Identifier> UsingParser::read_name()

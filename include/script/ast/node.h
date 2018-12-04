@@ -205,15 +205,21 @@ public:
 class LIBSCRIPT_API Identifier : public Expression
 {
 public:
+  Identifier() = default;
+};
+
+class LIBSCRIPT_API SimpleIdentifier : public Identifier
+{
+public:
   parser::Token name;
   std::weak_ptr<ast::AST> ast;
 
 public:
-  Identifier(const parser::Token & n, const std::shared_ptr<ast::AST> & tree) : name(n), ast(tree) {}
+  SimpleIdentifier(const parser::Token & n, const std::shared_ptr<ast::AST> & tree) : name(n), ast(tree) {}
 
-  inline static std::shared_ptr<Identifier> New(const parser::Token & name, const std::shared_ptr<ast::AST> & tree)
+  inline static std::shared_ptr<SimpleIdentifier> New(const parser::Token & name, const std::shared_ptr<ast::AST> & tree)
   {
-    return std::make_shared<Identifier>(name, tree);
+    return std::make_shared<SimpleIdentifier>(name, tree);
   }
 
   std::string getName() const;
@@ -226,22 +232,28 @@ public:
 class LIBSCRIPT_API TemplateIdentifier : public Identifier
 {
 public:
+  parser::Token name;
   parser::Token leftAngle;
-  std::vector<NodeRef> arguments; // should we store the commas ?
+  std::vector<NodeRef> arguments;
   parser::Token rightAngle;
+  std::weak_ptr<ast::AST> ast;
 
 public:
   TemplateIdentifier(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra, const std::shared_ptr<ast::AST> & tree)
-    : Identifier(name, tree)
+    : name(name)
     , arguments(args)
     , leftAngle(la)
-    , rightAngle(ra) 
-  {}
+    , rightAngle(ra)
+    , ast(tree)
+  {
+  }
 
   inline static std::shared_ptr<TemplateIdentifier> New(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra, const std::shared_ptr<ast::AST> & tree)
   {
     return std::make_shared<TemplateIdentifier>(name, args, la, ra, tree);
   }
+
+  std::string getName() const;
 
   static const NodeType type_code = NodeType::TemplateIdentifier;
   inline NodeType type() const override { return type_code; }
@@ -252,12 +264,13 @@ public:
 class LIBSCRIPT_API OperatorName : public Identifier
 {
 public:
-  parser::Token operatorKeyword;
+  parser::Token keyword;
+  parser::Token symbol;
 
 public:
   OperatorName(const parser::Token & opkeyword, const parser::Token & opSymbol)
-    : Identifier(opSymbol, nullptr)
-    , operatorKeyword(opkeyword)
+    : keyword(opkeyword)
+    , symbol(opSymbol)
   {}
 
   inline static std::shared_ptr<OperatorName> New(const parser::Token & opkeyword, const parser::Token & opSymbol)
@@ -278,20 +291,23 @@ public:
 
   static const NodeType type_code = NodeType::OperatorName;
   inline NodeType type() const override { return type_code; }
-  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(this->operatorKeyword); }
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(this->keyword); }
 };
 
 class LIBSCRIPT_API LiteralOperatorName : public Identifier
 {
 public:
-  parser::Token operatorKeyword;
+  parser::Token keyword;
   parser::Token doubleQuotes;
+  parser::Token suffix;
+  std::weak_ptr<ast::AST> ast;
 
 public:
   LiteralOperatorName(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName, const std::shared_ptr<ast::AST> & tree)
-    : Identifier(suffixName, tree)
-    , operatorKeyword(opkeyword)
+    : keyword(opkeyword)
     , doubleQuotes(dquotes)
+    , suffix(suffixName)
+    , ast(tree)
   {}
 
   inline static std::shared_ptr<LiteralOperatorName> New(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName, const std::shared_ptr<ast::AST> & tree)
@@ -299,12 +315,12 @@ public:
     return std::make_shared<LiteralOperatorName>(opkeyword, dquotes, suffixName, tree);
   }
 
-  inline const parser::Token & suffixName() const { return this->name; }
+  inline const parser::Token & suffixName() const { return this->suffix; }
   std::string suffix_string() const;
 
   static const NodeType type_code = NodeType::LiteralOperatorName;
   inline NodeType type() const override { return type_code; }
-  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(this->operatorKeyword); }
+  inline parser::Lexer::Position pos() const override { return parser::Lexer::position(this->keyword); }
 
 };
 
@@ -318,8 +334,7 @@ public:
 
 public:
   ScopedIdentifier(const std::shared_ptr<Identifier> & l, const parser::Token & scopeRes, const std::shared_ptr<Identifier> & r)
-    : Identifier(parser::Token{}, nullptr)
-    , lhs(l)
+    : lhs(l)
     , scopeResolution(scopeRes)
     , rhs(r)
   {}
@@ -697,7 +712,7 @@ class LIBSCRIPT_API Declaration : public Statement
 
 struct LIBSCRIPT_API EnumValueDeclaration
 {
-  std::shared_ptr<Identifier> name;
+  std::shared_ptr<SimpleIdentifier> name;
   std::shared_ptr<Expression> value;
 };
 
@@ -706,15 +721,15 @@ class LIBSCRIPT_API EnumDeclaration : public Declaration
 public:
   parser::Token enumKeyword;
   parser::Token classKeyword;
-  std::shared_ptr<Identifier> name;
+  std::shared_ptr<SimpleIdentifier> name;
   std::vector<EnumValueDeclaration> values;
 
 public:
   EnumDeclaration() = default;
-  EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<Identifier> & n, const std::vector<EnumValueDeclaration> && vals);
+  EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals);
   ~EnumDeclaration() = default;
 
-  static std::shared_ptr<EnumDeclaration> New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<Identifier> & n, const std::vector<EnumValueDeclaration> && vals);
+  static std::shared_ptr<EnumDeclaration> New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals);
 
   static const NodeType type_code = NodeType::EnumDeclaration;
   inline NodeType type() const override { return type_code; }
@@ -844,15 +859,15 @@ class LIBSCRIPT_API VariableDecl : public Declaration
 public:
   QualifiedType variable_type;
   parser::Token staticSpecifier;
-  std::shared_ptr<Identifier> name;
+  std::shared_ptr<SimpleIdentifier> name;
   std::shared_ptr<Initialization> init;
   parser::Token semicolon;
 
 public:
-  VariableDecl(const QualifiedType & t, const std::shared_ptr<Identifier> & name);
+  VariableDecl(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name);
   ~VariableDecl() = default;
 
-  static std::shared_ptr<VariableDecl> New(const QualifiedType & t, const std::shared_ptr<Identifier> & name);
+  static std::shared_ptr<VariableDecl> New(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name);
 
   static const NodeType type_code = NodeType::VariableDeclaration;
   inline NodeType type() const override { return type_code; }
@@ -972,7 +987,6 @@ struct LIBSCRIPT_API MemberInitialization
   std::shared_ptr<Initialization> init;
 
   MemberInitialization(const std::shared_ptr<Identifier> & n, const std::shared_ptr<Initialization> & init);
-  std::string getMemberName() const;
 };
 
 class LIBSCRIPT_API ConstructorDecl : public FunctionDecl
@@ -1075,13 +1089,13 @@ class LIBSCRIPT_API Typedef : public Declaration
 public:
   parser::Token typedef_token;
   QualifiedType qualified_type;
-  std::shared_ptr<ast::Identifier> name;
+  std::shared_ptr<ast::SimpleIdentifier> name;
 
 public:
-  Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n);
+  Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::SimpleIdentifier> & n);
   ~Typedef() = default;
 
-  static std::shared_ptr<Typedef> New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::Identifier> & n);
+  static std::shared_ptr<Typedef> New(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::SimpleIdentifier> & n);
 
   static const NodeType type_code = NodeType::Typedef;
   inline NodeType type() const override { return type_code; }
@@ -1093,16 +1107,16 @@ class LIBSCRIPT_API NamespaceDeclaration : public Declaration
 {
 public:
   parser::Token namespace_token;
-  std::shared_ptr<Identifier> namespace_name;
+  std::shared_ptr<SimpleIdentifier> namespace_name;
   parser::Token left_brace;
   std::vector<std::shared_ptr<Statement>> statements;
   parser::Token right_brace;
 
 public:
-  NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
+  NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
   ~NamespaceDeclaration() = default;
 
-  static std::shared_ptr<NamespaceDeclaration> New(const parser::Token & ns_tok, const std::shared_ptr<ast::Identifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
+  static std::shared_ptr<NamespaceDeclaration> New(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb);
 
   static const NodeType type_code = NodeType::NamespaceDecl;
   inline NodeType type() const override { return type_code; }
@@ -1180,15 +1194,15 @@ class LIBSCRIPT_API NamespaceAliasDefinition : public Declaration
 {
 public:
   parser::Token namespace_keyword;
-  std::shared_ptr<Identifier> alias_name;
+  std::shared_ptr<SimpleIdentifier> alias_name;
   parser::Token equal_token;
   std::shared_ptr<Identifier> aliased_namespace;
 
 public:
-  NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  NamespaceAliasDefinition(const parser::Token & namespace_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
   ~NamespaceAliasDefinition() = default;
 
-  static std::shared_ptr<NamespaceAliasDefinition> New(const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  static std::shared_ptr<NamespaceAliasDefinition> New(const parser::Token & namespace_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
 
   static const NodeType type_code = NodeType::NamespaceAliasDef;
   inline NodeType type() const override { return type_code; }
@@ -1200,15 +1214,15 @@ class LIBSCRIPT_API TypeAliasDeclaration : public Declaration
 {
 public:
   parser::Token using_keyword;
-  std::shared_ptr<Identifier> alias_name;
+  std::shared_ptr<SimpleIdentifier> alias_name;
   parser::Token equal_token;
   std::shared_ptr<Identifier> aliased_type;
 
 public:
-  TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
   ~TypeAliasDeclaration() = default;
 
-  static std::shared_ptr<TypeAliasDeclaration> New(const parser::Token & using_tok, const std::shared_ptr<Identifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
+  static std::shared_ptr<TypeAliasDeclaration> New(const parser::Token & using_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b);
 
   static const NodeType type_code = NodeType::TypeAliasDecl;
   inline NodeType type() const override { return type_code; }

@@ -87,7 +87,7 @@ struct CutPasteVisitor
     apply(l->token);
   }
 
-  void visit(const std::shared_ptr<ast::Identifier> & i)
+  void visit(const std::shared_ptr<ast::SimpleIdentifier> & i)
   {
     i->ast = ast;
     apply(i->name);
@@ -104,22 +104,21 @@ struct CutPasteVisitor
 
   void visit(const std::shared_ptr<ast::OperatorName> & id)
   {
-    id->ast = ast;
-    apply(id->name);
-    apply(id->operatorKeyword);
+    apply(id->symbol);
+    apply(id->keyword);
   }
 
   void visit(const std::shared_ptr<ast::LiteralOperatorName> & id)
   {
     id->ast = ast;
-    apply(id->name);
+    apply(id->suffix);
+    apply(id->keyword);
     apply(id->doubleQuotes);
   }
 
   void visit(const std::shared_ptr<ast::ScopedIdentifier> & id)
   {
-    id->ast = ast;
-    apply(id->name);
+    apply(id->scopeResolution);
     apply(id->lhs);
     apply(id->rhs);
   }
