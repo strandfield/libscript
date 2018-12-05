@@ -12,7 +12,7 @@
 #include "script/compiler/templatedefinition.h"
 #include "script/compiler/templatespecialization.h"
 
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 #include "script/ast/node.h"
 
 #include "script/parser/parser.h"
@@ -92,14 +92,15 @@ void ScriptCompiler::add(const Script & task)
   parser::Parser parser{ task.source() };
   auto ast = parser.parse(task.source());
 
-  if (ast->hasErrors())
+  if (ast->hasErrors)
   {
-    for (const auto & m : ast->messages())
+    for (const auto & m : ast->messages)
       logger_->log(m);
     return; /// TODO: should we throw instead ?
   }
 
   task.impl()->ast = ast;
+  ast->script = task.impl();
 
   processOrCollectScriptDeclarations(task);
 }
@@ -219,7 +220,7 @@ Function ScriptCompiler::registerRootFunction()
 
   auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
   fakedecl->body = ast::CompoundStatement::New(parser::Token{ parser::Token::LeftBrace, 0, 0, 0, 0 }, parser::Token{ parser::Token::RightBrace, 0, 0, 0, 0 });
-  const auto & stmts = currentAst()->statements();
+  const auto & stmts = currentAst()->root->as<ast::ScriptRootNode>().statements;
   for (const auto & s : stmts)
   {
     switch (s->type())
@@ -263,7 +264,7 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const Script & task)
 
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
-  for (const auto & decl : currentAst()->declarations())
+  for (const auto & decl : currentAst()->root->as<ast::ScriptRootNode>().declarations)
     processOrCollectDeclaration(decl);
 
   return true;

@@ -8,7 +8,7 @@
 #include <tuple>
 
 #include "script/parser/lexer.h"
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 
 #include "script/diagnosticmessage.h"
 #include "script/exception.h"

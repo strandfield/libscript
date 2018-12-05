@@ -63,3 +63,41 @@ TEST(Scenarios, manual_construction_and_delegate_ctor) {
   engine.free(val);
 }
 
+#include "script/ast.h"
+#include "script/ast/node.h"
+
+TEST(Scenarios, accessing_ast) {
+  using namespace script;
+
+  const char *source =
+    "  int a = 5;                      "
+    "  a += 2;                         "
+    "  int foo(int n) { return n; }    ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  ASSERT_TRUE(success);
+
+  Ast ast = s.ast();
+  ASSERT_FALSE(ast.isNull());
+
+  ASSERT_TRUE(ast.isScript());
+  ASSERT_EQ(s, ast.script());
+
+  ASSERT_FALSE(ast.isExpression());
+  ASSERT_FALSE(ast.hasErrors());
+  ASSERT_EQ(ast.messages().size(), 0);
+
+  ASSERT_EQ(ast.expression(), nullptr);
+
+  ASSERT_EQ(ast.statements().size(), 3);
+  ASSERT_EQ(ast.declarations().size(), 2);
+
+  auto decl = ast.declarations().back();
+  ASSERT_TRUE(decl->is<ast::FunctionDecl>());
+  ASSERT_EQ(decl->as<ast::FunctionDecl>().parameterName(0), "n");
+}
+

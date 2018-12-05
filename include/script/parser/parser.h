@@ -6,7 +6,7 @@
 #define LIBSCRIPT_PARSER_H
 
 #include "script/parser/lexer.h"
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 
 namespace script
 {

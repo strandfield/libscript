@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_COMPILER_TEMPLATE_DEFINITION_H
 #define LIBSCRIPT_COMPILER_TEMPLATE_DEFINITION_H
 
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 
 namespace script
 {

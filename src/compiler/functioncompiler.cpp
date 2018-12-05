@@ -16,7 +16,7 @@
 #include "script/compiler/conversionprocessor.h"
 #include "script/compiler/valueconstructor.h"
 
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 #include "script/ast/node.h"
 
 #include "script/program/expression.h"

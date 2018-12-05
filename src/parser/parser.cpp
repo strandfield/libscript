@@ -3031,7 +3031,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
-  ret->mScriptNode = ast::ScriptRootNode::New(ret);
+  ret->root = ast::ScriptRootNode::New(ret);
   frag.data()->mAst = ret;
 
   try
@@ -3044,7 +3044,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   }
   catch (const ParserException & e)
   {
-    ret->setErrorFlag();
+    ret->hasErrors = true;
     if(atEnd())
       ret->log(diagnostic::error() << e.what());
     else
@@ -3066,11 +3066,11 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
   {
     ExpressionParser ep{ &frag };
     auto expr = ep.parse();
-    ret->setExpression(expr);
+    ret->root = expr;
   }
   catch (const ParserException & e)
   {
-    ret->setErrorFlag();
+    ret->hasErrors = true;
     if (atEnd())
       ret->log(diagnostic::error() << e.what());
     else

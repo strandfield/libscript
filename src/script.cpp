@@ -5,6 +5,7 @@
 #include "script/script.h"
 #include "script/private/script_p.h"
 
+#include "script/ast.h"
 #include "script/engine.h"
 
 namespace script
@@ -25,6 +26,11 @@ void ScriptImpl::register_global(const Type & t, const std::string & name)
   this->global_types.push_back(t);
   this->globalNames[name] = this->global_types.size() - 1;
 }
+
+/*!
+ * \class Script
+ * \brief Represents an executable script
+ */
 
 Script::Script(const std::shared_ptr<ScriptImpl> & impl)
   : d(impl)
@@ -99,6 +105,15 @@ const std::vector<diagnostic::Message> & Script::messages() const
 Scope Script::exports() const
 {
   return d->exports;
+}
+
+/*!
+ * \fn Ast ast() const
+ * \brief Returns the script ast.
+ */
+Ast Script::ast() const
+{
+  return Ast{ d->ast };
 }
 
 Engine * Script::engine() const

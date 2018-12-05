@@ -16,6 +16,7 @@ namespace script
 
 class ScriptImpl;
 
+class Ast;
 class Engine;
 class Scope;
 
@@ -59,6 +60,8 @@ public:
   const std::vector<diagnostic::Message> & messages() const;
 
   Scope exports() const;
+
+  Ast ast() const;
 
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }

@@ -10,7 +10,7 @@
 #include "script/parser/parsererrors.h"
 
 #include "script/ast/node.h"
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 
 
 std::shared_ptr<script::parser::ParserData> parser_data(const char *source)

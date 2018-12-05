@@ -79,12 +79,12 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
   auto ast = parser.parseExpression(source);
 
   /// TODO: throw
-  if (ast->hasErrors())
+  if (ast->hasErrors)
     return nullptr;
 
   expr_.context_ = context;
   expr_.setScope(context.scope());
-  return expr_.generateExpression(ast->expression());
+  return expr_.generateExpression(std::static_pointer_cast<ast::Expression>(ast->root));
 }
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)

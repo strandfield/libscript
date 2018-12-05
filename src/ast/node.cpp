@@ -4,7 +4,7 @@
 
 #include "script/ast/node.h"
 
-#include "script/ast/ast.h"
+#include "script/ast/ast_p.h"
 
 #include <map>
 
@@ -335,6 +335,11 @@ NullStatement::NullStatement(const parser::Token & semicolon)
 
 }
 
+bool Statement::isDeclaration() const
+{
+  return false;
+}
+
 std::shared_ptr<NullStatement> NullStatement::New(const parser::Token & semicolon)
 {
   return std::make_shared<NullStatement>(semicolon);
@@ -477,6 +482,10 @@ std::shared_ptr<ReturnStatement> ReturnStatement::New(const parser::Token & keyw
   return ret;
 }
 
+bool Declaration::isDeclaration() const
+{
+  return true;
+}
 
 EnumDeclaration::EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals)
   : enumKeyword(ek)

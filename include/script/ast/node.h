@@ -516,7 +516,9 @@ public:
 
 class LIBSCRIPT_API Statement : public Node
 {
+public:
 
+  virtual bool isDeclaration() const;
 };
 
 class LIBSCRIPT_API NullStatement : public Statement
@@ -708,7 +710,9 @@ public:
 
 class LIBSCRIPT_API Declaration : public Statement
 {
+public:
 
+  bool isDeclaration() const override;
 };
 
 struct LIBSCRIPT_API EnumValueDeclaration
