@@ -137,15 +137,27 @@ Value Interpreter::invoke(const Function & f, const Value *obj, const Value *beg
 Value Interpreter::eval(const std::shared_ptr<program::Expression> & expr)
 {
   const size_t gcs = mExecutionContext->garbage_collector.size();
+  const size_t ilistbuffersize = mExecutionContext->initializer_list_buffer.size();
   
   Value ret = inner_eval(expr);
 
+  // Destroy temporaries
   while (mExecutionContext->garbage_collector.size() > gcs)
   {
     Value & v = mExecutionContext->garbage_collector.back();
     if(v.impl()->ref == 1)
       mEngine->destroy(v);
     mExecutionContext->garbage_collector.pop_back();
+  }
+
+  // Destroy initializer lists
+  while (mExecutionContext->initializer_list_buffer.size() > ilistbuffersize)
+  {
+    Value & v = mExecutionContext->initializer_list_buffer.back();
+    /// TODO: should we do something if refcount is not 1 ?
+    if (v.impl()->ref == 1)
+      mEngine->destroy(v);
+    mExecutionContext->initializer_list_buffer.pop_back();
   }
 
   return ret;
@@ -199,14 +211,8 @@ void Interpreter::invoke(const Function & f)
     exec(impl->implementation.program);
   }
 
+  /// TODO: maybe remove this call to the GC
   mEngine->garbageCollect();
-  if (f == mExecutionContext->initializer_list_owner)
-  {
-    for (Value & val : mExecutionContext->initializer_list_buffer)
-      mEngine->destroy(val);
-    mExecutionContext->initializer_list_buffer.clear();
-    mExecutionContext->initializer_list_owner = Function{};
-  }
 }
 
 void Interpreter::visit(const program::BreakStatement & bs) 
@@ -472,7 +478,7 @@ Value Interpreter::visit(const program::FundamentalConversion & conv)
 
 Value Interpreter::visit(const program::InitializerList & il)
 {
-  const int old_size = mExecutionContext->initializer_list_buffer.size();
+  const size_t old_size = mExecutionContext->initializer_list_buffer.size();
 
   for (const auto & e : il.elements)
   {
@@ -480,10 +486,7 @@ Value Interpreter::visit(const program::InitializerList & il)
     mExecutionContext->initializer_list_buffer.push_back(val);
   }
 
-  const int new_size = mExecutionContext->initializer_list_buffer.size();
-
-  if (old_size != new_size && mExecutionContext->initializer_list_owner.isNull())
-    mExecutionContext->initializer_list_owner = mExecutionContext->callstack.top()->callee();
+  const size_t new_size = mExecutionContext->initializer_list_buffer.size();
 
   Value ret = mEngine->construct(il.initializer_list_type, {});
 

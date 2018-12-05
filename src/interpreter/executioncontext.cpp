@@ -248,7 +248,9 @@ ExecutionContext::ExecutionContext(Engine *e, int stackSize, int callStackSize)
   , stack(stackSize)
   , callstack(callStackSize)
 {
-
+  /// TODO: size must never exceed initial reserved amount, check for that
+  // (otherwise some instances will become invalid)
+  initializer_list_buffer.reserve(256);
 }
 
 ExecutionContext::~ExecutionContext()

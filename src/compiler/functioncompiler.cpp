@@ -956,6 +956,9 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   Type var_type = input_var_type;
   if (input_var_type.baseType() == Type::Auto)
   {
+    if (value->is<program::InitializerList>())
+      return processVariableInitListDecl(var_decl, std::static_pointer_cast<program::InitializerList>(value));
+
     var_type = value->type();
     if (var_type.isConst())
       var_type = var_type.withFlag(Type::ConstFlag);
@@ -972,6 +975,11 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   // we could add copy elision
   value = ConversionProcessor::convert(engine(), value, conv);
   processVariableCreation(var_type, var_decl->name->getName(), value);
+}
+
+void FunctionCompiler::processVariableInitListDecl(const std::shared_ptr<ast::VariableDecl> & varDecl, const std::shared_ptr<program::InitializerList> & initlist)
+{
+  throw NotImplementedError{ dpos(varDecl), "Initializer list variables not implemented yet" };
 }
 
 void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)

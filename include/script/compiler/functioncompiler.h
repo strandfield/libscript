@@ -29,6 +29,7 @@ class Expression;
 class CompoundStatement;
 class Statement;
 class JumpStatement;
+class InitializerList;
 class IterationStatement;
 class SelectionStatement;
 class LambdaExpression;
@@ -182,6 +183,7 @@ private:
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init);
   void processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & varDecl, const Type & var_type, const std::shared_ptr<ast::AssignmentInitialization> & init);
+  void processVariableInitListDecl(const std::shared_ptr<ast::VariableDecl> & varDecl, const std::shared_ptr<program::InitializerList> & initlist);
   void processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value);
   void processVariableDestruction(const Variable & var);
   void processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop);

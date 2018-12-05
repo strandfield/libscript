@@ -10,6 +10,7 @@
 #include "script/class.h"
 #include "script/context.h"
 #include "script/enum.h"
+#include "script/function.h"
 #include "script/lambda.h"
 #include "script/namespace.h"
 #include "script/namespacealias.h"

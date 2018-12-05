@@ -339,8 +339,9 @@ public:
   Value accept(ExpressionVisitor &) override;
 };
 
-struct LIBSCRIPT_API InitializerList : public Expression
+class LIBSCRIPT_API InitializerList : public Expression
 {
+public:
   std::vector<std::shared_ptr<Expression>> elements;
   Type initializer_list_type;
 
