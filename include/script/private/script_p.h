@@ -33,6 +33,7 @@ public:
   std::vector<Type> global_types;
   std::map<std::string, int> globalNames;
   std::vector<diagnostic::Message> messages;
+  bool astlock;
   std::shared_ptr<ast::AST> ast;
   Scope exports;
 

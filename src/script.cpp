@@ -16,6 +16,7 @@ ScriptImpl::ScriptImpl(int index, Engine *e, const SourceFile & src)
   , id(index)
   , loaded(false)
   , source(src)
+  , astlock(false)
 {
 
 }
@@ -114,6 +115,22 @@ Scope Script::exports() const
 Ast Script::ast() const
 {
   return Ast{ d->ast };
+}
+
+/*!
+ * \fn void clearAst()
+ * \brief Destroys the script ast.
+ *
+ * Note that this does nothing if the ast is marked as locked.
+ * An ast is locked by the implementation when it may be needed later in time; 
+ * for example when the script contains templates.
+ */
+void Script::clearAst()
+{
+  if (d->astlock)
+    return;
+
+  d->ast = nullptr;
 }
 
 Engine * Script::engine() const

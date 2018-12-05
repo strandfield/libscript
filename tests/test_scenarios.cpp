@@ -99,5 +99,8 @@ TEST(Scenarios, accessing_ast) {
   auto decl = ast.declarations().back();
   ASSERT_TRUE(decl->is<ast::FunctionDecl>());
   ASSERT_EQ(decl->as<ast::FunctionDecl>().parameterName(0), "n");
+
+  // The Ast is no longer needed, we may request the Script to forget about it
+  s.clearAst();
 }
 

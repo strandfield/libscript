@@ -11,6 +11,7 @@ namespace script
 {
 
 class Scope;
+class Script;
 
 namespace compiler
 {
@@ -18,9 +19,8 @@ namespace compiler
 class LIBSCRIPT_API TemplateDefinition
 {
 public:
-  size_t line_offset_;
-  size_t source_offset_;
-  std::shared_ptr<ast::AST> ast_;
+  /// TODO: decide what to do with the ast
+  //std::shared_ptr<ast::AST> ast_;
   std::shared_ptr<ast::TemplateDeclaration> decl_;
 
   TemplateDefinition() = default;
@@ -30,7 +30,7 @@ public:
   std::shared_ptr<ast::ClassDecl> get_class_decl() const;
   std::shared_ptr<ast::FunctionDecl> get_function_decl() const;
 
-  static TemplateDefinition make(const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  static TemplateDefinition make(Script s, const std::shared_ptr<ast::TemplateDeclaration> & decl);
 
   TemplateDefinition & operator=(const TemplateDefinition &) = default;
 };

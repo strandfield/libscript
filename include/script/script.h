@@ -62,6 +62,7 @@ public:
   Scope exports() const;
 
   Ast ast() const;
+  void clearAst();
 
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }

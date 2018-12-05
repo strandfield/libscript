@@ -754,7 +754,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
 
   scp.invalidateCache(Scope::InvalidateTemplateCache);
 
-  ct.impl()->definition = TemplateDefinition::make(decl);
+  ct.impl()->definition = TemplateDefinition::make(script(), decl);
 }
 
 void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
@@ -772,7 +772,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
 
   scp.invalidateCache(Scope::InvalidateTemplateCache);
 
-  ft.impl()->definition = TemplateDefinition::make(decl);
+  ft.impl()->definition = TemplateDefinition::make(script(), decl);
 }
 
 Namespace ScriptCompiler::findEnclosingNamespace(const Scope & scp) const
@@ -834,7 +834,7 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
   auto ps = std::make_shared<PartialTemplateSpecializationImpl>(ct, std::move(params), scp, engine(), scp.symbol().impl());
-  ps->definition = TemplateDefinition::make(decl);
+  ps->definition = TemplateDefinition::make(script(), decl);
 
   ct.impl()->specializations.push_back(PartialTemplateSpecialization{ ps });
 }
