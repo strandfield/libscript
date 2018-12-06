@@ -10,6 +10,7 @@
 #include "script/functiontemplate.h"
 #include "script/namelookup.h"
 #include "script/templateargumentdeduction.h"
+#include "script/templatepatternmatching.h"
 
 #include "script/private/template_p.h"
 
@@ -211,8 +212,8 @@ std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> Template
   for (const auto & tps : specs)
   {
     TemplateArgumentDeduction deduc;
-    TemplatePatternMatching pattern{ &deduc, tps.parameterScope() };
-    if (!pattern.match(tps.arguments(), targs))
+    TemplatePatternMatching2 matcher{ ct, &deduc };
+    if (!matcher.match(tps.arguments(), targs))
       continue;
 
     std::vector<TemplateArgument> args;
@@ -253,8 +254,9 @@ std::pair<FunctionTemplate, std::vector<TemplateArgument>> TemplateOverloadSelec
     FunctionTemplate ft = ft_.asFunctionTemplate();
 
     TemplateArgumentDeduction deduc;
-    TemplatePatternMatching pattern{ &deduc, ft.argumentScope(targs) };
-    if (!pattern.match(ft.impl()->definition.get_function_decl(), proto))
+    TemplatePatternMatching2 matcher{ ft, &deduc };
+    matcher.setScope(ft.argumentScope(targs));
+    if (!matcher.match(ft.impl()->definition.get_function_decl(), proto))
       continue;
 
     std::vector<TemplateArgument> args;

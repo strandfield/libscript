@@ -62,41 +62,6 @@ private:
   bool process_next_deduction(std::vector<deduction::Deduction>::const_iterator & read, std::vector<deduction::Deduction>::iterator & write, std::vector<deduction::Deduction>::const_iterator end);
 };
 
-class TemplatePatternMatching
-{
-private:
-  TemplateArgumentDeduction *deductions_;
-  Scope scope_;
-  bool result_;
-
-public:
-  TemplatePatternMatching(TemplateArgumentDeduction *tad, const Scope & patternScope);
-
-  bool match(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs);
-  bool match(const std::shared_ptr<ast::FunctionDecl> & pattern, const Prototype & input);
-
-  inline TemplateArgumentDeduction & deductions() { return *deductions_; }
-
-  inline const Scope & scope() const { return scope_; }
-
-  inline Engine* engine() const { return scope_.engine(); }
-
-private:
-  void fail() { result_ = false; }
-
-private:
-  void match_(const ast::QualifiedType & pattern, const Type & input);
-  void match_(const ast::FunctionType & param, const Type & t);
-
-  // deduction from a template argument list
-  void match_(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs);
-  void match_(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input);
-
-  void match_(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input);
-
-  void record_deduction(int param_index, const TemplateArgument & value);
-};
-
 } // namespace script
 
 #endif // LIBSCRIPT_TEMPLATE_ARGUMENT_DEDUCTION_H
