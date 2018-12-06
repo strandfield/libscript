@@ -32,6 +32,7 @@ class LIBSCRIPT_API TemplateArgumentDeduction
 public:
   std::vector<deduction::Deduction> deductions_;
   bool success_;
+  /// TODO: add failure message
 
 public:
   TemplateArgumentDeduction();
@@ -54,53 +55,12 @@ public:
   void record_deduction(int param_index, const TemplateArgument & value);
   void agglomerate_deductions();
 
-  static TemplateArgumentDeduction process(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const Scope & scp, const std::shared_ptr<ast::TemplateDeclaration> & decl);
-  void fill(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const Scope & scp, const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  static TemplateArgumentDeduction process(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const std::shared_ptr<ast::TemplateDeclaration> & decl);
+  void fill(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const std::shared_ptr<ast::TemplateDeclaration> & decl);
 
 private:
   bool process_next_deduction(std::vector<deduction::Deduction>::const_iterator & read, std::vector<deduction::Deduction>::iterator & write, std::vector<deduction::Deduction>::const_iterator end);
 };
-
-class TemplateArgumentDeductionEngine
-{
-private:
-  TemplateArgumentDeduction *result_;
-
-  FunctionTemplate template_;
-  const std::vector<TemplateArgument> *arguments_;
-  const std::vector<Type> *types_;
-  Scope scope_;
-  std::shared_ptr<ast::FunctionDecl> declaration_;
-
-public:
-  TemplateArgumentDeductionEngine(TemplateArgumentDeduction *tad, const FunctionTemplate & ft, const std::vector<TemplateArgument> & result, const std::vector<Type> & types, const Scope & scp, const std::shared_ptr<ast::TemplateDeclaration> & decl);
-
-  inline TemplateArgumentDeduction & result() { return *result_; }
-
-  inline const FunctionTemplate & get_template() const { return template_; }
-  inline const std::vector<TemplateArgument> & get_arguments() const { return *arguments_; }
-  inline const std::vector<Type> & get_types() const { return *types_; }
-  inline const Scope & get_scope() const { return scope_; }
-
-  inline Engine* engine() const { return scope_.engine(); }
-
-  void process();
-
-private:
-  void deduce(const ast::FunctionParameter & param, const Type & t);
-
-  void deduce(const ast::QualifiedType & pattern, const Type & input);
-  void deduce(const ast::FunctionType & param, const Type & t);
-
-  // deduction from a template argument list
-  void deduce(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs);
-  void deduce(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input);
-
-  void deduce(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input);
-
-  void record_deduction(int param_index, const TemplateArgument & value);
-};
-
 
 class TemplatePatternMatching
 {

@@ -288,7 +288,7 @@ TEST(TemplateTests, argument_deduction_1) {
   std::vector<Type> types{ Type::Int };
   Scope scp{ engine.rootNamespace() };
 
-  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 1);
@@ -298,7 +298,7 @@ TEST(TemplateTests, argument_deduction_1) {
   
   arguments = std::vector<TemplateArgument>{ TemplateArgument{ Type::Int } };
   types = std::vector<Type>{ Type::Float };
-  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 0);
@@ -331,7 +331,7 @@ TEST(TemplateTests, argument_deduction_2) {
   std::vector<Type> types{ Type::Int, Type::Int };
   Scope scp{ engine.rootNamespace() };
 
-  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 1);
@@ -340,7 +340,7 @@ TEST(TemplateTests, argument_deduction_2) {
   //std::cout << "Deduced " << deduction.deduction_name(0) << " = " << engine.typeName(deduction.deduced_value(0).type) << std::endl;
 
   types = std::vector<Type>{ Type::Int, Type::Float };
-  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.failure());
   ASSERT_EQ(deduction.get_deductions().size(), 2);
@@ -365,7 +365,7 @@ TEST(TemplateTests, argument_deduction_3) {
 
   FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
-    .setScope(Scope{})
+    .setScope(Scope{engine.rootNamespace()})
     .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
     .get();
 
@@ -374,7 +374,7 @@ TEST(TemplateTests, argument_deduction_3) {
   std::vector<Type> types{ array_int };
   Scope scp{ engine.rootNamespace() };
 
-  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 1);
@@ -383,7 +383,7 @@ TEST(TemplateTests, argument_deduction_3) {
   // std::cout << "Deduced " << deduction.deduction_name(0) << " = " << engine.typeName(deduction.deduced_value(0).type) << std::endl;
 
   types = std::vector<Type>{ Type::Int };
-  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 0);
@@ -420,7 +420,7 @@ TEST(TemplateTests, argument_deduction_4) {
   std::vector<Type> types{ function_type.type(), Type::Int };
   Scope scp{ engine.rootNamespace() };
 
-  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, scp, template_declaration);
+  TemplateArgumentDeduction deduction = TemplateArgumentDeduction::process(function_template, arguments, types, template_declaration);
 
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 2);
@@ -436,10 +436,10 @@ TEST(TemplateTests, argument_deduction_5) {
 
   const char *source =
     "  template<typename T>                     "
-    "  int foo(const void(T) func) { }          "
+    "  int foo(void(T) func) { }          "
     "                                           "
     "  template<typename T>                     "
-    "  int bar(const void(const T) func) { }    ";
+    "  int bar(void(const T) func) { }    ";
 
   Engine engine;
   engine.setup();
@@ -464,25 +464,25 @@ TEST(TemplateTests, argument_deduction_5) {
   TemplateArgumentDeduction deduction;
 
   inputs = std::vector<Type>{ create_func_type(Type::Int) };
-  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.scope(), foo.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.impl()->definition.decl_);
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
 
   inputs = std::vector<Type>{ create_func_type(Type{Type::Int}.withConst()) };
-  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.scope(), foo.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.impl()->definition.decl_);
   ASSERT_TRUE(deduction.success()); 
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type{ Type::Int }.withConst());
 
   inputs = std::vector<Type>{ create_func_type(Type{ Type::Int }.withConst()) };
-  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.scope(), bar.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.impl()->definition.decl_);
   ASSERT_TRUE(deduction.success()); 
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
 
   inputs = std::vector<Type>{ create_func_type(Type::Int) };
-  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.scope(), bar.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.impl()->definition.decl_);
   ASSERT_TRUE(deduction.success()); /// TODO : should it be a success in this case ?
   ASSERT_EQ(deduction.get_deductions().size(), 0);
 }

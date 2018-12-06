@@ -86,7 +86,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
     if (is_native)
       ft.native_callbacks().deduction(deduction_result, ft, args, types);
     else
-      deduction_result.fill(ft, args, types, ft.scope(), ft.impl()->definition.decl_);
+      deduction_result.fill(ft, args, types, ft.impl()->definition.decl_);
 
     if (!deduction_result.success())
       return Function{};
