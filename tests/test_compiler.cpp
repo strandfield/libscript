@@ -99,7 +99,10 @@ TEST(CompilerTests, function1) {
   using namespace script;
 
   const char *source =
-    "int f(int a, int b) { return 0; } ";
+    " // This single line comment is going to be ignored \n "
+    " /* This multiline comment is going to              \n "
+    "    be ignored too! */                              \n "
+    "int f(int a, int b) { return 0; }                      ";
 
   Engine engine;
   engine.setup();

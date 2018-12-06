@@ -612,6 +612,12 @@ TEST(CoreUtilsTests, operator_names) {
   ASSERT_EQ(Operator::getFullName(DivisionAssignmentOperator), "operator/=");
   ASSERT_EQ(Operator::getFullName(AdditionAssignmentOperator), "operator+=");
   ASSERT_EQ(Operator::getFullName(SubstractionAssignmentOperator), "operator-=");
+
+  ASSERT_EQ(Operator::getSymbol(AssignmentOperator), "=");
+  ASSERT_EQ(Operator::getSymbol(PostIncrementOperator), "++");
+  ASSERT_EQ(Operator::getSymbol(PreIncrementOperator), "++");
+  ASSERT_EQ(Operator::getSymbol(LeftShiftAssignmentOperator), "<<=");
+  ASSERT_EQ(Operator::getSymbol(LogicalAndOperator), "&&");
 };
 
 TEST(CoreUtilsTests, access_specifiers) {
@@ -705,14 +711,20 @@ TEST(CoreUtilsTests, test_names) {
 
   a = Name{ Name::CastTag{}, Type::Int }; // operator int
   b = Name{ Name::CastTag{}, Type::Int };
+  ASSERT_EQ(a.kind(), Name::CastName);
   ASSERT_TRUE(a == b);
 
   a = "foo";
   b = "foo";
   ASSERT_TRUE(a == b);
 
+  a = b;
+  ASSERT_TRUE(b.kind() != Name::InvalidName);
   a = std::move(b);
   ASSERT_EQ(b.kind(), Name::InvalidName);
+
+  Name c{std::move(a)}; // operator""km
+  ASSERT_EQ(a.kind(), Name::InvalidName);
 };
 
 
