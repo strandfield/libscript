@@ -7,12 +7,10 @@
 
 #include "script/templateargumentdeduction.h"
 
-
-
 namespace script
 {
 
-class LIBSCRIPT_API TemplatePatternMatching2
+class LIBSCRIPT_API TemplatePatternMatching
 {
 public:
 
@@ -30,7 +28,7 @@ private:
   Mode working_mode_;
 
 public:
-  TemplatePatternMatching2(const Template & tmplt, TemplateArgumentDeduction *tad);
+  TemplatePatternMatching(const Template & tmplt, TemplateArgumentDeduction *tad);
 
   bool match(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs);
   bool match(const std::shared_ptr<ast::FunctionDecl> & pattern, const Prototype & input);

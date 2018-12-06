@@ -20,7 +20,7 @@
 namespace script
 {
 
-TemplatePatternMatching2::TemplatePatternMatching2(const Template & tmplt, TemplateArgumentDeduction *tad)
+TemplatePatternMatching::TemplatePatternMatching(const Template & tmplt, TemplateArgumentDeduction *tad)
   : deductions_(tad)
   , template_(tmplt)
   , scope_(tmplt.parameterScope())
@@ -29,7 +29,7 @@ TemplatePatternMatching2::TemplatePatternMatching2(const Template & tmplt, Templ
   arguments_ = &emptyargs_;
 }
 
-bool TemplatePatternMatching2::match(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
+bool TemplatePatternMatching::match(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
 {
   working_mode_ = PM_TemplateSelection;
 
@@ -45,7 +45,7 @@ bool TemplatePatternMatching2::match(const std::vector<std::shared_ptr<ast::Node
   return deductions_->success();
 }
 
-bool TemplatePatternMatching2::match(const std::shared_ptr<ast::FunctionDecl> & pattern, const Prototype & input)
+bool TemplatePatternMatching::match(const std::shared_ptr<ast::FunctionDecl> & pattern, const Prototype & input)
 {
   working_mode_ = PM_TemplateSelection;
 
@@ -63,7 +63,7 @@ bool TemplatePatternMatching2::match(const std::shared_ptr<ast::FunctionDecl> & 
   return deductions_->success();
 }
 
-void TemplatePatternMatching2::deduce(const std::shared_ptr<ast::FunctionDecl> & pattern, const std::vector<Type> & inputs)
+void TemplatePatternMatching::deduce(const std::shared_ptr<ast::FunctionDecl> & pattern, const std::vector<Type> & inputs)
 {
   working_mode_ = PM_Deduction;
 
@@ -81,7 +81,7 @@ void TemplatePatternMatching2::deduce(const std::shared_ptr<ast::FunctionDecl> &
   deductions_->agglomerate_deductions();
 }
 
-void TemplatePatternMatching2::deduce(const ast::FunctionParameter & param, const Type & t)
+void TemplatePatternMatching::deduce(const ast::FunctionParameter & param, const Type & t)
 {
   if (param.type.functionType)
   {
@@ -95,7 +95,7 @@ void TemplatePatternMatching2::deduce(const ast::FunctionParameter & param, cons
   match_(pattern, t.baseType());
 }
 
-bool TemplatePatternMatching2::match_(const ast::QualifiedType & pattern, const Type & input)
+bool TemplatePatternMatching::match_(const ast::QualifiedType & pattern, const Type & input)
 {
   if (pattern.constQualifier.isValid() && !input.isConst())
     return false;
@@ -157,7 +157,7 @@ bool TemplatePatternMatching2::match_(const ast::QualifiedType & pattern, const 
   }
 }
 
-bool TemplatePatternMatching2::match_(const ast::FunctionType & pattern, const Type & input)
+bool TemplatePatternMatching::match_(const ast::FunctionType & pattern, const Type & input)
 {
   if (!input.isFunctionType())
     return false;
@@ -179,7 +179,7 @@ bool TemplatePatternMatching2::match_(const ast::FunctionType & pattern, const T
   return true;
 }
 
-bool TemplatePatternMatching2::match_(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
+bool TemplatePatternMatching::match_(const std::vector<std::shared_ptr<ast::Node>> & pattern, const std::vector<TemplateArgument> & inputs)
 {
   // we should have pattern.size() < inputs.size() 
   // because some arguments may be missing in the pattern but not in the instantiated template
@@ -194,7 +194,7 @@ bool TemplatePatternMatching2::match_(const std::vector<std::shared_ptr<ast::Nod
   return true;
 }
 
-bool TemplatePatternMatching2::match_(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input)
+bool TemplatePatternMatching::match_(const std::shared_ptr<ast::Node> & pattern, const TemplateArgument & input)
 {
   if (pattern->is<ast::TypeNode>())
   {
@@ -265,7 +265,7 @@ bool TemplatePatternMatching2::match_(const std::shared_ptr<ast::Node> & pattern
   }
 }
 
-bool TemplatePatternMatching2::match_(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input)
+bool TemplatePatternMatching::match_(const std::shared_ptr<ast::ScopedIdentifier> & pattern, const Type & input)
 {
   if (pattern->rhs->is<ast::TemplateIdentifier>())
   {
@@ -300,7 +300,7 @@ bool TemplatePatternMatching2::match_(const std::shared_ptr<ast::ScopedIdentifie
 }
 
 
-void TemplatePatternMatching2::record_deduction(int param_index, const TemplateArgument & value)
+void TemplatePatternMatching::record_deduction(int param_index, const TemplateArgument & value)
 {
   if (param_index < (int)arguments_->size()) // this argument does not need to be deduced
     return;

@@ -212,7 +212,7 @@ std::pair<PartialTemplateSpecialization, std::vector<TemplateArgument>> Template
   for (const auto & tps : specs)
   {
     TemplateArgumentDeduction deduc;
-    TemplatePatternMatching2 matcher{ ct, &deduc };
+    TemplatePatternMatching matcher{ ct, &deduc };
     if (!matcher.match(tps.arguments(), targs))
       continue;
 
@@ -254,7 +254,7 @@ std::pair<FunctionTemplate, std::vector<TemplateArgument>> TemplateOverloadSelec
     FunctionTemplate ft = ft_.asFunctionTemplate();
 
     TemplateArgumentDeduction deduc;
-    TemplatePatternMatching2 matcher{ ft, &deduc };
+    TemplatePatternMatching matcher{ ft, &deduc };
     matcher.setScope(ft.argumentScope(targs));
     if (!matcher.match(ft.impl()->definition.get_function_decl(), proto))
       continue;

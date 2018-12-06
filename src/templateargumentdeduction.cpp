@@ -71,7 +71,7 @@ TemplateArgumentDeduction TemplateArgumentDeduction::process(FunctionTemplate ft
 
 void TemplateArgumentDeduction::fill(FunctionTemplate ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types, const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
-  TemplatePatternMatching2 pm{ ft, this };
+  TemplatePatternMatching pm{ ft, this };
   pm.setArguments(args);
   pm.deduce(std::static_pointer_cast<ast::FunctionDecl>(decl->declaration), types);
 }
