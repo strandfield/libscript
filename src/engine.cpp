@@ -126,13 +126,19 @@ static Value apply_conversion(const Value & arg, const Conversion & conv, Engine
     return apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
 
   Value ret = apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
+  if(!conv.firstStandardConversion().isReferenceConversion())
+    engine->manage(ret);
 
-  /// TODO : we need to define the behavior of invoking a constructor
-  // since conv.userDefinedConversion() can be a ctor
-  // Should it return the new object has it does currently
-  // or should it take an uninitialized object + the args and return void
-  // I think the second option is better and should be implemented
-  ret = engine->invoke(conv.userDefinedConversion(), { ret }); 
+  if (conv.userDefinedConversion().isCast())
+  {
+    ret = engine->invoke(conv.userDefinedConversion(), { ret });
+  }
+  else
+  {
+    Value obj = engine->allocate(conv.destType());
+    engine->invoke(conv.userDefinedConversion(), { obj, ret });
+    ret = obj;
+  }
 
   return apply_standard_conversion(ret, conv.secondStandardConversion(), engine);
 }

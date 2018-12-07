@@ -54,9 +54,10 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
 
   try
   {
+    const int offset = (obj != nullptr ? 1 : 0);
     for (int i(0); i < argc; ++i)
     {
-      Value arg = e->cast(begin[i], proto.at(i));
+      Value arg = e->cast(begin[i], proto.at(i + offset));
       if (!proto.at(i).isReference())
         e->manage(arg);
       mExecutionContext->stack.push(arg);
@@ -304,8 +305,9 @@ void Interpreter::visit(const program::PlacementStatement & placement)
 
 void Interpreter::visit(const program::PushDataMember & ims)
 {
+  Value object = mExecutionContext->callstack.top()->arg(0);
   Value member = eval(ims.value);
-  mExecutionContext->callstack.top()->arg(0).impl()->push_member(member);
+  object.impl()->push_member(member);
 }
 
 void Interpreter::visit(const program::ReturnStatement & rs) 

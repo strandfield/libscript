@@ -342,6 +342,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
 
   if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
   {
+    /// TODO: catch instantiation errors (e.g. TemplateInstantiationError)
     templateProcessor().instantiate(selected);
   }
 
