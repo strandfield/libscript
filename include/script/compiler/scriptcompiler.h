@@ -173,6 +173,8 @@ protected:
 
   FunctionTemplateProcessor default_ftp_;
   FunctionTemplateProcessor *ftp_;
+
+  bool mReprocessingIncompleteFunctions;
 };
 
 } // namespace compiler

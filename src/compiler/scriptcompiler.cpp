@@ -74,6 +74,7 @@ ScriptCompiler::ScriptCompiler(Engine *e)
   : mEngine(e)
   , variable_(e)
   , modules_(e)
+  , mReprocessingIncompleteFunctions(false)
 {
 
   scope_statements_.scope_ = &mCurrentScope;
@@ -155,6 +156,8 @@ void ScriptCompiler::processNext()
 {
   if (!mIncompleteFunctionDeclarations.empty())
   {
+    mReprocessingIncompleteFunctions = true;
+
     do
     {
       auto task = mIncompleteFunctionDeclarations.front();
@@ -162,6 +165,8 @@ void ScriptCompiler::processNext()
 
       reprocess(task);
     } while (!mIncompleteFunctionDeclarations.empty());
+
+    mReprocessingIncompleteFunctions = false;
 
     return;
   }
@@ -531,6 +536,9 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
   }
   catch (compiler::InvalidTypeName &)
   {
+    if (mReprocessingIncompleteFunctions)
+      throw;
+
     log(diagnostic::warning() << dpos(declaration) << "Type name could not be resolved, function will be reprocessed later");
     mIncompleteFunctionDeclarations.push(ScopedDeclaration{ currentScope(), declaration });
   }
