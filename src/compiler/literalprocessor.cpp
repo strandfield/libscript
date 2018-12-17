@@ -48,13 +48,13 @@ Value LiteralProcessor::generate(Engine *e, const std::shared_ptr<ast::Literal> 
   }
   case ast::NodeType::UserDefinedLiteral:
   {
-    throw NotImplementedError{ "LiteralProcessor::generate() : User defined literal not supported here" };
+    throw NotImplemented{ "LiteralProcessor::generate() : User defined literal not supported here" };
   }
   default:
     break;
   }
 
-  throw NotImplementedError{ "LiteralProcessor::generate() : kind of literal not implemented" };
+  throw NotImplemented{ "LiteralProcessor::generate() : kind of literal not implemented" };
 }
 
 Value LiteralProcessor::generate(Engine *e, std::string & str)
@@ -138,7 +138,7 @@ void LiteralProcessor::postprocess(std::string & sl)
       *write = '\0';
       break;
     default:
-      throw NotImplementedError{ "Invalid escaped character" };
+      throw NotImplemented{ "Invalid escaped character" };
     }
 
     ++write;

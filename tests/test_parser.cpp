@@ -853,7 +853,7 @@ TEST(ParserTests, illegal_class_friend_decl) {
   using namespace script;
 
   parser::Parser parser{ script::SourceFile::fromString(source) };
-  ASSERT_THROW(parser.parseStatement(), parser::UnexpectedFriendKeyword);
+  ASSERT_THROW(parser.parseStatement(), parser::IllegalUseOfKeyword);
 }
 
 TEST(ParserTests, class_friend_decl) {

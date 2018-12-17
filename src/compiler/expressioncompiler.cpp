@@ -35,7 +35,7 @@ namespace compiler
 
 std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le)
 {
-  throw NotImplementedError{ "Default LambdaProcessor cannot generate lambda expression" };
+  throw NotImplemented{ "Default LambdaProcessor cannot generate lambda expression" };
 }
 
 ExpressionCompiler::ExpressionCompiler()
@@ -162,7 +162,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(array_expr->elements);
 
   if (args.size() == 0)
-    throw NotImplementedError{ "ExpressionCompiler::generateArrayConstruction() : array of size 0" };
+    throw NotImplemented{ "ExpressionCompiler::generateArrayConstruction() : array of size 0" };
 
   const Type element_type = args.front()->type().baseType();
   if (element_type == Type::InitializerList)
@@ -328,7 +328,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName);
 
   if (lookup.resultType() == NameLookup::UnknownName)
-    throw NotImplementedError{ dpos(call), std::string{"Callee was not declared in this scope :"} + dstr(callee) };
+    throw NoSuchCallee{ dpos(callee) };
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(lookup.functions(), args, object))
@@ -365,7 +365,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVirtualCall(con
   const auto & vtable = c.vtable();
   auto it = std::find(vtable.begin(), vtable.end(), f);
   if (it == vtable.end())
-    throw NotImplementedError{ "Implementation error when calling virtual member" };
+    throw NotImplemented{ "Implementation error when calling virtual member" };
 
   auto object = args.front();
   args.erase(args.begin());
@@ -600,7 +600,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpr
 {
   auto con = generateExpression(ce->condition);
   if (con->type().baseType() != Type::Boolean)
-    throw NotImplementedError{ dpos(ce->condition), "Condition of ?: must be of type bool" };
+    throw NotImplemented{ "Condition of ?: must be of type bool" };
 
   auto tru = generateExpression(ce->onTrue);
   auto fal = generateExpression(ce->onFalse);
@@ -649,7 +649,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
     break;
   }
 
-  throw NotImplementedError{ dpos(identifier), "ExpressionCompiler::generateVariableAccess() : kind of variable not implemented" };
+  throw NotImplemented{ "ExpressionCompiler::generateVariableAccess() : kind of variable not implemented" };
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)

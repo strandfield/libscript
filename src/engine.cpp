@@ -603,7 +603,9 @@ static Value default_construct_fundamental(int type, Engine *e)
     break;
   }
 
-  throw std::runtime_error{ "default_construct_fundamental : Implementation error" };
+  /// Implementation error
+  assert(false);
+  std::abort();
 }
 
 /*!
@@ -616,6 +618,9 @@ static Value default_construct_fundamental(int type, Engine *e)
  * If \c t is an enum type, a value of the same type must be provided.
  * If \c t is an object type, overload resolution is performed to select a 
  * suitable constructor.
+ *
+ * On failure, this function throws a \t ConstructionError with a code describing 
+ * the error (e.g. NoMatchingConstructor, ConstructorIsDeleted, TooManyArgumentInInitialization, ...).
  */
 Value Engine::construct(Type t, const std::vector<Value> & args)
 {
@@ -625,9 +630,9 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
     const auto & ctors = cla.constructors();
     Function selected = OverloadResolution::selectConstructor(ctors, args);
     if (selected.isNull())
-      throw std::runtime_error{ "No valid constructor could be found" };
+      throw NoMatchingConstructor{};
     else if (selected.isDeleted())
-      throw std::runtime_error{ "The selected constructor is deleted" };
+      throw ConstructorIsDeleted{};
 
     Value result = allocate(t.withoutRef());
     d->interpreter->call(selected, &result, args.data(), args.data() + args.size());
@@ -636,7 +641,7 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   else if (t.isFundamentalType())
   {
     if (args.size() > 1)
-      throw std::runtime_error{ "Too many arguments provided" };
+      throw TooManyArgumentInInitialization{};
 
     if (args.size() == 0)
       return default_construct_fundamental(t.baseType().data(), this);
@@ -649,16 +654,18 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   }
   else if (t.isEnumType())
   {
-    if (args.size() != 1)
-      throw std::runtime_error{ "Incorrect argument count" };
+    if (args.size() > 1)
+      throw TooManyArgumentInInitialization{};
+    else if(args.size() == 0)
+      throw TooFewArgumentInInitialization{};
 
     Value arg = args.front();
     if (arg.type().baseType() != t.baseType())
-      throw std::runtime_error{ "Could not construct enumeration from a different enumeration-type" };
+      throw NoMatchingConstructor{}; /// TODO: throw something else ?
     return copy(arg);
   }
 
-  throw std::runtime_error{ "Could not construct value of given type with prodived arguments" };
+  throw NotImplemented{ "Engine::construct() : case not implemented" };
 }
 
 /*!
@@ -823,7 +830,8 @@ static Value copy_fundamental(const Value & val, Engine *e)
     break;
   }
 
-  throw std::runtime_error{ "copy_fundamental: Implementation error" };
+  assert(false);
+  std::abort();
 }
 
 static Value copy_enumvalue(const Value & val, Engine *e)
@@ -849,7 +857,9 @@ static Lambda copy_lambda(const Lambda & l, Engine *e)
  * \fn Value copy(const Value & val)
  * \param input value
  * \brief Creates a copy of a value.
- *
+ * 
+ * Throws \t CopyError on failure. 
+ * This may happen if the type has a deleted or no copy constructor.
  */
 Value Engine::copy(const Value & val)
 {
@@ -862,7 +872,7 @@ Value Engine::copy(const Value & val)
     Class cla = getClass(val.type());
     Function copyCtor = cla.copyConstructor();
     if (copyCtor.isNull() || copyCtor.isDeleted())
-      throw std::runtime_error{ "Value's type is not copy constructible." };
+      throw CopyError{};
 
     Value object = allocate(cla.id());
     invoke(copyCtor, { object, val });
@@ -875,7 +885,7 @@ Value Engine::copy(const Value & val)
 
   /// TODO : implement copy of closures and functions
 
-  throw std::runtime_error{ "Cannot copy given value" };
+  throw CopyError{};
 }
 
 /*!
@@ -921,12 +931,13 @@ bool Engine::canCast(const Type & srcType, const Type & destType)
  * \param dest type
  * \brief Converts a value to the given type.
  *
+ * Throws \t ConversionError on failure.
  */
 Value Engine::cast(const Value & val, const Type & destType)
 {
   Conversion conv = conversion(val.type(), destType);
   if (conv.isInvalid())
-    throw std::runtime_error{ "Could not convert value to desired type" }; /// TODO : emit better diagnostic
+    throw ConversionError{};
 
   return apply_conversion(val, conv, this);
 }
@@ -1041,7 +1052,7 @@ ClosureType Engine::getLambda(Type id) const
 }
 
 template<typename T>
-void reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t end)
+bool reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t end)
 {
   if (list.size() < end)
     list.resize(end);
@@ -1049,9 +1060,11 @@ void reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t 
   for (size_t i(begin); i < end; ++i)
   {
     if (!list.at(i).isNull() && list.at(i) != value)
-      throw std::runtime_error{ "Failed to reserve type range" };
+      return false; // Type already used
     list[i] = value;
   }
+
+  return true;
 }
 
 /*!
@@ -1061,17 +1074,18 @@ void reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t 
  * \brief Reserves a type range.
  *
  * Reserved types cannot be attributed unless they are explicitly requested.
+ * Returns true on success; false otherwise.
  */
-void Engine::reserveTypeRange(int begin, int end)
+bool Engine::reserveTypeRange(int begin, int end)
 {
   const Type begin_type{ begin };
   const Type end_type{ end };
 
   if (!begin_type.isValid() || !end_type.isValid() || begin_type.category() != end_type.category())
-    throw std::runtime_error{ "Invalid type range" };
+    return false; // Invalid type range
 
   if (begin_type.isFunctionType() || begin_type.isClosureType())
-    throw std::runtime_error{ "Closure types and function types cannot be reserved yet" };
+    return false; //Closure types and function types cannot be reserved yet
 
   const int index_mask = Type::EnumFlag - 1;
 
@@ -1079,9 +1093,11 @@ void Engine::reserveTypeRange(int begin, int end)
   end = end & index_mask;
 
   if (begin_type.isEnumType())
-    reserve_range(d->enums, d->reservations.enum_type, begin, end);
+    return reserve_range(d->enums, d->reservations.enum_type, begin, end);
   else if (begin_type.isObjectType())
-    reserve_range(d->classes, d->reservations.class_type, begin, end);
+    return reserve_range(d->classes, d->reservations.class_type, begin, end);
+
+  return false;
 }
 
 /*!
@@ -1255,7 +1271,8 @@ Namespace Engine::enclosingNamespace(Type t) const
   else if (t.isEnumType())
     return getEnum(t).enclosingNamespace();
 
-  throw std::runtime_error{ "Engine::enclosingNamespace() : type not supported" };
+  // Reasonable default
+  return this->rootNamespace();
 }
 
 /*!
@@ -1264,6 +1281,7 @@ Namespace Engine::enclosingNamespace(Type t) const
  * \param scope
  * \brief Searchs for a type by name.
  *
+ * Throws \t UnknownTypeError if the type could not be resolved.
  */
 Type Engine::typeId(const std::string & typeName, Scope scope) const
 {
@@ -1286,7 +1304,7 @@ Type Engine::typeId(const std::string & typeName, Scope scope) const
   NameLookup lookup = NameLookup::resolve(typeName, scope);
   Type t = lookup.typeResult();
   if (t.isNull())
-    throw std::runtime_error{ "Engine::typeId() : invalid type name" };
+    throw UnknownTypeError{};
   return t;
 }
 
@@ -1321,7 +1339,7 @@ std::string Engine::typeName(Type t) const
   if (index < 7)
     return types[index];
 
-  throw std::runtime_error{ "Engine::typeName() : Unknown type" };
+  throw UnknownTypeError{};
 }
 
 /*!
@@ -1363,6 +1381,8 @@ void Engine::setContext(Context con)
  * \brief Evaluates an expression.
  *
  * The \m currentContext is used to evaluate the expression.
+ *
+ * Throws \t EvaluationError on failure.
  */
 Value Engine::eval(const std::string & command)
 {
@@ -1375,11 +1395,10 @@ Value Engine::eval(const std::string & command)
   catch (compiler::CompilerException & ex)
   {
     diagnostic::MessageBuilder msb{ diagnostic::Error, this };
-    ex.print(msb);
-
+    msb << ex;
     diagnostic::Message mssg = msb.build();
 
-    throw std::runtime_error{ mssg.to_string().c_str() };
+    throw EvaluationError{ mssg.to_string() };
   }
 
   return d->interpreter->eval(expr);

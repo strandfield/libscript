@@ -30,15 +30,6 @@
 namespace script
 {
 
-diagnostic::MessageBuilder & operator<<(diagnostic::MessageBuilder & builder, const compiler::CompilerException & ex)
-{
-  builder << diagnostic::Code{ ex.code() };
-  if (ex.pos.line >= 0)
-    builder << ex.pos;
-  ex.print(builder);
-  return builder;
-}
-
 namespace compiler
 {
 
@@ -204,6 +195,10 @@ bool Compiler::compile(Script s)
   catch (const CompilerException & e)
   {
     session()->log(e);
+  }
+  catch (const NotImplemented & ex)
+  {
+    session()->log(diagnostic::error() << "NotImplemented: " << ex.message);
   }
   //catch (...)
   //{

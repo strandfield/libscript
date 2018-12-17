@@ -7,6 +7,10 @@
 
 #include "libscriptdefs.h"
 
+#include "script/exception.h"
+#include "script/operators.h"
+#include "script/parser/token.h"
+
 #include <string>
 
 namespace script
@@ -16,34 +20,24 @@ enum class AccessSpecifier;
 class Engine;
 class Type;
 
+namespace parser
+{
+class ParserException;
+} // namespace parser
+
+namespace compiler
+{
+class CompilerException;
+} // namespace compiler
+
 namespace diagnostic
 {
 
-std::string format(std::string str);
+const std::string & format(const std::string & str);
 std::string format(std::string str, const std::string & a);
-
-template<typename...Args>
-std::string format(std::string str, const std::string & a, const Args &... args)
-{
-  str = format(str, a);
-  return format(str, args...);
-}
-
-inline std::string repr(bool b) { return std::to_string(b); }
-inline std::string repr(char c) { return std::string{ c }; }
-inline std::string repr(int n) { return std::to_string(n); }
-inline const std::string & repr(const std::string & str) { return str; }
-
-inline std::string repr(bool b, Engine *) { return repr(b); }
-inline std::string repr(char c, Engine *) { return repr(c); }
-inline std::string repr(unsigned int n, Engine *) { return repr(int(n)); }
-inline std::string repr(unsigned long n, Engine *) { return repr(int(n)); }
-inline std::string repr(int n, Engine *) { return repr(n); }
-inline const std::string & repr(const std::string & str, Engine *) { return str; }
-
-std::string repr(const Type & t, Engine *e = nullptr);
-std::string repr(const AccessSpecifier & as, Engine *e = nullptr);
-
+std::string format(std::string str, const std::string & arg1, const std::string & arg2);
+std::string format(std::string str, const std::string & arg1, const std::string & arg2, const std::string & arg3);
+std::string format(std::string str, const std::string & arg1, const std::string & arg2, const std::string & arg3, const std::string & arg4);
 
 enum Severity {
   Info = 1,
@@ -58,54 +52,37 @@ enum Verbosity {
   Pedantic = 4,
 };
 
-class LIBSCRIPT_API Code
-{
-public:
-  Code() = default;
-  Code(const Code &) = default;
-  ~Code() = default;
-
-  Code(const std::string & str)
-    : mValue(str) { }
-
-  const std::string & value() const { return mValue; }
-
-  Code & operator=(const Code &) = default;
-
-private:
-  std::string mValue;
-};
-
-/// Format : [Severity](Code)line:col: content
+/// Format : [Severity]line:col: content
 class LIBSCRIPT_API Message
 {
 public:
-  Message() = default;
+  Message(Severity severity = Info, ErrorCode code = ErrorCode::NoError);
   Message(const Message &) = default;
 
-  Message(const std::string & str);
-  Message(std::string && str);
+  Message(const std::string & str, Severity severity = Info, ErrorCode code = ErrorCode::NoError);
+  Message(std::string && str, Severity severity = Info, ErrorCode code = ErrorCode::NoError);
   ~Message() = default;
 
-  Severity severity() const;
-  std::string code() const;
-  const std::string & message() const;
-  inline const std::string & to_string() const { return message(); }
-  std::string content() const;
+  inline Severity severity() const { return mSeverity; }
+  std::string message() const;
+  inline std::string to_string() const { return message(); }
+  const std::string & content() const;
 
-  int line() const;
-  int column() const;
+  inline const ErrorCode & code() const { return mCode; }
+
+  inline int line() const { return mLine; }
+  inline int column() const { return mColumn; }
 
   Message & operator=(const Message & other) = default;
   Message & operator=(Message && other);
 
 private:
-  static bool read_severity(const std::string & message, size_t & pos);
-  static bool read_code(const std::string & message, size_t & pos);
-  static bool read_pos(const std::string & message, size_t & pos);
-
-private:
-  std::string mMessage;
+  friend class MessageBuilder;
+  int16_t mLine;
+  int16_t mColumn;
+  Severity mSeverity;
+  ErrorCode mCode;
+  std::string mContent;
 };
 
 
@@ -114,6 +91,9 @@ line_t line(int l);
 
 struct pos_t { int line;  int column; };
 pos_t pos(int l, int column);
+inline pos_t nullpos() { return pos_t{ -1, -1 }; }
+
+bool isCompilerError(ErrorCode code);
 
 class MessageBuilder
 {
@@ -124,18 +104,32 @@ public:
   
   inline Engine * engine() const { return mEngine; }
 
+  inline static std::string repr(bool b) { return std::to_string(b); }
+  inline static std::string repr(char c) { return std::string{ c }; }
+  inline static std::string repr(unsigned int n) { return std::to_string(int(n)); }
+  inline static std::string repr(unsigned long n) { return std::to_string(int(n)); }
+  inline static std::string repr(int n) { return std::to_string(n); }
+  inline static const std::string & repr(const std::string & str) { return str; }
+  static std::string repr(script::AccessSpecifier as);
+  static std::string repr(script::OperatorName op);
+  std::string repr(const Type & t) const;
+  std::string repr(const parser::Token & tok) const;
+  const std::string & repr(const parser::Token::Type & tok) const;
+
   template<typename...Args>
   std::string format(const std::string & fmt, const Args &... args)
   {
-    return diagnostic::format(fmt, repr(args, engine())...);
+    return diagnostic::format(fmt, repr(args)...);
   }
 
-  MessageBuilder & operator<<(const Code & c);
   MessageBuilder & operator<<(int n);
   MessageBuilder & operator<<(line_t l);
   MessageBuilder & operator<<(pos_t p);
   MessageBuilder & operator<<(const std::string & str);
   MessageBuilder & operator<<(std::string && str);
+  MessageBuilder & operator<<(const Exception & ex);
+  MessageBuilder & operator<<(const parser::ParserException & ex);
+  MessageBuilder & operator<<(const compiler::CompilerException & ex);
   inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }
 
   inline MessageBuilder & operator<<(Engine *e) { mEngine = e; return *(this); }
@@ -143,15 +137,15 @@ public:
   template<typename T>
   MessageBuilder & operator<<(const T & as)
   {
-    return (*this) << repr(as, engine());
+    return (*this) << repr(as);
   }
 
   Message build() const;
   operator Message() const;
 
   Engine *mEngine;
+  ErrorCode mCode;
   Severity mSeverity;
-  Code mCode;
   std::string mBuffer;
   int mLine;
   int mColumn;

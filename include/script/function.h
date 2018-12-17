@@ -46,8 +46,6 @@ public:
   const Type & parameter(int index) const;
   const Type & returnType() const;
 
-  [[deprecated("Convey misleading information about behavior of a Function object")]]
-  bool accepts(int argc) const;
   [[deprecated("Use defaultArguments().size() != 0 instead")]]
   bool hasDefaultArguments() const;
   [[deprecated("Use defaultArguments().size() instead")]]

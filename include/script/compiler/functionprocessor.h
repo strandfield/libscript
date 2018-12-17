@@ -72,7 +72,7 @@ public:
     if (fundecl->explicitKeyword.isValid())
     {
       if (!fundecl->is<ast::ConstructorDecl>())
-        throw NotImplementedError{ dpos(fundecl->explicitKeyword), "Invalid use of explicit keyword" };
+        throw InvalidUseOfExplicitKeyword{ dpos(fundecl->explicitKeyword) };
 
       builder.setExplicit();
     }

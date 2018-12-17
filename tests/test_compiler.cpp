@@ -973,8 +973,7 @@ TEST(CompilerTests, default_argument) {
   ASSERT_EQ(true_random.returnType(), Type::Int);
   ASSERT_EQ(true_random.prototype().count(), 1);
   ASSERT_EQ(true_random.prototype().at(0), Type::Int);
-  ASSERT_TRUE(true_random.accepts(0));
-  ASSERT_TRUE(true_random.accepts(1));
+  ASSERT_EQ(true_random.defaultArguments().size(), 1);
 
   ASSERT_EQ(s.globalNames().size(), 2);
 

@@ -111,7 +111,7 @@ TEST(CompilerErrors, not_data_member) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::NotDataMember{ "n" }.code());
+  ASSERT_EQ(errors.front().code(), compiler::NotDataMember(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, initializing_inherited_data_member) {
@@ -139,7 +139,7 @@ TEST(CompilerErrors, initializing_inherited_data_member) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InheritedDataMember{ "n" }.code());
+  ASSERT_EQ(errors.front().code(), compiler::InheritedDataMember(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, multiple_initializers) {
@@ -162,7 +162,7 @@ TEST(CompilerErrors, multiple_initializers) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::DataMemberAlreadyHasInitializer{ "n" }.code());
+  ASSERT_EQ(errors.front().code(), compiler::DataMemberAlreadyHasInitializer(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, could_not_find_delegate_ctor) {
@@ -348,7 +348,7 @@ TEST(CompilerErrors, not_default_constructible) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::VariableCannotBeDefaultConstructed{ "A" }.code());
+  ASSERT_EQ(errors.front().code(), compiler::VariableCannotBeDefaultConstructed(diagnostic::nullpos(), script::Type()).code());
 }
 
 TEST(CompilerErrors, invalid_param_count_op_overload) {
@@ -367,7 +367,7 @@ TEST(CompilerErrors, invalid_param_count_op_overload) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InvalidParamCountInOperatorOverload(1, 3).code());
+  ASSERT_EQ(errors.front().code(), compiler::InvalidParamCountInOperatorOverload(diagnostic::nullpos(), 1, 3).code());
 }
 
 TEST(CompilerErrors, data_member_auto) {

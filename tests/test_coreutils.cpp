@@ -224,43 +224,38 @@ TEST(CoreUtilsTests, ClassInheritance) {
 TEST(CoreUtilsTests, diagnostic) {
   using namespace script;
 
-  diagnostic::Message mssg = diagnostic::info() << "Test 1" << diagnostic::Code{"A39"};
-  ASSERT_EQ(mssg.to_string(), "[info](A39) Test 1");
+  diagnostic::Message mssg = diagnostic::info() << "Test 1";
+  ASSERT_EQ(mssg.to_string(), "[info] Test 1");
   ASSERT_EQ(mssg.severity(), diagnostic::Info);
-  ASSERT_EQ(mssg.code(), "A39");
   ASSERT_EQ(mssg.line(), -1);
   ASSERT_EQ(mssg.column(), -1);
 
   mssg = diagnostic::warning() << "Test 2";
   ASSERT_EQ(mssg.to_string(), "[warning] Test 2");
   ASSERT_EQ(mssg.severity(), diagnostic::Warning);
-  ASSERT_EQ(mssg.code(), std::string());
   ASSERT_EQ(mssg.line(), -1);
   ASSERT_EQ(mssg.column(), -1);
 
   mssg = diagnostic::error() << "Test 3";
   ASSERT_EQ(mssg.to_string(), "[error] Test 3");
   ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.code(), std::string());
   ASSERT_EQ(mssg.line(), -1);
   ASSERT_EQ(mssg.column(), -1);
 
   mssg = diagnostic::error() << "Error message" << diagnostic::line(10);
   ASSERT_EQ(mssg.to_string(), "[error]10: Error message");
   ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.code(), std::string());
   ASSERT_EQ(mssg.line(), 10);
   ASSERT_EQ(mssg.column(), -1);
 
-  mssg = diagnostic::error() << "Error message" << diagnostic::Code{ "A39" } << diagnostic::pos(10, 2);
-  ASSERT_EQ(mssg.to_string(), "[error](A39)10:2: Error message");
+  mssg = diagnostic::error() << "Error message" << diagnostic::pos(10, 2);
+  ASSERT_EQ(mssg.to_string(), "[error]10:2: Error message");
   ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.code(), "A39");
   ASSERT_EQ(mssg.line(), 10);
   ASSERT_EQ(mssg.column(), 2);
 
   mssg = diagnostic::format("Message %1 : this %2 a %3 test", "#1", "is", "great");
-  ASSERT_EQ(mssg.to_string(), "Message #1 : this is a great test");
+  ASSERT_EQ(mssg.to_string(), "[info] Message #1 : this is a great test");
   ASSERT_EQ(mssg.severity(), diagnostic::Info);
 }
 

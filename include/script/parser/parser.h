@@ -184,15 +184,6 @@ protected:
   void seek(const ParserData::Position & p);
   const std::string text(const Token & tok);
 
-  template<typename ExceptionType>
-  Token readToken(const Token::Type & type)
-  {
-    Token t = peek();
-    if (t.type != type)
-      throw ExceptionType{};
-    return unsafe_read();
-  }
-
   SourceFile::Position sourcepos() const;
 
 protected:
@@ -516,7 +507,6 @@ protected:
   void readNode();
   bool readClassEnd();
   using ParserBase::read;
-  Token read(Token::Type tt);
 
 protected:
   std::shared_ptr<ast::ClassDecl> mClass;
@@ -557,7 +547,6 @@ public:
 
 protected:
   std::shared_ptr<ast::Identifier> read_name();
-  void read_semicolon();
 };
 
 class ImportParser : public ParserBase

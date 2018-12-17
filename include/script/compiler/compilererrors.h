@@ -6,12 +6,11 @@
 #define LIBSCRIPT_COMPILER_ERRORS_H
 
 #include <string>
-#include <tuple>
-#include <utility>
 
 #include "script/accessspecifier.h"
 #include "script/diagnosticmessage.h"
 #include "script/exception.h"
+#include "script/operators.h"
 #include "script/types.h"
 
 namespace script
@@ -27,219 +26,327 @@ public:
 
 public:
   CompilerException() : pos{-1, -1} { }
-  CompilerException(const CompilerException &) = default;
+  CompilerException(const CompilerException &) { }
   virtual ~CompilerException() = default;
 
   CompilerException(const diagnostic::pos_t & p) : pos(p) {}
-
-  std::string code() const { return std::string{ "C" } + std::to_string(get_code()); }
-
-  virtual void print(diagnostic::MessageBuilder & builder) const = 0;
-
-protected:
-  virtual int get_code() const = 0;
 };
 
-class CCompilerExceptionBase : public CompilerException
-{
-public:
-  CCompilerExceptionBase() = default;
-  CCompilerExceptionBase(const diagnostic::pos_t & p) : CompilerException(p) { }
-  virtual std::string get_format_message() const = 0;
-};
 
-template<typename...Args>
-class CCompilerException : public CCompilerExceptionBase
-{
-public:
-  typedef std::tuple<Args...>  container_type;
-  container_type items;
+#define CE(Name) public: \
+  ~Name() = default; \
+  ErrorCode code() const override { return ErrorCode::C_##Name; }
 
-  CCompilerException(const Args &... args)
-    : items{ args... }
-  {
 
-  }
-
-  CCompilerException(diagnostic::pos_t p, const Args &... args)
-    : CCompilerExceptionBase(p)
-    , items{ args... }
-  {
-
-  }
-
-  template<std::size_t...I>
-  void print_impl(diagnostic::MessageBuilder & builder, std::index_sequence<I...>) const
-  {
-    builder << builder.format(this->get_format_message(), std::get<I>(items)...);
-  }
-
-  void print(diagnostic::MessageBuilder & builder) const override
-  {
-    print_impl(builder, std::make_index_sequence<sizeof...(Args)>{});
-  }
-};
-
-#define DECLARE_COMPILER_ERROR(name, mssg, ...) class name : public CCompilerException<__VA_ARGS__> \
+#define GENERIC_COMPILER_EXCEPTION(Name) class Name : public CompilerException \
 { \
 public: \
-  using CCompilerException<__VA_ARGS__>::CCompilerException; \
-  std::string get_format_message() const override { return mssg; } \
-  static const int static_code = __LINE__ + CCE_CODE_OFFSET; \
-  int get_code() const override { return static_code; } \
+  Name(diagnostic::pos_t p = diagnostic::pos_t{-1,-1}) : CompilerException(p) { } \
+  ErrorCode code() const override { return ErrorCode::C_##Name; } \
+  ~Name() = default; \
+}
+
+
+GENERIC_COMPILER_EXCEPTION(IllegalUseOfThis);
+GENERIC_COMPILER_EXCEPTION(ObjectHasNoDestructor);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfDelegatedConstructor);
+
+class NotDataMember : public CompilerException
+{
+  CE(NotDataMember)
+  std::string name;
+
+  NotDataMember(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { };
 };
 
-#define CCE_CODE_OFFSET (-90);
+class InheritedDataMember : public CompilerException
+{
+  CE(InheritedDataMember)
+  std::string name;
 
-DECLARE_COMPILER_ERROR(IllegalUseOfThis, "Illegal use of this");
-DECLARE_COMPILER_ERROR(ObjectHasNoDestructor, "Object has no destructor");
-DECLARE_COMPILER_ERROR(InvalidUseOfDelegatedConstructor, "No other member initializer may be present when using delegating constructors");
-DECLARE_COMPILER_ERROR(NotDataMember, "%1 does not name a data member", std::string);
-DECLARE_COMPILER_ERROR(InheritedDataMember, "cannot initialize inherited data member %1", std::string);
-DECLARE_COMPILER_ERROR(DataMemberAlreadyHasInitializer, "data member %1 already has an intializer", std::string);
-DECLARE_COMPILER_ERROR(NoDelegatingConstructorFound, "Could not find a delegate constructor");
-DECLARE_COMPILER_ERROR(CouldNotFindValidBaseConstructor, "Could not find valid base constructor");
-DECLARE_COMPILER_ERROR(InitializerListAsFirstArrayElement, "An initializer list cannot be used as the first element of an array");
+  InheritedDataMember(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { };
+};
 
-DECLARE_COMPILER_ERROR(ReturnStatementWithoutValue, "Cannot have return-statement without a value in function returning non-void");
-DECLARE_COMPILER_ERROR(ReturnStatementWithValue, "A function returning void cannot return a value");
+class DataMemberAlreadyHasInitializer : public CompilerException
+{ 
+  CE(DataMemberAlreadyHasInitializer)
+  std::string name;
 
-DECLARE_COMPILER_ERROR(ReferencesMustBeInitialized, "References must be initialized");
-DECLARE_COMPILER_ERROR(EnumerationsCannotBeDefaultConstructed, "Enumerations cannot be default constructed");
-DECLARE_COMPILER_ERROR(EnumerationsMustBeInitialized, "Variables of enumeration type must be initialized");
-DECLARE_COMPILER_ERROR(FunctionVariablesMustBeInitialized, "Variables of function-type must be initialized");
-DECLARE_COMPILER_ERROR(VariableCannotBeDefaultConstructed, "Class '%1' does not provide a default constructor", std::string);
-DECLARE_COMPILER_ERROR(ClassHasDeletedDefaultCtor, "Class '%1' has a deleted default constructor", std::string);
-DECLARE_COMPILER_ERROR(VariableCannotBeDestroyed, "Class '%1' does not provide a destructor", std::string);
+  DataMemberAlreadyHasInitializer(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { };
+};
 
-DECLARE_COMPILER_ERROR(CouldNotResolveOperatorName, "Could not resolve operator name based on parameter count and operator symbol.");
-DECLARE_COMPILER_ERROR(InvalidParamCountInOperatorOverload, "Invalid parameter count found in operator overload, expected %1 got %2", int, int);
-DECLARE_COMPILER_ERROR(OpOverloadMustBeDeclaredAsMember, "This operator can only be overloaded as a member");
+GENERIC_COMPILER_EXCEPTION(NoDelegatingConstructorFound);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidBaseConstructor);
+GENERIC_COMPILER_EXCEPTION(InitializerListAsFirstArrayElement);
+GENERIC_COMPILER_EXCEPTION(ReturnStatementWithoutValue);
+GENERIC_COMPILER_EXCEPTION(ReturnStatementWithValue);
+GENERIC_COMPILER_EXCEPTION(ReferencesMustBeInitialized);
+GENERIC_COMPILER_EXCEPTION(EnumerationsCannotBeDefaultConstructed);
+GENERIC_COMPILER_EXCEPTION(EnumerationsMustBeInitialized);
+GENERIC_COMPILER_EXCEPTION(FunctionVariablesMustBeInitialized);
 
-DECLARE_COMPILER_ERROR(InvalidTypeName, "%1 does not name a type", std::string);
+class VariableCannotBeDefaultConstructed : public CompilerException
+{
+  CE(VariableCannotBeDefaultConstructed)
+  script::Type type;
 
-DECLARE_COMPILER_ERROR(DeclarationProcessingError, "Some declarations could not be processed.");
+  VariableCannotBeDefaultConstructed(diagnostic::pos_t p, const script::Type & t) : CompilerException(p), type(t) { }
+};
 
+class ClassHasDeletedDefaultCtor : public CompilerException
+{
+  CE(ClassHasDeletedDefaultCtor)
+  script::Type type;
 
-DECLARE_COMPILER_ERROR(DataMemberCannotBeAuto, "Data members cannot be declared 'auto'.");
-DECLARE_COMPILER_ERROR(MissingStaticInitialization, "A static variable must be initialized.");
-DECLARE_COMPILER_ERROR(InvalidStaticInitialization, "Static variables can only be initialized through assignment.");
-DECLARE_COMPILER_ERROR(FailedToInitializeStaticVariable, "Failed to initialized static variable.");
+  ClassHasDeletedDefaultCtor(diagnostic::pos_t p, const script::Type & t) 
+    : CompilerException(p), type(t) { }
+};
 
-DECLARE_COMPILER_ERROR(InvalidBaseClass, "Invalid base class.");
+class VariableCannotBeDestroyed : public CompilerException
+{
+  CE(VariableCannotBeDestroyed)
+  script::Type type;
 
-DECLARE_COMPILER_ERROR(InvalidUseOfDefaultArgument, "Cannot have a parameter without a default value after one was provided.");
+  VariableCannotBeDestroyed(const script::Type & t) : type(t) { }
+};
 
-DECLARE_COMPILER_ERROR(ArrayElementNotConvertible, "Could not convert element to array's element type.");
-DECLARE_COMPILER_ERROR(ArraySubscriptOnNonObject, "Cannot perform array subscript on non object type.");
-DECLARE_COMPILER_ERROR(CouldNotFindValidSubscriptOperator, "Could not find valid subscript operator.");
+GENERIC_COMPILER_EXCEPTION(CouldNotResolveOperatorName);
 
+class InvalidParamCountInOperatorOverload : public CompilerException
+{
+  CE(InvalidParamCountInOperatorOverload)
+  int expected;
+  int actual;
 
-DECLARE_COMPILER_ERROR(CannotCaptureThis, "'this' cannot be captured outside of a member function.");
-DECLARE_COMPILER_ERROR(UnknownCaptureName, "Could not capture any local variable with given name.");
-DECLARE_COMPILER_ERROR(CannotCaptureNonCopyable, "Cannot capture by value a non copyable type.");
-DECLARE_COMPILER_ERROR(SomeLocalsCannotBeCaptured, "Some local variables cannot be captured by value.");
-DECLARE_COMPILER_ERROR(CannotCaptureByValueAndByRef, "Cannot capture both everything by reference and by value.");
-DECLARE_COMPILER_ERROR(LambdaMustBeCaptureless, "A lambda must be captureless within this context.");
+  InvalidParamCountInOperatorOverload(diagnostic::pos_t p, int expect, int got) 
+    : CompilerException(p)
+    , expected(expect), actual(got) { }
+};
 
-DECLARE_COMPILER_ERROR(CouldNotFindValidConstructor, "Could not find valid constructor.");
-DECLARE_COMPILER_ERROR(CouldNotFindValidMemberFunction, "Could not find valid member function for call.");
-DECLARE_COMPILER_ERROR(CouldNotFindValidOperator, "Could not find valid operator overload.");
-DECLARE_COMPILER_ERROR(CouldNotFindValidOverload, "Overload resolution failed.");
-DECLARE_COMPILER_ERROR(CouldNotFindValidCallOperator, "Could not find valid operator() overload for call.");
+class OpOverloadMustBeDeclaredAsMember : public CompilerException
+{
+  CE(OpOverloadMustBeDeclaredAsMember)
+  script::OperatorName name;
 
-DECLARE_COMPILER_ERROR(AmbiguousFunctionName, "Name does not refer to a single function");
-DECLARE_COMPILER_ERROR(TemplateNamesAreNotExpressions, "Name refers to a template and cannot be used inside an expression");
-DECLARE_COMPILER_ERROR(TypeNameInExpression, "Name refers to a type and cannot be used inside an expression");
+  OpOverloadMustBeDeclaredAsMember(diagnostic::pos_t p, script::OperatorName n)
+    : CompilerException(p)
+    , name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(NamespaceNameInExpression, "Name refers to a namespace and cannot be used inside an expression");
+class InvalidTypeName : public CompilerException
+{
+  CE(InvalidTypeName)
+  std::string name;
 
-DECLARE_COMPILER_ERROR(TooManyArgumentInVariableInitialization, "Too many arguments provided in variable initialization.");
-DECLARE_COMPILER_ERROR(TooManyArgumentInInitialization, "Too many arguments provided in initialization.");
-DECLARE_COMPILER_ERROR(TooManyArgumentInReferenceInitialization, "More than one argument provided in reference initialization.");
-DECLARE_COMPILER_ERROR(TooManyArgumentsInMemberInitialization, "Too many arguments in member initialization.");
+  InvalidTypeName(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(CouldNotConvert, "Could not convert from %1 to %2", script::Type, script::Type);
-DECLARE_COMPILER_ERROR(CouldNotFindCommonType, "Could not find common type of %1 and %2 in conditionnal expression", script::Type, script::Type);
+GENERIC_COMPILER_EXCEPTION(DeclarationProcessingError);
+GENERIC_COMPILER_EXCEPTION(DataMemberCannotBeAuto);
+GENERIC_COMPILER_EXCEPTION(MissingStaticInitialization);
+GENERIC_COMPILER_EXCEPTION(InvalidStaticInitialization);
+GENERIC_COMPILER_EXCEPTION(FailedToInitializeStaticVariable);
+GENERIC_COMPILER_EXCEPTION(InvalidBaseClass);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfDefaultArgument);
+GENERIC_COMPILER_EXCEPTION(ArrayElementNotConvertible);
+GENERIC_COMPILER_EXCEPTION(ArraySubscriptOnNonObject);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidSubscriptOperator);
+GENERIC_COMPILER_EXCEPTION(CannotCaptureThis);
+GENERIC_COMPILER_EXCEPTION(UnknownCaptureName);
+GENERIC_COMPILER_EXCEPTION(CannotCaptureNonCopyable);
+GENERIC_COMPILER_EXCEPTION(SomeLocalsCannotBeCaptured);
+GENERIC_COMPILER_EXCEPTION(CannotCaptureByValueAndByRef);
+GENERIC_COMPILER_EXCEPTION(LambdaMustBeCaptureless);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidConstructor);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidMemberFunction);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidOperator);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidOverload);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidCallOperator);
+GENERIC_COMPILER_EXCEPTION(AmbiguousFunctionName);
+GENERIC_COMPILER_EXCEPTION(TemplateNamesAreNotExpressions);
+GENERIC_COMPILER_EXCEPTION(TypeNameInExpression);
+GENERIC_COMPILER_EXCEPTION(NamespaceNameInExpression);
+GENERIC_COMPILER_EXCEPTION(TooManyArgumentInVariableInitialization);
+GENERIC_COMPILER_EXCEPTION(TooManyArgumentInInitialization);
+GENERIC_COMPILER_EXCEPTION(TooManyArgumentInReferenceInitialization);
+GENERIC_COMPILER_EXCEPTION(TooManyArgumentsInMemberInitialization);
 
-DECLARE_COMPILER_ERROR(CannotAccessMemberOfNonObject, "Cannot access member of non object type.");
-DECLARE_COMPILER_ERROR(NoSuchMember, "Object has no such member.");
+class CouldNotConvert : public CompilerException
+{
+  CE(CouldNotConvert)
+  script::Type source;
+  script::Type destination;
 
+  CouldNotConvert(diagnostic::pos_t p, const script::Type & src, const script::Type & dest) 
+    : CompilerException(p)
+    , source(src), destination(dest) { }
+};
 
-DECLARE_COMPILER_ERROR(InvalidTemplateArgument, "Invalid template argument.");
-DECLARE_COMPILER_ERROR(InvalidLiteralTemplateArgument, "Only integer and boolean literals can be used as template arguments.");
-DECLARE_COMPILER_ERROR(NonConstExprTemplateArgument, "Template arguments must be constant expressions.");
-DECLARE_COMPILER_ERROR(InvalidTemplateArgumentType, "This constant epression does not evaluate to an int or a bool.");
-DECLARE_COMPILER_ERROR(MissingNonDefaultedTemplateParameter, "Missing non-defaulted template parameter.");
-DECLARE_COMPILER_ERROR(CouldNotFindPrimaryClassTemplate, "Could not find primary class template (must be declared in the same namespace).");
-DECLARE_COMPILER_ERROR(CouldNotFindPrimaryFunctionTemplate, "Could not find primary function template (must be declared in the same namespace).");
+class CouldNotFindCommonType : public CompilerException
+{
+  CE(CouldNotFindCommonType)
 
-DECLARE_COMPILER_ERROR(InvalidUseOfConstKeyword, "Invalid use of const keyword.");
-DECLARE_COMPILER_ERROR(InvalidUseOfStaticKeyword, "Invalid use of static keyword.");
-DECLARE_COMPILER_ERROR(InvalidUseOfVirtualKeyword, "Invalid use of virtual keyword.");
+  script::Type first;
+  script::Type second;
 
-DECLARE_COMPILER_ERROR(AutoMustBeUsedWithAssignment, "'auto' can only be used with assignment initialization.");
+  CouldNotFindCommonType(diagnostic::pos_t p, const script::Type & t1, const script::Type & t2) 
+    : CompilerException(p), first(t1), second(t2) { }
+};
 
-DECLARE_COMPILER_ERROR(CannotDeduceLambdaReturnType, "Cannot deduce lambda return type");
+GENERIC_COMPILER_EXCEPTION(CannotAccessMemberOfNonObject);
+GENERIC_COMPILER_EXCEPTION(NoSuchMember);
+GENERIC_COMPILER_EXCEPTION(InvalidTemplateArgument);
+GENERIC_COMPILER_EXCEPTION(InvalidLiteralTemplateArgument);
+GENERIC_COMPILER_EXCEPTION(NonConstExprTemplateArgument);
+GENERIC_COMPILER_EXCEPTION(InvalidTemplateArgumentType);
+GENERIC_COMPILER_EXCEPTION(MissingNonDefaultedTemplateParameter);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindPrimaryClassTemplate);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindPrimaryFunctionTemplate);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfConstKeyword);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfExplicitKeyword);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfStaticKeyword);
+GENERIC_COMPILER_EXCEPTION(InvalidUseOfVirtualKeyword);
+GENERIC_COMPILER_EXCEPTION(AutoMustBeUsedWithAssignment);
+GENERIC_COMPILER_EXCEPTION(CannotDeduceLambdaReturnType);
+GENERIC_COMPILER_EXCEPTION(CallToDeletedFunction);
+GENERIC_COMPILER_EXCEPTION(FunctionCannotBeDefaulted);
+GENERIC_COMPILER_EXCEPTION(ParentHasNoDefaultConstructor);
+GENERIC_COMPILER_EXCEPTION(ParentHasDeletedDefaultConstructor);
+GENERIC_COMPILER_EXCEPTION(ParentHasNoCopyConstructor);
+GENERIC_COMPILER_EXCEPTION(ParentHasDeletedCopyConstructor);
+GENERIC_COMPILER_EXCEPTION(DataMemberIsNotCopyable);
+GENERIC_COMPILER_EXCEPTION(ParentHasNoMoveConstructor);
+GENERIC_COMPILER_EXCEPTION(ParentHasDeletedMoveConstructor);
+GENERIC_COMPILER_EXCEPTION(DataMemberIsNotMovable);
+GENERIC_COMPILER_EXCEPTION(ParentHasNoAssignmentOperator);
+GENERIC_COMPILER_EXCEPTION(ParentHasDeletedAssignmentOperator);
+GENERIC_COMPILER_EXCEPTION(DataMemberHasNoAssignmentOperator);
+GENERIC_COMPILER_EXCEPTION(DataMemberHasDeletedAssignmentOperator);
+GENERIC_COMPILER_EXCEPTION(DataMemberIsReferenceAndCannotBeAssigned);
+GENERIC_COMPILER_EXCEPTION(InvalidArgumentCountInDataMemberRefInit);
+GENERIC_COMPILER_EXCEPTION(CannotInitializeNonConstRefDataMemberWithConst);
 
-DECLARE_COMPILER_ERROR(CallToDeletedFunction, "Call to deleted function.");
+class BadDataMemberRefInit : public CompilerException
+{
+  CE(BadDataMemberRefInit)
+  std::string name;
+  BadDataMemberRefInit(const std::string & n) : name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(FunctionCannotBeDefaulted, "Function cannot be defaulted.");
+class EnumMemberCannotBeDefaultConstructed : public CompilerException
+{
+  CE(EnumMemberCannotBeDefaultConstructed)
+  script::Type type;
+  std::string name;
+  EnumMemberCannotBeDefaultConstructed(const script::Type & t, const std::string & n) : type(t), name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(ParentHasNoDefaultConstructor, "Cannot generate defaulted default constructor because parent has no default constructor.");
-DECLARE_COMPILER_ERROR(ParentHasDeletedDefaultConstructor, "Cannot generate defaulted default constructor because parent default constructor is deleted.");
-DECLARE_COMPILER_ERROR(ParentHasNoCopyConstructor, "Cannot generate defaulted copy constructor because parent has no copy constructor.");
-DECLARE_COMPILER_ERROR(ParentHasDeletedCopyConstructor, "Cannot generate defaulted copy constructor because parent copy constructor is deleted.");
-DECLARE_COMPILER_ERROR(DataMemberIsNotCopyable, "Cannot generate defaulted copy constructor because at least one data member is not copyable.");
-DECLARE_COMPILER_ERROR(ParentHasNoMoveConstructor, "Cannot generate defaulted move constructor because parent has no move constructor.");
-DECLARE_COMPILER_ERROR(ParentHasDeletedMoveConstructor, "Cannot generate defaulted move constructor because parent move constructor is deleted.");
-DECLARE_COMPILER_ERROR(DataMemberIsNotMovable, "Cannot generate defaulted move constructor because at least one data member is not movable.");
+class DataMemberHasNoDefaultConstructor : public CompilerException
+{
+  CE(DataMemberHasNoDefaultConstructor)
+  script::Type type;
+  std::string name;
 
-DECLARE_COMPILER_ERROR(ParentHasNoAssignmentOperator, "Cannot generate defaulted assignment operator because parent has no assignment operator.");
-DECLARE_COMPILER_ERROR(ParentHasDeletedAssignmentOperator, "Cannot generate defaulted assignment operator because parent has a deleted assignment operator.");
-DECLARE_COMPILER_ERROR(DataMemberHasNoAssignmentOperator, "Cannot generate defaulted assignment operator because at least one data member has no assignment operator.");
-DECLARE_COMPILER_ERROR(DataMemberHasDeletedAssignmentOperator, "Cannot generate defaulted assignment operator because at least one data member has a deleted assignment operator.");
+  DataMemberHasNoDefaultConstructor(const script::Type & t, const std::string & n) : type(t), name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(DataMemberIsReferenceAndCannotBeAssigned, "Cannot generate defaulted assignment operator because at least one data member is a reference.");
+class DataMemberHasDeletedDefaultConstructor : public CompilerException
+{
+  CE(DataMemberHasDeletedDefaultConstructor)
 
-DECLARE_COMPILER_ERROR(InvalidArgumentCountInDataMemberRefInit, "Only one value must be provided to initialize a data member of reference type.");
-DECLARE_COMPILER_ERROR(CannotInitializeNonConstRefDataMemberWithConst, "Cannot initialize a data member of non-const reference type with a const value.");
-DECLARE_COMPILER_ERROR(BadDataMemberRefInit, "Bad reference initialization of data member %1.", std::string);
-DECLARE_COMPILER_ERROR(EnumMemberCannotBeDefaultConstructed, "Data member %1 of enumeration type %2 cannot be default constructed.", std::string, std::string);
-DECLARE_COMPILER_ERROR(DataMemberHasNoDefaultConstructor, "Data member %1 of type %2 has no default constructor.", std::string, std::string);
-DECLARE_COMPILER_ERROR(DataMemberHasDeletedDefaultConstructor, "Data member %1 of type %2 has a deleted default constructor.", std::string, std::string);
+  script::Type type;
+  std::string name;
 
-DECLARE_COMPILER_ERROR(InvalidCharacterLiteral, "A character literal must contain only one character.");
+  DataMemberHasDeletedDefaultConstructor(const script::Type & t, const std::string & n) : type(t), name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(CouldNotFindValidLiteralOperator, "Could not find valid literal operator.");
+GENERIC_COMPILER_EXCEPTION(InvalidCharacterLiteral);
+GENERIC_COMPILER_EXCEPTION(CouldNotFindValidLiteralOperator);
 
-DECLARE_COMPILER_ERROR(UnknownTypeInBraceInitialization, "Unknown type %1 in brace initialization", std::string);
-DECLARE_COMPILER_ERROR(NarrowingConversionInBraceInitialization, "Narrowing conversion from %1 to %2 in brace initialization", script::Type, script::Type);
+class UnknownTypeInBraceInitialization : public CompilerException
+{
+  CE(UnknownTypeInBraceInitialization)
+  std::string name;
+  UnknownTypeInBraceInitialization(diagnostic::pos_t p, const std::string & n) 
+    : CompilerException(p)
+    , name(n) { }
+};
 
-DECLARE_COMPILER_ERROR(NamespaceDeclarationCannotAppearAtThisLevel, "Namespace declarations cannot appear at this level");
-DECLARE_COMPILER_ERROR(ExpectedDeclaration, "Expected a declaration.");
-DECLARE_COMPILER_ERROR(GlobalVariablesCannotBeAuto, "Global variables cannot be declared with auto.");
-DECLARE_COMPILER_ERROR(GlobalVariablesMustBeInitialized, "Global variables must have an initializer.");
-DECLARE_COMPILER_ERROR(GlobalVariablesMustBeAssigned, "Global variables must be initialized through assignment.");
+class NarrowingConversionInBraceInitialization : public CompilerException
+{
+  CE(NarrowingConversionInBraceInitialization)
 
-DECLARE_COMPILER_ERROR(InaccessibleMember, "%1 is %2 within this context", std::string, script::AccessSpecifier);
+  script::Type source;
+  script::Type destination;
 
-DECLARE_COMPILER_ERROR(FriendMustBeAClass, "Friend must be a class");
+  NarrowingConversionInBraceInitialization(const script::Type & src, const script::Type & dest)
+    : source(src), destination(dest) { }
+  NarrowingConversionInBraceInitialization(diagnostic::pos_t p, const script::Type & src, const script::Type & dest) 
+    : CompilerException(p), source(src), destination(dest) { }
+};
 
-DECLARE_COMPILER_ERROR(UnknownModuleName, "Unknown module '%1'", std::string);
-DECLARE_COMPILER_ERROR(UnknownSubModuleName, "'%1' is not a submodule of '%2'", std::string, std::string);
-DECLARE_COMPILER_ERROR(ModuleImportationError, "Failed to import module '%1'\n%2", std::string, std::string);
+GENERIC_COMPILER_EXCEPTION(NamespaceDeclarationCannotAppearAtThisLevel);
+GENERIC_COMPILER_EXCEPTION(ExpectedDeclaration);
+GENERIC_COMPILER_EXCEPTION(GlobalVariablesCannotBeAuto);
+GENERIC_COMPILER_EXCEPTION(GlobalVariablesMustBeInitialized);
+GENERIC_COMPILER_EXCEPTION(GlobalVariablesMustBeAssigned);
 
-DECLARE_COMPILER_ERROR(InvalidNameInUsingDirective, "%1 does not name a namespace", std::string);
+class InaccessibleMember : public CompilerException
+{
+  CE(InaccessibleMember)
+  std::string name;
+  script::AccessSpecifier access;
 
-DECLARE_COMPILER_ERROR(NotImplementedError, "Not implemented : %1", std::string);
+  InaccessibleMember(diagnostic::pos_t p, const std::string & n, script::AccessSpecifier a) 
+    : CompilerException(p)
+    , name(n), access(a) { }
+};
 
-#undef DECLARE_COMPILER_ERROR
-#undef CCE_CODE_OFFSET
+GENERIC_COMPILER_EXCEPTION(FriendMustBeAClass);
+
+class UnknownModuleName : public CompilerException
+{
+  CE(UnknownModuleName)
+  std::string name;
+
+  UnknownModuleName(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { }
+};
+
+class UnknownSubModuleName : public CompilerException
+{
+  CE(UnknownSubModuleName)
+  std::string name;
+  std::string moduleName;
+
+  UnknownSubModuleName(diagnostic::pos_t p, const std::string & n, const std::string & modn) 
+    : CompilerException(p), name(n), moduleName(modn) { }
+};
+
+class ModuleImportationError : public CompilerException
+{
+  CE(ModuleImportationError)
+  std::string name;
+  std::string message;
+
+  ModuleImportationError(const std::string & n, const std::string & mssg) : name(n), message(mssg) { }
+};
+
+class InvalidNameInUsingDirective : public CompilerException
+{
+  CE(InvalidNameInUsingDirective)
+  std::string name;
+
+  InvalidNameInUsingDirective(diagnostic::pos_t p, const std::string & n) : CompilerException(p), name(n) { }
+};
+
+GENERIC_COMPILER_EXCEPTION(NoSuchCallee);
+GENERIC_COMPILER_EXCEPTION(LiteralOperatorNotInNamespace);
+
+#undef CE
+#undef GENERIC_COMPILER_EXCEPTION
 
 } // namespace compiler
 
 } // namespace script
-
 
 #endif // LIBSCRIPT_COMPILER_ERRORS_H

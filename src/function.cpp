@@ -284,25 +284,6 @@ const Type & Function::returnType() const
 }
 
 /*!
- * \fn bool accepts(int argc) const
- * \brief Returns whether the function could be called with a certain number of arguments.
- * \param number of arguments
- * 
- * This function is deprecated and might be removed in future versions as 
- * it conveys misleading information about the behavior of functions.
- * A function shall always be called with \c{prototype().parameterCount()} arguments -
- * and therefore only accepts as many - but default arguments may be used at the call 
- * site to complete the argument list if some are missing.
- */
-bool Function::accepts(int argc) const
-{
-  const int parameter_count = prototype().parameterCount();
-  const int default_count = d->default_arguments().size();
-
-  return parameter_count - default_count <= argc && argc <= parameter_count;
-}
-
-/*!
  * \fun bool hasDefaultArguments() const
  * \brief Returns whether the function has default arguments.
  *

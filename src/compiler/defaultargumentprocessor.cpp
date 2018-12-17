@@ -24,7 +24,7 @@ std::shared_ptr<program::Expression> DefaultArgumentProcessor::generateDefaultAr
 
   Conversion conv = Conversion::compute(expr, t, scp.engine());
   if (conv.isInvalid())
-    throw NotImplementedError{ "FunctionCompiler::generateDefaultArgument() : failed to convert default value" };
+    throw NotImplemented{ "FunctionCompiler::generateDefaultArgument() : failed to convert default value" };
 
   return ConversionProcessor::convert(scp.engine(), expr, conv);
 }

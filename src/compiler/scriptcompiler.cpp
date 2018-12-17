@@ -239,7 +239,7 @@ Function ScriptCompiler::registerRootFunction()
     case ast::NodeType::TemplateDecl:
       break;
     case ast::NodeType::CastDeclaration:
-      throw NotImplementedError{ "ScriptCompiler::registerRootFunction() : cast declaration are not allowed at this scope" };
+      throw NotImplemented{ "ScriptCompiler::registerRootFunction() : cast declaration are not allowed at this scope" };
     default:
       fakedecl->body->statements.push_back(s);
       break;
@@ -319,7 +319,7 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
   case ast::NodeType::TemplateDecl:
     return processTemplateDeclaration(std::static_pointer_cast<ast::TemplateDeclaration>(declaration));
   default:
-    throw NotImplementedError{ "This kind of declaration is not implemented yet" };
+    throw NotImplemented{ "ScriptCompiler::processOrCollectDeclaration() : declaration not implemented" };
   }
 }
 
@@ -456,7 +456,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
   for (size_t i(0); i < enum_decl.values.size(); ++i)
   {
     if (enum_decl.values.at(i).value != nullptr)
-      throw NotImplementedError{ "Enum value with initialization are not supported yet" };
+      throw NotImplemented{ "Enum value with initialization are not supported yet" };
     else
       e.addValue(enum_decl.values.at(i).name->getName());
   }
@@ -600,7 +600,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
   Scope scp = currentScope().escapeTemplate();
 
   if (!scp.isNamespace())
-    throw NotImplementedError{ dpos(decl), "Literal operator can only be declared inside a namespace" };
+    throw LiteralOperatorNotInNamespace{ dpos(decl) };
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
@@ -657,7 +657,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 1, int(arity) };
 
   if (Operator::onlyAsMember(builder.operation) && !is_member)
-    throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl) };
+    throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl), builder.operation };
 
   /// TODO: check that the user does not declare any default arguments
 
@@ -739,7 +739,9 @@ std::vector<TemplateParameter> ScriptCompiler::processTemplateParameters(const s
       result.push_back(TemplateParameter{ Type::Int, decl->parameter_name(i) });
     }
     else
-      throw NotImplementedError{ dpos(decl), "Invalid template parameter" };
+    {
+      throw NotImplemented{ "Invalid template parameter" };
+    }
 
     result.back().setDefaultValue(p.default_value);
   }
@@ -811,7 +813,7 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   ClassTemplate ct = findClassTemplate(classdecl->name->as<ast::TemplateIdentifier>().getName(), ns.templates());
 
   if (ct.isNull())
-    throw CouldNotFindPrimaryClassTemplate{dpos(classdecl)};
+    throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
 
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
   std::vector<TemplateArgument> args = ftp_->name_processor().arguments(scp, template_full_name->arguments);

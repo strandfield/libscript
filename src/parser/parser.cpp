@@ -406,17 +406,7 @@ Token ParserBase::read(const Token::Type & type)
 {
   Token ret = read();
   if (ret.type != type)
-  {
-    switch (type)
-    {
-    case Token::LeftBrace:
-      throw ExpectedLeftBrace{};
-    case Token::LeftPar:
-      throw ExpectedLeftPar{};
-    default:
-      throw UnexpectedToken{};
-    }
-  }
+    throw UnexpectedToken{ ret, type };
   return ret;
 }
 
@@ -485,7 +475,7 @@ std::shared_ptr<ast::Literal> LiteralParser::parse()
     break;
   }
 
-  throw CouldNotReadLiteral{};
+  throw ExpectedLiteral{ lit };
 }
 
 ExpressionParser::ExpressionParser(AbstractFragment *fragment)
@@ -550,7 +540,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   if (t.isOperator())
   {
     if (!isPrefixOperator(t))
-      throw NotPrefixOperator{};
+      throw ExpectedPrefixOperator{ t };
 
     assert(isPrefixOperator(t));
     read();
@@ -666,11 +656,9 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
         continue;
       }
 
-      throw UnexpectedToken{};
+      throw UnexpectedToken{ t };
     }
   }
-
-
 
   return operand;
 }
@@ -684,9 +672,9 @@ Token ExpressionParser::readBinaryOperator()
     return read();
 
   if (!t.isOperator())
-    throw CouldNotReadOperator{};
+    throw ExpectedOperator{ t };
   else if (!isInfixOperator(t))
-    throw ExpectedBinaryOperator{};
+    throw ExpectedBinaryOperator{ t };
 
   return read();
 }
@@ -808,10 +796,14 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
     }
   }
 
-  if (peek() != Token::LeftPar) {
+  if (peek() != Token::LeftPar) 
+  {
     if (mDecision == ParsingLambda)
-      throw ExpectedLeftPar{};
-    else {
+    {
+      throw UnexpectedToken{ peek(), Token::LeftPar };
+    }
+    else
+    {
       setDecision(ParsingArray);
       return mArray;
     }
@@ -898,7 +890,7 @@ void LambdaParser::readParams()
 {
   assert(mDecision == ParsingLambda);
 
-  mLambda->leftPar = readToken<ExpectedLeftPar>(Token::LeftPar);
+  mLambda->leftPar = read(Token::LeftPar);
 
   SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
@@ -922,7 +914,7 @@ std::shared_ptr<ast::CompoundStatement> LambdaParser::readBody()
     throw UnexpectedEndOfInput{};
 
   if (peek() != Token::LeftBrace)
-    throw ExpectedLeftBrace{};
+    throw UnexpectedToken{ peek(), Token::LeftBrace };
 
   ProgramParser pParser{ fragment() };
   return std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
@@ -952,7 +944,7 @@ ast::LambdaCapture LambdaCaptureParser::parse()
   if (peek() == Token::Eq) {
     cap.byValueSign = read();
     if (!atEnd())
-      throw UnexpectedToken{};
+      throw UnexpectedToken{ cap.byValueSign };
     return cap;
   }
   else if (peek() == Token::Ref) {
@@ -965,7 +957,7 @@ ast::LambdaCapture LambdaCaptureParser::parse()
   cap.name = idpar.parse()->as<ast::SimpleIdentifier>().name;
   if (atEnd())
     return cap;
-  cap.assignmentSign = readToken<ExpectedEqualSign>(Token::Eq);
+  cap.assignmentSign = read(Token::Eq);
   ExpressionParser ep{ fragment() };
   cap.value = ep.parse();
   return cap;
@@ -1040,7 +1032,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
   case Token::Namespace:
     return parseNamespace();
   case Token::Friend:
-    throw UnexpectedFriendKeyword{};
+    throw IllegalUseOfKeyword{ t };
   case Token::Export:
   case Token::Import:
     return parseImport();
@@ -1069,7 +1061,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseAmbiguous()
 
 std::shared_ptr<ast::ClassDecl> ProgramParser::parseClassDeclaration()
 {
-  throw UnexpectedClassKeyword{};
+  throw UnexpectedToken{ peek() };
 }
 
 std::shared_ptr<ast::EnumDeclaration> ProgramParser::parseEnumDeclaration()
@@ -1083,7 +1075,7 @@ std::shared_ptr<ast::BreakStatement> ProgramParser::parseBreakStatement()
 {
   Token kw = read();
   assert(kw == Token::Break);
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::Semicolon);
   return ast::BreakStatement::New(kw);
 }
 
@@ -1091,7 +1083,7 @@ std::shared_ptr<ast::ContinueStatement> ProgramParser::parseContinueStatement()
 {
   Token kw = read();
   assert(kw == Token::Continue);
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::Semicolon);
   return ast::ContinueStatement::New(kw);
 }
 
@@ -1137,7 +1129,7 @@ std::shared_ptr<ast::IfStatement> ProgramParser::parseIfStatement()
 {
   Token ifkw = read();
   assert(ifkw == Token::If);
-  const Token leftpar = readToken<ExpectedLeftPar>(Token::LeftPar);
+  const Token leftpar = read(Token::LeftPar);
 
   auto ifStatement = ast::IfStatement::New(ifkw);
 
@@ -1163,7 +1155,7 @@ std::shared_ptr<ast::WhileLoop> ProgramParser::parseWhileLoop()
 {
   Token whilekw = read();
   assert(whilekw == Token::While);
-  const Token leftpar = readToken<ExpectedLeftPar>(Token::LeftPar);
+  const Token leftpar = read(Token::LeftPar);
 
   auto whileLoop = ast::WhileLoop::New(whilekw);
 
@@ -1183,7 +1175,7 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
 {
   Token forkw = read();
   assert(forkw == Token::For);
-  const Token leftpar = readToken<ExpectedLeftPar>(Token::LeftPar);
+  const Token leftpar = read(Token::LeftPar);
 
   auto forLoop = ast::ForLoop::New(forkw);
 
@@ -1234,10 +1226,7 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
   /// TODO: add overload to IdentifierParser that only parses symple identifier.
   const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
 
-  if (peek() != parser::Token::Semicolon)
-    throw ExpectedSemicolon{};
-
-  const parser::Token semicolon = unsafe_read();
+  const parser::Token semicolon = read(parser::Token::Semicolon);
 
   return ast::Typedef::New(typedef_tok, qtype, name);
 }
@@ -1297,13 +1286,13 @@ std::shared_ptr<ast::Identifier> IdentifierParser::parse()
     break;
   }
 
-  throw CouldNotReadIdentifier{};
+  throw ExpectedIdentifier{ t };
 }
 
 std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
 {
   if (!testOption(ParseOperatorName))
-    throw UnexpectedOperatorKeyword{};
+    throw UnexpectedToken{ peek() };
 
   Token opkw = read();
   if (atEnd())
@@ -1317,27 +1306,23 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token lp = read();
     if (atEnd())
       throw UnexpectedEndOfInput{};
-    if (peek() != Token::RightPar)
-      throw ExpectedRightPar{};
-    const Token rp = read();
+    const Token rp = read(Token::RightPar);
     if (lp.column + 1 != rp.column)
-      throw IllegalSpaceBetweenPars{};
+      throw UnexpectedToken{ lp, Token::LeftRightPar };
     return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, lp.pos, 2, lp.line, lp.column, lp.src });
   }
   else if (op == Token::LeftBracket)
   {
     const Token lb = read();
-    if (peek() != Token::RightBracket)
-      throw ExpectedRightBracket{};
-    const Token rb = read();
+    const Token rb = read(Token::RightBracket);
     if (lb.column + 1 != rb.column)
-      throw IllegalSpaceBetweenBrackets{};
+      throw UnexpectedToken{ lb, Token::LeftRightBracket };
     return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, lb.pos, 2, lb.line, lb.column, lb.src });
   }
   else if (op.type == Token::StringLiteral)
   {
     if (op.length != 2)
-      throw ExpectedEmptyStringLiteral{};
+      throw ExpectedEmptyStringLiteral{ op };
     IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to remove this cast
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
@@ -1348,20 +1333,20 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     op = unsafe_read();
     const auto & str = text(op);
     if(str.find("\"\"") != 0)
-      throw ExpectedEmptyStringLiteral{}; /// TODO ? should this have a different error than the previous
+      throw ExpectedEmptyStringLiteral{ op }; /// TODO ? should this have a different error than the previous
     Token quotes{ Token::StringLiteral, op.pos, 2, op.line, op.column, op.src };
     Token suffixName{ Token::UserDefinedName, op.pos + 2, op.length - 2, op.line, op.column + 2, op.src };
     return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
   }
 
-  throw ExpectedOperatorSymbol{};
+  throw ExpectedOperatorSymbol{ op };
 }
 
 std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
 {
   const Token base = read();
   if (base != Token::UserDefinedName)
-    throw ExpectedUserDefinedName{};
+    throw ExpectedUserDefinedName{ base };
 
   if(atEnd())
     return ast::SimpleIdentifier::New(base, ast());
@@ -1552,7 +1537,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
     ret.functionType->params.push_back(param);
 
     if (!listfrag.atEnd())
-      throw UnexpectedToken{};
+      throw UnexpectedToken{ listfrag.peek() };
 
     listfrag.consumeComma();
   }
@@ -1600,10 +1585,7 @@ ast::FunctionParameter FunctionParamParser::parse()
   if (atEnd())
     return fp;
 
-  if (peek() != Token::Eq)
-    throw ExpectedEqualSign{};
-
-  const Token eqSign = read();
+  const Token eqSign = read(Token::Eq);
   ExpressionParser ep{ fragment() };
   auto defaultVal = ep.parse();
   fp.defaultValue = defaultVal;
@@ -1679,7 +1661,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalVirtual())
   {
     if (!isParsingMember())
-      throw IllegalUseOfVirtual{};
+      throw IllegalUseOfKeyword{ mVirtualKw };
   }
 
   readOptionalStatic();
@@ -1687,7 +1669,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalExplicit())
   {
     if (!isParsingMember())
-      throw IllegalUseOfExplicit{};
+      throw IllegalUseOfKeyword{ mExplicitKw };
   }
 }
 
@@ -1842,8 +1824,7 @@ bool DeclParser::detectDecl()
 
 std::shared_ptr<ast::Declaration> DeclParser::parse()
 {
-  if (mDecision == NotADecl)
-    throw ImplementationError{"Calling DeclParser::parse() when decision = NotADecl"};
+  assert(mDecision != NotADecl);
 
   if (mDecision == ParsingDestructor)
     return parseDestructor();
@@ -1882,7 +1863,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   }
   else
   {
-    throw UnexpectedToken{};
+    throw UnexpectedToken{ peek() };
   }
 
   readArgsOrParams();
@@ -1898,7 +1879,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   if (peek() == Token::LeftBrace)
   {
     if (mDecision == ParsingVariable)
-      throw UnexpectedToken{};
+      throw UnexpectedToken{ peek() };
     mDecision = ParsingFunction;
     mVarDecl = nullptr;
     mFuncDecl->body = readFunctionBody();
@@ -1907,13 +1888,13 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   else if (peek() == Token::Semicolon)
   {
     if (mDecision == ParsingFunction)
-      throw ExpectedLeftBrace{};
+      throw UnexpectedToken{ peek(), Token::LeftBrace };
 
     mVarDecl->semicolon = read();
     return mVarDecl;
   }
 
-  throw UnexpectedToken{};
+  throw UnexpectedToken{ peek() };
 }
 
 std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
@@ -1944,10 +1925,13 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     const Token rightpar = sentinel.consumeSentinel();
     mVarDecl->init = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
   }
-  else if (peek() != Token::Semicolon)
-    throw ImplementationError{"DeclParser::parseVarDecl() : a semicolon was expected"};
+  else
+  {
+    /// TODO: should we assert here ?
+    assert(peek() == Token::Semicolon);
+  }
 
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  const Token semicolon = read(Token::Semicolon);
 
   return mVarDecl;
 }
@@ -2023,21 +2007,15 @@ void DeclParser::readOptionalMemberInitializers()
 
     if (peek() == Token::LeftBrace)
       break;
-    else if (peek() != Token::Comma)
-      throw ExpectedComma{};
 
-    unsafe_read(); // reads the comma ','
+    read(Token::Comma);
   }
 }
 
 std::shared_ptr<ast::FunctionDecl> DeclParser::parseDestructor()
 {
-  const Token leftpar = read();
-  if (leftpar != Token::LeftPar)
-    throw ExpectedLeftPar{};
-  const Token rightpar = read();
-  if (rightpar != Token::RightPar)
-    throw ExpectedRightPar{};
+  const Token leftpar = read(Token::LeftPar);
+  const Token rightpar = read(Token::RightPar);
 
   if (readOptionalDeleteSpecifier() || readOptionalDefaultSpecifier()) {
     return mFuncDecl;
@@ -2055,8 +2033,7 @@ DeclParser::Decision DeclParser::decision() const
 
 void DeclParser::setDecision(Decision d)
 {
-  if (mDecision != Undecided)
-    throw ImplementationError{"DeclParser::setDecision() : decision already set"};
+  assert(mDecision == Undecided);
 
   mDecision = d;
   if (mDecision == ParsingVariable)
@@ -2121,9 +2098,7 @@ bool DeclParser::readOptionalExplicit()
 
 void DeclParser::readArgs()
 {
-  const Token leftPar = read();
-  if (leftPar != Token::LeftPar)
-    throw ExpectedLeftPar{};
+  const Token leftPar = read(Token::LeftPar);
 
   std::vector<std::shared_ptr<ast::Expression>> args;
   SentinelFragment sentinel{ Token::RightPar, fragment() };
@@ -2143,7 +2118,7 @@ void DeclParser::readArgs()
 
 void DeclParser::readParams()
 {
-  const Token leftpar = readToken<ExpectedLeftPar>(Token::LeftPar);
+  const Token leftpar = read(Token::LeftPar);
 
   SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
@@ -2234,7 +2209,7 @@ bool DeclParser::readOptionalConst()
     return false;
   
   if (mDecision == ParsingVariable)
-    throw UnexpectedToken{};
+    throw UnexpectedToken{ peek() };
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
   mFuncDecl->constQualifier = read();
@@ -2271,7 +2246,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   if (atEnd())
     throw UnexpectedEndOfInput{};
 
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::Semicolon);
 
   return true;
 }
@@ -2302,7 +2277,7 @@ bool DeclParser::readOptionalDefaultSpecifier()
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
 
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::Semicolon);
 
   return true;
 }
@@ -2316,7 +2291,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
     return false;
 
   auto p = pos();
-  const Token eqSign = read();
+  const Token eqSign = unsafe_read();
 
   if (peek().type != Token::OctalLiteral)
   {
@@ -2327,12 +2302,12 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
   mFuncDecl->virtualPure = read();
 
   if (text(mFuncDecl->virtualPure) != "0")
-    throw ExpectedZero{};
+    throw UnexpectedToken{ mFuncDecl->virtualPure, parser::Token::Zero};
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
 
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::Semicolon);
 
   return true;
 }
@@ -2341,7 +2316,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
 std::shared_ptr<ast::CompoundStatement> DeclParser::readFunctionBody()
 {
   if (peek() != Token::LeftBrace)
-    throw ExpectedLeftBrace{};
+    throw UnexpectedToken{ peek(), Token::LeftBrace };
 
   ProgramParser pParser{ fragment() };
   return std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
@@ -2424,8 +2399,11 @@ bool DeclParser::detectCastDecl()
   catch (const ParserException &)
   {
     if (mExplicitKw.isValid())
+    {
       throw CouldNotReadType{};
-    else {
+    }
+    else 
+    {
       seek(p);
       return false;
     }
@@ -2526,10 +2504,7 @@ void EnumValueParser::parse()
       continue;
     }
 
-    if (frag.peek() != Token::Eq)
-      throw ExpectedEqualSign{};
-
-    const Token equalsign = unsafe_read();
+    const Token equalsign = read(Token::Eq);
 
     ExpressionParser valparser{ &frag };
     auto expr = valparser.parse();
@@ -2561,21 +2536,14 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
     enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(idparser.parse());
   }
 
-  if (peek() != Token::LeftBrace)
-    throw ExpectedLeftBrace{};
-
-  read(); // reads left brace
+  read(Token::LeftBrace);
 
   SentinelFragment sentinel{ Token::RightBrace, fragment() };
   EnumValueParser value_parser{ &sentinel };
   value_parser.parse();
 
-  if (peek() != Token::RightBrace)
-    throw ExpectedRightBrace{};
-
-  read(); // reads right brace
-
-  const Token semicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  read(Token::RightBrace);
+  read(Token::Semicolon);
 
   return ast::EnumDeclaration::New(etok, ctok, enum_name, std::move(value_parser.values));
 }
@@ -2608,7 +2576,7 @@ std::shared_ptr<ast::ClassDecl> ClassParser::parse()
 
   readOptionalParent();
 
-  mClass->openingBrace = readToken<ExpectedLeftBrace>(Token::LeftBrace);
+  mClass->openingBrace = read(Token::LeftBrace);
 
   while (!readClassEnd())
     readNode();
@@ -2620,10 +2588,7 @@ void ClassParser::parseAccessSpecifier()
 {
   const Token visibility = unsafe_read();
 
-  if (peek() != Token::Colon)
-    throw ExpectedColon{};
-
-  const Token colon = unsafe_read();
+  const Token colon = read(Token::Colon);
 
   mClass->content.push_back(ast::AccessSpecifier::New(visibility, colon));
 }
@@ -2721,22 +2686,10 @@ bool ClassParser::readClassEnd()
     return false;
 
   mClass->closingBrace = unsafe_read();
-  mClass->endingSemicolon = readToken<ExpectedSemicolon>(Token::Semicolon);
+  mClass->endingSemicolon = read(Token::Semicolon);
 
   return true;
 }
-
-Token ClassParser::read(Token::Type tt)
-{
-  if (atEnd())
-    throw UnexpectedEndOfInput{};
-
-  Token r = read();
-  if (r != tt)
-    throw UnexpectedToken{};
-  return r;
-}
-
 
 NamespaceParser::NamespaceParser(AbstractFragment *fragment)
   : ParserBase(fragment)
@@ -2757,18 +2710,12 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
     IdentifierParser idp{ fragment() };
     std::shared_ptr<ast::Identifier> aliased_name = idp.parse();
 
-    if (peek() != Token::Semicolon)
-      throw ExpectedSemicolon{};
-
-    unsafe_read();
+    read(Token::Semicolon);
 
     return ast::NamespaceAliasDefinition::New(ns_tok, name, eq_sign, aliased_name);
   }
 
-  if (unsafe_peek() != Token::LeftBrace)
-    throw ExpectedLeftBrace{};
-
-  const Token lb = unsafe_read();
+  const Token lb = read(Token::LeftBrace);
 
   SentinelFragment sentinel{ Token::RightBrace, fragment() };
   Parser parser;
@@ -2799,10 +2746,7 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
 {
   const Token friend_tok = unsafe_read();
 
-  if (peek() != Token::Class)
-    throw ExpectedClassKeywordAfterFriend{};
-
-  const Token class_tok = unsafe_read();
+  const Token class_tok = read(Token::Class);
 
   std::shared_ptr<ast::Identifier> class_name;
   {
@@ -2810,10 +2754,7 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
     class_name = idp.parse();
   }
 
-  if (peek() != Token::Semicolon)
-    throw ExpectedSemicolon{};
-
-  const Token semicolon = unsafe_read();
+  const Token semicolon = read(Token::Semicolon);
 
   return ast::ClassFriendDeclaration::New(friend_tok, class_tok, class_name);
 }
@@ -2836,7 +2777,7 @@ std::shared_ptr<ast::Declaration> UsingParser::parse()
   {
     const Token namespace_tok = unsafe_read();
     std::shared_ptr<ast::Identifier> name = read_name();
-    read_semicolon();
+    read(Token::Semicolon);
     return ast::UsingDirective::New(using_tok, namespace_tok, name);
   }
 
@@ -2844,20 +2785,17 @@ std::shared_ptr<ast::Declaration> UsingParser::parse()
 
   if (name->is<ast::ScopedIdentifier>())
   {
-    read_semicolon();
+    read(Token::Semicolon);
     return ast::UsingDeclaration::New(using_tok, std::static_pointer_cast<ast::ScopedIdentifier>(name));
   }
 
   /// TODO: throw exception instead
   assert(name->is<ast::SimpleIdentifier>());
 
-  if (peek() != Token::Eq)
-    throw ExpectedEqualSign{};
-
-  const Token eq_sign = unsafe_read();
+  const Token eq_sign = read(Token::Eq);
 
   std::shared_ptr<ast::Identifier> aliased_type = read_name();
-  read_semicolon();
+  read(Token::Semicolon);
   return ast::TypeAliasDeclaration::New(using_tok, std::static_pointer_cast<ast::SimpleIdentifier>(name), eq_sign, aliased_type);
 }
 
@@ -2865,14 +2803,6 @@ std::shared_ptr<ast::Identifier> UsingParser::read_name()
 {
   IdentifierParser idp{ fragment() };
   return idp.parse();
-}
-
-void UsingParser::read_semicolon()
-{
-  if (peek() != Token::Semicolon)
-    throw ExpectedSemicolon{};
-
-  unsafe_read();
 }
 
 
@@ -2884,16 +2814,13 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 {
   const Token exprt = unsafe_peek() == Token::Export ? unsafe_read() : Token{};
 
-  if (peek() != Token::Import)
-    throw ExpectedImportKeyword{};
-
-  const Token imprt = unsafe_read();
+  const Token imprt = read(Token::Import);
 
   std::vector<Token> names;
 
   Token tok = read();
   if (!tok.isIdentifier())
-    throw ExpectedIdentifier{};
+    throw ExpectedIdentifier{ tok };
   names.push_back(tok);
 
   while (peek() == Token::Dot)
@@ -2902,14 +2829,11 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 
     tok = read();
     if (!tok.isIdentifier())
-      throw ExpectedIdentifier{};
+      throw ExpectedIdentifier{ tok };
     names.push_back(tok);
   }
 
-  if (peek() != Token::Semicolon)
-    throw ExpectedSemicolon{};
-
-  unsafe_read();
+  read(Token::Semicolon);
 
   return ast::ImportDirective::New(exprt, imprt, std::move(names), ast());
 }
@@ -2926,10 +2850,7 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
 {
   const Token tmplt_k = unsafe_read();
 
-  if (peek() != Token::LeftAngle)
-    throw ExpectedLeftAngle{};
-
-  const Token left_angle = unsafe_read();
+  const Token left_angle = read(Token::LeftAngle);
 
   std::vector<ast::TemplateParameter> params;
   //SentinelFragment sentinel{ Token::RightAngle, fragment() };
@@ -2988,20 +2909,17 @@ ast::TemplateParameter TemplateParameterParser::parse()
   else if (unsafe_peek() == Token::Bool)
     result.kind = unsafe_read();
   else
-    throw UnexpectedToken{};
+    throw UnexpectedToken{ peek() };
 
   if (!peek().isIdentifier())
-    throw ExpectedIdentifier{};
+    throw ExpectedIdentifier{ peek() };
 
   result.name = unsafe_read();
 
   if (atEnd())
     return result;
 
-  if (peek() != Token::Eq)
-    throw ExpectedEqualSign{};
-
-  result.eq = unsafe_read();
+  result.eq = read(Token::Eq);
 
   TemplateArgParser argp{ fragment() };
   result.default_value = argp.parse();

@@ -149,6 +149,7 @@ public:
     Tilde = BitwiseNot,
     Asterisk = Mul,
     Star = Asterisk,
+    Zero = OctalLiteral, // Zero is an octal literal of length 1
   };
 
   Token(Type t, int pos, int size, int line, int column, int src = 0);

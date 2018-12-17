@@ -72,11 +72,12 @@ FunctionScope * FunctionScope::clone() const
 
 bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
 {
+  /// TODO: (update), remove this block, it is useless
   /// TODO : this block is incorrect, 'this' is not always at index 1 !
   if (name == "this")
   {
     if (!mCompiler->canUseThis())
-      throw IllegalUseOfThis{ };
+      throw IllegalUseOfThis{ diagnostic::pos_t{-1, -1} };
 
     nl->localIndex = 1;
     return true;
@@ -776,7 +777,7 @@ void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
   if (for_cond->type().baseType() != Type::Boolean)
   {
     /// TODO : simply perform an implicit conversion
-    throw NotImplementedError{ "Implicit conversion to bool not implemented yet in for-condition" };
+    throw NotImplemented{ "Implicit conversion to bool not implemented yet in for-condition" };
   }
 
   std::shared_ptr<program::Expression> for_loop_incr = nullptr;
@@ -849,7 +850,7 @@ void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpState
   }
 
   assert(false);
-  throw NotImplementedError{ dpos(js), "This kind of jump statement not implemented" };
+  throw NotImplemented{ "This kind of jump statement not implemented" };
 }
 
 void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnStatement> & rs)
@@ -886,7 +887,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   const Type var_type = type_.resolve(var_decl->variable_type, mCurrentScope);
 
   if (var_decl->staticSpecifier.isValid())
-    throw NotImplementedError{ dpos(var_decl), "Static variables not implemented yet" };
+    throw NotImplemented{ "Static variables not implemented yet" };
 
   if (var_decl->init == nullptr)
     return processVariableDeclaration(var_decl, var_type, nullptr);
@@ -979,7 +980,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
 void FunctionCompiler::processVariableInitListDecl(const std::shared_ptr<ast::VariableDecl> & varDecl, const std::shared_ptr<program::InitializerList> & initlist)
 {
-  throw NotImplementedError{ dpos(varDecl), "Initializer list variables not implemented yet" };
+  throw NotImplemented{ "Initializer list variables not implemented yet" };
 }
 
 void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
@@ -1025,7 +1026,7 @@ void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & 
 
   /// TODO : convert to bool if not bool
   if (cond->type().baseType() != Type::Boolean)
-    throw NotImplementedError{ "FunctionCompiler::generateWhileLoop() : implicit conversion to bool not implemented" };
+    throw NotImplemented{ "FunctionCompiler::generateWhileLoop() : implicit conversion to bool not implemented" };
 
   std::shared_ptr<program::Statement> body;
   if (whileLoop->body->is<ast::CompoundStatement>())

@@ -26,104 +26,200 @@ public:
   ParserException(const ParserException &) = default;
   virtual ~ParserException() = default;
   
-  virtual std::string what() const = 0;
+  virtual std::string what() const { return "no implemented"; };
 };
 
-class CParserExceptionBase : public ParserException
+class UnexpectedEndOfInput : public ParserException
 {
 public:
-  virtual std::string get_format_message() const = 0;
+  UnexpectedEndOfInput() = default;
+  ~UnexpectedEndOfInput() = default;
+  ErrorCode code() const override { return ErrorCode::P_UnexpectedEndOfInput; }
 };
 
-template<typename...Args>
-class CParserException : public CParserExceptionBase
+class UnexpectedFragmentEnd : public ParserException
 {
 public:
-  typedef std::tuple<Args...>  container_type;
-  container_type items;
-
-  CParserException(const Args &... args)
-    : items{ args... }
-  {
-
-  }
-
-  template<std::size_t...I>
-  std::string what_impl(std::index_sequence<I...>) const
-  {
-    return diagnostic::format(this->get_format_message(), std::get<I>(items)...);
-  }
-
-  std::string what() const override
-  {
-    return what_impl(std::make_index_sequence<sizeof...(Args)>{});
-  }
-};
-
-#define DECLARE_PARSER_ERROR(name, mssg, ...) class name : public CParserException<__VA_ARGS__> \
-{ \
-public: \
-  using CParserException<__VA_ARGS__>::CParserException; \
-  std::string get_format_message() const override { return mssg; } \
+  UnexpectedFragmentEnd() = default;
+  ~UnexpectedFragmentEnd() = default;
+  ErrorCode code() const override { return ErrorCode::P_UnexpectedFragmentEnd; }
 };
 
 
-DECLARE_PARSER_ERROR(ImplementationError, "Implementation error : %1", std::string);
-DECLARE_PARSER_ERROR(UnexpectedEndOfInput, "Unexpected end of input");
-DECLARE_PARSER_ERROR(UnexpectedFragmentEnd, "Unexpected token");
+class UnexpectedToken : public ParserException
+{
+public:
+  Token actual;
+  Token::Type expected;
 
-DECLARE_PARSER_ERROR(UnexpectedToken, "Unexpected token");
-DECLARE_PARSER_ERROR(UnexpectedClassKeyword, "Unexpected 'class' keyword.");
-DECLARE_PARSER_ERROR(UnexpectedOperatorKeyword, "Unexpected 'operator' keyword.");
+public:
+  UnexpectedToken(const Token & got, Token::Type expect = Token::Invalid) : actual(got), expected(expect) { }
+  ~UnexpectedToken() = default;
+  ErrorCode code() const override { return ErrorCode::P_UnexpectedToken; }
+};
 
-DECLARE_PARSER_ERROR(ExpectedLeftBrace, "Expected left brace");
-DECLARE_PARSER_ERROR(ExpectedRightBrace, "Expected right brace");
-DECLARE_PARSER_ERROR(ExpectedLeftPar, "Expected left parenthesis");
-DECLARE_PARSER_ERROR(ExpectedRightPar, "Expected right parenthesis");
-DECLARE_PARSER_ERROR(ExpectedRightBracket, "Expected right bracket");
-DECLARE_PARSER_ERROR(ExpectedLeftAngle, "Expected left angle");
-DECLARE_PARSER_ERROR(ExpectedRightAngle, "Expected right angle");
-DECLARE_PARSER_ERROR(ExpectedSemicolon, "Expected semicolon");
-DECLARE_PARSER_ERROR(ExpectedComma, "Expected comma");
-DECLARE_PARSER_ERROR(ExpectedZero, "Expected zero");
-DECLARE_PARSER_ERROR(ExpectedEqualSign, "Expected equal sign");
-DECLARE_PARSER_ERROR(ExpectedColon, "Expected colon");
+class IllegalUseOfKeyword : public ParserException
+{
+public:
+  Token keyword;
 
-DECLARE_PARSER_ERROR(CouldNotReadIdentifier, "Could not read identifier");
-DECLARE_PARSER_ERROR(IllegalSpaceBetweenPars, "operator() allows no spaces between '(' and ')'");
-DECLARE_PARSER_ERROR(IllegalSpaceBetweenBrackets, "operator[] allows no spaces between '[' and ']'");
-DECLARE_PARSER_ERROR(ExpectedEmptyStringLiteral, "Expected an empty string literal");
-DECLARE_PARSER_ERROR(ExpectedOperatorSymbol, "Expected 'operator' to be followed by operator symbol");
-DECLARE_PARSER_ERROR(ExpectedUserDefinedName, "Could not read user-defined name");
+public:
+  IllegalUseOfKeyword(const Token & got) : keyword(got) { }
+  ~IllegalUseOfKeyword() = default;
+  ErrorCode code() const override { return ErrorCode::P_IllegalUseOfKeyword; }
+};
 
-DECLARE_PARSER_ERROR(CouldNotReadLiteral, "Could not read literal");
+class ExpectedEmptyStringLiteral : public ParserException
+{
+public:
+  Token actual;
 
-DECLARE_PARSER_ERROR(InvalidEmptyOperand, "Parentheses are empty");
-DECLARE_PARSER_ERROR(InvalidEmptyBrackets, "Brackets are empty");
-DECLARE_PARSER_ERROR(CouldNotReadOperator, "Could not read operator name");
-DECLARE_PARSER_ERROR(ExpectedBinaryOperator, "A binary operator is expected after an operand");
-DECLARE_PARSER_ERROR(MissingConditionalColon, "Incomplete conditional expression (read '?' but could not find ':')");
-DECLARE_PARSER_ERROR(NotPrefixOperator, "Could not read prefix-operator");
+public:
+  ExpectedEmptyStringLiteral(const Token & got) : actual(got) { }
+  ~ExpectedEmptyStringLiteral() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedEmptyStringLiteral; }
+};
 
-DECLARE_PARSER_ERROR(CouldNotParseLambdaCapture, "Could not read lambda-capture");
+class ExpectedOperatorSymbol : public ParserException
+{
+public:
+  Token actual;
 
-DECLARE_PARSER_ERROR(IllegalUseOfExplicit, "'explicit' keyword is not allowed within this context");
-DECLARE_PARSER_ERROR(IllegalUseOfVirtual, "'virtual' keyword is not allowed within this context");
-DECLARE_PARSER_ERROR(ExpectedCurrentClassName, "Could not read current class name");
-DECLARE_PARSER_ERROR(CouldNotReadType, "Could not read type name");
+public:
+  ExpectedOperatorSymbol(const Token & got) : actual(got) { }
+  ~ExpectedOperatorSymbol() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedOperatorSymbol; }
+};
 
-DECLARE_PARSER_ERROR(ExpectedDeclaration, "Expected a declaration");
+class ExpectedIdentifier : public ParserException
+{
+public:
+  Token actual;
 
-DECLARE_PARSER_ERROR(ExpectedClassKeywordAfterFriend, "Expected 'class' keyword after 'friend'");
-DECLARE_PARSER_ERROR(UnexpectedFriendKeyword, "Friend declarations cannot appear at this level.");
+public:
+  ExpectedIdentifier(const Token & got) : actual(got) { }
+  ~ExpectedIdentifier() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedIdentifier; }
+};
 
-DECLARE_PARSER_ERROR(ExpectedImportKeyword, "Expected 'import' keyword after 'export'");
-DECLARE_PARSER_ERROR(ExpectedIdentifier, "Expected an identifier");
+class ExpectedUserDefinedName : public ParserException
+{
+public:
+  Token actual;
 
-DECLARE_PARSER_ERROR(NotImplementedError, "%1", std::string);
+public:
+  ExpectedUserDefinedName(const Token & got) : actual(got) { }
+  ~ExpectedUserDefinedName() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedUserDefinedName; }
+};
 
-#undef DECLARE_PARSER_ERROR
 
+class ExpectedLiteral : public ParserException
+{
+public:
+  Token actual;
+
+public:
+  ExpectedLiteral(const Token & got) : actual(got) { }
+  ~ExpectedLiteral() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedLiteral; }
+};
+
+class InvalidEmptyOperand : public ParserException
+{
+public:
+  InvalidEmptyOperand() = default;
+  ~InvalidEmptyOperand() = default;
+  ErrorCode code() const override { return ErrorCode::P_InvalidEmptyOperand; }
+};
+
+class InvalidEmptyBrackets : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  InvalidEmptyBrackets() = default;
+  ~InvalidEmptyBrackets() = default;
+  ErrorCode code() const override { return ErrorCode::P_InvalidEmptyBrackets; }
+};
+
+class ExpectedOperator : public ParserException
+{
+public:
+  Token actual;
+
+public:
+  ExpectedOperator(const Token & got) : actual(got) { }
+  ~ExpectedOperator() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedOperator; }
+};
+
+class ExpectedBinaryOperator : public ParserException
+{
+public:
+  Token actual;
+
+public:
+  ExpectedBinaryOperator(const Token & got) : actual(got) { }
+  ~ExpectedBinaryOperator() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedBinaryOperator; }
+};
+
+class ExpectedPrefixOperator : public ParserException
+{
+public:
+  Token actual;
+
+public:
+  ExpectedPrefixOperator(const Token & got) : actual(got) { }
+  ~ExpectedPrefixOperator() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedPrefixOperator; }
+};
+
+class MissingConditionalColon : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  MissingConditionalColon() = default;
+  ~MissingConditionalColon() = default;
+  ErrorCode code() const override { return ErrorCode::P_MissingConditionalColon; }
+};
+
+
+class CouldNotParseLambdaCapture : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  CouldNotParseLambdaCapture() = default;
+  ~CouldNotParseLambdaCapture() = default;
+  ErrorCode code() const override { return ErrorCode::P_CouldNotParseLambdaCapture; }
+};
+
+class ExpectedCurrentClassName : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  ExpectedCurrentClassName() = default;
+  ~ExpectedCurrentClassName() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedCurrentClassName; }
+};
+
+class CouldNotReadType : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  CouldNotReadType() = default;
+  ~CouldNotReadType() = default;
+  ErrorCode code() const override { return ErrorCode::P_CouldNotReadType; }
+};
+
+class ExpectedDeclaration : public ParserException
+{
+  /// TODO: add pos ?
+public:
+  ExpectedDeclaration() = default;
+  ~ExpectedDeclaration() = default;
+  ErrorCode code() const override { return ErrorCode::P_ExpectedDeclaration; }
+};
 
 } // namespace parser
 

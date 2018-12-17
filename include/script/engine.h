@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "script/exception.h"
 #include "script/scope.h"
 #include "script/string.h"
 #include "script/types.h"
@@ -45,6 +46,39 @@ namespace program
 {
 class Expression;
 } // namespace program
+
+// base class for all engine exception
+class EngineError : public Exception 
+{ 
+public:
+  ErrorCode code_;
+  
+  EngineError(ErrorCode c) : code_(c) {}
+  ErrorCode code() const override { return code_; }
+};
+
+// errors returned by Engine::construct 
+struct ConstructionError : EngineError { using EngineError::EngineError; };
+struct NoMatchingConstructor : ConstructionError { NoMatchingConstructor() : ConstructionError(ErrorCode::E_NoMatchingConstructor) {} };
+struct ConstructorIsDeleted : ConstructionError { ConstructorIsDeleted() : ConstructionError(ErrorCode::E_ConstructorIsDeleted) {} };
+struct TooManyArgumentInInitialization : ConstructionError { TooManyArgumentInInitialization() : ConstructionError(ErrorCode::E_TooManyArgumentInInitialization) {} };
+struct TooFewArgumentInInitialization : ConstructionError { TooFewArgumentInInitialization() : ConstructionError(ErrorCode::E_TooFewArgumentInInitialization) {} };
+
+// error returned by Engine::copy
+struct CopyError : EngineError { CopyError() : EngineError(ErrorCode::E_CopyError) {} };
+
+// error returned by Engine::cast
+struct ConversionError : EngineError { ConversionError() : EngineError(ErrorCode::E_ConversionError) {} };
+
+// error returned by Engine::typeId
+struct UnknownTypeError : EngineError { UnknownTypeError() : EngineError(ErrorCode::E_UnknownTypeError) {} };
+
+// error returned by Engine::eval
+struct EvaluationError : EngineError 
+{ 
+  std::string message;
+  EvaluationError(const std::string & mssg) : EngineError(ErrorCode::E_EvaluationError), message(mssg) {} 
+};
 
 
 class LIBSCRIPT_API Engine
@@ -109,7 +143,7 @@ public:
   Enum getEnum(Type id) const;
   ClosureType getLambda(Type id) const;
 
-  void reserveTypeRange(int begin, int end);
+  bool reserveTypeRange(int begin, int end);
 
   FunctionType newFunctionType(const Prototype & proto);
 

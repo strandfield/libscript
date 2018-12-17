@@ -61,7 +61,7 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
     if (dm.type.isReference())
       throw DataMemberIsReferenceAndCannotBeAssigned{};
     if (dm.type.isConst())
-      throw NotImplementedError{ "Data member is const and cannot be assigned" };
+      throw NotImplemented{ "Data member is const and cannot be assigned" };
 
     Operator dm_assign = findAssignmentOperator(dm.type);
     if (dm_assign.isNull())

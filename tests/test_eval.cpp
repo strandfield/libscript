@@ -59,6 +59,15 @@ TEST(Eval, failure1) {
   engine.setup();
 
   ASSERT_ANY_THROW(engine.eval("this"));
+
+  try
+  {
+    engine.eval("3 + \"Hello\"");
+  }
+  catch (EngineError & error)
+  {
+    ASSERT_EQ(error.code(), ErrorCode::E_EvaluationError);
+  }
 }
 
 TEST(Eval, conditional_expression) {
@@ -215,4 +224,105 @@ TEST(Scripts, conversions) {
   ASSERT_EQ(c.toDouble(), 15.0);
   Value d = s.globals().at(3);
   ASSERT_EQ(d.type(), Type::Int);
+}
+
+TEST(BuiltinOperations, booleans) {
+  using namespace script;
+
+  const char *source =
+    "  bool result = true;                              "
+    "                                                   "
+    "  void Assert(bool b) { result = result && b; }    "
+    "                                                   "
+    "  Assert(true == true);                            "
+    "  Assert(true != false);                           "
+    "                                                   "
+    "  bool a = true;                                   "
+    "  bool b = false;                                  "
+    "                                                   "
+    "  Assert(!a == false);                             "
+    "  Assert(a || b);                                  "
+    "  Assert(a && !b);                                 ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  Value result = s.globals().at(0);
+  ASSERT_TRUE(result.toBool());
+}
+
+TEST(BuiltinOperations, numbers) {
+  using namespace script;
+
+  const char *source =
+    "                                                      "
+    "  bool result = true;                                 "
+    "                                                      "
+    "  void Assert(bool val) { result = result && val; }   "
+    "                                                      "
+    "  template<typename T>                                "
+    "  void test_number()                                  "
+    "  {                                                   "
+    "    T zero = 0;                                       "
+    "    T one = 1;                                        "
+    "    T two = 2;                                        "
+    "    T a = 0;                                          "
+    "    a = one;                                          "
+    "    a += one; Assert(a == 2);                         "
+    "    a -= one; Assert(a == 1);                         "
+    "    a *= two; Assert(a == 2);                         "
+    "    a /= two; Assert(a == 1);                         "
+    "    T b = two * a - one; Assert(b == 1);              "
+    "    a = a + b; Assert(a == 2);                        "
+    "    b = a / two; Assert(b == 1);                      "
+    "    Assert(b < two);                                  "
+    "    Assert(b >= zero);                                "
+    "    Assert(b <= two);                                 "
+    "    Assert(b > zero);                                 "
+    "    Assert(b != zero);                                "
+    "    b = -b; Assert(b == -1);                          "
+    "    b = +b; Assert(b == -1);                          "
+    "  }                                                   "
+    "                                                      "
+    "  template<typename T>                                "
+    "  void test_integral()                                "
+    "  {                                                   "
+    "    test_number<T>();                                 "
+    "                                                      "
+    "    T one = 1;                                        "
+    "    T two = 2;                                        "
+    "    T a = 1;                                          "
+    "    a %= two; Assert(a == 1);                         "
+    "    a <<= one; Assert(a == 2);                        "
+    "    T b = a % two; Assert(b == 0);                    "
+    "    b = (a >> one); Assert(b == 1);                   "
+    "    T c = (a | b); Assert(c == 3);                    "
+    "    a = (c & b); Assert(a == 1);                      "
+    "    b = a--; Assert(b == 1 && a == 0);                "
+    "    b = ++a; Assert(b == 1 && a == 1);                "
+    "  }                                                   "
+    "                                                      "
+    "  test_integral<char>();                              "
+    "  test_integral<int>();                               "
+    "  test_number<float>();                               "
+    "  test_number<double>();                              "
+    "                                                      ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  ASSERT_TRUE(success);
+
+  s.run();
+
+  Value result = s.globals().at(0);
+  ASSERT_TRUE(result.toBool());
 }

@@ -22,25 +22,7 @@ namespace compiler
 Value ValueConstructor::fundamental(Engine *e, const Type & t)
 {
   assert(t.isFundamentalType());
-
-  switch (t.baseType().data())
-  {
-  case Type::Null:
-  case Type::Void:
-    throw NotImplementedError{ "Could not construct value of type void" };
-  case Type::Boolean:
-    return e->newBool(false);
-  case Type::Char:
-    return e->newChar('\0');
-  case Type::Int:
-    return e->newInt(0);
-  case Type::Float:
-    return e->newFloat(0.f);
-  case Type::Double:
-    return e->newDouble(0.);
-  default:
-    throw NotImplementedError{ "Could not construct value of given fundamental type" };
-  }
+  return e->construct(t.baseType(), {});
 }
 
 std::shared_ptr<program::Expression> ValueConstructor::fundamental(Engine *e, const Type & t, bool copy)
@@ -69,14 +51,14 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   {
     Function default_ctor = e->getClass(type).defaultConstructor();
     if (default_ctor.isNull())
-      throw VariableCannotBeDefaultConstructed{ dp, e->getClass(type).name() };
+      throw VariableCannotBeDefaultConstructed{ dp, type };
     else if (default_ctor.isDeleted())
-      throw ClassHasDeletedDefaultCtor{ dp, e->getClass(type).name() };
+      throw ClassHasDeletedDefaultCtor{ dp, type };
 
     return program::ConstructorCall::New(default_ctor, {});
   }
 
-  throw NotImplementedError{ dp, "ValueConstructor::construct() : cannot default construct value" };
+  throw NotImplemented{ "ValueConstructor::construct() : cannot default construct value" };
 }
 
 std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
@@ -122,7 +104,7 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     return program::ConstructorCall::New(ctor, alloc, std::move(args));
   }
   else
-    throw NotImplementedError{ dp, "ValueConstructor::brace_construct() : type not implemented" };
+    throw NotImplemented{ "ValueConstructor::brace_construct() : type not implemented" };
 }
 
 std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
@@ -158,7 +140,7 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
     return program::ConstructorCall::New(ctor, alloc, std::move(args));
   }
   else
-    throw NotImplementedError{ dp, "ValueConstructor::construct() : type not implemented" };
+    throw NotImplemented{ "ValueConstructor::construct() : type not implemented" };
 }
 
 std::shared_ptr<program::Expression> ValueConstructor::construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init)
