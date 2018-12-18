@@ -118,28 +118,10 @@ std::string Lexer::text(const Token & t) const
   return std::string{ mSource + t.pos, mSource + t.pos + t.length };
 }
 
-bool Lexer::sameIdentifier(const Token & a, const Token & b)
-{
-  if (a.length != b.length)
-    return false;
-  if (a.pos == b.pos)
-    return true;
-  auto a_it = mSource + a.pos;
-  auto b_it = mSource + b.pos;
-  for (int i(0); i < a.length; ++a_it, ++b_it)
-  {
-    if (*a_it != *b_it)
-      return false;
-  }
-  return true;
-}
-
-
 bool Lexer::atEnd() const
 {
   return mPos == mLength;
 }
-
 
 int Lexer::pos() const
 {
@@ -171,26 +153,6 @@ void Lexer::seek(const Position & pos)
   mPos = pos.pos;
   mColumn = pos.col;
   mLine = pos.line;
-}
-
-
-void Lexer::seek(int pos)
-{
-  mPos = mLine = mColumn = 0;
-  auto it = mSource;
-  while (pos > 0)
-  {
-    if (*it == '\n')
-    {
-      mLine++;
-      mColumn = 0;
-    }
-    else
-      mColumn++;
-
-    --pos;
-    ++it;
-  }
 }
 
 void Lexer::reset()
@@ -233,38 +195,6 @@ char Lexer::readChar()
   return *it;
 }
 
-void Lexer::unread(int n)
-{
-  if (n <= 0)
-    return;
-
-  if (n == 1)
-  {
-    if (mPos == 0)
-      throw std::runtime_error{ "Lexer::unread() : already at the beginning of source" };
-    if (mColumn > 0)
-    {
-      mColumn--;
-      mPos--;
-    }
-    else
-    {
-      mLine--;
-      mPos--;
-      int pos = mPos;
-      assert(mSource[pos] == '\n');
-      while (pos > 0 && mSource[pos - 1] != '\n')
-        --pos;
-      mColumn = mPos - pos; // TODO : check if correct !!
-    }
-  }
-  else
-  {
-    unread();
-    unread(n - 1);
-  }
-}
-
 char Lexer::charAt(const Position & pos)
 {
   return mSource[pos.pos];
@@ -279,13 +209,6 @@ void Lexer::consumeDiscardable()
 {
   while (!atEnd() && isDiscardable(peekChar())) 
     readChar();
-}
-
-void Lexer::seek(int pos, int line, int col)
-{
-  mPos = pos;
-  mLine = line;
-  mColumn = col;
 }
 
 Token Lexer::create(const Position & pos, int length, Token::Type type)
@@ -445,12 +368,7 @@ bool Lexer::isDiscardable(char c)
 template<>
 bool Lexer::checkAfter<Token::DecimalLiteral>() const
 {
-  if (atEnd())
-    return true;
-  auto ct = ctype(peekChar());
-  if (ct == Letter)
-    return false;
-  return true;
+  return atEnd() || ctype(peekChar()) != Letter;
 }
 
 
@@ -463,7 +381,7 @@ Token Lexer::readNumericLiteral(const Position & start)
       return create(start, 1, Token::IntegerLiteral);
   }
 
-  char c = readChar();
+  char c = peekChar();
 
   // Reading binary, octal or hexadecimal number
   // eg. : 0b00110111
@@ -479,14 +397,12 @@ Token Lexer::readNumericLiteral(const Position & start)
       return readOctal(start);
     else // it is zero
     {
-      unread();
       if (!checkAfter<Token::DecimalLiteral>())
-        throw std::runtime_error{ "LExer::readNumericLiteral() : error" };
+        throw std::runtime_error{ "Lexer::readNumericLiteral() : error" };
       return create(start, Token::OctalLiteral);
     }
   }
 
-  unread();
   return readDecimal(start);
 }
 
@@ -495,16 +411,14 @@ Token Lexer::readNumericLiteral(const Position & start)
 template<>
 bool Lexer::checkAfter<Token::HexadecimalLiteral>() const
 {
-  if (atEnd())
-    return true;
-  auto ct = ctype(peekChar());
-  if (ct == Letter)
-    return false;
-  return true;
+  return atEnd() || ctype(peekChar()) != Letter;
 }
 
 Token Lexer::readHexa(const Position & start)
 {
+  const char x = readChar();
+  assert(x == 'x');
+
   if (atEnd())  // input ends with '0x' -> error
     throw std::runtime_error{ "Lexer::readHexa() : unexpected end of input" };
 
@@ -543,6 +457,9 @@ bool Lexer::checkAfter<Token::BinaryLiteral>() const
 
 Token Lexer::readBinary(const Position & start)
 {
+  const char b = readChar();
+  assert(b == 'b');
+
   if (atEnd())  // input ends with '0b' -> error
     throw std::runtime_error{ "Lexer::readBinary() : unexpected end of input" };
 
@@ -762,12 +679,7 @@ Token::Type Lexer::identifierType(int begin, int end) const
 template<>
 bool Lexer::checkAfter<Token::StringLiteral>() const
 {
-  if (atEnd())
-    return true;
-  auto ct = ctype(peekChar());
-  if (ct == Digit)
-    return false;
-  return true;
+  return atEnd() || ctype(peekChar()) != Digit;
 }
 
 Token Lexer::readStringLiteral(const Position & start)

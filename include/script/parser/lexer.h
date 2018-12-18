@@ -22,7 +22,6 @@ public:
 
   Token read();
   std::string text(const Token & t) const; // TODO : replace with string_view
-  bool sameIdentifier(const Token & a, const Token & b);
 
   bool atEnd() const;
 
@@ -38,7 +37,6 @@ public:
   Position position() const;
   static Position position(const Token & tok);
 
-  void seek(int pos);
   void seek(const Position & pos);
   void reset();
   void setSource(const SourceFile & src, int id = 0);
@@ -81,12 +79,10 @@ public:
 
 protected:
   char readChar();
-  void unread(int n = 1);
   char charAt(const Position & pos);
   char currentChar() const;
   inline char peekChar() const { return currentChar(); }
   void consumeDiscardable();
-  void seek(int pos, int line, int col);
   Token create(const Position & pos, int length, Token::Type type);
   Token create(const Position & pos, Token::Type type);
   Token readNumericLiteral(const Position & pos);

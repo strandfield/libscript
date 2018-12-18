@@ -93,10 +93,6 @@ public:
   inline const std::shared_ptr<program::Expression> & implicit_object() const { return implicit_object_; }
 
 protected:
-  // diagnostics related (hopefully this is temporary)
-  std::string dstr(const Type & t) const;
-
-protected:
 
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
 
@@ -104,8 +100,6 @@ protected:
   static void complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args);
 
 protected:
-  Type resolve(const ast::QualifiedType & qt);
-
   std::vector<Function> getBinaryOperators(OperatorName op, Type a, Type b);
   std::vector<Function> getUnaryOperators(OperatorName op, Type a);
   std::vector<Function> getCallOperator(const Type & functor_type);

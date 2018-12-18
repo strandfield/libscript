@@ -258,27 +258,24 @@ ExecutionContext::~ExecutionContext()
   engine = nullptr;
 }
 
-bool ExecutionContext::push(const Function & f, Value *begin, Value *end)
+void ExecutionContext::push(const Function & f, const Value *obj, const Value *begin, const Value *end)
 {
-  try {
-    FunctionCall *fc = this->callstack.push();
-    fc->mCallee = f;
-    fc->mArgc = std::distance(begin, end);
-    fc->mStackIndex = this->stack.size;
-    this->stack[this->stack.size++] = Value::Void;
-    for (auto it = begin; it != end; ++it)
-    {
-      this->stack[this->stack.size++] = *it;
-    }
-    fc->flags = FunctionCall::NoFlags;
-    fc->ec = this;
-  }
-  catch (...)
+  FunctionCall *fc = this->callstack.push();
+  fc->mCallee = f;
+  fc->mArgc = std::distance(begin, end);
+  fc->mStackIndex = this->stack.size;
+  this->stack[this->stack.size++] = Value::Void;
+  if (obj != nullptr)
   {
-    return false;
+    fc->mArgc++;
+    this->stack[this->stack.size++] = *obj;
   }
-
-  return true;
+  for (auto it = begin; it != end; ++it)
+  {
+    this->stack[this->stack.size++] = *it;
+  }
+  fc->flags = FunctionCall::NoFlags;
+  fc->ec = this;
 }
 
 bool ExecutionContext::push(const Function & f, int sp)

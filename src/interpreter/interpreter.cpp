@@ -81,57 +81,10 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
   return mExecutionContext->pop();
 }
 
-Value Interpreter::call(const Function & f, const std::vector<Value> & args)
-{
-  Engine *e = f.engine();
-  const int sp = mExecutionContext->stack.size;
-
-  mExecutionContext->stack.push(Value::Void);
-
-  const Prototype & proto = f.prototype();
-  const int argc = args.size();
-
-  try
-  {
-    for (int i(0); i < argc; ++i)
-    {
-      Value arg = e->cast(args[i], proto.at(i));
-      if (!proto.at(i).isReference())
-        e->manage(arg);
-      mExecutionContext->stack.push(arg);
-    }
-  }
-  catch (const std::runtime_error &)
-  {
-    // pop the arguments
-    while (mExecutionContext->stack.size > sp + 1)
-      mExecutionContext->stack.pop();
-
-    throw;
-  }
-
-  mExecutionContext->push(f, sp);
-
-  invoke(f);
-
-  return mExecutionContext->pop();
-}
-
 Value Interpreter::invoke(const Function & f, const Value *obj, const Value *begin, const Value *end)
 {
-  const int sp = mExecutionContext->stack.size;
-  
-  mExecutionContext->stack.push(Value::Void);
-
-  if (obj)
-    mExecutionContext->stack.push(*obj);
-  for (auto it = begin; it != end; ++it)
-    mExecutionContext->stack.push(*it);
-
-  mExecutionContext->push(f, sp);
-
+  mExecutionContext->push(f, obj, begin, end);
   invoke(f);
-
   return mExecutionContext->pop();
 }
 

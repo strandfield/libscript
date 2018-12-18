@@ -85,7 +85,6 @@ public:
   void destroy(Class c);
   void destroy(Namespace ns);
   void destroy(Script s);
-  void destroy(ClosureType ct);
 
   void unregister_class(Class &c);
   void unregister_enum(Enum &e);

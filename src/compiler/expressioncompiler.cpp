@@ -73,16 +73,6 @@ void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
   type_resolver.name_resolver().set_tnp(ftp.name_processor());
 }
 
-std::string ExpressionCompiler::dstr(const Type & t) const
-{
-  return engine()->typeName(t);
-}
-
-Type ExpressionCompiler::resolve(const ast::QualifiedType & qt)
-{
-  return type_resolver.resolve(qt, scope());
-}
-
 std::vector<Function> ExpressionCompiler::getBinaryOperators(OperatorName op, Type a, Type b)
 {
   return NameLookup::resolve(op, a, b, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);

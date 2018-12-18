@@ -106,7 +106,7 @@ private:
   friend class ExecutionContext;
 private:
   Function mCallee;
-  int mIndex; // index in the callstack
+  int mIndex; // index in the callstack, TODO: remove, can be deduced from address of element
   int mStackIndex; // index of return value in the callstack
   int mArgc;
   int flags;
@@ -143,7 +143,7 @@ public:
   ExecutionContext(Engine *e, int stackSize, int callStackSize);
   ~ExecutionContext();
 
-  bool push(const Function & f, Value *begin, Value *end);
+  void push(const Function & f, const Value *obj, const Value *begin, const Value *end);
   bool push(const Function & f, int sp);
   Value pop();
 

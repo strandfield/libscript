@@ -361,19 +361,6 @@ void EngineImpl::destroy(Script s)
     this->scripts.pop_back();
 }
 
-void EngineImpl::destroy(ClosureType ct)
-{
-  auto impl = ct.impl();
-
-  impl->operators.clear();
-  impl->templates.clear(); /// TODO: clear the template instances
-
-  unregister_closure(ct);
-
-  impl->name.insert(0, "deleted_");
-  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
-}
-
 template<typename T>
 void squeeze(std::vector<T> & list)
 {
@@ -1425,7 +1412,7 @@ Value Engine::call(const Function & f, std::initializer_list<Value> && args)
  */
 Value Engine::call(const Function & f, const std::vector<Value> & args)
 {
-  return d->interpreter->call(f, args);
+  return d->interpreter->call(f, nullptr, &args.front(), (&args.front()) + args.size());
 }
 
 /*!
@@ -1450,7 +1437,7 @@ Value Engine::invoke(const Function & f, std::initializer_list<Value> && args)
 
 Value Engine::invoke(const Function & f, const std::vector<Value> & args)
 {
-  return d->interpreter->invoke(f, args.begin(), args.end());
+  return d->interpreter->invoke(f, nullptr, &(args.front()), (&args.front()) + args.size());
 }
 
 

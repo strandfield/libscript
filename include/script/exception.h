@@ -7,6 +7,8 @@
 
 #include "script/errorcodes.h"
 
+#include <string>
+
 namespace script
 {
 

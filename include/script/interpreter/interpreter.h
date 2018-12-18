@@ -25,26 +25,7 @@ public:
   ~Interpreter();
 
   Value call(const Function & f, const Value *obj, const Value *begin, const Value *end);
-  Value call(const Function & f, const std::vector<Value> & args);
-
   Value invoke(const Function & f, const Value *obj, const Value *begin, const Value *end);
-
-  template<typename Iter>
-  Value invoke(const Function & f, Iter begin, Iter end)
-  {
-    const int sp = mExecutionContext->stack.size;
-
-    mExecutionContext->stack.push(Value::Void);
-
-    for (auto it = begin; it != end; ++it)
-      mExecutionContext->stack.push(*it);
-
-    mExecutionContext->push(f, sp);
-
-    invoke(f);
-
-    return mExecutionContext->pop();
-  }
 
   Value eval(const std::shared_ptr<program::Expression> & expr);
 

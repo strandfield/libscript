@@ -510,18 +510,13 @@ std::shared_ptr<ast::Expression> ExpressionParser::parse()
 }
 
 
-bool ExpressionParser::isPrefixOperator(const Token & tok) const
+bool ExpressionParser::isPrefixOperator(const Token & tok)
 {
   auto op = ast::OperatorName::getOperatorId(tok, ast::OperatorName::PrefixOp);
   return op != Operator::Null;
 }
 
-bool ExpressionParser::isPostfixOperator(const Token & tok) const
-{
-  auto op = ast::OperatorName::getOperatorId(tok, ast::OperatorName::PostFixOp);
-  return op != Operator::Null;
-}
-bool ExpressionParser::isInfixOperator(const Token & tok) const
+bool ExpressionParser::isInfixOperator(const Token & tok)
 {
   auto op = ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp);
   return op != Operator::Null;
@@ -686,18 +681,6 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(const std::ve
 
   return buildExpression(operands.begin(), operands.end(), operators.begin(), operators.end());
 }
-
-
-std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprBegin,
-  std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprEnd,
-  std::vector<Token>::const_iterator opBegin,
-  std::vector<Token>::const_iterator opEnd, int opIndex)
-{
-  auto left = buildExpression(exprBegin, exprBegin + (opIndex + 1), opBegin, opBegin + opIndex);
-  auto right = buildExpression(exprBegin + (opIndex + 1), exprEnd, opBegin + (opIndex + 1), opEnd);
-  return ast::Operation::New(*(opBegin + opIndex), left, right);
-}
-
 
 std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprBegin,
   std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprEnd,
@@ -2095,27 +2078,6 @@ bool DeclParser::readOptionalExplicit()
   return true;
 }
 
-
-void DeclParser::readArgs()
-{
-  const Token leftPar = read(Token::LeftPar);
-
-  std::vector<std::shared_ptr<ast::Expression>> args;
-  SentinelFragment sentinel{ Token::RightPar, fragment() };
-  while (!sentinel.atEnd())
-  {
-    ListFragment listfrag{ &sentinel };
-    ExpressionParser ep{ &listfrag };
-    auto expr = ep.parse();
-    args.push_back(expr);
-      
-    listfrag.consumeComma();
-  }
-
-  const Token rightpar = sentinel.consumeSentinel();
-  mVarDecl->init = ast::ConstructorInitialization::New(leftPar, std::move(args), rightpar);
-}
-
 void DeclParser::readParams()
 {
   const Token leftpar = read(Token::LeftPar);
@@ -2420,58 +2382,14 @@ bool DeclParser::detectCastDecl()
 
 bool DeclParser::isClassName(const std::shared_ptr<ast::Identifier> & name) const
 {
-  return compareName(name, mClassName, fragment()->data());
-}
-
-bool compareName(const std::shared_ptr<ast::Identifier> & a, const std::shared_ptr<ast::Identifier> & b, const std::shared_ptr<ParserData> & data);
-
-static bool compare_template_names(const std::shared_ptr<ast::TemplateIdentifier> & a, const std::shared_ptr<ast::TemplateIdentifier> & b, const std::shared_ptr<ParserData> & data)
-{
-  if (a->arguments.size() != b->arguments.size())
+  if (!name->is<ast::SimpleIdentifier>())
     return false;
 
-  if (a->getName() != b->getName())
-    return false;
-
-  for (size_t i(0); i < a->arguments.size(); ++i)
-  {
-    if (!(a->arguments.at(i)->is<ast::Identifier>() && b->arguments.at(i)->is<ast::Identifier>()))
-      return false;
-
-    if (!compareName(std::dynamic_pointer_cast<ast::Identifier>(a->arguments.at(i)), std::dynamic_pointer_cast<ast::Identifier>(b->arguments.at(i)), data))
-      return false;
-  }
-
-  return false;
-}
-
-static bool compare_qualified_names(const std::shared_ptr<ast::ScopedIdentifier> & a, const std::shared_ptr<ast::ScopedIdentifier> & b, const std::shared_ptr<ParserData> & data)
-{
-  /// TODO
-  return false;
-}
-
-bool compareName(const std::shared_ptr<ast::Identifier> & a, const std::shared_ptr<ast::Identifier> & b, const std::shared_ptr<ParserData> & data)
-{
-  if (a->type() != b->type())
-    return false;
-
-  switch (a->type())
-  {
-  case ast::NodeType::SimpleIdentifier:
-    return a->as<ast::SimpleIdentifier>().getName() == b->as<ast::SimpleIdentifier>().getName();
-  case ast::NodeType::OperatorName:
-    return a->as<ast::OperatorName>().symbol.type == b->as<ast::OperatorName>().symbol.type;
-  case ast::NodeType::LiteralOperatorName:
-    return a->as<ast::LiteralOperatorName>().suffix.type == b->as<ast::LiteralOperatorName>().suffix.type;
-  case ast::NodeType::TemplateIdentifier:
-    return compare_template_names(std::static_pointer_cast<ast::TemplateIdentifier>(a), std::static_pointer_cast<ast::TemplateIdentifier>(b), data);
-  case ast::NodeType::QualifiedIdentifier:
-    return compare_qualified_names(std::static_pointer_cast<ast::ScopedIdentifier>(a), std::static_pointer_cast<ast::ScopedIdentifier>(b), data);
-  default:
-    break;
-  }
-
+  if (mClassName->is<ast::SimpleIdentifier>())
+    return mClassName->as<ast::SimpleIdentifier>().getName() == name->as<ast::SimpleIdentifier>().getName();
+  else if(mClassName->is<ast::TemplateIdentifier>())
+    return mClassName->as<ast::TemplateIdentifier>().getName() == name->as<ast::SimpleIdentifier>().getName();
+ 
   return false;
 }
 

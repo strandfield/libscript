@@ -212,15 +212,10 @@ protected:
     std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprEnd,
     std::vector<Token>::const_iterator opBegin, 
     std::vector<Token>::const_iterator opEnd);
-  std::shared_ptr<ast::Expression> buildExpression(std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprBegin,
-    std::vector<std::shared_ptr<ast::Expression>>::const_iterator exprEnd,
-    std::vector<Token>::const_iterator opBegin,
-    std::vector<Token>::const_iterator opEnd, int opIndex);
 
 
-  bool isPrefixOperator(const Token & tok) const;
-  bool isPostfixOperator(const Token & tok) const;
-  bool isInfixOperator(const Token & tok) const;
+  static bool isPrefixOperator(const Token & tok);
+  static bool isInfixOperator(const Token & tok);
 };
 
 // parses a lambda or an array expression
@@ -432,7 +427,6 @@ protected:
   bool readOptionalVirtual();
   bool readOptionalStatic();
   bool readOptionalExplicit();
-  void readArgs();
   void readParams();
   void readArgsOrParams();
   bool readOptionalConst();

@@ -68,7 +68,7 @@ TEST(LexerTests, literals) {
   using namespace parser;
 
   const char *source =
-    "0 5 3.14 0x1 0xFF 0xF3e 0b1010 5f 3. 3.14 5.f 5e210 5e10f 5";
+    "0 5 3.14 0x1 0xFF 0xF3e 0b1010 5f 3. 3.14 5.f 5e210 5e10f 5 010";
 
   Lexer lex{ SourceFile::fromString(source) };
   ASSERT_EQ(lex.read().type, Token::OctalLiteral);
@@ -85,6 +85,7 @@ TEST(LexerTests, literals) {
   ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
   ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
   ASSERT_EQ(lex.read().type, Token::IntegerLiteral);
+  ASSERT_EQ(lex.read().type, Token::OctalLiteral);
 
   ASSERT_TRUE(lex.atEnd());
 }
