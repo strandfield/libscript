@@ -17,8 +17,6 @@
 
 #include "script/interpreter/interpreter.h"
 
-#include "script/support/filesystem.h"
-
 #if defined(LIBSCRIPT_HAS_CONFIG)
 #include "config/libscript/engineimpl.h"
 #endif // defined(LIBSCRIPT_HAS_CONFIG)

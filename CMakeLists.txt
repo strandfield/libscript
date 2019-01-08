@@ -21,29 +21,6 @@ if(ENABLE_COVERAGE)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
 endif()
 
-
-##################################################################
-###### feature test
-##################################################################
-
-try_compile(HAVE_FILESYSTEM ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/filesystem.cpp")
-
-if(NOT ${HAVE_FILESYSTEM})
-  try_compile(HAVE_FILESYSTEM_TS ${CMAKE_BINARY_DIR} "${CMAKE_SOURCE_DIR}/cmake/filesystem-ts.cpp")
-endif()
-
-set(LIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB TRUE CACHE BOOL "Set to true unless you have the filesystem TS or C++17")
-
-if(${LIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB})
-  add_definitions(-DLIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB)
-elseif(${HAVE_FILESYSTEM} OR ${HAVE_FILESYSTEM_TS})
-  message("Either the filesystem library or the filesystem TS will be used")
-else()
-  message("Neither filesystem or the filesystem TS could be found")
-  message("The filesystem support library will be used instead")
-  add_definitions(-DLIBSCRIPT_USE_FILESYSTEM_SUPPORT_LIB)
-endif()
-
 ##################################################################
 ###### libscript
 ##################################################################
