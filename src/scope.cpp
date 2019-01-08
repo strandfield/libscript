@@ -448,7 +448,7 @@ const std::vector<Class> & NamespaceScope::classes() const
 
   if (mClasses.empty())
   {
-    mClasses = mNamespace.classes();
+    mClasses = mNamespace.isNull() ? std::vector<Class>{} : mNamespace.classes();
     for (const auto & ns : mImportedNamespaces)
       mClasses.insert(mClasses.end(), ns.classes().begin(), ns.classes().end());
   }
@@ -463,7 +463,7 @@ const std::vector<Enum> & NamespaceScope::enums() const
 
   if (mEnums.empty())
   {
-    mEnums = mNamespace.enums();
+    mEnums = mNamespace.isNull() ? std::vector<Enum>{} : mNamespace.enums();
     for (const auto & ns : mImportedNamespaces)
       mEnums.insert(mEnums.end(), ns.enums().begin(), ns.enums().end());
   }
@@ -478,7 +478,7 @@ const std::vector<Function> & NamespaceScope::functions() const
 
   if (mFunctions.empty())
   {
-    mFunctions = mNamespace.functions();
+    mFunctions = mNamespace.isNull() ? std::vector<Function>{} : mNamespace.functions();
     for (const auto & ns : mImportedNamespaces)
       mFunctions.insert(mFunctions.end(), ns.functions().begin(), ns.functions().end());
   }
@@ -493,7 +493,7 @@ const std::vector<LiteralOperator> & NamespaceScope::literal_operators() const
 
   if (mLiteralOperators.empty())
   {
-    mLiteralOperators = mNamespace.literalOperators();
+    mLiteralOperators = mNamespace.isNull() ? std::vector<LiteralOperator>{} : mNamespace.literalOperators();
     for (const auto & ns : mImportedNamespaces)
       mLiteralOperators.insert(mLiteralOperators.end(), ns.literalOperators().begin(), ns.literalOperators().end());
   }
@@ -513,7 +513,7 @@ const std::vector<Operator> & NamespaceScope::operators() const
 
   if (mOperators.empty())
   {
-    mOperators = mNamespace.operators();
+    mOperators = mNamespace.isNull() ? std::vector<Operator>{} : mNamespace.operators();
     for (const auto & ns : mImportedNamespaces)
       mOperators.insert(mOperators.end(), ns.operators().begin(), ns.operators().end());
   }
@@ -528,7 +528,7 @@ const std::vector<Template> & NamespaceScope::templates() const
 
   if (mTemplates.empty())
   {
-    mTemplates = mNamespace.templates();
+    mTemplates = mNamespace.isNull() ? std::vector<Template>{} : mNamespace.templates();
     for (const auto & ns : mImportedNamespaces)
       mTemplates.insert(mTemplates.end(), ns.templates().begin(), ns.templates().end());
   }
@@ -543,7 +543,7 @@ const std::vector<Typedef> & NamespaceScope::typedefs() const
 
   if (mTypedefs.empty())
   {
-    mTypedefs = mNamespace.typedefs();
+    mTypedefs = mNamespace.isNull() ? std::vector<Typedef>{} : mNamespace.typedefs();
     for (const auto & ns : mImportedNamespaces)
       mTypedefs.insert(mTypedefs.end(), ns.typedefs().begin(), ns.typedefs().end());
   }
@@ -558,7 +558,7 @@ const std::map<std::string, Value> & NamespaceScope::values() const
 
   if (mValues.empty())
   {
-    mValues = mNamespace.vars();
+    mValues = mNamespace.isNull() ? std::map<std::string, Value>{} : mNamespace.vars();
     for (const auto & ns : mImportedNamespaces)
     {
       for (const auto & it : ns.vars())
