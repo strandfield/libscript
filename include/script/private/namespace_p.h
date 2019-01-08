@@ -48,6 +48,9 @@ public:
   virtual ~NamespaceImpl() = default;
 
   Name get_name() const override;
+  
+  virtual bool is_module() const;
+  virtual bool is_native_module() const;
 };
 
 } // namespace script

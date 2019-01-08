@@ -5,7 +5,6 @@
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilesession.h"
 #include "script/compiler/cfunctiontemplateprocessor.h"
-#include "script/compiler/cmoduleloader.h"
 #include "script/compiler/ctemplatenameprocessor.h"
 
 #include "script/engine.h"
@@ -94,7 +93,6 @@ CompileSession::CompileSession(Compiler *c)
   , mState(State::ProcessingDeclarations)
   , error(false)
   , mLogger(this)
-  , mLoader(c)
   , mFTP(c)
   , mTNP(c)
 {
@@ -108,7 +106,6 @@ CompileSession::CompileSession(Compiler *c, const Script & s)
   , script(s)
   , error(false)
   , mLogger(this)
-  , mLoader(c)
   , mFTP(c)
   , mTNP(c)
 {
@@ -191,6 +188,8 @@ bool Compiler::compile(Script s)
         processAllDeclarations();
       }
     }
+
+    s.impl()->loaded = true;
   }
   catch (const CompilerException & e)
   {
@@ -270,7 +269,6 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   FunctionCompiler fc{ engine() };
   fc.setLogger(session()->mLogger);
   fc.setFunctionTemplateProcessor(session()->mFTP);
-  fc.importProcessor().set_loader(session()->mLoader);
 
   CompileFunctionTask task;
   task.declaration = decl;
@@ -328,7 +326,6 @@ ScriptCompiler * Compiler::getScriptCompiler()
     mScriptCompiler = std::make_unique<ScriptCompiler>(engine());
     mScriptCompiler->setLogger(mSession->mLogger);
     mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
-    mScriptCompiler->importProcessor().set_loader(mSession->mLoader);
   }
 
   return mScriptCompiler.get();
@@ -341,7 +338,6 @@ FunctionCompiler * Compiler::getFunctionCompiler()
     mFunctionCompiler = std::make_unique<FunctionCompiler>(engine());
     mFunctionCompiler->setLogger(mSession->mLogger);
     mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
-    mFunctionCompiler->importProcessor().set_loader(mSession->mLoader);
   }
 
   return mFunctionCompiler.get();
@@ -453,21 +449,6 @@ void CFunctionTemplateProcessor::instantiate(Function & f)
   }
 
   ft.impl()->instances[targs] = f;
-}
-
-CModuleLoader::CModuleLoader(Compiler *c)
-  : compiler_(c)
-{
-
-}
-
-Script CModuleLoader::load(Engine *e, const SourceFile & src)
-{
-  /// TODO: not sure about that, need to check impl
-  Script s = e->newScript(src);
-  if (!compiler_->compile(s))
-    throw ModuleImportationError{ src.filepath(), "" };
-  return s;
 }
 
 } // namespace compiler

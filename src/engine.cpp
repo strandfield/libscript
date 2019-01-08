@@ -159,7 +159,7 @@ EngineImpl::EngineImpl(Engine *e)
   : engine(e)
   , garbage_collector_running(false)
 {
-  this->search_dir = support::filesystem::current_path();
+
 }
 
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
@@ -451,6 +451,8 @@ void Engine::setup()
 
   d->templates.array = ArrayImpl::register_array_template(this);
   d->templates.initializer_list = register_initialize_list_template(this);
+
+  d->compiler = std::unique_ptr<compiler::Compiler>(new compiler::Compiler{ this });
 
   auto ec = std::make_shared<interpreter::ExecutionContext>(this, 1024, 256);
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
@@ -1111,6 +1113,16 @@ FunctionType Engine::newFunctionType(const Prototype & proto)
 }
 
 /*!
+ * \fn compiler::Compiler* compiler() const
+ * \brief Returns the engine's compiler.
+ *
+ */
+compiler::Compiler* Engine::compiler() const
+{
+  return d->compiler.get();
+}
+
+/*!
  * \fn Script newScript(const SourceFile & source)
  * \param source file
  * \brief Creates a new script with the given source.
@@ -1131,8 +1143,7 @@ Script Engine::newScript(const SourceFile & source)
  */
 bool Engine::compile(Script s)
 {
-  compiler::Compiler c{ this };
-  return c.compile(s);
+  return compiler()->compile(s);
 }
 
 /*!
@@ -1149,12 +1160,12 @@ void Engine::destroy(Script s)
 /*!
  * \fn Module newModule(const std::string & name)
  * \param module name
- * \brief Creates a new module.
+ * \brief Creates a new native module.
  *
  */
 Module Engine::newModule(const std::string & name)
 {
-  Module m{ std::make_shared<ModuleImpl>(this, name) };
+  Module m{ std::make_shared<NativeModule>(this, name) };
   d->modules.push_back(m);
   return m;
 }
@@ -1164,12 +1175,29 @@ Module Engine::newModule(const std::string & name)
  * \param module name
  * \param load function
  * \param cleanup function
- * \brief Creates a new module.
+ * \brief Creates a new native module.
  *
  */
 Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Module m{ std::make_shared<ModuleImpl>(this, name, load, cleanup) };
+  Module m{ std::make_shared<NativeModule>(this, name, load, cleanup) };
+  d->modules.push_back(m);
+  return m;
+}
+
+/*!
+ * \fn Module newModule(const std::string & name, const SourceFile & src)
+ * \param module name
+ * \param load function
+ * \param cleanup function
+ * \brief Creates a new script module.
+ *
+ */
+Module Engine::newModule(const std::string & name, const SourceFile & src)
+{
+  auto mimpl = std::make_shared<ScriptModule>(d->scripts.size(), this, src, name);
+  d->scripts.push_back(Script{ mimpl });
+  Module m{ mimpl };
   d->modules.push_back(m);
   return m;
 }
@@ -1192,55 +1220,13 @@ const std::vector<Module> & Engine::modules() const
  */
 Module Engine::getModule(const std::string & name)
 {
-  for (const auto & child : d->modules)
+  for (const auto & m : d->modules)
   {
-    if (child.name() == name)
-      return child;
+    if (m.name() == name)
+      return m;
   }
 
   return Module{};
-}
-
-/*!
- * \fn const std::string & scriptExtension() const
- * \brief Returns the file extension of script files.
- *
- */
-const std::string & Engine::scriptExtension() const
-{
-  return d->script_extension;
-}
-
-/*!
- * \fn void setScriptExtension(const std::string & ex)
- * \param file extension
- * \brief Sets the file extension for script files.
- *
- */
-void Engine::setScriptExtension(const std::string & ex)
-{
-  d->script_extension = ex;
-}
-
-/*!
- * \fn const support::filesystem::path & searchDirectory() const
- * \brief Returns the search directory for script modules.
- *
- */
-const support::filesystem::path & Engine::searchDirectory() const
-{
-  return d->search_dir;
-}
-
-/*!
- * \fn void setSearchDirectory(const support::filesystem::path & dir)
- * \param search directory
- * \brief Sets the search directory for script modules.
- *
- */
-void Engine::setSearchDirectory(const support::filesystem::path & dir)
-{
-  d->search_dir = dir;
 }
 
 /*!

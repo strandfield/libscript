@@ -42,6 +42,11 @@ class TemplateArgumentDeduction;
 class TemplateParameter;
 class Value;
 
+namespace compiler
+{
+class Compiler;
+} // namespace compiler
+
 namespace program
 {
 class Expression;
@@ -148,18 +153,15 @@ public:
   FunctionType newFunctionType(const Prototype & proto);
 
   Script newScript(const SourceFile & source);
+  compiler::Compiler* compiler() const;
   bool compile(Script s);
   void destroy(Script s);
 
   Module newModule(const std::string & name);
   Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
+  Module newModule(const std::string & name, const SourceFile & src);
   const std::vector<Module> & modules() const;
   Module getModule(const std::string & name);
-
-  const std::string & scriptExtension() const;
-  void setScriptExtension(const std::string & ex);
-  const support::filesystem::path & searchDirectory() const;
-  void setSearchDirectory(const support::filesystem::path & dir);
 
   // Returns the enclosing namespace of the type
   Namespace enclosingNamespace(Type t) const;

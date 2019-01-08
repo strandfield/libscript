@@ -8,7 +8,6 @@
 #include "libscriptdefs.h"
 
 #include "script/compiler/cfunctiontemplateprocessor.h"
-#include "script/compiler/cmoduleloader.h"
 #include "script/compiler/ctemplatenameprocessor.h"
 #include "script/compiler/logger.h"
 
@@ -84,7 +83,6 @@ public:
   SessionLogger mLogger;
   CTemplateNameProcessor mTNP;
   CFunctionTemplateProcessor mFTP;
-  CModuleLoader mLoader;
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);

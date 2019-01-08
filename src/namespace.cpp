@@ -28,6 +28,16 @@ Name NamespaceImpl::get_name() const
   return Name{ this->name };
 }
 
+bool NamespaceImpl::is_module() const
+{
+  return false;
+}
+
+bool NamespaceImpl::is_native_module() const
+{
+  return false;
+}
+
 Namespace::Namespace(const std::shared_ptr<NamespaceImpl> & impl)
   : d(impl)
 {
@@ -66,12 +76,12 @@ Script Namespace::script() const
 
 bool Namespace::isModuleNamespace() const
 {
-  return dynamic_cast<ModuleImpl*>(d.get()) != nullptr;
+  return d->is_module();
 }
 
 Module Namespace::asModule() const
 {
-  return Module{ std::dynamic_pointer_cast<ModuleImpl>(d) };
+  return Module{ d->is_module() ? d : nullptr };
 }
 
 const std::string & Namespace::name() const

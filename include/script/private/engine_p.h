@@ -39,6 +39,7 @@ public:
 public:
   Engine *engine;
 
+  std::unique_ptr<compiler::Compiler> compiler;
   std::unique_ptr<interpreter::Interpreter> interpreter;
 
   Context context;
@@ -55,9 +56,6 @@ public:
   std::vector<ClosureType> lambdas;
   std::vector<Script> scripts;
   std::vector<Module> modules;
-  
-  std::string script_extension;
-  support::filesystem::path search_dir;
 
   struct {
     Enum enum_type;

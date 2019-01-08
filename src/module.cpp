@@ -5,7 +5,11 @@
 #include "script/module.h"
 #include "script/private/module_p.h"
 
+#include "script/engine.h"
 #include "script/scope.h"
+#include "script/script.h"
+
+#include "script/compiler/compiler.h"
 
 #include "script/private/namespace_p.h"
 
@@ -23,7 +27,7 @@ static void module_default_cleanup(Module)
 
 }
 
-ModuleImpl::ModuleImpl(Engine *e, const std::string & str)
+NativeModule::NativeModule(Engine *e, const std::string & str)
   : NamespaceImpl(str, e)
   , load(module_default_load)
   , cleanup(module_default_cleanup)
@@ -32,7 +36,7 @@ ModuleImpl::ModuleImpl(Engine *e, const std::string & str)
 
 }
 
-ModuleImpl::ModuleImpl(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback)
+NativeModule::NativeModule(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback)
   : NamespaceImpl(module_name, e)
   , load(load_callback)
   , cleanup(cleanup_callback)
@@ -41,9 +45,33 @@ ModuleImpl::ModuleImpl(Engine *e, const std::string & module_name, ModuleLoadFun
 
 }
 
+bool NativeModule::is_module() const
+{
+  return true;
+}
 
-Module::Module(const std::shared_ptr<ModuleImpl> & impl)
-  : d(impl) {}
+bool NativeModule::is_native_module() const
+{
+  return true;
+}
+
+ScriptModule::ScriptModule(int id, Engine *e, const SourceFile & src, const std::string & module_name)
+  : ScriptImpl(id, e, src)
+{
+  this->name = module_name;
+}
+
+bool ScriptModule::is_module() const
+{
+  return true;
+}
+
+
+Module::Module(const std::shared_ptr<NamespaceImpl> & impl)
+  : d(impl) 
+{
+
+}
 
 Engine * Module::engine() const
 {
@@ -55,23 +83,43 @@ const std::string & Module::name() const
   return d->name;
 }
 
+bool Module::isNative() const
+{
+  return d->is_native_module();
+}
+
 Module Module::newSubModule(const std::string & name)
 {
-  Module m{ std::make_shared<ModuleImpl>(engine(), name) };
-  d->modules.push_back(m);
+  if (!isNative())
+    throw std::runtime_error{ "Only native modules can have submodules" };
+
+  NativeModule *nm = static_cast<NativeModule*>(impl());
+
+  Module m{ std::make_shared<NativeModule>(engine(), name) };
+  nm->modules.push_back(m);
   return m;
 }
 
 Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Module m{ std::make_shared<ModuleImpl>(engine(), name, load, cleanup) };
-  d->modules.push_back(m);
+  if (!isNative())
+    throw std::runtime_error{ "Only native modules can have submodules" };
+
+  NativeModule *nm = static_cast<NativeModule*>(impl());
+
+  Module m{ std::make_shared<NativeModule>(engine(), name, load, cleanup) };
+  nm->modules.push_back(m);
   return m;
 }
 
 Module Module::getSubModule(const std::string & name) const
 {
-  for (const auto & child : d->modules)
+  if (!isNative())
+    return Module{};
+
+  const NativeModule *nm = static_cast<const NativeModule*>(impl());
+
+  for (const auto & child : nm->modules)
   {
     if (child.name() == name)
       return child;
@@ -82,21 +130,40 @@ Module Module::getSubModule(const std::string & name) const
 
 const std::vector<Module> & Module::submodules() const
 {
-  return d->modules;
+  static std::vector<Module> static_default = {};
+
+  if (!isNative())
+    return static_default;
+
+  return static_cast<const NativeModule*>(impl())->modules;
 }
 
 bool Module::isLoaded() const
 {
-  return d->loaded;
+  if(isNative())
+    return static_cast<const NativeModule*>(impl())->loaded;
+  else
+    return static_cast<const ScriptModule*>(impl())->loaded;
 }
 
 void Module::load()
 {
-  if (d->loaded)
+  if (isLoaded())
     return;
 
-  d->loaded = true;
-  d->load(*this);
+  if (isNative())
+  {
+    auto nm = static_cast<NativeModule*>(impl());
+    nm->loaded = true;
+    nm->load(*this);
+  }
+  else
+  {
+    Script s = asScript();
+    const bool success = s.compile();
+    if (success && !engine()->compiler()->hasActiveSession())
+      s.run();
+  }
 }
 
 Namespace Module::root() const
@@ -108,37 +175,59 @@ Scope Module::scope() const
 {
   Scope scp{ Namespace{ d } };
 
-  for (const auto & child : d->modules)
+  if (isNative())
   {
-    if (!child.isLoaded())
-      continue;
+    for (const auto & child : submodules())
+    {
+      if (!child.isLoaded())
+        continue;
 
-    Scope submodule_scope = child.scope();
-    scp.merge(submodule_scope);
+      Scope submodule_scope = child.scope();
+      scp.merge(submodule_scope);
+    }
+  }
+  else
+  {
+    Script s = asScript();
+    if (!s.exports().isNull())
+      scp.merge(s.exports());
   }
 
   return scp;
 }
 
+Script Module::asScript() const
+{
+  if (isNative())
+    return Script{};
+
+  return Script{ std::static_pointer_cast<ScriptImpl>(d) };
+}
+
 void Module::destroy()
 {
-  d->cleanup(*this);
-
-  for (auto child : d->modules)
+  if (isNative())
   {
-    child.destroy();
+    auto nm = static_cast<NativeModule*>(impl());
+
+    nm->cleanup(*this);
+
+    for (auto child : nm->modules)
+    {
+      child.destroy();
+    }
+
+    nm->modules.clear();
+
+    nm->functions.clear();
+    nm->classes.clear();
+    nm->enums.clear();
+    nm->namespaces.clear();
+    nm->operators.clear();
+    nm->templates.clear();
+    nm->variables.clear();
+    nm->typedefs.clear();
   }
-
-  d->modules.clear();
-
-  d->functions.clear();
-  d->classes.clear();
-  d->enums.clear();
-  d->namespaces.clear();
-  d->operators.clear();
-  d->templates.clear();
-  d->variables.clear();
-  d->typedefs.clear();
 }
 
 

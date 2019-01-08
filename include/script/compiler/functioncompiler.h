@@ -100,7 +100,6 @@ public:
 
   void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
   inline FunctionTemplateProcessor & functionTemplateProcessor() { return *ftp_; }
-  ImportProcessor & importProcessor() { return modules_; }
   inline Logger & logger() { return *logger_; }
   void setLogger(Logger & lg);
 

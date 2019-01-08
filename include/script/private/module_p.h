@@ -6,12 +6,12 @@
 #define LIBSCRIPT_MODULE_P_H
 
 #include "script/module.h"
-#include "script/private/namespace_p.h"
+#include "script/private/script_p.h"
 
 namespace script
 {
 
-class ModuleImpl : public NamespaceImpl
+class NativeModule : public NamespaceImpl
 {
 public:
   ModuleLoadFunction load;
@@ -20,9 +20,21 @@ public:
   bool loaded;
 
 public:
-  ModuleImpl(Engine *e, const std::string & module_name);
-  ModuleImpl(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback);
-  ~ModuleImpl() = default;
+  NativeModule(Engine *e, const std::string & module_name);
+  NativeModule(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback);
+  ~NativeModule() = default;
+
+  bool is_module() const override;
+  bool is_native_module() const override;
+};
+
+class ScriptModule : public ScriptImpl
+{
+public:
+  ScriptModule(int id, Engine *e, const SourceFile & src, const std::string & module_name);
+  ~ScriptModule() = default;
+
+  bool is_module() const override;
 };
 
 } // namespace script

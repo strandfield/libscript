@@ -16,8 +16,9 @@ namespace script
 class Engine;
 class Namespace;
 class Scope;
+class Script;
 
-class ModuleImpl;
+class NamespaceImpl;
 
 class LIBSCRIPT_API Module
 {
@@ -26,12 +27,14 @@ public:
   Module(const Module & other) = default;
   ~Module() = default;
 
-  explicit Module(const std::shared_ptr<ModuleImpl> & impl);
+  explicit Module(const std::shared_ptr<NamespaceImpl> & impl);
 
   inline bool isNull() const { return d == nullptr; }
   Engine * engine() const;
 
   const std::string & name() const;
+
+  bool isNative() const;
 
   Module newSubModule(const std::string & name);
   Module newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
@@ -44,16 +47,18 @@ public:
   Namespace root() const;
   Scope scope() const;
 
-  inline ModuleImpl* impl() const { return d.get(); }
-  inline std::weak_ptr<ModuleImpl> weakref() const { return std::weak_ptr<ModuleImpl>(d); }
-  inline const std::shared_ptr<ModuleImpl> & strongref() const { return d; }
+  Script asScript() const;
+
+  inline NamespaceImpl* impl() const { return d.get(); }
+  inline std::weak_ptr<NamespaceImpl> weakref() const { return std::weak_ptr<NamespaceImpl>(d); }
+  inline const std::shared_ptr<NamespaceImpl> & strongref() const { return d; }
 
 private:
   friend class Engine;
   void destroy();
 
 private:
-  std::shared_ptr<ModuleImpl> d;
+  std::shared_ptr<NamespaceImpl> d;
 };
 
 } // namespace script

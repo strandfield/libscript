@@ -221,7 +221,7 @@ TEST(ModuleTests, script_module) {
   Engine engine;
   engine.setup();
 
-  engine.setScriptExtension(".m");
+  engine.newModule("foo", SourceFile{ "foo.m" });
 
   Script s = engine.newScript(SourceFile{"bar.m"});
   bool success = s.compile();
@@ -244,7 +244,7 @@ TEST(ModuleTests, script_module_import_inside_function_body) {
   Engine engine;
   engine.setup();
 
-  engine.setScriptExtension(".m");
+  engine.newModule("foo", SourceFile{ "foo.m" });
 
   Script s = engine.newScript(SourceFile{ "qux.m" });
   bool success = s.compile();
@@ -267,7 +267,8 @@ TEST(ModuleTests, export_import) {
   Engine engine;
   engine.setup();
 
-  engine.setScriptExtension(".m");
+  engine.newModule("kar", SourceFile{ "kar.m" });
+  engine.newModule("foo", SourceFile{ "foo.m" });
 
   Script s = engine.newScript(SourceFile{ "tuk.m" });
   bool success = s.compile();

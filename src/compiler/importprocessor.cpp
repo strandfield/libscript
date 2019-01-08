@@ -11,8 +11,6 @@
 
 #include "script/engine.h"
 #include "script/module.h"
-#include "script/script.h"
-#include "script/sourcefile.h"
 
 namespace script
 {
@@ -20,38 +18,17 @@ namespace script
 namespace compiler
 {
 
-Script ModuleLoader::load(Engine *e, const SourceFile & src)
-{
-  Script s = e->newScript(src);
-  bool success = e->compile(s); /// TODO: bad, will create another compiler and another session
-  if (!success)
-  {
-    std::string mssg;
-    for (const auto & m : s.messages())
-      mssg += m.to_string() + "\n";
-    throw ModuleImportationError{ src.filepath(), mssg };
-  }
-
-  /// TODO: ensure the script is run later
-  // s.run();
-
-  return s;
-}
-
 ImportProcessor::ImportProcessor(Engine *e)
   : engine_(e)
 {
-  loader_ = &default_loader_;
-}
 
+}
 
 Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & decl)
 {
   Module m = engine()->getModule(decl->at(0));
   if (m.isNull())
-  {
-    return load_script_module(decl);
-  }
+    throw UnknownModuleName{ dpos(decl), decl->at(0) };
 
   for (size_t i(1); i < decl->size(); ++i)
   {
@@ -65,83 +42,6 @@ Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & dec
   m.load();
 
   return m.scope();
-}
-
-Scope ImportProcessor::load_script_module(const std::shared_ptr<ast::ImportDirective> & decl)
-{
-  auto path = engine()->searchDirectory();
-
-  for (size_t i(0); i < decl->size(); ++i)
-    path /= decl->at(i);
-
-  if (support::filesystem::is_directory(path))
-  {
-    Scope result;
-    load_recursively(result, path);
-    return result;
-  }
-  else
-  {
-    path += engine()->scriptExtension();
-
-    if (!support::filesystem::exists(path))
-      throw UnknownModuleName{ dpos(decl), decl->full_name() };
-
-    return load(path);
-  }
-}
-
-Scope ImportProcessor::load(const support::filesystem::path & p)
-{
-  if (p.extension() != engine()->scriptExtension())
-    return Scope{};
-
-  Script s;
-  if (!is_loaded(p, s))
-  {
-    s = loader_->load(engine(), SourceFile{ p.string() });
-  }
-
-  Scope ret{ s.rootNamespace() };
-
-  // Also import exported names
-  if(!s.exports().isNull())
-    ret.merge(s.exports());
-  
-  return ret;
-}
-
-void ImportProcessor::load_recursively(Scope & result, const support::filesystem::path & dir)
-{
-  for (auto& p : support::filesystem::directory_iterator(dir))
-  {
-    if (support::filesystem::is_directory(p))
-      load_recursively(result, p);
-    else
-      add_import(result, load(p));
-  }
-}
-
-bool ImportProcessor::is_loaded(const support::filesystem::path & p, Script & result)
-{
-  for (const auto & s : engine()->scripts())
-  {
-    if (s.path() == p)
-    {
-      result = s;
-      return true;
-    }
-  }
-
-  return false;
-}
-
-void ImportProcessor::add_import(Scope & result, const Scope & scp)
-{
-  if (result.isNull())
-    result = scp;
-  else
-    result.merge(scp);
 }
 
 } // namespace compiler
