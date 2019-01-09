@@ -91,9 +91,7 @@ Stack::iterator StackView::end() const
 
 
 FunctionCall::FunctionCall()
-  : mIndex(0)
-  , mStackIndex(0)
-  , mArgc(0)
+  : mStackIndex(0)
   , flags(0)
   , ec(nullptr)
 {
@@ -102,15 +100,12 @@ FunctionCall::FunctionCall()
 
 FunctionCall * FunctionCall::caller() const
 {
-  if (mIndex == 0)
+  const int d = depth();
+
+  if (d == 0)
     return nullptr;
 
-  return this->ec->callstack[mIndex - 1];
-}
-
-Function FunctionCall::callee() const
-{
-  return mCallee;
+  return this->ec->callstack[d - 1];
 }
 
 void FunctionCall::setReturnValue(const Value & val)
@@ -162,7 +157,7 @@ void FunctionCall::destroyObject()
 
 StackView FunctionCall::args() const
 {
-  return StackView{ &this->ec->stack, this->mStackIndex + 1, this->mStackIndex + 1 + this->mArgc };
+  return StackView{ &this->ec->stack, stackOffset() + 1, stackOffset() + 1 + argc() };
 }
 
 ExecutionContext * FunctionCall::executionContext() const
@@ -173,6 +168,11 @@ ExecutionContext * FunctionCall::executionContext() const
 Engine * FunctionCall::engine() const
 {
   return this->ec->engine;
+}
+
+int FunctionCall::depth() const
+{
+  return std::distance(this->ec->callstack.begin(), this);
 }
 
 void FunctionCall::setBreakFlag()
@@ -192,7 +192,6 @@ void FunctionCall::clearFlags()
 
 
 
-
 Callstack::Callstack(int capacity)
   : mSize(0)
 {
@@ -209,13 +208,15 @@ int Callstack::size()
   return mSize;
 }
 
-FunctionCall * Callstack::push()
+FunctionCall * Callstack::push(const Function & f, int stackOffset)
 {
   if (size() == capacity())
     throw std::runtime_error{ "Callstack overflow" };
 
   FunctionCall *ret = std::addressof(mData[mSize++]);
-  ret->mIndex = mSize - 1;
+  ret->mCallee = f;
+  ret->mStackIndex = stackOffset;
+  ret->flags = FunctionCall::NoFlags;
   return ret;
 }
 
@@ -235,6 +236,15 @@ void Callstack::pop()
   --mSize;
 }
 
+const FunctionCall* Callstack::begin() const
+{
+  return std::addressof(mData[0]);
+}
+
+const FunctionCall* Callstack::end() const
+{
+  return std::addressof(mData[mSize]);
+}
 
 FunctionCall * Callstack::operator[](int index)
 {
@@ -260,32 +270,19 @@ ExecutionContext::~ExecutionContext()
 
 void ExecutionContext::push(const Function & f, const Value *obj, const Value *begin, const Value *end)
 {
-  FunctionCall *fc = this->callstack.push();
-  fc->mCallee = f;
-  fc->mArgc = std::distance(begin, end);
-  fc->mStackIndex = this->stack.size;
+  FunctionCall *fc = this->callstack.push(f, this->stack.size);
   this->stack[this->stack.size++] = Value::Void;
   if (obj != nullptr)
-  {
-    fc->mArgc++;
     this->stack[this->stack.size++] = *obj;
-  }
   for (auto it = begin; it != end; ++it)
-  {
     this->stack[this->stack.size++] = *it;
-  }
-  fc->flags = FunctionCall::NoFlags;
   fc->ec = this;
 }
 
 bool ExecutionContext::push(const Function & f, int sp)
 {
   try {
-    FunctionCall *fc = this->callstack.push();
-    fc->mCallee = f;
-    fc->mArgc = this->stack.size - sp - 1;
-    fc->mStackIndex = sp;
-    fc->flags = FunctionCall::NoFlags;
+    FunctionCall *fc = this->callstack.push(f, sp);
     fc->ec = this;
   }
   catch (...)
@@ -299,9 +296,8 @@ bool ExecutionContext::push(const Function & f, int sp)
 Value ExecutionContext::pop()
 {
   FunctionCall *fc = this->callstack.top();
-  for (int i = 0; i < fc->mArgc; ++i)
+  for (int i = 0; i < fc->argc(); ++i)
     this->stack.pop();
-  //this->stack.size -= (fc->mArgc);
   this->callstack.pop();
 
   Value ret = this->stack.pop();

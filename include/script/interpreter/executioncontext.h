@@ -71,13 +71,14 @@ public:
   FunctionCall();
 
   FunctionCall * caller() const;
-  Function callee() const;
+  inline const Function & callee() const { return mCallee; }
 
   void setReturnValue(const Value & val);
   Value & returnValue();
   Value & thisObject() const;
   StackView args() const;
   Value arg(int index) const;
+  inline int argc() const { return callee().prototype().count(); }
 
   void initObject();
   void push(const Value & val);
@@ -88,6 +89,7 @@ public:
   Engine * engine() const;
 
   inline int stackOffset() const { return mStackIndex; }
+  int depth() const;
 
   void setBreakFlag();
   void setContinueFlag();
@@ -106,9 +108,7 @@ private:
   friend class ExecutionContext;
 private:
   Function mCallee;
-  int mIndex; // index in the callstack, TODO: remove, can be deduced from address of element
   int mStackIndex; // index of return value in the callstack
-  int mArgc;
   int flags;
   ExecutionContext *ec;
 };
@@ -123,10 +123,13 @@ public:
   int capacity() const;
   int size();
 
-  FunctionCall * push();
+  FunctionCall * push(const Function & f, int stackOffset);
   FunctionCall * top();
   const FunctionCall * top() const;
   void pop();
+
+  const FunctionCall* begin() const;
+  const FunctionCall* end() const;
 
   Callstack & operator=(const Callstack &) = delete;
   FunctionCall * operator[](int index);
