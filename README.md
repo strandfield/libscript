@@ -1,9 +1,9 @@
 
 # `libscript` - A scripting library written in C++
 
-[![Build Status](https://api.travis-ci.org/RugessNome/libscript.svg?branch=master)](https://travis-ci.org/RugessNome/libscript)
-[![codecov](https://codecov.io/gh/RugessNome/libscript/branch/master/graph/badge.svg)](https://codecov.io/gh/RugessNome/libscript)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a090f609f8944a28d0103b11c9d2d92)](https://www.codacy.com/app/RugessNome/libscript?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=RugessNome/libscript&amp;utm_campaign=Badge_Grade)
+[![Build Status](https://api.travis-ci.org/bandicode/libscript.svg?branch=master)](https://travis-ci.org/bandicode/libscript)
+[![codecov](https://codecov.io/gh/bandicode/libscript/branch/master/graph/badge.svg)](https://codecov.io/gh/bandicode/libscript)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a090f609f8944a28d0103b11c9d2d92)](https://www.codacy.com/app/bandicode/libscript)
 
 `libscript` is a scripting library written in C++. 
 It aims at providing all the building blocks necessary to create 
@@ -16,7 +16,7 @@ No binaries are provided. To use the library, you are invited to clone
 this repository and compile the code yourself. 
 
 ```bash
-git clone http://github.com/RugessNome/libscript.git
+git clone http://github.com/bandicode/libscript.git
 ```
 
 You can then use CMake to generate project files for your favorite build system 
