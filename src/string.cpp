@@ -2,12 +2,9 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "libscriptdefs.h"
-#include "script/private/string_p.h"
+#include "script/string.h"
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/string.cpp"
-#else 
+#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
@@ -333,11 +330,6 @@ Value assign(FunctionCall *c)
 
 } // namespace callbacks
 
-std::string get_string_typename()
-{
-  return "String";
-}
-
 Type register_charref_type(Engine *e)
 {
   Class charref = Symbol{ e->rootNamespace() }.newClass("charref").get();
@@ -357,7 +349,7 @@ Type register_charref_type(Engine *e)
   return charref.id();
 }
 
-void register_string_type(Class string)
+void StringBackend::register_string_type(Class& string)
 {
   string.newConstructor(callbacks::string::default_ctor).create();
   string.newConstructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
@@ -395,4 +387,4 @@ void register_string_type(Class string)
 
 } // namespace script
 
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
+#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)

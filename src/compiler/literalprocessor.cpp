@@ -5,7 +5,7 @@
 #include "script/compiler/literalprocessor.h"
 
 #include "script/engine.h"
-#include "script/private/string_p.h"
+#include "script/string.h"
 
 #include "script/ast/node.h"
 
@@ -41,7 +41,7 @@ Value LiteralProcessor::generate(Engine *e, const std::shared_ptr<ast::Literal> 
     std::string str = l->toString();
     postprocess(str);
     if (str.front() == '"')
-      return e->newString(string::convert(std::string(str.begin() + 1, str.end() - 1)));
+      return e->newString(StringBackend::convert(std::string(str.begin() + 1, str.end() - 1)));
     if (str.size() != 3)
       throw InvalidCharacterLiteral{ };
     return e->newChar(str.at(1));
@@ -63,7 +63,7 @@ Value LiteralProcessor::generate(Engine *e, std::string & str)
   {
     postprocess(str);
     if (str.front() == '"')
-      return e->newString(string::convert(std::string(str.begin() + 1, str.end() - 1)));
+      return e->newString(StringBackend::convert(std::string(str.begin() + 1, str.end() - 1)));
     if (str.size() != 3)
       throw InvalidCharacterLiteral{};
     return e->newChar(str.at(1));

@@ -25,6 +25,7 @@
 #include "script/overloadresolution.h"
 #include "script/scope.h"
 #include "script/script.h"
+#include "script/string.h"
 #include "script/value.h"
 
 #include "script/compiler/compiler.h"
@@ -43,7 +44,6 @@
 #include "script/private/operator_p.h"
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"
-#include "script/private/string_p.h"
 #include "script/private/template_p.h"
 #include "script/private/value_p.h"
 
@@ -446,8 +446,8 @@ void Engine::setup()
   d->reservations.enum_type = Enum{ std::make_shared<EnumImpl>(0, "__reserved_enum__", nullptr) };
   d->enums.push_back(d->reservations.enum_type);
 
-  Class string = Symbol{ d->rootNamespace }.newClass(get_string_typename()).setId(Type::String).get();
-  register_string_type(string);
+  Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
+  StringBackend::register_string_type(string);
 
   d->templates.array = ArrayImpl::register_array_template(this);
   d->templates.initializer_list = register_initialize_list_template(this);
