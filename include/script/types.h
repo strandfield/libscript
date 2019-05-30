@@ -43,9 +43,6 @@ public:
     UnknownFlag          = UninitializedFlag,
     ProtectedFlag        = 0x4000000,
     PrivateFlag          = 0x8000000,
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/typeflags.incl"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
   };
 
   enum BuiltInType {
@@ -59,9 +56,6 @@ public:
     String = ObjectFlag | 1,
     InitializerList = 8,
     Auto = 9,
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/typeids.incl"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
   };
 
   inline bool isNull() const { return d == 0; }

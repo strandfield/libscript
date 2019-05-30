@@ -19,10 +19,6 @@
 #define LIBSCRIPT_API
 #endif
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/config.h"
-#endif //defined(LIBSCRIPT_HAS_CONFIG)
-
 namespace script
 {
 using reference_counter_type = int;

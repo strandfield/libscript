@@ -17,11 +17,6 @@
 
 #include "script/interpreter/interpreter.h"
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/engineimpl.h"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
-
-
 namespace script
 {
 
@@ -85,12 +80,6 @@ public:
   void unregister_class(Class &c);
   void unregister_enum(Enum &e);
   void unregister_closure(ClosureType &c);
-
-
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/engineimpl-members.incl"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
-
 };
 
 

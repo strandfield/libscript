@@ -42,11 +42,6 @@ foreach(_source IN ITEMS ${HDR_FILES} ${SRC_FILES})
     source_group("${_group_path}" FILES "${_source}")
 endforeach()
 
-#set(WITH_CONFIG_FILE TRUE CACHE BOOL "Set to true if you want to build libscript with a config file")
-#if(${WITH_CONFIG_FILE})
-#  add_definitions(-DLIBSCRIPT_HAS_CONFIG)
-#endif()
-
 target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
 #add_definitions(-DLIBSCRIPT_COMPILE_LIBRARY)
 

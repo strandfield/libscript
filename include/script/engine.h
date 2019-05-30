@@ -16,10 +16,6 @@
 
 #include "script/modulecallbacks.h"
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/engine.h"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
-
 namespace script
 {
 
@@ -213,10 +209,6 @@ public:
   EngineImpl * implementation() const;
 
   Engine & operator=(const Engine & other) = delete;
-
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/engine-methods.incl"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
 
 protected:
   std::unique_ptr<EngineImpl> d;

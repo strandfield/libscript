@@ -47,11 +47,6 @@
 #include "script/private/template_p.h"
 #include "script/private/value_p.h"
 
-
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/engine.cpp"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
-
 namespace script
 {
 
