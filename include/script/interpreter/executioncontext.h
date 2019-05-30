@@ -6,8 +6,8 @@
 #define LIBSCRIPT_EXECUTION_CONTEXT_H
 
 #include "script/function.h"
+#include "script/thisobject.h"
 #include "script/types.h"
-#include "script/value.h"
 
 namespace script
 {
@@ -75,15 +75,17 @@ public:
 
   void setReturnValue(const Value & val);
   Value & returnValue();
-  Value & thisObject() const;
   StackView args() const;
   Value arg(int index) const;
   inline int argc() const { return callee().prototype().count(); }
 
-  void initObject();
-  void push(const Value & val);
-  Value pop();
-  void destroyObject();
+  ThisObject thisObject() const;
+
+  /// TODO: remove these
+  void initObject() { thisObject().init(); }
+  void push(const Value& val) { thisObject().push(val); }
+  Value pop() { return thisObject().pop(); }
+  void destroyObject() { thisObject().destroy(); }
 
   ExecutionContext * executionContext() const;
   Engine * engine() const;

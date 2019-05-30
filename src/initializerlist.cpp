@@ -55,13 +55,13 @@ Value dtor(FunctionCall *c)
 // int size() const;
 Value size(FunctionCall *c)
 {
-  return c->engine()->newInt(c->thisObject().toInitializerList().size());
+  return c->engine()->newInt(c->arg(0).toInitializerList().size());
 }
 
 // iterator begin() const;
 Value begin(FunctionCall *c)
 {
-  InitializerList self = c->thisObject().toInitializerList();
+  InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
   ret.impl()->set_initializer_list(InitializerList{ self.begin(), self.begin() });
@@ -71,7 +71,7 @@ Value begin(FunctionCall *c)
 // iterator end() const;
 Value end(FunctionCall *c)
 {
-  InitializerList self = c->thisObject().toInitializerList();
+  InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
   ret.impl()->set_initializer_list(InitializerList{ self.end(), self.end() });

@@ -7,8 +7,18 @@
 
 #include "libscriptdefs.h"
 
+#include "script/string.h"
+
 namespace script
 {
+
+class Type;
+
+template<typename T>
+struct make_type_helper
+{
+  inline static Type get() = delete;
+};
 
 class LIBSCRIPT_API Type
 {
@@ -89,6 +99,12 @@ public:
   static Type cref(const Type & base);
   static Type rref(const Type & base);
 
+  template<typename T>
+  static Type make()
+  {
+    return make_type_helper<T>::get();
+  }
+
   bool operator==(const Type & other) const;
   bool operator==(const BuiltInType & rhs) const;
   inline bool operator!=(const Type & other) const { return !operator==(other); }
@@ -100,6 +116,67 @@ public:
 protected:
   int d;
 };
+
+
+template<typename T>
+struct make_type_helper<T&>
+{
+  inline static Type get()
+  {
+    return Type::ref(make_type_helper<T>::get());
+  }
+};
+
+template<typename T>
+struct make_type_helper<T&&>
+{
+  inline static Type get()
+  {
+    return Type::rref(make_type_helper<T>::get());
+  }
+};
+
+template<typename T>
+struct make_type_helper<const T>
+{
+  inline static Type get()
+  {
+    return make_type_helper<T>::get().withFlag(Type::ConstFlag);
+  }
+};
+
+template<typename T>
+struct make_type_helper<const T&>
+{
+  inline static Type get()
+  {
+    return Type::cref(make_type_helper<T>::get());
+  }
+};
+
+template<typename T>
+struct make_type_helper<const T*>
+{
+  inline static Type get()
+  {
+    return make_type_helper<T*>::get().withFlag(Type::ConstFlag);
+  }
+};
+
+template<> struct make_type_helper<bool> { static Type get() { return Type::Boolean; } };
+template<> struct make_type_helper<char> { static Type get() { return Type::Char; } };
+template<> struct make_type_helper<int> { static Type get() { return Type::Int; } };
+template<> struct make_type_helper<float> { static Type get() { return Type::Float; } };
+template<> struct make_type_helper<double> { static Type get() { return Type::Double; } };
+template<> struct make_type_helper<String> { static Type get() { return Type::String; } };
+
+template<typename T>
+Type make_type()
+{
+  return make_type_helper<T>::get();
+}
+
+template<> inline Type make_type<void>() { return Type::Void; }
 
 } // namespace script
 

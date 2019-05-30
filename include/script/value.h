@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2019 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -8,9 +8,9 @@
 #include "script/types.h"
 #include "script/string.h"
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/value.h"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
+#ifndef LIBSCRIPT_BUILTIN_MEMBUF_SIZE
+#define LIBSCRIPT_BUILTIN_MEMBUF_SIZE 24
+#endif
 
 namespace script
 {
@@ -22,6 +22,7 @@ class Function;
 class InitializerList;
 class Lambda;
 class Object;
+class ThisObject;
 
 struct ValueImpl;
 
@@ -29,10 +30,10 @@ class LIBSCRIPT_API Value
 {
 public:
   Value();
-  Value(const Value & other);
+  Value(const Value& other);
   ~Value();
 
-  explicit Value(ValueImpl * impl);
+  explicit Value(ValueImpl* impl);
 
   static constexpr ParameterPolicy Copy = ParameterPolicy::Copy;
   static constexpr ParameterPolicy Move = ParameterPolicy::Move;
@@ -68,30 +69,56 @@ public:
   Lambda toLambda() const;
   InitializerList toInitializerList() const;
 
-  size_t dataMemberCount() const;
-  Value getDataMember(size_t i) const;
-   
-  static Value fromEnumerator(const Enumerator & ev);
-  static Value fromFunction(const Function & f, const Type & ft);
-  static Value fromLambda(const Lambda & obj);
-  static Value fromArray(const Array & a);
+  static constexpr size_t MemoryBufferSize = LIBSCRIPT_BUILTIN_MEMBUF_SIZE;
+
+  void* memory() const;
+
+  static Value fromEnumerator(const Enumerator& ev);
+  static Value fromFunction(const Function& f, const Type& ft);
+  static Value fromLambda(const Lambda& obj);
+  static Value fromArray(const Array& a);
 
   Engine* engine() const;
   bool isManaged() const;
 
-  Value & operator=(const Value & other);
-  bool operator==(const Value & other) const;
-  inline bool operator!=(const Value & other) const { return !operator==(other); }
+  Value& operator=(const Value& other);
+  bool operator==(const Value& other) const;
+  inline bool operator!=(const Value& other) const { return !operator==(other); }
 
-  inline ValueImpl * impl() const { return d; }
+  inline ValueImpl* impl() const { return d; }
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/value-members.incl"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
+protected:
+  friend Engine;
+  friend ThisObject;
+
+  void* acquireMemory();
+  void releaseMemory();
 
 private:
-  ValueImpl *d;
+  ValueImpl* d;
 };
+
+} // namespace script
+
+#include "script/value-get-details.h"
+
+namespace script
+{
+
+template<typename T>
+typename get_helper<T>::type get(const Value& val)
+{
+  return get_helper<T>::get(val);
+}
+
+/* get<T>() specializations */
+
+template<> bool& get<bool>(const Value& val);
+template<> char& get<char>(const Value& val);
+template<> int& get<int>(const Value& val);
+template<> float& get<float>(const Value& val);
+template<> double& get<double>(const Value& val);
+template<> String& get<String>(const Value& val);
 
 } // namespace script
 

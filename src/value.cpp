@@ -15,163 +15,340 @@
 #include "script/object.h"
 #include "script/private/object_p.h"
 
-#if defined(LIBSCRIPT_HAS_CONFIG)
-#include "config/libscript/value.cpp"
-#endif // defined(LIBSCRIPT_HAS_CONFIG)
-
 namespace script
 {
 
-#if !defined(LIBSCRIPT_HAS_CONFIG)
-
-ValueImpl::Storage::Storage()
+ValueImpl::ValueImpl(Type t, Engine* e) : ref(0), type(t), engine(e)
 {
-  builtin.string = nullptr;
-  initlistEnd = nullptr;
+  std::memset(data.memory, 0, Value::MemoryBufferSize);
+  which = FundamentalsField;
 }
 
-CharRef ValueImpl::get_charref()
+ValueImpl::Data::Data()
 {
-  return data.builtin.charref;
+  fundamentals.boolean = false;
 }
 
-void ValueImpl::set_charref(const CharRef & val)
+ValueImpl::Data::~Data()
 {
-  data.builtin.charref = val;
+  fundamentals.boolean = false;
+}
+
+ValueImpl::ValueImpl(const ValueImpl& other)
+  : ref(other.ref), type(other.type), engine(other.engine)
+{
+  assert(type.isNull() || type == Type::Void);
+}
+
+ValueImpl::~ValueImpl()
+{
+  clear();
+}
+
+String& ValueImpl::get_string()
+{
+  assert(this->which == StringField);
+  return data.string;
+}
+
+void ValueImpl::set_string(const String& sval)
+{
+  if (this->which != StringField)
+  {
+    clear();
+    new (&data.string) String{ sval };
+    which = StringField;
+  }
+  else
+  {
+    data.string = sval;
+  }
 }
 
 bool ValueImpl::is_object() const
 {
-  return !data.object.isNull();
+  return which == ObjectField && !data.object.isNull();
 }
 
-const Object & ValueImpl::get_object() const
+const Object& ValueImpl::get_object() const
 {
+  assert(which == ObjectField);
+
   return data.object;
 }
 
 void ValueImpl::init_object()
 {
-  if (!data.object.isNull())
-    return;
+  if (which != ObjectField)
+  {
+    clear();
 
-  data.object = Object::create(this->engine->getClass(this->type));
+    auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
+    new (&data.object) Object{ impl };
+
+    which = ObjectField;
+  }
+  else
+  {
+    if (!data.object.isNull())
+      return;
+
+    auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
+    data.object = Object{ impl };
+  }
 }
 
 void ValueImpl::push_member(const Value & val)
 {
+  assert(which == ObjectField);
+
   data.object.push(val);
 }
 
 Value ValueImpl::pop_member()
 {
+  assert(which == ObjectField);
+
   return data.object.pop();
 }
 
 Value ValueImpl::get_member(size_t i) const
 {
+  assert(which == ObjectField);
+
   return data.object.at(i);
 }
 
 size_t ValueImpl::member_count() const
 {
+  assert(which == ObjectField);
+
   return data.object.size();
 }
 
+
 bool ValueImpl::is_array() const
 {
-  return !data.array.isNull();
+  return which == ArrayField && !data.array.isNull();
 }
 
-const Array & ValueImpl::get_array() const
+const Array& ValueImpl::get_array() const
 {
+  assert(which == ArrayField);
+
   return data.array;
 }
 
 void ValueImpl::set_array(const Array & aval)
 {
-  data.array = aval;
+  if (which != ArrayField)
+  {
+    clear();
+
+    new (&data.array) Array{ aval };
+
+    which = ArrayField;
+  }
+  else
+  {
+    data.array = aval;
+  }
 }
+
+#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
+
+bool ValueImpl::is_charref() const
+{
+  return which == CharrefField;
+}
+
+CharRef& ValueImpl::get_charref()
+{
+  assert(which == CharrefField);
+
+  return data.charref;
+}
+
+void ValueImpl::set_charref(const CharRef & cr)
+{
+  if (which != CharrefField)
+  {
+    clear();
+
+    new (&data.charref) CharRef{ cr };
+
+    which = CharrefField;
+  }
+  else
+  {
+    data.charref = cr;
+  }
+}
+
+#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
 
 bool ValueImpl::is_function() const
 {
-  return !data.function.isNull();
+  return which == FunctionField && !data.function.isNull();
 }
 
-const Function & ValueImpl::get_function() const
+const Function& ValueImpl::get_function() const
 {
+  assert(which == FunctionField);
+
   return data.function;
 }
 
 void ValueImpl::set_function(const Function & fval)
 {
-  data.function = fval;
+  if (which != FunctionField)
+  {
+    clear();
+
+    new (&data.function) Function{ fval };
+
+    which = FunctionField;
+  }
+  else
+  {
+    data.function = fval;
+  }
 }
 
 bool ValueImpl::is_lambda() const
 {
-  return !data.lambda.isNull();
+  return which == LambdaField && !data.lambda.isNull();
 }
 
-const Lambda & ValueImpl::get_lambda() const
+const Lambda& ValueImpl::get_lambda() const
 {
+  assert(which == LambdaField);
+
   return data.lambda;
 }
 
 void ValueImpl::set_lambda(const Lambda & lval)
 {
-  data.lambda = lval;
-}
+  if (which != LambdaField)
+  {
+    clear();
 
+    new (&data.lambda) Lambda{ lval };
 
-const Enumerator & ValueImpl::get_enumerator() const
-{
-  return *data.builtin.enumValue;
-}
-
-void ValueImpl::set_enumerator(const Enumerator & val)
-{
-  if (data.builtin.enumValue == nullptr)
-    data.builtin.enumValue = new Enumerator{ val };
+    which = LambdaField;
+  }
   else
-    *data.builtin.enumValue = val;
+  {
+    data.lambda = lval;
+  }
+}
+
+const Enumerator& ValueImpl::get_enumerator() const
+{
+  assert(which == EnumeratorField);
+
+  return data.enumerator;
+}
+
+void ValueImpl::set_enumerator(const Enumerator & en)
+{
+  if (which != EnumeratorField)
+  {
+    clear();
+
+    new (&data.enumerator) Enumerator{ en };
+
+    which = EnumeratorField;
+  }
+  else
+  {
+    data.enumerator = en;
+  }
 }
 
 bool ValueImpl::is_initializer_list() const
 {
-  return data.initlistEnd != nullptr && data.builtin.valueptr != nullptr;
+  return which == InitListField;
 }
 
 InitializerList ValueImpl::get_initializer_list() const
 {
-  return InitializerList{ data.builtin.valueptr, data.initlistEnd };
+  assert(which == InitListField);
+
+  return data.initializer_list;
 }
 
 void ValueImpl::set_initializer_list(const InitializerList & il)
 {
-  data.builtin.valueptr = il.begin();
-  data.initlistEnd = il.end();
+  if (which != InitListField)
+  {
+    clear();
+
+    new (&data.initializer_list) InitializerList{ il };
+
+    which = InitListField;
+  }
+  else
+  {
+    data.initializer_list = il;
+  }
 }
 
 void ValueImpl::clear()
 {
-  data.array = Array{};
-  data.object = Object{};
-  if (type.baseType() == Type::String)
+  assert(which != MemoryField);
+
+  switch (which)
   {
-    delete data.builtin.string;
-    data.builtin.string = nullptr;
+  case FundamentalsField:
+    return;
+  case StringField:
+    data.string.~String();
+    break;
+  case ObjectField:
+    data.object.~Object();
+    break;
+  case ArrayField:
+    data.array.~Array();
+    break;
+  case FunctionField:
+    data.function.~Function();
+    break;
+  case LambdaField:
+    data.lambda.~Lambda();
+    break;
+  case EnumeratorField:
+    data.enumerator.~Enumerator();
+    break;
+#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
+  case CharrefField:
+    data.charref.~CharRef();
+    break;
+#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
+  case InitListField:
+    data.initializer_list.~InitializerList();
+    break;
   }
-  else if (type.isEnumType())
-  {
-    delete data.builtin.enumValue;
-    data.builtin.enumValue = nullptr;
-  }
-  this->type = Type::Null;
+
+  data.fundamentals.boolean = false;
+  which = FundamentalsField;
 }
 
-#endif // !defined(LIBSCRIPT_HAS_CONFIG)
+void* ValueImpl::acquire_memory()
+{
+  if (which != ValueImpl::MemoryField)
+    clear();
 
+  which = ValueImpl::MemoryField;
+  return &(data.memory);
+}
+
+void ValueImpl::release_memory()
+{
+  assert(which == MemoryField);
+  data.fundamentals.boolean = false;
+  which = FundamentalsField;
+}
 
 static ValueImpl construct_void()
 {
@@ -283,32 +460,32 @@ bool Value::isInitializerList() const
 
 bool Value::toBool() const
 {
-  return d->get_bool();
+  return get<bool>(*this);
 }
 
 char Value::toChar() const
 {
-  return d->get_char();
+  return get<char>(*this);
 }
 
 int Value::toInt() const
 {
-  return d->get_int();
+  return get<int>(*this);
 }
 
 float Value::toFloat() const
 {
-  return d->get_float();
+  return get<float>(*this);
 }
 
 double Value::toDouble() const
 {
-  return d->get_double();
+  return get<double>(*this);
 }
 
 String Value::toString() const
 {
-  return d->get_string();
+  return get<String>(*this);
 }
 
 Function Value::toFunction() const
@@ -341,14 +518,11 @@ InitializerList Value::toInitializerList() const
   return d->get_initializer_list();
 }
 
-size_t Value::dataMemberCount() const
+void* Value::memory() const
 {
-  return d->member_count();
-}
+  assert(d->which == ValueImpl::MemoryField);
 
-Value Value::getDataMember(size_t i) const
-{
-  return d->get_member(i);
+  return &(d->data.memory);
 }
 
 Value Value::fromEnumerator(const Enumerator & ev)
@@ -391,7 +565,6 @@ Value Value::fromLambda(const Lambda & obj)
   return ret;
 }
 
-
 Engine* Value::engine() const
 {
   return d->engine;
@@ -400,6 +573,16 @@ Engine* Value::engine() const
 bool Value::isManaged() const
 {
   return d->type.testFlag(Type::ManagedFlag);
+}
+
+void* Value::acquireMemory()
+{
+  return d->acquire_memory();
+}
+
+void Value::releaseMemory()
+{
+  d->release_memory();
 }
 
 Value & Value::operator=(const Value & other)
@@ -419,6 +602,44 @@ Value & Value::operator=(const Value & other)
 bool Value::operator==(const Value & other) const
 {
   return d == other.d;
+}
+
+/* get<T>() specializations */
+
+template<>
+bool& get<bool>(const Value& val)
+{
+  return val.impl()->get_bool();
+}
+
+template<>
+char& get<char>(const Value& val)
+{
+  return val.impl()->get_char();
+}
+
+template<>
+int& get<int>(const Value& val)
+{
+  return val.impl()->get_int();
+}
+
+template<>
+float& get<float>(const Value& val)
+{
+  return val.impl()->get_float();
+}
+
+template<>
+double& get<double>(const Value& val)
+{
+  return val.impl()->get_double();
+}
+
+template<>
+String& get<String>(const Value& val)
+{
+  return val.impl()->get_string();
 }
 
 } // namespace script

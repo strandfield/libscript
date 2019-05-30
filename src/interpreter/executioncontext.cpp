@@ -119,40 +119,14 @@ Value & FunctionCall::returnValue()
   return this->ec->stack[this->mStackIndex];
 }
 
-Value & FunctionCall::thisObject() const
+ThisObject FunctionCall::thisObject() const
 {
-  return this->ec->stack[this->mStackIndex + 1];
+  return ThisObject(this->ec->stack[this->mStackIndex + 1]);
 }
 
 Value FunctionCall::arg(int index) const
 {
   return this->ec->stack[this->mStackIndex + index + 1];
-}
-
-void FunctionCall::initObject()
-{
-  thisObject().impl()->init_object();
-}
-
-void FunctionCall::push(const Value & val)
-{
-  thisObject().impl()->push_member(val);
-}
-
-Value FunctionCall::pop()
-{
-  return thisObject().impl()->pop_member();
-}
-
-void FunctionCall::destroyObject()
-{
-  size_t n = thisObject().impl()->member_count();
-
-  while (n > 0)
-  {
-    engine()->destroy(thisObject().impl()->pop_member());
-    --n;
-  }
 }
 
 StackView FunctionCall::args() const

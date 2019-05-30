@@ -12,6 +12,7 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
+#include "script/thisobject.h"
 
 #include "script/modulecallbacks.h"
 
@@ -38,7 +39,6 @@ class Script;
 class SourceFile;
 class TemplateArgumentDeduction;
 class TemplateParameter;
-class Value;
 
 namespace compiler
 {
@@ -110,6 +110,7 @@ public:
 
   Value construct(Type t, const std::vector<Value> & args);
   
+  /// TODO: remove (depecated)
   template<typename InitFunc>
   Value construct(Type t, InitFunc && f)
   {
@@ -118,7 +119,24 @@ public:
     return ret;
   }
 
+  template<typename T, typename...Args>
+  Value construct(Args&& ... args)
+  {
+    Value ret = allocate(Type::make<T>());
+    ThisObject self{ ret };
+    self.init<T>(std::forward<Args>(args)...);
+    return ret;
+  }
+
   void destroy(Value val);
+
+  template<typename T>
+  void destroy(Value val)
+  {
+    ThisObject self{ val };
+    self.destroy<T>();
+    free(val);
+  }
 
   void manage(Value val);
   void garbageCollect();

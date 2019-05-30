@@ -87,7 +87,7 @@ Value fundamental_conversion(const Value & src, int destType, Engine *e)
   switch (destType)
   {
   case Type::Boolean:
-    return e->newInt(fundamental_value_cast<bool>(src));
+    return e->newBool(fundamental_value_cast<bool>(src));
   case Type::Char:
     return e->newChar(fundamental_value_cast<char>(src));
   case Type::Int:

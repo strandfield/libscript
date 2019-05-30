@@ -31,7 +31,7 @@ namespace array
 // Array<T>();
 Value default_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
+  Value that = c->arg(0);
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
   that.impl()->set_array(Array{ array_impl });
@@ -41,7 +41,7 @@ Value default_ctor(FunctionCall *c)
 // Array<T>(const Array<T> & other);
 Value copy_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
+  Value that = c->arg(0);
   Array other = c->arg(1).toArray();
   other.detach();
   that.impl()->set_array(other);
@@ -51,7 +51,7 @@ Value copy_ctor(FunctionCall *c)
 // Array<T>(const int & size);
 Value size_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
+  Value that = c->arg(0);
 
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
 
@@ -66,7 +66,7 @@ Value size_ctor(FunctionCall *c)
 // ~Array<T>();
 Value dtor(FunctionCall *c)
 {
-  Value that = c->thisObject();
+  Value that = c->arg(0);
   that.impl()->clear();
   return that;
 }
@@ -74,13 +74,13 @@ Value dtor(FunctionCall *c)
 // int Array<T>::size() const;
 Value size(FunctionCall *c)
 {
-  return c->engine()->newInt(c->thisObject().toArray().size());
+  return c->engine()->newInt(c->arg(0).toArray().size());
 }
 
 // void Array<T>::resize(const int & newSize);
 Value resize(FunctionCall *c)
 {
-  Array self = c->thisObject().toArray();
+  Array self = c->arg(0).toArray();
   self.resize(c->arg(1).toInt());
   return Value::Void;
 }
@@ -90,7 +90,7 @@ Value resize(FunctionCall *c)
 // const T & Array<T>::operator[](const int & index) const;
 Value subscript(FunctionCall *c)
 {
-  Value that = c->thisObject();
+  Value that = c->arg(0);
   auto array_impl = that.toArray().impl();
 
   return array_impl->elements[c->arg(1).toInt()];
@@ -99,10 +99,10 @@ Value subscript(FunctionCall *c)
 // Array<T> & Array<T>::operator=(const Array<T> & other);
 Value assign(FunctionCall *c)
 {
-  Array self = c->thisObject().toArray();
+  Array self = c->arg(0).toArray();
   Array other = c->arg(1).toArray();
   self.assign(other);
-  return c->thisObject();
+  return c->arg(0);
 }
 
 } // namespace array
