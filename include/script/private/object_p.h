@@ -6,6 +6,7 @@
 #define LIBSCRIPT_OBJECT_P_H
 
 #include "script/class.h"
+#include "script/userdata.h"
 
 namespace script
 {
@@ -15,6 +16,7 @@ class ObjectImpl
 public:
   Class instanceOf;
   std::vector<Value> attributes;
+  std::shared_ptr<UserData> data;
 
   ObjectImpl(const Class & c)
     : instanceOf(c)

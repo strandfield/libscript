@@ -127,6 +127,36 @@ Value Object::get(const std::string & attrName) const
 }
 
 /*!
+ * \fn void setUserData(const std::shared_ptr<UserData>& data)
+ * \brief Sets the user data on this object.
+ */
+
+/*!
+ * \fn void setUserData<T>(Args &&...)
+ * \brief Sets the user data on this object.
+ */
+void Object::setUserData(const std::shared_ptr<UserData>& data)
+{
+  d->data = data;
+}
+
+/*!
+ * \fn const std::shared_ptr<UserData>& getUserData() const
+ * \brief Retrieves the object's user data.
+ */
+
+/*!
+  * \fn T& getUserData<T>()
+  * \brief Retrieves the object's user data.
+  * This function can only be used if the data was previously set 
+  * with setUserData<T>().
+  */
+const std::shared_ptr<UserData>& Object::getUserData() const
+{
+  return d->data;
+}
+
+/*!
  * \fn Engine* engine() const
  * \brief Returns the script engine.
  *

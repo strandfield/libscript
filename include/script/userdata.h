@@ -20,6 +20,22 @@ public:
   UserData & operator=(const UserData &) = delete;
 };
 
+template<typename T>
+class GenericUserData
+{
+public:
+  T value;
+public:
+  explicit GenericUserData(const T& val) : value(val) { }
+  ~GenericUserData() = default;
+};
+
+template<typename T>
+std::shared_ptr<UserData> make_userdata(const T& val)
+{
+  return std::make_shared<GenericUserData<T>>(val);
+}
+
 } // namespace script
 
 #endif // LIBSCRIP_USERDATA_H

@@ -8,6 +8,8 @@
 #include "script/value.h"
 #include "script/class.h" /// TODO: replace by forward declaration
 
+#include <utility>
+
 namespace script
 {
 
@@ -31,6 +33,23 @@ public:
   size_t size() const;
 
   Value get(const std::string & attrName) const;
+
+  void setUserData(const std::shared_ptr<UserData>& data);
+  const std::shared_ptr<UserData>& getUserData() const;
+
+  template<typename T, typename...Args>
+  void setUserData(Args&& ... args)
+  {
+    this->setUserData(script::make_userdata<T>(T(std::forward<Args>(args)...)));
+  }
+
+  template<typename T>
+  T& getUserData() const
+  {
+    GenericUserData<T>* ud = dynamic_cast<GenericUserData<T>*>(getUserData().get());
+    assert(ud != nullptr);
+    return ud->value;
+  }
 
   Engine* engine() const;
 
