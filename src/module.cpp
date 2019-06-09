@@ -11,6 +11,7 @@
 
 #include "script/compiler/compiler.h"
 
+#include "script/private/engine_p.h"
 #include "script/private/namespace_p.h"
 
 namespace script
@@ -67,27 +68,54 @@ bool ScriptModule::is_module() const
 }
 
 
+/*!
+ * \class Module
+ * \brief Provides module features
+ */
+
 Module::Module(const std::shared_ptr<NamespaceImpl> & impl)
   : d(impl) 
 {
 
 }
 
-Engine * Module::engine() const
+/*!
+ * \fn Engine* engine() const
+ * \brief Returns the engine that was used to construct this module
+ */
+Engine* Module::engine() const
 {
   return d->engine;
 }
 
+/*!
+ * \fn const std::string& name() const
+ * \brief Returns the module name
+ */
 const std::string & Module::name() const
 {
   return d->name;
 }
 
+/*!
+ * \fn bool isNative() const
+ * \brief Returns whether this module is a "native" module.
+ * 
+ * Unlike a "script" module, a native module has a C++ backend.
+ */
 bool Module::isNative() const
 {
   return d->is_native_module();
 }
 
+/*!
+ * \fn Module newSubModule(const std::string& name)
+ * \brief Adds a submodule to this module.
+ * 
+ * This function creates a native submodule that defines no symbol but 
+ * in which submodule can be added.
+ * Use this function if you want to group modules in a common parent module.
+ */
 Module Module::newSubModule(const std::string & name)
 {
   if (!isNative())
@@ -100,6 +128,13 @@ Module Module::newSubModule(const std::string & name)
   return m;
 }
 
+/*!
+ * \fn Module newSubModule(const std::string& name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
+ * \brief Adds a submodule to this module.
+ *
+ * This function creates a native submodule. The callbacks \a load and \a cleanup are 
+ * called when the module is loaded and destroyed.
+ */
 Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
   if (!isNative())
@@ -112,6 +147,31 @@ Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, M
   return m;
 }
 
+/*!
+ * \fn Module newSubModule(const std::string& name, const SourceFile& src)
+ * \brief Adds a script module to this module.
+ *
+ * This function creates a script submodule.
+ * When the module is loaded, \a src is compiled.
+ */
+Module Module::newSubModule(const std::string& name, const SourceFile& src)
+{
+  if (!isNative())
+    throw std::runtime_error{ "Only native modules can have submodules" };
+
+  NativeModule* nm = static_cast<NativeModule*>(impl());
+
+  auto mimpl = std::make_shared<ScriptModule>(engine()->implementation()->scripts.size(), engine(), src, name);
+
+  Module m{ mimpl };
+  nm->modules.push_back(m);
+  return m;
+}
+
+/*!
+ * \fn Module getSubModule(const std::string& name) const
+ * \brief Retrieves an existing submodule by name.
+ */
 Module Module::getSubModule(const std::string & name) const
 {
   if (!isNative())
@@ -128,6 +188,10 @@ Module Module::getSubModule(const std::string & name) const
   return Module{};
 }
 
+/*!
+ * \fn const std::vector<Module>& submodules() const
+ * \brief Returns the module' submodules.
+ */
 const std::vector<Module> & Module::submodules() const
 {
   static std::vector<Module> static_default = {};
@@ -138,6 +202,10 @@ const std::vector<Module> & Module::submodules() const
   return static_cast<const NativeModule*>(impl())->modules;
 }
 
+/*!
+ * \fn bool isLoaded() const
+ * \brief Returns whether the module is loaded.
+ */
 bool Module::isLoaded() const
 {
   if(isNative())
@@ -146,6 +214,10 @@ bool Module::isLoaded() const
     return static_cast<const ScriptModule*>(impl())->loaded;
 }
 
+/*!
+ * \fn void load()
+ * \brief Loads the module.
+ */
 void Module::load()
 {
   if (isLoaded())
@@ -166,11 +238,24 @@ void Module::load()
   }
 }
 
+/*!
+ * \fn Namespace root() const
+ * \brief Returns the module's root namespace
+ */
 Namespace Module::root() const
 {
   return Namespace{ d };
 }
 
+/*!
+ * \fn Scope scope() const
+ * \brief Returns the module's scope.
+ *
+ * This scope contains all the symbols that are visible when the module 
+ * is loaded. 
+ * This includes submodules (native modules) and symbols exported with 
+ * and "export import" statement (script modules).
+ */
 Scope Module::scope() const
 {
   Scope scp{ Namespace{ d } };
@@ -196,6 +281,12 @@ Scope Module::scope() const
   return scp;
 }
 
+/*!
+ * \fn Script asScript() const
+ * \brief Returns the module's Script.
+ *
+ * If the module is a native module, this returns an invalid script.
+ */
 Script Module::asScript() const
 {
   if (isNative())

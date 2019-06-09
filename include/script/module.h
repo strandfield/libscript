@@ -17,6 +17,7 @@ class Engine;
 class Namespace;
 class Scope;
 class Script;
+class SourceFile;
 
 class NamespaceImpl;
 
@@ -38,6 +39,7 @@ public:
 
   Module newSubModule(const std::string & name);
   Module newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
+  Module newSubModule(const std::string& name, const SourceFile& src);
   Module getSubModule(const std::string & name) const;
   const std::vector<Module> & submodules() const;
 
