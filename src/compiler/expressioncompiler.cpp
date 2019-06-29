@@ -309,7 +309,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
   }
 
-  assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName);
+  assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName || lookup.resultType() == NameLookup::TemplateName);
 
   if (lookup.resultType() == NameLookup::UnknownName)
     throw NoSuchCallee{ dpos(callee) };
