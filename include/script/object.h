@@ -7,6 +7,7 @@
 
 #include "script/value.h"
 #include "script/class.h" /// TODO: replace by forward declaration
+#include "script/userdata.h"
 
 #include <utility>
 

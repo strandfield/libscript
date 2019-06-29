@@ -49,6 +49,8 @@ struct PtrWrapper
   PtrWrapper(void* ptr) : value(ptr) { }
 };
 
+LIBSCRIPT_API int get_enum_value(const Value& val);
+
 } // namespace details
 
 template<typename T, typename Tag = typename details::tag_resolver<T>::tag_type>
@@ -83,7 +85,7 @@ struct get_helper<T, details::enum_tag>
 
   static T get(const script::Value& val)
   {
-    return static_cast<T>(val.toEnumerator().value());
+    return static_cast<T>(details::get_enum_value(val));
   }
 };
 

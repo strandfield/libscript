@@ -15,6 +15,8 @@
 #include "script/object.h"
 #include "script/private/object_p.h"
 
+#include <cstring>
+
 namespace script
 {
 
@@ -603,6 +605,16 @@ bool Value::operator==(const Value & other) const
 {
   return d == other.d;
 }
+
+namespace details
+{
+
+int get_enum_value(const Value& val)
+{
+    return val.impl()->get_enumerator().value();
+}
+
+} // namespace details
 
 /* get<T>() specializations */
 
