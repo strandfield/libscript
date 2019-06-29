@@ -991,6 +991,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
   case Token::Break:
     return parseBreakStatement();
   case Token::Class:
+  case Token::Struct:
     return parseClassDeclaration();
   case Token::Continue:
     return parseContinueStatement();
@@ -2552,7 +2553,7 @@ void ClassParser::readOptionalParent()
   if (atEnd())
     throw UnexpectedEndOfInput{};
 
-  IdentifierParser nameParser{ fragment(), IdentifierParser::ParseTemplateId}; // TODO : forbid read operator name directly here
+  IdentifierParser nameParser{ fragment(), IdentifierParser::ParseTemplateId | IdentifierParser::ParseQualifiedId}; // TODO : forbid read operator name directly here
   auto parent = nameParser.parse();
   //if(parent->is<ast::OperatorName>())
   //  throw Error{ "Unexpected operator name read after ':' " };
@@ -2793,7 +2794,7 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
 
 std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
 {
-  if (peek() == Token::Class)
+  if (peek() == Token::Class || peek() == Token::Struct)
   {
     ClassParser parser{ fragment() };
     parser.setTemplateSpecialization(true);
