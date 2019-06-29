@@ -113,12 +113,12 @@ typename get_helper<T>::type get(const Value& val)
 
 /* get<T>() specializations */
 
-template<> bool& get<bool>(const Value& val);
-template<> char& get<char>(const Value& val);
-template<> int& get<int>(const Value& val);
-template<> float& get<float>(const Value& val);
-template<> double& get<double>(const Value& val);
-template<> String& get<String>(const Value& val);
+template<> LIBSCRIPT_API bool& get<bool>(const Value& val);
+template<> LIBSCRIPT_API char& get<char>(const Value& val);
+template<> LIBSCRIPT_API int& get<int>(const Value& val);
+template<> LIBSCRIPT_API float& get<float>(const Value& val);
+template<> LIBSCRIPT_API double& get<double>(const Value& val);
+template<> LIBSCRIPT_API String& get<String>(const Value& val);
 
 } // namespace script
 

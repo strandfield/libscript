@@ -13,7 +13,7 @@
 namespace script
 {
 
-class DataMember
+class LIBSCRIPT_API DataMember
 {
 public:
   Type type;

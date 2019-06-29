@@ -10,7 +10,7 @@
 namespace script
 {
 
-class ThisObject
+class LIBSCRIPT_API ThisObject
 {
 public:
   ThisObject(Value& val) : m_value(val) { }
@@ -27,7 +27,6 @@ public:
   {
     void* mem = get().acquireMemory();
     new (mem) T(std::forward<Args>(args)...);
-    return ret;
   }
 
   template<typename T, typename...Args>
@@ -36,7 +35,6 @@ public:
   {
     void* mem = get().acquireMemory();
     new (mem) details::PtrWrapper(new T(std::forward<Args>(args)...));
-    return ret;
   }
 
   template<typename T>
