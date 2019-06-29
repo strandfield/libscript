@@ -52,6 +52,8 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
   const Prototype & proto = f.prototype();
   const int argc = std::distance(begin, end);
 
+  assert(argc + (obj ? 1 : 0) == f.prototype().count());
+
   try
   {
     const int offset = (obj != nullptr ? 1 : 0);

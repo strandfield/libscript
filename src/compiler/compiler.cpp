@@ -327,6 +327,11 @@ ScriptCompiler * Compiler::getScriptCompiler()
     mScriptCompiler->setLogger(mSession->mLogger);
     mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
   }
+  else
+  {
+    mScriptCompiler->setLogger(mSession->mLogger);
+    mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
+  }
 
   return mScriptCompiler.get();
 }
@@ -336,9 +341,10 @@ FunctionCompiler * Compiler::getFunctionCompiler()
   if (mFunctionCompiler == nullptr)
   {
     mFunctionCompiler = std::make_unique<FunctionCompiler>(engine());
-    mFunctionCompiler->setLogger(mSession->mLogger);
-    mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
   }
+
+  mFunctionCompiler->setLogger(mSession->mLogger);
+  mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
 
   return mFunctionCompiler.get();
 }

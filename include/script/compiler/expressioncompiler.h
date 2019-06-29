@@ -96,6 +96,9 @@ protected:
 
   NameLookup resolve(const std::shared_ptr<ast::Identifier> & identifier);
 
+  static std::vector<Type> getTypes(const std::vector<std::shared_ptr<program::Expression>>& exprs);
+  static const std::vector<std::shared_ptr<ast::Node>>& getTemplateArgs(const std::shared_ptr<ast::Identifier>& id);
+
   virtual std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op);
   static void complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args);
 

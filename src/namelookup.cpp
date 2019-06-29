@@ -91,7 +91,7 @@ NameLookup::ResultType NameLookup::resultType() const
     return CaptureName;
   else if (!d->scopeResult.isNull())
     return NamespaceName;
-  else if (!d->classTemplateResult.isNull())
+  else if (!d->classTemplateResult.isNull() || !d->functionTemplateResult.empty())
     return TemplateName;
   else if (!d->typeResult.isNull())
     return TypeName;
@@ -609,11 +609,14 @@ void NameLookup::process()
 
     if (resultType() == NameLookup::TemplateName)
     {
-      Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
-      if (!cla.isNull())
+      if (!d->classTemplateResult.isNull())
       {
-        d->classTemplateResult = ClassTemplate{};
-        d->typeResult = cla.id();
+        Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+        if (!cla.isNull())
+        {
+          d->classTemplateResult = ClassTemplate{};
+          d->typeResult = cla.id();
+        }
       }
     }
     else
@@ -645,17 +648,26 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
   }
   else if (name->is<ast::TemplateIdentifier>())
   {
-    const auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
+    auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
     auto fake_template_name = ast::SimpleIdentifier::New(tempid->name, tempid->ast.lock());
     qualified_lookup(fake_template_name, s);
-    if (d->classTemplateResult.isNull())
-      throw std::runtime_error{ "Name does not refer to a template" };
+    d->functions.clear(); // we only keep templates
 
-    Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
-    if (!cla.isNull())
+    if (resultType() == NameLookup::TemplateName)
     {
-      d->classTemplateResult = ClassTemplate{};
-      d->typeResult = cla.id();
+      if (!d->classTemplateResult.isNull())
+      {
+        Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+        if (!cla.isNull())
+        {
+          d->classTemplateResult = ClassTemplate{};
+          d->typeResult = cla.id();
+        }
+      }
+    }
+    else
+    {
+      /// TODO: if the result is not Unknown name, we should throw or at least report an error
     }
   }
 }

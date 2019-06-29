@@ -301,16 +301,10 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   {
     FunctionTemplateProcessor::remove_duplicates(lookup.impl()->functionTemplateResult);
 
-    std::vector<Type> types;
-    for (const auto & a : args)
-      types.push_back(a->type());
+    const std::vector<Type> types = getTypes(args);
 
-    std::vector<TemplateArgument> targs{};
-    if (callee->is<ast::TemplateIdentifier>())
-    {
-      const auto & template_name = callee->as<ast::TemplateIdentifier>();
-      targs = templateProcessor().name_processor().arguments(scope(), template_name.arguments);
-    }
+    const auto& ast_targs = getTemplateArgs(callee);
+    const std::vector<TemplateArgument> targs = templateProcessor().name_processor().arguments(scope(), ast_targs);
 
     templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
   }
@@ -488,6 +482,35 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const s
 NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
 {
   return NameLookup::resolve(identifier, scope(), templateProcessor().name_processor());
+}
+
+std::vector<Type> ExpressionCompiler::getTypes(const std::vector<std::shared_ptr<program::Expression>>& exprs)
+{
+  std::vector<Type> ret;
+  ret.reserve(exprs.size());
+
+  for (const auto& e : exprs)
+  {
+    ret.push_back(e->type());
+  }
+
+  return ret;
+}
+
+const std::vector<std::shared_ptr<ast::Node>>& ExpressionCompiler::getTemplateArgs(const std::shared_ptr<ast::Identifier>& id)
+{
+  static const std::vector<std::shared_ptr<ast::Node>> static_instance = {};
+
+  if (id->is<ast::TemplateIdentifier>())
+  {
+    return id->as<ast::TemplateIdentifier>().arguments;
+  }
+  else if (id->is<ast::ScopedIdentifier>())
+  {
+    return getTemplateArgs(id->as<ast::ScopedIdentifier>().rhs);
+  }
+
+  return static_instance;
 }
 
 void ExpressionCompiler::complete(const Function & f, std::vector<std::shared_ptr<program::Expression>> & args)

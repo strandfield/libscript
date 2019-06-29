@@ -38,6 +38,9 @@ std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, co
 
 std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, const std::shared_ptr<program::Expression> & arg, const Conversion & conv)
 {
+  if (conv == Conversion::NotConvertible())
+    throw std::runtime_error{ "Cannot convert" };
+
   if (!conv.isUserDefinedConversion())
     return sconvert(e, arg, conv.firstStandardConversion());
 

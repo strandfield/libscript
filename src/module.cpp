@@ -162,6 +162,7 @@ Module Module::newSubModule(const std::string& name, const SourceFile& src)
   NativeModule* nm = static_cast<NativeModule*>(impl());
 
   auto mimpl = std::make_shared<ScriptModule>(engine()->implementation()->scripts.size(), engine(), src, name);
+  engine()->implementation()->scripts.push_back(Script(mimpl));
 
   Module m{ mimpl };
   nm->modules.push_back(m);
@@ -235,6 +236,7 @@ void Module::load()
     const bool success = s.compile();
     if (success && !engine()->compiler()->hasActiveSession())
       s.run();
+    /// TODO: throw on failure!!
   }
 }
 

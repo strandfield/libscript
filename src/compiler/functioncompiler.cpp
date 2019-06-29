@@ -875,6 +875,11 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 
   const Conversion conv = Conversion::compute(retval, mFunction.prototype().returnType(), engine());
 
+  if (conv == Conversion::NotConvertible())
+  {
+    throw CouldNotConvert(dpos(rs), retval->type(), mFunction.prototype().returnType());
+  }
+
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
   retval = ConversionProcessor::convert(engine(), retval, conv);
 
