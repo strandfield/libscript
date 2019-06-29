@@ -21,19 +21,22 @@ public:
 };
 
 template<typename T>
-class GenericUserData
+class GenericUserData : public UserData
 {
 public:
   T value;
 public:
-  explicit GenericUserData(const T& val) : value(val) { }
+
+  template<typename...Args>
+  GenericUserData(Args&& ... args) : value(std::forward<Args>(args)...) { }
+
   ~GenericUserData() = default;
 };
 
-template<typename T>
-std::shared_ptr<UserData> make_userdata(const T& val)
+template<typename T, typename...Args>
+std::shared_ptr<UserData> make_userdata(Args &&... args)
 {
-  return std::make_shared<GenericUserData<T>>(val);
+  return std::make_shared<GenericUserData<T>>(std::forward<Args>(args)...);
 }
 
 } // namespace script

@@ -40,7 +40,7 @@ public:
   template<typename T, typename...Args>
   void setUserData(Args&& ... args)
   {
-    this->setUserData(script::make_userdata<T>(T(std::forward<Args>(args)...)));
+    this->setUserData(script::make_userdata<T>(std::forward<Args>(args)...));
   }
 
   template<typename T>
