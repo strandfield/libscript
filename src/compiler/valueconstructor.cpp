@@ -12,6 +12,7 @@
 #include "script/engine.h"
 #include "script/initialization.h"
 #include "script/overloadresolution.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -49,7 +50,7 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
     throw FunctionVariablesMustBeInitialized{ dp };
   else if (type.isObjectType())
   {
-    Function default_ctor = e->getClass(type).defaultConstructor();
+    Function default_ctor = e->typeSystem()->getClass(type).defaultConstructor();
     if (default_ctor.isNull())
       throw VariableCannotBeDefaultConstructed{ dp, type };
     else if (default_ctor.isDeleted())
@@ -86,7 +87,7 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
   else if (type.isObjectType())
   {
     auto alloc = program::AllocateExpression::New(type.baseType());
-    const std::vector<Function> & ctors = e->getClass(type).constructors();
+    const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
     if (!resol.process(ctors, args, alloc))
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
@@ -129,7 +130,7 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   else if (type.isObjectType())
   {
     auto alloc = program::AllocateExpression::New(type.baseType());
-    const std::vector<Function> & ctors = e->getClass(type).constructors();
+    const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
     if (!resol.process(ctors, args, alloc))
       throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
@@ -203,17 +204,17 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 
   program::InitializerList & ilist = *std::static_pointer_cast<program::InitializerList>(arg);
 
-  if (e->isInitializerListType(init.destType()))
+  if (e->typeSystem()->isInitializerList(init.destType()))
   {
-    make_initializer_list(e->getClass(init.destType()), ilist, init.initializations());
+    make_initializer_list(e->typeSystem()->getClass(init.destType()), ilist, init.initializations());
     return arg;
   }
   else
   {
     const Function ctor = init.constructor();
-    if (e->isInitializerListType(ctor.parameter(1)))
+    if (e->typeSystem()->isInitializerList(ctor.parameter(1)))
     {
-      make_initializer_list(e->getClass(ctor.parameter(1)), ilist, init.initializations());
+      make_initializer_list(e->typeSystem()->getClass(ctor.parameter(1)), ilist, init.initializations());
       return program::ConstructorCall::New(ctor, { arg });
     }
     else
@@ -245,16 +246,16 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 
   assert(init.kind() == Initialization::ListInitialization);
 
-  if (e->isInitializerListType(init.destType()))
+  if (e->typeSystem()->isInitializerList(init.destType()))
   {
-    return make_initializer_list(e->getClass(init.destType()), std::move(args), init.initializations());
+    return make_initializer_list(e->typeSystem()->getClass(init.destType()), std::move(args), init.initializations());
   }
   else
   {
     const Function ctor = init.constructor();
-    if (e->isInitializerListType(ctor.parameter(0)))
+    if (e->typeSystem()->isInitializerList(ctor.parameter(0)))
     {
-      auto ilist = make_initializer_list(e->getClass(ctor.parameter(0)), std::move(args), init.initializations());
+      auto ilist = make_initializer_list(e->typeSystem()->getClass(ctor.parameter(0)), std::move(args), init.initializations());
       return program::ConstructorCall::New(ctor, { ilist });
     }
     else

@@ -35,6 +35,7 @@ class Script;
 class SourceFile;
 class TemplateArgumentDeduction;
 class TemplateParameter;
+class TypeSystem;
 
 namespace compiler
 {
@@ -88,6 +89,8 @@ public:
   Engine(const Engine & other) = delete;
 
   void setup();
+
+  TypeSystem* typeSystem() const;
 
   Value newBool(bool bval);
   Value newChar(char cval);
@@ -143,26 +146,12 @@ public:
   bool canCopy(const Type & t);
   Value copy(const Value & val);
 
-  Conversion conversion(const Type & src, const Type & dest);
-
   void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions);
 
-  bool canCast(const Type & srcType, const Type & destType);
-  Value cast(const Value & val, const Type & type);
+  bool canConvert(const Type & srcType, const Type & destType) const;
+  Value convert(const Value & val, const Type & type);
 
   Namespace rootNamespace() const;
-
-  FunctionType getFunctionType(Type id) const;
-  FunctionType getFunctionType(const Prototype & proto);
-
-  bool hasType(const Type & t) const;
-  Class getClass(Type id) const;
-  Enum getEnum(Type id) const;
-  ClosureType getLambda(Type id) const;
-
-  bool reserveTypeRange(int begin, int end);
-
-  FunctionType newFunctionType(const Prototype & proto);
 
   Script newScript(const SourceFile & source);
   compiler::Compiler* compiler() const;
@@ -175,24 +164,18 @@ public:
   const std::vector<Module> & modules() const;
   Module getModule(const std::string & name);
 
-  // Returns the enclosing namespace of the type
-  Namespace enclosingNamespace(Type t) const;
-
   Type typeId(const std::string & typeName, Scope scope = Scope()) const;
-  std::string typeName(Type t) const;
 
   Context newContext();
   Context currentContext() const;
   void setContext(Context con);
 
-  /// TODO : add a way to get error messages on failure
   Value eval(const std::string & command);
 
   Value call(const Function & f, std::initializer_list<Value> && args);
   Value call(const Function & f, const std::vector<Value> & args);
   Value invoke(const Function & f, std::initializer_list<Value> && args);
   Value invoke(const Function & f, const std::vector<Value> & args);
-
 
   struct array_template_t {};
   static const array_template_t ArrayTemplate;
@@ -201,8 +184,6 @@ public:
   struct initializer_list_template_t {};
   static const initializer_list_template_t InitializerListTemplate;
   ClassTemplate getTemplate(initializer_list_template_t) const;
-  bool isInitializerListType(const Type & t) const;
-
 
   const std::vector<Script> & scripts() const;
 

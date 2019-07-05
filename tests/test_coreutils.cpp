@@ -33,7 +33,7 @@
 #include "script/sourcefile.h"
 #include "script/staticdatamember.h"
 #include "script/symbol.h"
-#include "script/types.h"
+#include "script/typesystem.h"
 
 #include "script/interpreter/executioncontext.h"
 
@@ -120,29 +120,14 @@ TEST(CoreUtilsTests, Types) {
   Engine e;
   e.setup();
 
-  Type function_type = e.newFunctionType(Prototype{ Type::Void }).type();
+  Type function_type = e.typeSystem()->getFunctionType(Prototype{ Type::Void }).type();
   ASSERT_EQ(function_type.category(), Type::PrototypeFlag);
 
-  ASSERT_TRUE(e.hasType(Type::Int));
-  ASSERT_TRUE(e.hasType(Type::String));
-  ASSERT_FALSE(e.hasType(Type::Auto));
-  ASSERT_FALSE(e.hasType(Type::String + 66));
-  ASSERT_TRUE(e.hasType(function_type));
-}
-
-TEST(CoreUtilsTests, TypeReservation) {
-  using namespace script;
-
-  Engine e;
-  e.setup();
-
-  const int begin = Type::ObjectFlag | 10;
-  const int end = Type::ObjectFlag | 11;
-
-  e.reserveTypeRange(begin, end);
-
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").setId(Type::ObjectFlag | 10).get();
-  ASSERT_EQ(A.id(), Type::ObjectFlag | 10);
+  ASSERT_TRUE(e.typeSystem()->exists(Type::Int));
+  ASSERT_TRUE(e.typeSystem()->exists(Type::String));
+  ASSERT_FALSE(e.typeSystem()->exists(Type::Auto));
+  ASSERT_FALSE(e.typeSystem()->exists(Type::String + 66));
+  ASSERT_TRUE(e.typeSystem()->exists(function_type));
 }
 
 TEST(CoreUtilsTests, Enums) {
@@ -748,7 +733,7 @@ TEST(CoreUtilsTests, function_names) {
   ASSERT_EQ(a.getName(), ctor.getName());
   
   /// TODO : make this work !
-  Function dtor = e.getClass(Type::String).destructor();
+  Function dtor = e.typeSystem()->getClass(Type::String).destructor();
   ASSERT_ANY_THROW(dtor.getName());
 };
 
@@ -759,7 +744,7 @@ TEST(CoreUtilsTests, symbols) {
   Engine e;
   e.setup();
 
-  Class string = e.getClass(Type::String);
+  Class string = e.typeSystem()->getClass(Type::String);
   Namespace ns = e.rootNamespace();
 
   Symbol s{ string };

@@ -16,6 +16,7 @@
 #include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/typedefs.h"
+#include "script/typesystem.h"
 
 #include "script/compiler/compiler.h"
 
@@ -1128,7 +1129,7 @@ TEST(CompilerTests, function_variable) {
   Value func = s.globals().back();
 
   DynamicPrototype proto{ Type::Int, {Type::Int} };
-  ASSERT_EQ(func.type(), engine.getFunctionType(proto).type());
+  ASSERT_EQ(func.type(), engine.typeSystem()->getFunctionType(proto).type());
 }
 
 
@@ -1183,7 +1184,7 @@ TEST(CompilerTests, function_variable_assignment) {
   Value func = s.globals().back();
 
   DynamicPrototype proto{ Type::Int, {Type::Int} };
-  ASSERT_EQ(func.type(), engine.getFunctionType(proto).type());
+  ASSERT_EQ(func.type(), engine.typeSystem()->getFunctionType(proto).type());
 
   ASSERT_EQ(func.toFunction(), bar);
 }

@@ -17,6 +17,7 @@
 #include "script/initialization.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -220,6 +221,8 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
 
 std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveConstructor(const Class & cla)
 {
+  const TypeSystem* ts = cla.engine()->typeSystem();
+
   auto this_object = program::StackValue::New(1, Type::ref(cla.id()));
   auto other_object = program::StackValue::New(2, Type::rref(cla.id()));
 
@@ -261,7 +264,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
     {
       if (dm.type.isObjectType())
       {
-        Function dm_move_ctor = cla.engine()->getClass(dm.type).moveConstructor();
+        Function dm_move_ctor = ts->getClass(dm.type).moveConstructor();
         if (!dm_move_ctor.isNull())
         {
           if (dm_move_ctor.isDeleted())
@@ -270,7 +273,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
         }
         else
         {
-          Function dm_copy_ctor = cla.engine()->getClass(dm.type).copyConstructor();
+          Function dm_copy_ctor = ts->getClass(dm.type).copyConstructor();
           if (dm_copy_ctor.isNull() || dm_copy_ctor.isDeleted())
             throw DataMemberIsNotMovable{};
           member_value = program::ConstructorCall::New(dm_copy_ctor, { member_access });

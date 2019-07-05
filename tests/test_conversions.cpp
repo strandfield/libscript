@@ -17,6 +17,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/namespace.h"
+#include "script/typesystem.h"
 
 TEST(Conversions, fundamentals) {
   using namespace script;
@@ -270,7 +271,7 @@ TEST(Conversions, function_type) {
   Engine e;
   e.setup();
 
-  auto ft = e.getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} });
+  auto ft = e.typeSystem()->getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} });
 
   Conversion conv = Conversion::compute(ft.type(), ft.type(), &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());
@@ -282,7 +283,7 @@ TEST(Conversions, function_type) {
   ASSERT_FALSE(conv.isUserDefinedConversion());
   ASSERT_TRUE(conv.firstStandardConversion().isReferenceConversion());
 
-  auto ft2 = e.getFunctionType(DynamicPrototype{ Type::Void, { Type::Float } });
+  auto ft2 = e.typeSystem()->getFunctionType(DynamicPrototype{ Type::Void, { Type::Float } });
 
   conv = Conversion::compute(ft.type(), ft2.type(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
@@ -327,14 +328,14 @@ TEST(Conversions, engine_functions) {
   Engine e;
   e.setup();
 
-  ASSERT_TRUE(e.canCast(Type::Int, Type::Float));
-  ASSERT_FALSE(e.canCast(Type::String, Type::Int));
+  ASSERT_TRUE(e.canConvert(Type::Int, Type::Float));
+  ASSERT_FALSE(e.canConvert(Type::String, Type::Int));
 
   Namespace ns = e.rootNamespace();
   Class A = ns.newClass("A").get();
   A.newConstructor().params(Type::cref(A.id())).create();
   ASSERT_TRUE(e.canCopy(A.id()));
-  ASSERT_TRUE(e.canCast(A.id(), A.id()));
+  ASSERT_TRUE(e.canConvert(A.id(), A.id()));
 
   Class B = ns.newClass("B").get();
   ASSERT_FALSE(e.canCopy(B.id()));

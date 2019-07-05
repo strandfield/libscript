@@ -15,6 +15,8 @@
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 #include "script/symbol.h"
+#include "script/types.h"
+#include "script/typesystem.h"
 
 #include "script/namelookup.h"
 #include "script/private/namelookup_p.h"
@@ -72,11 +74,11 @@ void ScopeImpl::inject(const NameLookupImpl *nl)
   {
     if (nl->typeResult.isEnumType())
     {
-      extensible->injected_enums.push_back(engine()->getEnum(nl->typeResult));
+      extensible->injected_enums.push_back(engine()->typeSystem()->getEnum(nl->typeResult));
     }
     else if (nl->typeResult.isObjectType())
     {
-      extensible->injected_classes.push_back(engine()->getClass(nl->typeResult));
+      extensible->injected_classes.push_back(engine()->typeSystem()->getClass(nl->typeResult));
     }
     else
     {
@@ -839,7 +841,7 @@ bool LambdaScope::lookup(const std::string & name, NameLookupImpl *nl) const
 
   if (captures.front().name == "this")
   {
-    Class cla = engine()->getClass(captures.front().type);
+    Class cla = engine()->typeSystem()->getClass(captures.front().type);
     const int dmi = cla.attributeIndex(name);
     if (dmi != -1)
     {
@@ -1331,6 +1333,24 @@ void Scope::inject(const NamespaceAlias & alias)
   }
 
   throw std::runtime_error{ "Scope::inject() : could not inject namespace alias" };
+}
+
+/*!
+ * \fn static Namespace enclosingNamespace(const Type& t, Engine* e)
+ * \brief Return the enclosing namespace of the given type.
+ *
+ */
+Namespace Scope::enclosingNamespace(const script::Type& t, Engine* e)
+{
+  if (t.isFundamentalType() || t.isClosureType() || t.isFunctionType())
+    return e->rootNamespace();
+  else if (t.isObjectType())
+    return e->typeSystem()->getClass(t).enclosingNamespace();
+  else if (t.isEnumType())
+    return e->typeSystem()->getEnum(t).enclosingNamespace();
+
+  // Reasonable default
+  return e->rootNamespace();
 }
 
 std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string & suffix) const

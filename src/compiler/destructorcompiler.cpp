@@ -15,6 +15,7 @@
 #include "script/datamember.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -57,7 +58,7 @@ std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateDestruct
 Function DestructorCompiler::getDestructor(Engine *e, const Type & t)
 {
   if (t.isObjectType())
-    return e->getClass(t).destructor();
+    return e->typeSystem()->getClass(t).destructor();
   return Function{};
 }
 

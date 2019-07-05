@@ -32,6 +32,8 @@ public:
 public:
   Engine *engine;
 
+  std::unique_ptr<TypeSystem> typesystem;
+
   std::unique_ptr<compiler::Compiler> compiler;
   std::unique_ptr<interpreter::Interpreter> interpreter;
 
@@ -43,17 +45,8 @@ public:
   std::vector<Value> garbageCollector;
   bool garbage_collector_running;
 
-  std::vector<FunctionType> prototypes;
-  std::vector<Class> classes;
-  std::vector<Enum> enums;
-  std::vector<ClosureType> lambdas;
   std::vector<Script> scripts;
   std::vector<Module> modules;
-
-  struct {
-    Enum enum_type;
-    Class class_type;
-  } reservations;
 
   struct
   {
@@ -67,19 +60,8 @@ public:
   Value copy(const Value & val, const Function & copyctor);
   void destroy(const Value & val, const Function & dtor);
 
-  ClosureType newLambda();
-
-  void register_class(Class & c, int id = 0);
-  void register_enum(Enum & e, int id = 0);
-
-  void destroy(Enum e);
-  void destroy(Class c);
   void destroy(Namespace ns);
   void destroy(Script s);
-
-  void unregister_class(Class &c);
-  void unregister_enum(Enum &e);
-  void unregister_closure(ClosureType &c);
 };
 
 

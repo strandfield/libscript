@@ -17,6 +17,7 @@
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/symbol.h"
+#include "script/typesystem.h"
 
 TEST(InitializerLists, class_template) {
   using namespace script;
@@ -30,8 +31,8 @@ TEST(InitializerLists, class_template) {
     TemplateArgument{ Type{Type::Int} }
     });
 
-  ASSERT_TRUE(engine.isInitializerListType(ilist_int.id()));
-  ASSERT_FALSE(engine.isInitializerListType(Type::String));
+  ASSERT_TRUE(engine.typeSystem()->isInitializerList(ilist_int.id()));
+  ASSERT_FALSE(engine.typeSystem()->isInitializerList(Type::String));
 
   ASSERT_EQ(ilist_int.classes().size(), 1);
   Class iter = ilist_int.classes().front();

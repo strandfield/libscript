@@ -6,13 +6,14 @@
 #include "script/private/value_p.h"
 
 #include "script/engine.h"
-#include "script/private/engine_p.h"
-
 #include "script/array.h"
 #include "script/enumerator.h"
 #include "script/function.h"
 #include "script/initializerlist.h"
 #include "script/object.h"
+#include "script/typesystem.h"
+
+#include "script/private/engine_p.h"
 #include "script/private/object_p.h"
 
 #include <cstring>
@@ -85,7 +86,7 @@ void ValueImpl::init_object()
   {
     clear();
 
-    auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
+    auto impl = std::make_shared<ObjectImpl>(this->engine->typeSystem()->getClass(this->type));
     new (&data.object) Object{ impl };
 
     which = ObjectField;
@@ -95,7 +96,7 @@ void ValueImpl::init_object()
     if (!data.object.isNull())
       return;
 
-    auto impl = std::make_shared<ObjectImpl>(this->engine->getClass(this->type));
+    auto impl = std::make_shared<ObjectImpl>(this->engine->typeSystem()->getClass(this->type));
     data.object = Object{ impl };
   }
 }

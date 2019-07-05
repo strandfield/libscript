@@ -168,7 +168,7 @@ void VariableProcessor::default_initialization(Variable & v)
 
   assert(val.type().isObjectType());
 
-  Function ctor = engine->getClass(val.type()).defaultConstructor();
+  Function ctor = engine->typeSystem()->getClass(val.type()).defaultConstructor();
   if (ctor.isNull())
     throw FailedToInitializeStaticVariable{};
 
@@ -228,7 +228,7 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
   }
   else if (t.isObjectType())
   {
-    Function copy_ctor = engine->getClass(t).copyConstructor();
+    Function copy_ctor = engine->typeSystem()->getClass(t).copyConstructor();
     if(copy_ctor.isNull())
       throw FailedToInitializeStaticVariable{};
 

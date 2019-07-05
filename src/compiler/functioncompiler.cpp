@@ -1014,7 +1014,7 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
 
   if (var.type.isObjectType())
   {
-    Function dtor = engine()->getClass(var.type).destructor();
+    Function dtor = engine()->typeSystem()->getClass(var.type).destructor();
     if (dtor.isNull())
       throw ObjectHasNoDestructor{};
 

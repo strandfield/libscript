@@ -12,6 +12,7 @@
 #include "script/operatorbuilder.h"
 #include "script/template.h"
 #include "script/templatebuilder.h"
+#include "script/typesystem.h"
 
 #include "script/private/array_p.h"
 #include "script/private/engine_p.h"
@@ -32,7 +33,7 @@ namespace array
 Value default_ctor(FunctionCall *c)
 {
   Value that = c->arg(0);
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
+  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->typeSystem()->getClass(that.type()).data());
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
   that.impl()->set_array(Array{ array_impl });
   return that;
@@ -53,7 +54,7 @@ Value size_ctor(FunctionCall *c)
 {
   Value that = c->arg(0);
 
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->engine()->getClass(that.type()).data());
+  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->typeSystem()->getClass(that.type()).data());
 
   const int size = c->arg(1).toInt();
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
@@ -132,7 +133,7 @@ Class instantiate_array_class(ClassTemplateInstanceBuilder & builder)
 
   if (element_type.isObjectType())
   {
-    Class element_class = e->getClass(element_type);
+    Class element_class = e->typeSystem()->getClass(element_type);
     data.constructor = element_class.defaultConstructor();
     data.copyConstructor = element_class.copyConstructor();
     data.destructor = element_class.destructor();
@@ -146,7 +147,7 @@ Class instantiate_array_class(ClassTemplateInstanceBuilder & builder)
   }
   
 
-  builder.name = std::string("Array<") + e->typeName(element_type) + std::string(">");
+  builder.name = std::string("Array<") + e->typeSystem()->typeName(element_type) + std::string(">");
 
   auto shared_data = std::make_shared<SharedArrayData>(data);
   builder.setData(shared_data);

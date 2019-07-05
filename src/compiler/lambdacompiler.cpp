@@ -23,7 +23,7 @@
 #include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/operator_p.h"
-
+#include "script/private/typesystem_p.h"
 
 namespace script
 {
@@ -109,7 +109,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
     capture_flags[first_capture_offset] = true;
 
     captures.push_back(Capture{ "this", this_object });
-    captured_class = c->engine()->getClass(this_object->type());
+    captured_class = c->engine()->typeSystem()->getClass(this_object->type());
   }
 
   for (const auto & cap : task.lexpr->captures)
@@ -181,7 +181,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   // we should fix that !!
   //mDeclaration = task.lexpr;
 
-  mLambda = engine()->implementation()->newLambda();
+  mLambda = engine()->typeSystem()->impl()->newLambda();
 
   for (const auto & cap : task.captures)
   {

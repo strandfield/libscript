@@ -50,7 +50,7 @@ std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionC
 
 std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset, const diagnostic::pos_t dpos)
 {
-  Class cla = ec.engine()->getClass(object->type());
+  Class cla = ec.engine()->typeSystem()->getClass(object->type());
   int relative_index = offset;
   while (relative_index - int(cla.dataMembers().size()) >= 0)
   {

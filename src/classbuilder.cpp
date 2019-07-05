@@ -9,11 +9,12 @@
 #include "script/class.h"
 #include "script/classtemplate.h"
 #include "script/engine.h"
+#include "script/typesystem.h"
 
 #include "script/private/class_p.h"
-#include "script/private/engine_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/template_p.h"
+#include "script/private/typesystem_p.h"
 
 namespace script
 {
@@ -21,7 +22,7 @@ namespace script
 template<typename Derived>
 static void fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilderBase<Derived> & opts)
 {
-  impl->set_parent(impl->engine->getClass(opts.base));
+  impl->set_parent(impl->engine->typeSystem()->getClass(opts.base));
   impl->dataMembers = opts.dataMembers;
   impl->isFinal = opts.isFinal;
   impl->data = opts.userdata;
@@ -56,7 +57,7 @@ Class ClassBuilder::get()
 
   fill_class(ret.impl(), *this);
 
-  symbol.engine()->implementation()->register_class(ret, id);
+  symbol.engine()->typeSystem()->impl()->register_class(ret, id);
 
   if (symbol.isClass())
     std::static_pointer_cast<ClassImpl>(symbol.impl())->classes.push_back(ret);
@@ -88,7 +89,7 @@ Class ClassTemplateInstanceBuilder::get()
   ret->enclosing_symbol = symbol.impl();
 
   Class class_result{ ret };
-  template_.engine()->implementation()->register_class(class_result, this->id);
+  template_.engine()->typeSystem()->impl()->register_class(class_result, this->id);
 
   return class_result;
 }
@@ -110,7 +111,7 @@ Class ClassTemplateSpecializationBuilder::get()
   ret->enclosing_symbol = symbol.impl();
 
   Class class_result{ ret };
-  template_.engine()->implementation()->register_class(class_result, this->id);
+  template_.engine()->typeSystem()->impl()->register_class(class_result, this->id);
 
   template_.impl()->instances[class_result.arguments()] = class_result;
 

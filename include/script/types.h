@@ -53,9 +53,13 @@ public:
     Int = 4,
     Float = 5,
     Double = 6,
-    String = ObjectFlag | 1,
     InitializerList = 8,
     Auto = 9,
+    FirstClassType = ObjectFlag | 1,
+    String = FirstClassType,
+    LastClassType,
+    FirstEnumType = EnumFlag | 1,
+    LastEnumType,
   };
 
   inline bool isNull() const { return d == 0; }

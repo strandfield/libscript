@@ -10,6 +10,7 @@
 #include "script/object.h"
 #include "script/scope.h"
 #include "script/script.h"
+#include "script/typesystem.h"
 #include "script/value.h"
 
 TEST(Scenarios, manual_construction_and_delegate_ctor) {
@@ -36,7 +37,7 @@ TEST(Scenarios, manual_construction_and_delegate_ctor) {
   ASSERT_ANY_THROW(engine.typeId("Foo"));
 
   Type foo_type = engine.typeId("Foo", Scope{ s });
-  Class foo = engine.getClass(foo_type);
+  Class foo = engine.typeSystem()->getClass(foo_type);
 
   // We create a value of type Foo without initializing it
   Value val = engine.allocate(foo_type);

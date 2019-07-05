@@ -11,6 +11,7 @@
 #include "script/initializerlist.h"
 #include "script/object.h"
 #include "script/script.h"
+#include "script/typesystem.h"
 
 #include "script/private/array_p.h"
 #include "script/private/function_p.h"
@@ -59,7 +60,7 @@ Value Interpreter::call(const Function & f, const Value *obj, const Value *begin
     const int offset = (obj != nullptr ? 1 : 0);
     for (int i(0); i < argc; ++i)
     {
-      Value arg = e->cast(begin[i], proto.at(i + offset));
+      Value arg = e->convert(begin[i], proto.at(i + offset));
       if (!proto.at(i).isReference())
         e->manage(arg);
       mExecutionContext->stack.push(arg);
@@ -321,7 +322,7 @@ void Interpreter::visit(const program::WhileLoop & wl)
 
 Value Interpreter::visit(const program::ArrayExpression & array)
 {
-  Class array_class = mEngine->getClass(array.arrayType);
+  Class array_class = mEngine->typeSystem()->getClass(array.arrayType);
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
   Array a{ std::make_shared<ArrayImpl>(array_data->data, mEngine) };
   auto aimpl = a.impl();
@@ -455,7 +456,7 @@ Value Interpreter::visit(const program::InitializerList & il)
 
 Value Interpreter::visit(const program::LambdaExpression & lexpr)
 {
-  ClosureType closure_type = mEngine->getLambda(lexpr.closureType);
+  ClosureType closure_type = mEngine->typeSystem()->getLambda(lexpr.closureType);
   auto limpl = std::make_shared<LambdaImpl>(closure_type);
 
   for (const auto & cap : lexpr.captures)
@@ -513,7 +514,7 @@ Value Interpreter::visit(const program::VirtualCall & vc)
   for (const auto & arg : vc.args)
     mExecutionContext->stack.push(inner_eval(arg));
 
-  Function callee = mEngine->getClass(object.type()).vtable().at(vc.vtableIndex);
+  Function callee = mEngine->typeSystem()->getClass(object.type()).vtable().at(vc.vtableIndex);
   mExecutionContext->push(callee, sp);
 
   invoke(callee);

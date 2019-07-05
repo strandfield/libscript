@@ -16,6 +16,7 @@
 #include "script/script.h"
 #include "script/templateargumentdeduction.h"
 #include "script/templatebuilder.h"
+#include "script/typesystem.h"
 
 #include "script/userdata.h"
 #include "script/namelookup.h"
@@ -414,7 +415,7 @@ TEST(TemplateTests, argument_deduction_4) {
     .get();
 
   DynamicPrototype proto{ Type::Boolean, {Type::Int} };
-  FunctionType function_type = engine.getFunctionType(proto);
+  FunctionType function_type = engine.typeSystem()->getFunctionType(proto);
 
   std::vector<TemplateArgument> arguments;
   std::vector<Type> types{ function_type.type(), Type::Int };
@@ -456,7 +457,7 @@ TEST(TemplateTests, argument_deduction_5) {
 
   auto create_func_type = [&engine](const Type & t) -> Type {
     DynamicPrototype proto{ Type::Void , {t} };
-    return engine.getFunctionType(proto).type();
+    return engine.typeSystem()->getFunctionType(proto).type();
   };
 
   std::vector<TemplateArgument> targs;
@@ -1131,7 +1132,7 @@ TEST(TemplateTests, partial_specializations_selec) {
   ASSERT_EQ(result.second.front().type, Type::Int);
   ASSERT_EQ(result.second.back().type, Type::Boolean);
 
-  Type void_int = engine.getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} }).type();
+  Type void_int = engine.typeSystem()->getFunctionType(DynamicPrototype{ Type::Void, {Type::Int} }).type();
   targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Int }, TemplateArgument{ void_int } };
   result = selector.select(foo, targs);
   ASSERT_EQ(result.first, foo_T_UT);
@@ -1139,7 +1140,7 @@ TEST(TemplateTests, partial_specializations_selec) {
   ASSERT_EQ(result.second.front().type, Type::Int);
   ASSERT_EQ(result.second.back().type, Type::Void);
 
-  Type int_int = engine.getFunctionType(DynamicPrototype{ Type::Int, {Type::Int} }).type();
+  Type int_int = engine.typeSystem()->getFunctionType(DynamicPrototype{ Type::Int, {Type::Int} }).type();
   targs = std::vector<TemplateArgument>{ TemplateArgument{ Type::Void }, TemplateArgument{ int_int } };
   result = selector.select(foo, targs);
   ASSERT_TRUE(result.first.isNull());

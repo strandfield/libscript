@@ -10,6 +10,7 @@
 #include "script/engine.h"
 #include "script/functiontype.h"
 #include "script/namelookup.h"
+#include "script/typesystem.h"
 
 #include "script/ast/node.h"
 
@@ -117,7 +118,7 @@ bool TemplatePatternMatching::match_(const ast::QualifiedType & pattern, const T
     if (!input.isObjectType())
       return false;
 
-    Class object_type = engine()->getClass(input);
+    Class object_type = engine()->typeSystem()->getClass(input);
     if (!object_type.isTemplateInstance())
       return false;
 
@@ -162,7 +163,7 @@ bool TemplatePatternMatching::match_(const ast::FunctionType & pattern, const Ty
   if (!input.isFunctionType())
     return false;
 
-  FunctionType ft = engine()->getFunctionType(input);
+  FunctionType ft = engine()->typeSystem()->getFunctionType(input);
 
   if (!match_(pattern.returnType, ft.prototype().returnType()))
     return false;
@@ -272,7 +273,7 @@ bool TemplatePatternMatching::match_(const std::shared_ptr<ast::ScopedIdentifier
     if (!input.isObjectType())
       return false;
 
-    Class object_type = engine()->getClass(input);
+    Class object_type = engine()->typeSystem()->getClass(input);
     if (!object_type.isTemplateInstance())
       return false;
 

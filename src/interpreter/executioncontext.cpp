@@ -144,6 +144,11 @@ Engine * FunctionCall::engine() const
   return this->ec->engine;
 }
 
+TypeSystem* FunctionCall::typeSystem() const
+{
+  return this->ec->engine->typeSystem();
+}
+
 int FunctionCall::depth() const
 {
   return std::distance(this->ec->callstack.begin(), this);

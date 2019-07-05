@@ -7,6 +7,7 @@
 #include "script/engine.h"
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/typesystem.h"
 
 #include "script/program/expression.h"
 
@@ -453,7 +454,7 @@ StandardConversion StandardConversion::compute(const Type & src, const Type & de
 
   if (src.isObjectType() && dest.isObjectType())
   {
-    const Class src_class = e->getClass(src), dest_class = e->getClass(dest);
+    const Class src_class = e->typeSystem()->getClass(src), dest_class = e->typeSystem()->getClass(dest);
     const int inheritance_depth = src_class.inheritanceLevel(dest_class);
 
     if (inheritance_depth < 0)
@@ -707,7 +708,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
 
   if (dest.isObjectType())
   {
-    const auto & ctors = engine->getClass(dest).constructors();
+    const auto & ctors = engine->typeSystem()->getClass(dest).constructors();
     Conversion userdefconv = select_converting_constructor(src, ctors, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;
@@ -715,7 +716,7 @@ Conversion Conversion::compute(const Type & src, const Type & dest, Engine *engi
 
   if (src.isObjectType())
   {
-    const auto & casts = engine->getClass(src).casts();
+    const auto & casts = engine->typeSystem()->getClass(src).casts();
     Conversion userdefconv = select_cast(src, casts, dest, engine, policy);
     if (userdefconv != Conversion::NotConvertible())
       return userdefconv;

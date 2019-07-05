@@ -104,6 +104,8 @@ public:
 
   void inject(const NamespaceAlias & alias);
 
+  static Namespace enclosingNamespace(const script::Type& t, Engine* e);
+
   std::vector<Function> lookup(const LiteralOperator &, const std::string & suffix) const;
   std::vector<Function> lookup(OperatorName op) const;
 

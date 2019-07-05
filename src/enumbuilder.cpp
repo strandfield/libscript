@@ -7,6 +7,7 @@
 #include "script/engine.h"
 #include "script/enumerator.h"
 #include "script/value.h"
+#include "script/typesystem.h"
 
 #include "script/interpreter/executioncontext.h"
 
@@ -15,6 +16,7 @@
 #include "script/private/enum_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/operator_p.h"
+#include "script/private/typesystem_p.h"
 #include "script/private/value_p.h"
 
 namespace script
@@ -39,7 +41,7 @@ Enum EnumBuilder::get()
 
   Enum result{ impl };
   
-  symbol.engine()->implementation()->register_enum(result, id);
+  symbol.engine()->typeSystem()->impl()->register_enum(result, id);
 
   BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
   auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine(), FunctionFlags{});

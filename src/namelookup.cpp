@@ -10,6 +10,7 @@
 #include "script/private/scope_p.h"
 #include "script/functiontype.h"
 #include "script/staticdatamember.h"
+#include "script/typesystem.h"
 
 #include "script/parser/parser.h"
 
@@ -484,18 +485,19 @@ static void resolve_operators(std::vector<Function> &result, OperatorName op, co
 static void resolve_operators(std::vector<Function> &result, OperatorName op, const Type & type, const Scope & scp, int opts)
 {
   Engine *engine = scp.engine();
+  TypeSystem* ts = engine->typeSystem();
 
   if (type.isClosureType() || type.isFunctionType())
   {
     // these two don't have a definition scope, so we must process them separatly
     if (type.isFunctionType() && op == AssignmentOperator)
     {
-      result.push_back(engine->getFunctionType(type).assignment());
+      result.push_back(ts->getFunctionType(type).assignment());
       return;
     }
     else if (type.isClosureType() && op == FunctionCallOperator)
     {
-      result.push_back(engine->getLambda(type).function());
+      result.push_back(ts->getLambda(type).function());
       return;
     }
 
@@ -504,15 +506,15 @@ static void resolve_operators(std::vector<Function> &result, OperatorName op, co
 
   if (type.isEnumType() && op == AssignmentOperator)
   {
-    result.push_back(engine->getEnum(type).getAssignmentOperator());
+    result.push_back(ts->getEnum(type).getAssignmentOperator());
     return;
   }
 
   if (type.isObjectType())
-    resolve_operators(result, op, engine->getClass(type));
+    resolve_operators(result, op, ts->getClass(type));
   else 
   {
-    Namespace type_namespace = engine->enclosingNamespace(type);
+    Namespace type_namespace = Scope::enclosingNamespace(type, engine);
     get_operators(result, op, type_namespace);
   }
 

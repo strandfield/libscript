@@ -26,6 +26,7 @@
 #include "script/private/namelookup_p.h"
 #include "script/overloadresolution.h"
 #include "script/staticdatamember.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -111,7 +112,7 @@ std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_t
 
   if (functor_type.isObjectType())
   {
-    Class cla = engine()->getClass(functor_type);
+    Class cla = engine()->typeSystem()->getClass(functor_type);
     const auto & operators = cla.operators();
     for (const auto & op : operators)
     {
@@ -127,7 +128,7 @@ std::vector<Function> ExpressionCompiler::getCallOperator(const Type & functor_t
   }
   else if (functor_type.isClosureType())
   {
-    ClosureType closure = engine()->getLambda(functor_type);
+    ClosureType closure = engine()->typeSystem()->getLambda(functor_type);
     return { closure.function() };
   }
 
@@ -273,7 +274,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     /// TODO: add an overload to NameLookup to pass the identifier directly
     std::string member_name = callee_name->is<ast::SimpleIdentifier>() ?
       callee_name->as<ast::SimpleIdentifier>().getName() : callee_name->as<ast::TemplateIdentifier>().getName();
-    NameLookup lookup = NameLookup::member(member_name, engine()->getClass(object->type()));
+    NameLookup lookup = NameLookup::member(member_name, engine()->typeSystem()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
       auto functor = VariableAccessor::generateMemberAccess(*this, object, lookup.dataMemberIndex(), dpos(call));
@@ -383,7 +384,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariableCall(const std::shared_ptr<ast::FunctionCall> & call, const std::shared_ptr<program::Expression> & functor, std::vector<std::shared_ptr<program::Expression>> && args)
 {
-  auto function_type = engine()->getFunctionType(functor->type());
+  auto function_type = engine()->typeSystem()->getFunctionType(functor->type());
   const Prototype & proto = function_type.prototype();
 
   std::vector<Initialization> inits;
@@ -548,7 +549,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
   if (!object->type().isObjectType())
     throw CannotAccessMemberOfNonObject{ dpos(operation) };
 
-  Class cla = engine()->getClass(object->type());
+  Class cla = engine()->typeSystem()->getClass(object->type());
   const int attr_index = cla.attributeIndex(operation->arg2->as<ast::SimpleIdentifier>().getName());
   if (attr_index == -1)
     throw NoSuchMember{ dpos(operation) };
@@ -671,7 +672,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
     throw AmbiguousFunctionName{ dpos(identifier) };
 
   Function f = lookup.functions().front();
-  FunctionType ft = engine()->getFunctionType(f.prototype());
+  FunctionType ft = engine()->typeSystem()->getFunctionType(f.prototype());
   Value val = Value::fromFunction(f, ft.type());
   engine()->manage(val);
   return program::Literal::New(val); /// TODO : perhaps a program::VariableAccess would be better ?

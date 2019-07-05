@@ -8,6 +8,7 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/templateargument.h"
+#include "script/typesystem.h"
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/valueconstructor.h"
@@ -29,7 +30,7 @@ std::shared_ptr<program::Expression> ConversionProcessor::sconvert(Engine *e, co
   }
   else if (conv.isDerivedToBaseConversion())
   {
-    const Class dest_class = e->getClass(arg->type()).indirectBase(conv.derivedToBaseConversionDepth());
+    const Class dest_class = e->typeSystem()->getClass(arg->type()).indirectBase(conv.derivedToBaseConversionDepth());
     return program::ConstructorCall::New(dest_class.copyConstructor(), { arg });
   }
 

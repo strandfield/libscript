@@ -9,7 +9,7 @@
 #include "script/functiontype.h"
 #include "script/namelookup.h"
 #include "script/scope.h"
-#include "script/types.h"
+#include "script/typesystem.h"
 
 #include "script/ast/node.h"
 
@@ -72,7 +72,7 @@ protected:
     for (const auto & p : ft->params)
       proto.push(resolve(p, scp));
 
-    return scp.engine()->getFunctionType(proto).type();
+    return scp.engine()->typeSystem()->getFunctionType(proto).type();
   }
 };
 

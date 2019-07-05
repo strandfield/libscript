@@ -12,6 +12,8 @@
 namespace script
 {
 
+class TypeSystem;
+
 namespace interpreter
 {
 
@@ -89,6 +91,7 @@ public:
 
   ExecutionContext * executionContext() const;
   Engine * engine() const;
+  TypeSystem* typeSystem() const;
 
   inline int stackOffset() const { return mStackIndex; }
   int depth() const;

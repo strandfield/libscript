@@ -341,7 +341,7 @@ void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclarat
   if (!lookup.typeResult().isObjectType())
     throw FriendMustBeAClass{ dpos(pal.class_name) };
 
-  currentScope().asClass().addFriend(engine()->getClass(lookup.typeResult()));
+  currentScope().asClass().addFriend(engine()->typeSystem()->getClass(lookup.typeResult()));
 }
 
 void ScriptCompiler::processPendingDeclarations()

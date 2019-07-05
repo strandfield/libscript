@@ -7,7 +7,7 @@
 #include "script/accessspecifier.h"
 #include "script/engine.h"
 #include "script/operator.h"
-#include "script/types.h"
+#include "script/typesystem.h"
 
 #include "script/parser/parsererrors.h"
 #include "script/compiler/compilererrors.h"
@@ -513,7 +513,7 @@ std::string MessageBuilder::repr(const Type & t) const
   if (mEngine == nullptr)
     return diagnostic::format("Type<%1>", repr(t.data()));
 
-  std::string result = mEngine->typeName(t);
+  std::string result = mEngine->typeSystem()->typeName(t);
   if (t.isConst())
     result = std::string{ "const " } +result;
   if (t.isReference())

@@ -10,6 +10,7 @@
 #include "script/engine.h"
 #include "script/initialization.h"
 #include "script/operator.h"
+#include "script/typesystem.h"
 
 #include "script/program/expression.h"
 
@@ -452,7 +453,7 @@ diagnostic::Message OverloadResolution::emitDiagnostic() const
 
 std::string OverloadResolution::dtype(const Type & t) const
 {
-  std::string ret = d->engine->typeName(t);
+  std::string ret = d->engine->typeSystem()->typeName(t);
   if (t.isConst())
     ret = std::string{ "const " } + ret;
   if (t.isReference())

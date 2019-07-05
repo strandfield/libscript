@@ -113,11 +113,11 @@ Operator AssignmentCompiler::findAssignmentOperator(const Type & t)
   }
   else if (t.isEnumType())
   {
-    return engine()->getEnum(t).getAssignmentOperator();
+    return engine()->typeSystem()->getEnum(t).getAssignmentOperator();
   }
   else if (t.isObjectType())
   {
-    const auto & ops = engine()->getClass(t).operators();
+    const auto & ops = engine()->typeSystem()->getClass(t).operators();
     for (const auto & o : ops)
     {
       if (isAssignmentOperator(o, t))

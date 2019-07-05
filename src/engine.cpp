@@ -26,6 +26,7 @@
 #include "script/scope.h"
 #include "script/script.h"
 #include "script/string.h"
+#include "script/typesystem.h"
 #include "script/value.h"
 
 #include "script/compiler/compiler.h"
@@ -45,6 +46,7 @@
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
+#include "script/private/typesystem_p.h"
 #include "script/private/value_p.h"
 
 namespace script
@@ -108,7 +110,7 @@ static Value apply_standard_conversion(const Value & arg, const StandardConversi
 
   if (conv.isDerivedToBaseConversion())
   {
-    Class target = engine->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
+    Class target = engine->typeSystem()->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
     return engine->invoke(target.copyConstructor(), { arg });
   }
 
@@ -137,18 +139,6 @@ static Value apply_conversion(const Value & arg, const Conversion & conv, Engine
 
   return apply_standard_conversion(ret, conv.secondStandardConversion(), engine);
 }
-
-namespace callbacks
-{
-
-Value function_variable_assignment(interpreter::FunctionCall *c)
-{
-  c->arg(0).impl()->set_function(c->arg(1).toFunction());
-  return c->arg(0);
-}
-
-} // namespace callbacks
-
 
 EngineImpl::EngineImpl(Engine *e)
   : engine(e)
@@ -202,108 +192,6 @@ void EngineImpl::destroy(const Value & val, const Function & dtor)
   impl->engine = nullptr;
 }
 
-ClosureType EngineImpl::newLambda()
-{
-  const int id = static_cast<int>(this->lambdas.size()) | Type::LambdaFlag;
-  // const int index = id & 0xFFFF;
-  ClosureType l{ std::make_shared<ClosureTypeImpl>(id, this->engine) };
-  this->lambdas.push_back(l);
-  return l;
-}
-
-void EngineImpl::register_class(Class & c, int id)
-{
-  if (id < 1)
-  {
-    id = static_cast<int>(this->classes.size()) | Type::ObjectFlag;
-  }
-  else
-  {
-    if ((id & Type::ObjectFlag) == 0)
-      throw std::runtime_error{ "Invalid requested type id for class" };
-  }
-  
-  const int index = id & 0xFFFF;
-  if (static_cast<int>(this->classes.size()) <= index)
-  {
-    this->classes.resize(index + 1);
-  }
-  else
-  {
-    if (!this->classes[index].isNull() && this->classes[index] != this->reservations.class_type)
-      throw std::runtime_error{ "Engine::newClass() : Class id already used" };
-  }
-
-  c.impl()->id = id;
-  c.impl()->engine = this->engine;
-
-  this->classes[index] = c;
-}
-
-void EngineImpl::register_enum(Enum & e, int id)
-{
-  if (id < 1)
-  {
-    id = static_cast<int>(this->enums.size()) | Type::EnumFlag;
-  }
-  else
-  {
-    if ((id & Type::EnumFlag) == 0)
-      throw std::runtime_error{ "Invalid requested type id for enum" };
-  }
-
-  const int index = id & 0xFFFF;
-  if (static_cast<int>(this->enums.size()) <= index)
-  {
-    this->enums.resize(index + 1);
-  }
-  else
-  {
-    if (!this->enums[index].isNull() && this->enums[index] != this->reservations.enum_type)
-      throw std::runtime_error{ "Enum id already used" };
-  }
-
-  e.impl()->id = id;
-  e.impl()->engine = this->engine;
-
-  this->enums[index] = e;
-}
-
-void EngineImpl::destroy(Enum e)
-{
-  e.impl()->name.insert(0, "deleted_");
-  unregister_enum(e);
-}
-
-void EngineImpl::destroy(Class c)
-{
-  for (const auto & v : c.staticDataMembers())
-  {
-    this->engine->destroy(v.second.value);
-  }
-
-  auto impl = c.impl();
-  impl->staticMembers.clear();
-
-  for (const auto & e : impl->enums)
-    destroy(e);
-
-  for (const auto & c : impl->classes)
-    destroy(c);
-  impl->classes.clear();
-
-  impl->functions.clear();
-  impl->operators.clear();
-  impl->casts.clear();
-  impl->templates.clear(); /// TODO: clear the template instances
-  impl->typedefs.clear();
-
-  unregister_class(c);
-
-  impl->name.insert(0, "deleted_");
-  impl->enclosing_symbol = std::weak_ptr<SymbolImpl>();
-}
-
 void EngineImpl::destroy(Namespace ns)
 {
   for (const auto & v : ns.vars())
@@ -315,7 +203,7 @@ void EngineImpl::destroy(Namespace ns)
   impl->variables.clear();
 
   for (const auto & e : impl->enums)
-    destroy(e);
+    typesystem->impl()->destroy(e);
   impl->enums.clear();
 
   for (const auto & nns : impl->namespaces)
@@ -323,7 +211,7 @@ void EngineImpl::destroy(Namespace ns)
   impl->namespaces.clear();
 
   for (const auto & c : impl->classes)
-    destroy(c);
+    typesystem->impl()->destroy(c);
   impl->classes.clear();
 
   impl->functions.clear();
@@ -354,34 +242,6 @@ void EngineImpl::destroy(Script s)
   this->scripts[index] = Script{};
   while (!this->scripts.empty() && this->scripts.back().isNull())
     this->scripts.pop_back();
-}
-
-template<typename T>
-void squeeze(std::vector<T> & list)
-{
-  while (!list.empty() && list.back().isNull())
-    list.pop_back();
-}
-
-void EngineImpl::unregister_class(Class &c)
-{
-  const int index = c.id() & 0xFFFF;
-  this->classes[index] = Class();
-  squeeze(this->classes);
-}
-
-void EngineImpl::unregister_enum(Enum &e)
-{
-  const int index = e.id() & 0xFFFF;
-  this->enums[index] = Enum();
-  squeeze(this->enums);
-}
-
-void EngineImpl::unregister_closure(ClosureType &c)
-{
-  const int index = c.id() & 0xFFFF;
-  this->lambdas[index] = ClosureType();
-  squeeze(this->lambdas);
 }
 
 
@@ -431,15 +291,12 @@ ClassTemplate register_initialize_list_template(Engine*); // defined in initiali
 
 void Engine::setup()
 {
+  d->typesystem = std::unique_ptr<TypeSystem>(new TypeSystem(TypeSystemImpl::create(this)));
+
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
   register_builtin_operators(d->rootNamespace);
-
-  d->reservations.class_type = Class{ std::make_shared<ClassImpl>(0, "__reserved_class__", nullptr) };
-  d->classes.push_back(d->reservations.class_type);
-  d->reservations.enum_type = Enum{ std::make_shared<EnumImpl>(0, "__reserved_enum__", nullptr) };
-  d->enums.push_back(d->reservations.enum_type);
 
   Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
   StringBackend::register_string_type(string);
@@ -451,6 +308,15 @@ void Engine::setup()
 
   auto ec = std::make_shared<interpreter::ExecutionContext>(this, 1024, 256);
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
+}
+
+/*!
+ * \fn TypeSystem* typeSystem() const
+ * \brief Returns the engine's typesystem.
+ */
+TypeSystem* Engine::typeSystem() const
+{
+  return d->typesystem.get();
 }
 
 /*!
@@ -529,7 +395,7 @@ Value Engine::newString(const String & sval)
  */
 Array Engine::newArray(ArrayType array_type)
 {
-  Class array_class = getClass(array_type.type);
+  Class array_class = typeSystem()->getClass(array_type.type);
   auto data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
   auto impl = std::make_shared<ArrayImpl>(data->data, this);
   return Array{ impl };
@@ -610,7 +476,7 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
 {
   if (t.isObjectType())
   {
-    Class cla = getClass(t);
+    Class cla = typeSystem()->getClass(t);
     const auto & ctors = cla.constructors();
     Function selected = OverloadResolution::selectConstructor(ctors, args);
     if (selected.isNull())
@@ -666,7 +532,7 @@ void Engine::destroy(Value val)
 
   if (impl->type.isObjectType())
   {
-    Function dtor = getClass(val.type()).destructor();
+    Function dtor = typeSystem()->getClass(val.type()).destructor();
     invoke(dtor, { val });
   }
 
@@ -772,28 +638,11 @@ void Engine::free(Value & v)
  * \param input type
  * \brief Returns whether a type is copyable.
  *
- * Note that the \c const and \c{&} qualifiers of \c t are ignored.
+ * This function internally asks TypeSystem::isCopyConstructible().
  */
 bool Engine::canCopy(const Type & t)
 {
-  if (t.isFundamentalType())
-    return true;
-  else if (t.isEnumType())
-    return true;
-  else if (t.isObjectType())
-  {
-    Class cla = getClass(t);
-    Function copyCtor = cla.copyConstructor();
-    if (copyCtor.isNull() || copyCtor.isDeleted())
-      return false;
-    return true;
-  }
-  else if (t.isFunctionType())
-    return true;
-  else if (t.isClosureType())
-    return true;
-
-  return false;
+  return typeSystem()->isCopyConstructible(t);
 }
 
 static Value copy_fundamental(const Value & val, Engine *e)
@@ -853,7 +702,7 @@ Value Engine::copy(const Value & val)
     return copy_enumvalue(val, this);
   else if (val.type().isObjectType())
   {
-    Class cla = getClass(val.type());
+    Class cla = typeSystem()->getClass(val.type());
     Function copyCtor = cla.copyConstructor();
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw CopyError{};
@@ -872,17 +721,6 @@ Value Engine::copy(const Value & val)
   throw CopyError{};
 }
 
-/*!
- * \fn Conversion conversion(const Type & src, const Type & dest)
- * \param source type
- * \param dest type
- * \brief Computes a conversion sequence.
- *
- */
-Conversion Engine::conversion(const Type & src, const Type & dest)
-{
-  return Conversion::compute(src, dest, this);
-}
 
 /*!
  * \fn void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
@@ -898,28 +736,28 @@ void Engine::applyConversions(std::vector<script::Value> & values, const std::ve
 }
 
 /*!
- * \fn bool canCast(const Type & srcType, const Type & destType)
+ * \fn bool canConvert(const Type & srcType, const Type & destType)
  * \param source type
  * \param dest type
  * \brief Checks if a conversion is possible.
  *
  */
-bool Engine::canCast(const Type & srcType, const Type & destType)
+bool Engine::canConvert(const Type& srcType, const Type& destType) const
 {
-  return conversion(srcType, destType).rank() != ConversionRank::NotConvertible;
+  return typeSystem()->canConvert(srcType, destType);
 }
 
 /*!
- * \fn Value cast(const Value & val, const Type & destType)
+ * \fn Value convert(const Value & val, const Type & destType)
  * \param input value
  * \param dest type
  * \brief Converts a value to the given type.
  *
  * Throws \t ConversionError on failure.
  */
-Value Engine::cast(const Value & val, const Type & destType)
+Value Engine::convert(const Value& val, const Type& type)
 {
-  Conversion conv = conversion(val.type(), destType);
+  Conversion conv = typeSystem()->conversion(val.type(), type);
   if (conv.isInvalid())
     throw ConversionError{};
 
@@ -934,177 +772,6 @@ Value Engine::cast(const Value & val, const Type & destType)
 Namespace Engine::rootNamespace() const
 {
   return d->rootNamespace;
-}
-
-/*!
- * \fn FunctionType getFunctionType(Type id) const
- * \param function type
- * \brief Returns type info for the given type id.
- *
- */
-FunctionType Engine::getFunctionType(Type id) const
-{
-  const int index = id.data() & 0xFFFF;
-  return d->prototypes[index];
-}
-
-/*!
- * \fn FunctionType getFunctionType(const Prototype & proto)
- * \param prototype
- * \brief Returns type info for the function type associated with the prototype.
- *
- * If no such type exists, it is created.
- */
-FunctionType Engine::getFunctionType(const Prototype & proto)
-{
-  for (const auto & ft : d->prototypes)
-  {
-    if (ft.prototype() == proto)
-      return ft;
-  }
-
-  return newFunctionType(proto);
-}
-
-/*!
- * \fn bool hasType(const Type & t) const
- * \param input type
- * \brief Returns whether a given type exists.
- *
- */
-bool Engine::hasType(const Type & t) const
-{
-  if (t.isFundamentalType())
-    return true;
-
-  const size_t index = t.data() & 0xFFFF;
-  if (t.isObjectType())
-    return d->classes.size() > index && !d->classes.at(index).isNull();
-  else if(t.isEnumType())
-    return d->enums.size() > index && !d->enums.at(index).isNull();
-  else if(t.isClosureType())
-    return d->lambdas.size() > index && d->lambdas.at(index).impl() != nullptr;
-  else if (t.isFunctionType())
-    return d->prototypes.size() > index && !d->prototypes.at(index).assignment().isNull();
-
-  return false;
-}
-
-/*!
- * \fn Class getClass(Type id) const
- * \param input type
- * \brief Returns the Class associated with the given type.
- *
- */
-Class Engine::getClass(Type id) const
-{
-  if (!id.isObjectType())
-    return Class{};
-
-  int index = id.data() & 0xFFFF;
-  return d->classes[index];
-}
-
-/*!
- * \fn Enum getEnum(Type id) const
- * \param input type
- * \brief Returns the Enum associated with the given type.
- *
- */
-Enum Engine::getEnum(Type id) const
-{
-  if (!id.isEnumType())
-    return Enum{};
-
-  int index = id.data() & 0xFFFF;
-  return d->enums[index];
-}
-
-/*!
- * \fn ClosureType getLambda(Type id) const
- * \param input type
- * \brief Returns typeinfo associated with the given closure type.
- *
- */
-ClosureType Engine::getLambda(Type id) const
-{
-  if (!id.isClosureType())
-    return ClosureType{};
-
-  int index = id.data() & 0xFFFF;
-  return d->lambdas[index];
-}
-
-template<typename T>
-bool reserve_range(std::vector<T> & list, const T & value, size_t begin, size_t end)
-{
-  if (list.size() < end)
-    list.resize(end);
-
-  for (size_t i(begin); i < end; ++i)
-  {
-    if (!list.at(i).isNull() && list.at(i) != value)
-      return false; // Type already used
-    list[i] = value;
-  }
-
-  return true;
-}
-
-/*!
- * \fn void reserveTypeRange(int begin, int end)
- * \param first type
- * \param last type
- * \brief Reserves a type range.
- *
- * Reserved types cannot be attributed unless they are explicitly requested.
- * Returns true on success; false otherwise.
- */
-bool Engine::reserveTypeRange(int begin, int end)
-{
-  const Type begin_type{ begin };
-  const Type end_type{ end };
-
-  if (!begin_type.isValid() || !end_type.isValid() || begin_type.category() != end_type.category())
-    return false; // Invalid type range
-
-  if (begin_type.isFunctionType() || begin_type.isClosureType())
-    return false; //Closure types and function types cannot be reserved yet
-
-  const int index_mask = Type::EnumFlag - 1;
-
-  begin = begin & index_mask;
-  end = end & index_mask;
-
-  if (begin_type.isEnumType())
-    return reserve_range(d->enums, d->reservations.enum_type, begin, end);
-  else if (begin_type.isObjectType())
-    return reserve_range(d->classes, d->reservations.class_type, begin, end);
-
-  return false;
-}
-
-/*!
- * \fn FunctionType newFunctionType(const Prototype & proto)
- * \param prototype
- * \brief Creates a new function type.
- *
- * This function does not check if such type exists an creates a new one 
- * anyway.
- * Use \m getFunctionType instead.
- */
-FunctionType Engine::newFunctionType(const Prototype & proto)
-{
-  const int id = d->prototypes.size();
-  Type type{ id | Type::PrototypeFlag };
-
-  BinaryOperatorPrototype assign_proto{ Type::ref(type), Type::ref(type), Type::cref(type) };
-  auto assign_op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, assign_proto, this, FunctionFlags{});
-  assign_op->set_impl(callbacks::function_variable_assignment);
-
-  FunctionType ret{ type, proto, Operator{ assign_op } };
-  d->prototypes.push_back(ret);
-  return ret;
 }
 
 /*!
@@ -1225,25 +892,6 @@ Module Engine::getModule(const std::string & name)
 }
 
 /*!
- * \fn Namespace enclosingNamespace(Type t) const
- * \param input type
- * \brief Return the enclosing namespace of the given type.
- *
- */
-Namespace Engine::enclosingNamespace(Type t) const
-{
-  if (t.isFundamentalType() || t.isClosureType() || t.isFunctionType())
-    return this->rootNamespace();
-  else if (t.isObjectType())
-    return getClass(t).enclosingNamespace();
-  else if (t.isEnumType())
-    return getEnum(t).enclosingNamespace();
-
-  // Reasonable default
-  return this->rootNamespace();
-}
-
-/*!
  * \fn Type typeId(const std::string & typeName, const Scope & scope) const
  * \param type name
  * \param scope
@@ -1253,62 +901,9 @@ Namespace Engine::enclosingNamespace(Type t) const
  */
 Type Engine::typeId(const std::string & typeName, Scope scope) const
 {
-  static const std::map<std::string, Type> fundamentalTypes = std::map<std::string, Type>{
-    std::make_pair(std::string{"void"}, Type{Type::Void}),
-    std::make_pair(std::string{"bool"}, Type{ Type::Boolean}),
-    std::make_pair(std::string{"char"}, Type{ Type::Char}),
-    std::make_pair(std::string{"int"}, Type{ Type::Int}),
-    std::make_pair(std::string{"float"}, Type{ Type::Float}),
-    std::make_pair(std::string{"double"}, Type{ Type::Double}),
-  };
-
-  auto it = fundamentalTypes.find(typeName);
-  if (it != fundamentalTypes.end())
-    return it->second;
-
-  if (scope.isNull())
-    scope = Scope{ d->rootNamespace };
-
-  NameLookup lookup = NameLookup::resolve(typeName, scope);
-  Type t = lookup.typeResult();
-  if (t.isNull())
-    throw UnknownTypeError{};
-  return t;
+  return typeSystem()->typeId(typeName, scope);
 }
 
-/*!
- * \fn std::string typeName(Type t) const
- * \param input type
- * \brief Returns the name of a type.
- *
- */
-std::string Engine::typeName(Type t) const
-{
-  if (t.isObjectType())
-    return getClass(t).name();
-  else if (t.isEnumType())
-    return getEnum(t).name();
-  else if (t.isClosureType())
-    throw std::runtime_error{ "Not implemented : name of closure type" };
-  else if (t.isFunctionType())
-    throw std::runtime_error{ "Not implemented : name of function type" };
-
-  static const std::string types[] = {
-    "Null",
-    "void",
-    "bool",
-    "char",
-    "int",
-    "float",
-    "double",
-  };
-
-  int index = t.data() & 0xFFFF;
-  if (index < 7)
-    return types[index];
-
-  throw UnknownTypeError{};
-}
 
 /*!
  * \fn Context newContext()
@@ -1444,19 +1039,6 @@ ClassTemplate Engine::getTemplate(initializer_list_template_t) const
   return d->templates.initializer_list;
 }
 
-/*!
- * \fn bool isInitializerListType(const Type & t) const
- * \param input type
- * \brief Returns whether a type is an initializer list type.
- *
- */
-bool Engine::isInitializerListType(const Type & t) const
-{
-  if (!t.isObjectType())
-    return false;
-
-  return getClass(t).isTemplateInstance() && getClass(t).instanceOf() == getTemplate(InitializerListTemplate);
-}
 
 /*!
  * \fn const std::vector<Script> & scripts() const

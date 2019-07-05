@@ -12,6 +12,7 @@
 #include "script/operatorbuilder.h"
 #include "script/template.h"
 #include "script/templatebuilder.h"
+#include "script/typesystem.h"
 
 #include "script/private/array_p.h"
 #include "script/private/engine_p.h"
@@ -221,7 +222,7 @@ Class instantiate_initializer_list_class(ClassTemplateInstanceBuilder & builder)
 
   Engine *e = builder.getTemplate().engine();
  
-  builder.name = std::string("InitializerList<") + e->typeName(element_type) + std::string(">");
+  builder.name = std::string("InitializerList<") + e->typeSystem()->typeName(element_type) + std::string(">");
 
 
   Class ilist_class = builder.get();

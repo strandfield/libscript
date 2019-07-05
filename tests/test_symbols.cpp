@@ -8,6 +8,7 @@
 #include "script/engine.h"
 #include "script/namespace.h"
 #include "script/symbol.h"
+#include "script/typesystem.h"
 
 /****************************************************************
 Testing enum creation
@@ -142,7 +143,7 @@ TEST(Symbols, name) {
   ASSERT_EQ(s.name().kind(), Name::StringName);
   ASSERT_EQ(s.name().string(), "bar");
 
-  s = Symbol{ e.getClass(Type::String) };
+  s = Symbol{ e.typeSystem()->getClass(Type::String) };
   ASSERT_EQ(s.name().kind(), Name::StringName);
   ASSERT_EQ(s.name().string(), "String");
 
