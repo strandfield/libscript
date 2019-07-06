@@ -63,6 +63,7 @@ public:
   void unregister_class(Class &c);
   void unregister_enum(Enum &e);
   void unregister_closure(ClosureType &c);
+  void unregister_function(FunctionType& ft);
 
   void notify_creation(const Type& t);
   void notify_destruction(const Type& t);

@@ -25,8 +25,11 @@ public:
   FunctionType(const Type & t, DynamicPrototype && pt, const Operator & op) : mType(t), mPrototype(std::move(pt)), mAssignment(op) { }
 
   inline Type type() const { return mType; }
+  inline bool isNull() const { return type().isNull(); }
   inline const Prototype & prototype() const { return mPrototype; }
   inline const Operator & assignment() const { return mAssignment; }
+
+  FunctionType& operator=(const FunctionType&) = default;
 };
 
 } // namespace script

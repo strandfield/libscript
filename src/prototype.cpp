@@ -198,6 +198,14 @@ DynamicPrototype & DynamicPrototype::operator=(const Prototype & other)
   return *this;
 }
 
+DynamicPrototype& DynamicPrototype::operator=(const DynamicPrototype& other)
+{
+  setReturnType(other.returnType());
+  mParameters = other.parameters();
+  setParameters(mParameters.data(), mParameters.data() + mParameters.size());
+  return *this;
+}
+
 DynamicPrototype & DynamicPrototype::operator=(DynamicPrototype && other)
 {
   setReturnType(other.returnType());

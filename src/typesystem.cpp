@@ -215,6 +215,14 @@ void TypeSystemImpl::unregister_closure(ClosureType &c)
   notify_destruction(c.id());
 }
 
+void TypeSystemImpl::unregister_function(FunctionType& ft)
+{
+  const int index = ft.type().data() & 0xFFFF;
+  this->prototypes[index] = FunctionType();
+  squeeze(this->prototypes);
+  notify_destruction(ft.type());
+}
+
 void TypeSystemImpl::notify_creation(const Type& t)
 {
   for (const auto& l : listeners)

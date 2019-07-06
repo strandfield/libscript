@@ -76,8 +76,9 @@ public:
 
   void set(std::vector<Type> && params);
 
-  DynamicPrototype & operator=(const Prototype & other);
-  DynamicPrototype & operator=(DynamicPrototype && other);
+  DynamicPrototype& operator=(const Prototype & other);
+  DynamicPrototype& operator=(const DynamicPrototype& other);
+  DynamicPrototype& operator=(DynamicPrototype && other);
 
 private:
   std::vector<Type> mParameters;
