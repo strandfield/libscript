@@ -30,7 +30,7 @@ class TypeSystemImpl
 public:
   TypeSystemImpl(Engine *e);
   TypeSystemImpl(const TypeSystemImpl&) = delete;
-  ~TypeSystemImpl() = default;
+  ~TypeSystemImpl();
 
   static std::unique_ptr<TypeSystemImpl> create(Engine* e);
 
@@ -56,6 +56,8 @@ public:
 
   void register_class(Class & c, int id = 0);
   void register_enum(Enum & e, int id = 0);
+
+  void destroy(const Type& t);
 
   void destroy(Enum e);
   void destroy(Class c);

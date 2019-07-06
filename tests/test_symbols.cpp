@@ -27,11 +27,10 @@ TEST(Symbols, enum_create) {
 
   const auto nb_enums = e.rootNamespace().enums().size();
 
-  Enum Foo = s.newEnum("Foo").setEnumClass(true).setId(15 | Type::EnumFlag).get();
+  Enum Foo = s.newEnum("Foo").setEnumClass(true).get();
 
   ASSERT_EQ(Foo.name(), "Foo");
   ASSERT_TRUE(Foo.isEnumClass());
-  ASSERT_EQ(Foo.id(), 15 | Type::EnumFlag);
 
   ASSERT_EQ(e.rootNamespace().enums().size(), nb_enums + 1);
 }

@@ -43,6 +43,11 @@ TypeSystemImpl::TypeSystemImpl(Engine *e)
 
 }
 
+TypeSystemImpl::~TypeSystemImpl()
+{
+
+}
+
 std::unique_ptr<TypeSystemImpl> TypeSystemImpl::create(Engine* e)
 {
   return std::unique_ptr<TypeSystemImpl>(new TypeSystemImpl(e));
@@ -154,6 +159,30 @@ void TypeSystemImpl::register_enum(Enum & e, int id)
   this->enums[index] = e;
 
   notify_creation(e.id());
+}
+
+void TypeSystemImpl::destroy(const Type& t)
+{
+  if (t.isEnumType())
+  {
+    destroy(this->enums[t.data() & 0xFFFF]);
+  }
+  else if (t.isObjectType())
+  {
+    destroy(this->classes[t.data() & 0xFFFF]);
+  }
+  else if (t.isClosureType())
+  {
+    unregister_closure(this->lambdas[t.data() & 0xFFFF]);
+  }
+  else if (t.isFunctionType())
+  {
+    unregister_function(this->prototypes[t.data() & 0xFFFF]);
+  }
+  else
+  {
+    throw std::runtime_error{ "Not implemented" };
+  }
 }
 
 void TypeSystemImpl::destroy(Enum e)
@@ -576,6 +605,7 @@ bool TypeSystem::isInitializerList(const Type& t) const
 void TypeSystem::addListener(TypeSystemListener* listener)
 {
   d->listeners.push_back(std::unique_ptr<TypeSystemListener>(listener));
+  listener->m_typesystem = this;
 }
 
 /*!
@@ -592,6 +622,7 @@ void TypeSystem::removeListener(TypeSystemListener* listener)
     if (it->get() == listener)
     {
       it->release();
+      listener->m_typesystem = nullptr;
       d->listeners.erase(it);
       return;
     }

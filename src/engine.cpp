@@ -284,6 +284,8 @@ Engine::~Engine()
     }
     d->garbageCollector.clear();
   }
+
+  d->typesystem = nullptr;
 }
 
 

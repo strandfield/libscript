@@ -10,6 +10,8 @@
 namespace script
 {
 
+class TypeSystem;
+
 class LIBSCRIPT_API TypeSystemListener
 {
 public:
@@ -17,11 +19,22 @@ public:
   TypeSystemListener(const TypeSystemListener&) = delete;
   virtual ~TypeSystemListener() = default;
 
+  TypeSystem* typeSystem() const;
+
   virtual void created(const Type& t) = 0;
   virtual void destroyed(const Type& t) = 0;
 
   TypeSystemListener& operator=(const TypeSystemListener&) = delete;
+
+private:
+  friend class TypeSystem;
+  TypeSystem* m_typesystem = nullptr;
 };
+
+inline TypeSystem* TypeSystemListener::typeSystem() const
+{
+  return m_typesystem;
+}
 
 } // namespace script
 
