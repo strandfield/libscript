@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_TYPESYSTEM_P_H
 #define LIBSCRIPT_TYPESYSTEM_P_H
 
+#include <memory>
 #include <vector>
 
 #include "script/enum.h"
@@ -14,6 +15,7 @@
 #include "script/context.h"
 #include "script/module.h"
 #include "script/namespace.h"
+#include "script/typesystemlistener.h"
 #include "script/value.h"
 
 #include "script/interpreter/interpreter.h"
@@ -45,6 +47,8 @@ public:
     Class class_type;
   } reservations;
 
+  std::vector<std::unique_ptr<TypeSystemListener>> listeners;
+
 public:
   void reserveTypes();
 
@@ -59,6 +63,9 @@ public:
   void unregister_class(Class &c);
   void unregister_enum(Enum &e);
   void unregister_closure(ClosureType &c);
+
+  void notify_creation(const Type& t);
+  void notify_destruction(const Type& t);
 
 private:
   void reserveTypes(int begin, int end);

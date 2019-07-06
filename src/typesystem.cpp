@@ -90,6 +90,7 @@ ClosureType TypeSystemImpl::newLambda()
   // const int index = id & 0xFFFF;
   ClosureType l{ std::make_shared<ClosureTypeImpl>(id, this->engine) };
   this->lambdas.push_back(l);
+  notify_creation(l.id());
   return l;
 }
 
@@ -120,6 +121,8 @@ void TypeSystemImpl::register_class(Class & c, int id)
   c.impl()->engine = this->engine;
 
   this->classes[index] = c;
+
+  notify_creation(c.id());
 }
 
 void TypeSystemImpl::register_enum(Enum & e, int id)
@@ -149,6 +152,8 @@ void TypeSystemImpl::register_enum(Enum & e, int id)
   e.impl()->engine = this->engine;
 
   this->enums[index] = e;
+
+  notify_creation(e.id());
 }
 
 void TypeSystemImpl::destroy(Enum e)
@@ -191,6 +196,7 @@ void TypeSystemImpl::unregister_class(Class &c)
   const int index = c.id() & 0xFFFF;
   this->classes[index] = Class();
   squeeze(this->classes);
+  notify_destruction(c.id());
 }
 
 void TypeSystemImpl::unregister_enum(Enum &e)
@@ -198,6 +204,7 @@ void TypeSystemImpl::unregister_enum(Enum &e)
   const int index = e.id() & 0xFFFF;
   this->enums[index] = Enum();
   squeeze(this->enums);
+  notify_destruction(e.id());
 }
 
 void TypeSystemImpl::unregister_closure(ClosureType &c)
@@ -205,6 +212,23 @@ void TypeSystemImpl::unregister_closure(ClosureType &c)
   const int index = c.id() & 0xFFFF;
   this->lambdas[index] = ClosureType();
   squeeze(this->lambdas);
+  notify_destruction(c.id());
+}
+
+void TypeSystemImpl::notify_creation(const Type& t)
+{
+  for (const auto& l : listeners)
+  {
+    l->created(t);
+  }
+}
+
+void TypeSystemImpl::notify_destruction(const Type& t)
+{
+  for (const auto& l : listeners)
+  {
+    l->destroyed(t);
+  }
 }
 
 
@@ -342,6 +366,9 @@ FunctionType TypeSystem::getFunctionType(const Prototype& proto)
 
   FunctionType ret{ type, proto, Operator{ assign_op } };
   d->prototypes.push_back(ret);
+
+  d->notify_creation(ret.type());
+
   return ret;
 }
 
@@ -529,6 +556,38 @@ bool TypeSystem::isInitializerList(const Type& t) const
     return false;
 
   return getClass(t).isTemplateInstance() && getClass(t).instanceOf() == engine()->getTemplate(Engine::InitializerListTemplate);
+}
+
+/*!
+ * \fn void addListener(TypeSystemListener* listener)
+ * \param listener
+ * \brief Adds a listener to the typesystem.
+ *
+ * The TypeSystem takes ownership of the listener.
+ */
+void TypeSystem::addListener(TypeSystemListener* listener)
+{
+  d->listeners.push_back(std::unique_ptr<TypeSystemListener>(listener));
+}
+
+/*!
+ * \fn void removeListener(TypeSystemListener* listener)
+ * \param listener
+ * \brief Removes a listener.
+ *
+ * Ownership is transferred back to the caller of this function.
+ */
+void TypeSystem::removeListener(TypeSystemListener* listener)
+{
+  for (auto it = d->listeners.begin(); it != d->listeners.end(); ++it)
+  {
+    if (it->get() == listener)
+    {
+      it->release();
+      d->listeners.erase(it);
+      return;
+    }
+  }
 }
 
 TypeSystemImpl* TypeSystem::impl() const

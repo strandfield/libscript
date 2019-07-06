@@ -23,6 +23,7 @@ class Namespace;
 class Prototype;
 class Scope;
 class Script;
+class TypeSystemListener;
 
 class TypeSystemImpl;
 
@@ -57,6 +58,9 @@ public:
   std::string typeName(Type t) const;
 
   bool isInitializerList(const Type & t) const;
+
+  void addListener(TypeSystemListener* listener);
+  void removeListener(TypeSystemListener* listener);
 
   TypeSystemImpl* impl() const;
 
