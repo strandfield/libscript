@@ -53,19 +53,6 @@ public:
   EnterScope(const EnterScope &) = delete;
 };
 
-class StackVariableAccessor : public VariableAccessor
-{
-protected:
-  Stack * stack_;
-public:
-  StackVariableAccessor(Stack & s);
-  ~StackVariableAccessor() = default;
-
-  inline const Stack & stack() const { return *stack_; }
-
-  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos) override;
-};
-
 class FunctionCompilerLambdaProcessor : public LambdaProcessor
 {
 protected:
@@ -212,9 +199,6 @@ protected:
   Logger *logger_;
 
   FunctionTemplateProcessor ftp_;
-
-private:
-  StackVariableAccessor variable_;
 };
 
 } // namespace compiler

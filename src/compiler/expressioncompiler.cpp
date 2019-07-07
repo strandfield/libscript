@@ -42,15 +42,12 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
 ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;
-  variable_ = &default_variable_;
-
 }
 
 ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   : scope_(scp)
 {
   lambda_ = &default_lambda_;
-  variable_ = &default_variable_;
 }
 
 void ExpressionCompiler::setCaller(const Function & func)
@@ -639,13 +636,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::StaticDataMemberName:
     return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
-    return variable_->accessDataMember(*this, lookup.dataMemberIndex(), dpos(identifier));
+    return variables_.accessDataMember(*this, lookup.dataMemberIndex(), dpos(identifier));
   case NameLookup::GlobalName:
-    return variable_->accessGlobal(*this, lookup.globalIndex(), dpos(identifier));
+    return variables_.accessGlobal(*this, lookup.globalIndex(), dpos(identifier));
   case NameLookup::LocalName:
-    return variable_->accessLocal(*this, lookup.localIndex(), dpos(identifier));
+    return variables_.accessLocal(*this, lookup.localIndex(), dpos(identifier));
   case NameLookup::CaptureName:
-    return variable_->accessCapture(*this, lookup.captureIndex(), dpos(identifier));
+    return variables_.accessCapture(*this, lookup.captureIndex(), dpos(identifier));
   case NameLookup::EnumValueName:
     return program::Literal::New(Value::fromEnumerator(lookup.enumeratorResult()));
   case NameLookup::NamespaceName:

@@ -6,11 +6,13 @@
 
 #include "script/compiler/diagnostichelper.h"
 #include "script/compiler/expressioncompiler.h"
+#include "script/compiler/stack.h"
 
 #include "script/program/expression.h"
 
 #include "script/class.h"
 #include "script/datamember.h"
+#include "script/lambda.h"
 #include "script/script.h"
 
 #include "script/private/script_p.h"
@@ -21,10 +23,36 @@ namespace script
 namespace compiler
 {
 
+VariableAccessor::VariableAccessor(Stack* s)
+  : stack_(s)
+{
+
+}
+
+void VariableAccessor::setStack(Stack* s)
+{
+  stack_ = s;
+}
+
+const Stack& VariableAccessor::stack() const
+{
+  return *stack_;
+}
+
 std::shared_ptr<program::Expression> VariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
-  auto object = ec.implicit_object();
-  return generateMemberAccess(ec, object, offset, dpos);
+  if (ec.caller().memberOf().isClosure())
+  {
+    ClosureType ct = ec.caller().memberOf().toClosure();
+    auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+    auto this_object = program::CaptureAccess::New(Type::ref(ct.captures().at(0).type), lambda, 0);
+    return generateMemberAccess(ec, this_object, offset, dpos);
+  }
+  else
+  {
+    auto object = ec.implicit_object();
+    return generateMemberAccess(ec, object, offset, dpos);
+  }
 }
 
 std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
@@ -38,14 +66,18 @@ std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCo
 
 std::shared_ptr<program::Expression> VariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
-  /// TODO: should we throw this type of exception ?
-  throw std::runtime_error{ "Default VariableAccessor does not support accessing local variables" };
+  const Type t = stack()[offset].type;
+  return program::StackValue::New(offset, t);
 }
 
 std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
 {
-  /// TODO: should we throw this type of exception ?
-  throw std::runtime_error{ "Default VariableAccessor does not support accessing captures" };
+  ClosureType ct = ec.caller().memberOf().toClosure();
+  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
+  const auto capture = ct.captures().at(offset);
+  auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
+  captures_.push_back(capaccess);
+  return capaccess;
 }
 
 std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset, const diagnostic::pos_t dpos)

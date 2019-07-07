@@ -57,8 +57,7 @@ private:
   LambdaProcessor default_lambda_;
   LambdaProcessor *lambda_;
 
-  VariableAccessor default_variable_;
-  VariableAccessor *variable_;
+  VariableAccessor variables_;
 
   FunctionTemplateProcessor templates_;
 
@@ -76,11 +75,10 @@ public:
   
   inline Engine* engine() const { return scope_.engine(); }
 
+  VariableAccessor& variableAccessor() { return variables_; }
+
   inline LambdaProcessor & lambdaProcessor() { return *lambda_; }
   inline void setLambdaProcessor(LambdaProcessor & lp) { lambda_ = &lp; }
-
-  inline VariableAccessor & variableAccessor() { return *variable_; }
-  inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);

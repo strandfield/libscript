@@ -7,11 +7,15 @@
 
 #include "script/diagnosticmessage.h"
 
+#include <memory>
+#include <vector>
+
 namespace script
 {
 
 namespace program
 {
+class CaptureAccess;
 class Expression;
 } // namespace program
 
@@ -19,19 +23,29 @@ namespace compiler
 {
 
 class ExpressionCompiler;
+class Stack;
 
 class VariableAccessor
 {
+private:
+  Stack* stack_;
+  std::vector<std::shared_ptr<program::CaptureAccess>> captures_;
+
 public:
-  VariableAccessor() = default;
+  explicit VariableAccessor(Stack* s = nullptr);
   VariableAccessor(const VariableAccessor &) = delete;
-  virtual ~VariableAccessor() = default;
+  ~VariableAccessor() = default;
+
+  void setStack(Stack* s);
+  const Stack& stack() const;
+
+  const std::vector<std::shared_ptr<program::CaptureAccess>>& generatedCaptures() const { return captures_; }
 
   /// TODO: maybe pass ast::Expression instead of dpos
-  virtual std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  virtual std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
   /// TODO: add accessStaticDataMember
 
   static std::shared_ptr<program::Expression> generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);

@@ -40,39 +40,11 @@ Capture::Capture(const std::string & n, const std::shared_ptr<program::Expressio
 
 }
 
-
-LambdaVariableAccessor::LambdaVariableAccessor(Stack & s)
-  : StackVariableAccessor(s)
-{
-
-}
-
-std::shared_ptr<program::Expression> LambdaVariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  ClosureType ct = ec.caller().memberOf().toClosure();
-  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
-  const auto capture = ct.captures().at(offset);
-  auto capaccess = program::CaptureAccess::New(capture.type, lambda, offset);
-  generated_access_.push_back(capaccess);
-  return capaccess;
-}
-
-std::shared_ptr<program::Expression> LambdaVariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  ClosureType ct = ec.caller().memberOf().toClosure();
-  auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
-  auto this_object = program::CaptureAccess::New(Type::ref(ct.captures().at(0).type), lambda, 0);
-  return generateMemberAccess(ec, this_object, offset, dpos);
-}
-
-
-
 LambdaCompiler::LambdaCompiler(Engine* e)
   : FunctionCompiler(e)
   , mCurrentTask(nullptr)
-  , variable_(mStack)
 {
-  expr_.setVariableAccessor(this->variable_);
+
 }
 
 void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset)
@@ -273,6 +245,7 @@ parser::Token LambdaCompiler::captureThis(const ast::LambdaExpression & lexpr)
 void LambdaCompiler::removeUnusedCaptures()
 {
   mCaptures = task().captures;
+  const auto& used = expr_.variableAccessor().generatedCaptures();
   /// TODO : remove unused captures
 }
 

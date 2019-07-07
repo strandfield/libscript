@@ -277,20 +277,6 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-
-StackVariableAccessor::StackVariableAccessor(Stack & s)
-  : stack_(&s)
-{
-
-}
-
-std::shared_ptr<program::Expression> StackVariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
-{
-  const Type t = stack()[offset].type;
-  return program::StackValue::New(offset, t);
-}
-
-
 FunctionCompilerLambdaProcessor::FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc)
   : stack_(&s)
   , fcomp_(fc)
@@ -309,7 +295,6 @@ std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::gene
 
   LambdaCompiler compiler{ fcomp_->engine() };
   compiler.setLogger(fcomp_->logger());
-  compiler.setFunctionTemplateProcessor(fcomp_->functionTemplateProcessor());
   LambdaCompilationResult result = compiler.compile(task);
 
   return result.expression;
@@ -360,17 +345,15 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 
 FunctionCompiler::FunctionCompiler(Engine *e)
   : mEngine(e)
-  , variable_(mStack)
   , lambda_(mStack, this)
   , modules_(e)
 {
-  expr_.setVariableAccessor(variable_);
+  expr_.variableAccessor().setStack(&mStack);
+
   expr_.setLambdaProcessor(lambda_);
   scope_statements_.scope_ = &mCurrentScope;
   
   logger_ = &default_logger_;
-
-  setFunctionTemplateProcessor(default_ftp_);
 }
 
 FunctionCompiler::~FunctionCompiler()
@@ -460,14 +443,6 @@ bool FunctionCompiler::canUseThis() const
   return mFunction.hasImplicitObject();
 }
 
-void FunctionCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp)
-{
-  ftp_ = &ftp;
-  expr_.setTemplateProcessor(ftp);
-  type_.name_resolver().set_tnp(ftp_->name_processor());
-  scope_statements_.name_.set_tnp(ftp.name_processor());
-}
-
 void FunctionCompiler::setLogger(Logger & lg)
 {
   logger_ = &lg;
@@ -498,7 +473,7 @@ void FunctionCompiler::leave_scope(const ScopeKey &)
 
 NameLookup FunctionCompiler::resolve(const std::shared_ptr<ast::Identifier> & name)
 {
-  return NameLookup::resolve(name, mCurrentScope, ftp_->name_processor());
+  return NameLookup::resolve(name, mCurrentScope);
 }
 
 Scope FunctionCompiler::breakScope() const

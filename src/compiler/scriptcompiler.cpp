@@ -80,7 +80,6 @@ ScriptCompiler::ScriptCompiler(Engine *e)
   scope_statements_.scope_ = &mCurrentScope;
 
   logger_ = &default_logger_;
-  setFunctionTemplateProcessor(default_ftp_);
 }
 
 ScriptCompiler::~ScriptCompiler()
@@ -197,17 +196,6 @@ void ScriptCompiler::setLogger(Logger & lg)
   logger_ = &lg;
 }
 
-void ScriptCompiler::setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp)
-{
-  ftp_ = &ftp;
-  name_resolver.set_tnp(ftp.name_processor());
-  type_resolver.name_resolver().set_tnp(ftp.name_processor());
-  function_processor_.prototype_.type_.name_resolver().set_tnp(ftp.name_processor());
-  scope_statements_.name_.set_tnp(ftp.name_processor());
-  variable_.expressionCompiler().setTemplateProcessor(ftp);
-  variable_.typeResolver().name_resolver().set_tnp(ftp.name_processor());
-}
-
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
   return type_resolver.resolve(qt, mCurrentScope);
@@ -215,7 +203,7 @@ Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 
 NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
 {
-  return name_resolver.resolve(id, mCurrentScope);
+  return NameLookup::resolve(id, mCurrentScope);
 }
 
 Function ScriptCompiler::registerRootFunction()
@@ -816,7 +804,7 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
     throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
 
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
-  std::vector<TemplateArgument> args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
+  std::vector<TemplateArgument> args = TemplateNameProcessor::arguments(scp, template_full_name->arguments);
 
   ClassTemplateSpecializationBuilder builder = ct.Specialization(std::move(args));
   builder.name = readClassName(classdecl);
@@ -866,7 +854,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   if (fundecl->name->is<ast::TemplateIdentifier>())
   {
     auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(fundecl->name);
-    args = ftp_->name_processor().arguments(scp, template_full_name->arguments);
+    args = TemplateNameProcessor::arguments(scp, template_full_name->arguments);
   }
 
   FunctionBuilder builder{ scp.symbol(), std::string{} };
