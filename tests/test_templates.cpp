@@ -62,72 +62,75 @@ script::Value max_function(script::FunctionCall *c)
 }
 
 /// TODO : it could be nice to be able to set an error to explain why deduction failed
-/// or this could be done in another function (e.g. NativeTemplateDeductionDiagnosticFunction)
-void max_function_template_deduce(script::TemplateArgumentDeduction & result, const script::FunctionTemplate & max, const std::vector<script::TemplateArgument> & args, const std::vector<script::Type> & types)
+
+class MaxFunctionTemplate : public script::FunctionTemplateNativeBackend
 {
-  using namespace script;
-
-  if (args.size() > 2) // too many argument provided
-    return result.fail();
-
-  if (args.size() > 0) 
+  void deduce(script::TemplateArgumentDeduction& deduction, const std::vector<script::TemplateArgument>& targs, const std::vector<script::Type>& itypes) override
   {
-    // checking first argument
-    if (args.front().kind != TemplateArgument::TypeArgument)
-      return result.fail();
+    using namespace script;
 
+    if (targs.size() > 2) // too many argument provided
+      return deduction.fail();
+
+    if (targs.size() > 0)
+    {
+      // checking first argument
+      if (targs.front().kind != TemplateArgument::TypeArgument)
+        return deduction.fail();
+
+    }
+    else
+    {
+      if (itypes.size() == 0)
+        return deduction.fail();
+
+      deduction.record_deduction(0, TemplateArgument{ itypes.front().baseType() });
+    }
+
+    if (targs.size() > 1)
+    {
+      // checking second argument
+      if (targs.at(1).kind != TemplateArgument::IntegerArgument)
+        return deduction.fail();
+    }
+    else
+    {
+      deduction.record_deduction(1, TemplateArgument{ int(itypes.size()) });
+    }
+
+    return deduction.set_success(true);
   }
-  else 
+
+  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
   {
-    if (types.size() == 0)
-      return result.fail();
+    using namespace script;
 
-    result.record_deduction(0, TemplateArgument{ types.front().baseType() });
+    Type T = functionTemplate().get("T", targs).type;
+    int N = functionTemplate().get("N", targs).integer;
+
+    builder.setReturnType(T);
+
+    for (size_t i(0); i < size_t(N); ++i)
+      builder.addParam(Type::cref(T));
   }
 
-  if (args.size() > 1)
+  std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function& function) override
   {
-    // checking second argument
-    if (args.at(1).kind != TemplateArgument::IntegerArgument)
-      return result.fail();
+    using namespace script;
+
+    Engine* e = functionTemplate().engine();
+
+    NameLookup lookup = NameLookup::resolve(LessOperator, e->rootNamespace());
+    OverloadResolution resol = OverloadResolution::New(e);
+    const Type param_type = function.parameter(0);
+    if (!resol.process(lookup.functions(), { param_type , param_type }))
+      throw std::runtime_error{ "Cannot instantiate max function template (no operator< was found)" };
+
+    Function less = resol.selectedOverload();
+
+    return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.initializations()));
   }
-  else
-  {
-    result.record_deduction(1, TemplateArgument{ int(types.size()) });
-  }
-
-  return result.set_success(true);
-}
-
-void max_function_template_substitution(script::FunctionBuilder & result, script::FunctionTemplate t, const std::vector<script::TemplateArgument> & args)
-{
-  using namespace script;
-
-  Type T = t.get("T", args).type;
-  int N = t.get("N", args).integer;
-
-  result.setReturnType(T);
-
-  for (size_t i(0); i < size_t(N); ++i)
-    result.addParam(Type::cref(T));
-}
-
-std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> max_function_template_instantiation(script::FunctionTemplate t, script::Function f)
-{
-  using namespace script;
-
-  Engine *e = t.engine();
-
-  NameLookup lookup = NameLookup::resolve(LessOperator, e->rootNamespace());
-  OverloadResolution resol = OverloadResolution::New(e);
-  const Type param_type = f.parameter(0);
-  if (!resol.process(lookup.functions(), { param_type , param_type }))
-    throw std::runtime_error{ "Cannot instantiate max function template (no operator< was found)" };
-
-  Function less = resol.selectedOverload();
-
-  return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.initializations()));
-}
+};
 
 TEST(TemplateTests, call_with_no_args) {
   using namespace script;
@@ -146,7 +149,7 @@ TEST(TemplateTests, call_with_no_args) {
   Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .withBackend<MaxFunctionTemplate>()
     .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
@@ -172,7 +175,7 @@ TEST(TemplateTests, call_to_template_with_no_args) {
   Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .withBackend<MaxFunctionTemplate>()
     .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
@@ -198,7 +201,7 @@ TEST(TemplateTests, call_to_template_with_one_arg) {
   Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .withBackend<MaxFunctionTemplate>()
     .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
@@ -224,7 +227,7 @@ TEST(TemplateTests, call_to_template_with_all_args) {
   Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .withBackend<MaxFunctionTemplate>()
     .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
@@ -250,7 +253,7 @@ TEST(TemplateTests, invalid_call_to_template_with_all_args) {
   Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(max_function_template_deduce).substitute(max_function_template_substitution).instantiate(max_function_template_instantiation)
+    .withBackend<MaxFunctionTemplate>()
     .create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
@@ -261,6 +264,24 @@ TEST(TemplateTests, invalid_call_to_template_with_all_args) {
 
 #include "script/parser/parser.h"
 #include "script/templateargumentdeduction.h"
+
+class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBackend
+{
+  void deduce(script::TemplateArgumentDeduction& deduction, const std::vector<script::TemplateArgument>& targs, const std::vector<script::Type>& itypes) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  void substitute(script::FunctionBuilder & builder, const std::vector<script::TemplateArgument> & targs) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function & function) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+};
 
 TEST(TemplateTests, argument_deduction_1) {
   using namespace script;
@@ -282,7 +303,7 @@ TEST(TemplateTests, argument_deduction_1) {
   FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("abs")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .withBackend<DummyFunctionTemplateBackend>()
     .get();
 
   std::vector<TemplateArgument> arguments;
@@ -325,7 +346,7 @@ TEST(TemplateTests, argument_deduction_2) {
   FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("swap")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .withBackend<DummyFunctionTemplateBackend>()
     .get();
 
   std::vector<TemplateArgument> arguments;
@@ -367,7 +388,7 @@ TEST(TemplateTests, argument_deduction_3) {
   FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
     .setParams(std::move(params))
     .setScope(Scope{engine.rootNamespace()})
-    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .withBackend<DummyFunctionTemplateBackend>()
     .get();
 
   std::vector<TemplateArgument> arguments;
@@ -411,7 +432,7 @@ TEST(TemplateTests, argument_deduction_4) {
   FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("apply")
     .setParams(std::move(params))
     .setScope(Scope{})
-    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .withBackend<DummyFunctionTemplateBackend>()
     .get();
 
   DynamicPrototype proto{ Type::Boolean, {Type::Int} };
@@ -460,30 +481,35 @@ TEST(TemplateTests, argument_deduction_5) {
     return engine.typeSystem()->getFunctionType(proto).type();
   };
 
+  auto get_definition = [](const FunctionTemplate & ft) -> compiler::TemplateDefinition&
+  {
+    return dynamic_cast<ScriptFunctionTemplateBackend*>(ft.backend())->definition;
+  };
+
   std::vector<TemplateArgument> targs;
   std::vector<Type> inputs;
   TemplateArgumentDeduction deduction;
 
   inputs = std::vector<Type>{ create_func_type(Type::Int) };
-  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, get_definition(foo).decl_);
   ASSERT_TRUE(deduction.success());
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
 
   inputs = std::vector<Type>{ create_func_type(Type{Type::Int}.withConst()) };
-  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, foo.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(foo, targs, inputs, get_definition(foo).decl_);
   ASSERT_TRUE(deduction.success()); 
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type{ Type::Int }.withConst());
 
   inputs = std::vector<Type>{ create_func_type(Type{ Type::Int }.withConst()) };
-  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, get_definition(bar).decl_);
   ASSERT_TRUE(deduction.success()); 
   ASSERT_EQ(deduction.get_deductions().size(), 1);
   ASSERT_EQ(deduction.deduced_value(0).type, Type::Int);
 
   inputs = std::vector<Type>{ create_func_type(Type::Int) };
-  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, bar.impl()->definition.decl_);
+  deduction = TemplateArgumentDeduction::process(bar, targs, inputs, get_definition(bar).decl_);
   ASSERT_TRUE(deduction.success()); /// TODO : should it be a success in this case ?
   ASSERT_EQ(deduction.get_deductions().size(), 0);
 }
@@ -659,7 +685,6 @@ TEST(TemplateTests, user_defined_class_template_definition) {
 
   ClassTemplate pair = s.rootNamespace().templates().front().asClassTemplate();
   ASSERT_EQ(pair.name(), "Pair");
-  ASSERT_FALSE(pair.is_native());
 
   const auto & params = pair.parameters();
   ASSERT_EQ(params.size(), 2);

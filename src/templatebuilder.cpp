@@ -25,35 +25,13 @@ FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, std::string &
 
 }
 
-FunctionTemplateBuilder & FunctionTemplateBuilder::setCallbacks(const FunctionTemplateCallbacks & val)
-{
-  callbacks = val;
-  return (*this);
-}
-
-FunctionTemplateBuilder & FunctionTemplateBuilder::deduce(NativeFunctionTemplateDeductionCallback callback)
-{
-  callbacks.deduction = callback;
-  return (*this);
-}
-
-FunctionTemplateBuilder & FunctionTemplateBuilder::substitute(NativeFunctionTemplateSubstitutionCallback callback)
-{
-  callbacks.substitution = callback;
-  return (*this);
-}
-
-FunctionTemplateBuilder & FunctionTemplateBuilder::instantiate(NativeFunctionTemplateInstantiationCallback callback)
-{
-  callbacks.instantiation = callback;
-  return (*this);
-}
-
 FunctionTemplate FunctionTemplateBuilder::get()
 {
   /// TODO: perform checks
   FunctionTemplate ret{ std::make_shared<FunctionTemplateImpl>(std::move(name), std::move(this->parameters), this->scope,
-    this->callbacks.deduction, this->callbacks.substitution, this->callbacks.instantiation, symbol.engine(), this->symbol.impl()) };
+    std::move(this->backend), symbol.engine(), this->symbol.impl()) };
+
+  ret.backend()->m_template = ret.impl();
   
   if (symbol.isClass())
     symbol.toClass().impl()->templates.push_back(ret);
@@ -81,17 +59,11 @@ ClassTemplateBuilder::ClassTemplateBuilder(const Symbol & s, std::string && name
 
 }
 
-ClassTemplateBuilder & ClassTemplateBuilder::setCallback(NativeClassTemplateInstantiationFunction val)
-{
-  this->callback = val;
-  return (*this);
-}
-
 ClassTemplate ClassTemplateBuilder::get()
 {
   /// TODO: perform checks
   ClassTemplate ret{ std::make_shared<ClassTemplateImpl>(std::move(this->name), 
-    std::move(this->parameters), this->scope, this->callback, this->symbol.engine(), this->symbol.impl()) };
+    std::move(this->parameters), this->scope, std::move(this->backend), this->symbol.engine(), this->symbol.impl()) };
 
   if (symbol.isClass())
     symbol.toClass().impl()->templates.push_back(ret);

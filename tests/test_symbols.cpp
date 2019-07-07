@@ -42,6 +42,25 @@ Testing function template creation
 #include "script/template.h"
 #include "script/templatebuilder.h"
 
+
+class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBackend
+{
+  void deduce(script::TemplateArgumentDeduction& deduction, const std::vector<script::TemplateArgument>& targs, const std::vector<script::Type>& itypes) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function& function) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+};
+
 TEST(Symbols, function_template_create) {
   using namespace script;
 
@@ -54,6 +73,7 @@ TEST(Symbols, function_template_create) {
 
   // We cannot use get() here because FunctionTemplate has not been defined yet
   s.newFunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+    .withBackend<DummyFunctionTemplateBackend>()
     .setScope(e.rootNamespace()).create();
 
   ASSERT_EQ(e.rootNamespace().templates().size(), nb_templates + 1);
@@ -72,6 +92,7 @@ TEST(Symbols, function_template_get) {
   FunctionTemplate foo = s.newFunctionTemplate("foo").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
+    .withBackend<DummyFunctionTemplateBackend>()
     .setScope(e.rootNamespace()).get();
 
   ASSERT_EQ(foo.name(), "foo");

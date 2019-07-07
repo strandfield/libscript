@@ -9,6 +9,8 @@
 #include "script/classtemplatespecializationbuilder.h"
 #include "script/templatenameprocessor.h"
 
+#include "script/private/templateargumentscope_p.h"
+
 namespace script
 {
 
@@ -18,14 +20,9 @@ ClassTemplate::ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl)
 
 }
 
-bool ClassTemplate::is_native() const
+ClassTemplateNativeBackend* ClassTemplate::backend() const
 {
-  return impl()->instantiate != nullptr;
-}
-
-NativeClassTemplateInstantiationFunction ClassTemplate::native_callback() const
-{
-  return impl()->instantiate;
+  return impl()->backend.get();
 }
 
 bool ClassTemplate::hasInstance(const std::vector<TemplateArgument> & args, Class *value) const
@@ -72,7 +69,7 @@ ClassTemplateSpecializationBuilder ClassTemplate::Specialization(std::vector<Tem
 
 const std::vector<PartialTemplateSpecialization> & ClassTemplate::partialSpecializations() const
 {
-  return impl()->specializations;
+  return impl()->specializations();
 }
 
 const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & ClassTemplate::instances() const
@@ -89,9 +86,38 @@ std::shared_ptr<ClassTemplateImpl> ClassTemplate::impl() const
 
 
 PartialTemplateSpecialization::PartialTemplateSpecialization(const std::shared_ptr<PartialTemplateSpecializationImpl> & impl)
-  : Template(impl)
+  : d(impl)
 {
 
+}
+
+bool PartialTemplateSpecialization::isNull() const
+{
+  return d == nullptr;
+}
+
+const std::vector<TemplateParameter>& PartialTemplateSpecialization::parameters() const
+{
+  return d->parameters;
+}
+
+Scope PartialTemplateSpecialization::scope() const
+{
+  return d->scope;
+}
+
+Scope PartialTemplateSpecialization::argumentScope(const std::vector<TemplateArgument>& args) const
+{
+  auto ret = std::make_shared<TemplateArgumentScope>(Template(d), args);
+  ret->parent = d->scope.impl();
+  return Scope{ ret };
+}
+
+Scope PartialTemplateSpecialization::parameterScope() const
+{
+  auto tparamscope = std::make_shared<TemplateParameterScope>(Template(d));
+  tparamscope->parent = scope().impl();
+  return Scope{ tparamscope };
 }
 
 const std::vector<std::shared_ptr<ast::Node>> & PartialTemplateSpecialization::arguments() const
@@ -109,5 +135,9 @@ std::shared_ptr<PartialTemplateSpecializationImpl> PartialTemplateSpecialization
   return std::static_pointer_cast<PartialTemplateSpecializationImpl>(d);
 }
 
+bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs)
+{
+  return lhs.impl() == rhs.impl();
+}
 
 } // namespace script

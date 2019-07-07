@@ -39,11 +39,14 @@ TemplatePartialOrdering TemplateSpecialization::compare(const FunctionTemplate &
   if (a.name() != b.name())
     return TemplatePartialOrdering::NotComparable;
 
-  if (a.is_native() || b.is_native())
+  auto* a_back = dynamic_cast<ScriptFunctionTemplateBackend*>(a.backend());
+  auto* b_back = dynamic_cast<ScriptFunctionTemplateBackend*>(b.backend());
+
+  if (a_back == nullptr || b_back == nullptr)
     return TemplatePartialOrdering::Indistinguishable;
 
-  const auto & a_params = a.impl()->definition.get_function_decl()->params;
-  const auto & b_params = b.impl()->definition.get_function_decl()->params;
+  const auto & a_params = a_back->definition.get_function_decl()->params;
+  const auto & b_params = b_back->definition.get_function_decl()->params;
   const size_t s = std::min(a_params.size(), b_params.size());
   TemplatePartialOrdering c{ TemplatePartialOrdering::Indistinguishable };
   for (size_t i(0); i < s; ++i)
@@ -58,8 +61,8 @@ TemplatePartialOrdering TemplateSpecialization::compare(const FunctionTemplate &
 
   assert(c == TemplatePartialOrdering::Indistinguishable);
 
-  const bool a_const = a.impl()->definition.get_function_decl()->constQualifier.isValid();
-  const bool b_const = b.impl()->definition.get_function_decl()->constQualifier.isValid();
+  const bool a_const = a_back->definition.get_function_decl()->constQualifier.isValid();
+  const bool b_const = b_back->definition.get_function_decl()->constQualifier.isValid();
 
   if (a_const && !b_const)
     return TemplatePartialOrdering::FirstIsMoreSpecialized;
@@ -254,7 +257,10 @@ std::pair<FunctionTemplate, std::vector<TemplateArgument>> TemplateOverloadSelec
     TemplateArgumentDeduction deduc;
     TemplatePatternMatching matcher{ ft, &deduc };
     matcher.setScope(ft.argumentScope(targs));
-    if (!matcher.match(ft.impl()->definition.get_function_decl(), proto))
+
+    auto* back = dynamic_cast<ScriptFunctionTemplateBackend*>(ft.backend());
+
+    if (!matcher.match(back->definition.get_function_decl(), proto))
       continue;
 
     std::vector<TemplateArgument> args;

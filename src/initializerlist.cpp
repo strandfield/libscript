@@ -208,20 +208,20 @@ static Class register_ilist_iterator(Class & ilist)
 }
 
 
-Class instantiate_initializer_list_class(ClassTemplateInstanceBuilder & builder)
+Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
 {
-  const auto & arguments = builder.arguments();
+  const auto& arguments = builder.arguments();
 
   if (arguments.size() != 1)
-    throw TemplateInstantiationError{"Invalid argument count"};
+    throw TemplateInstantiationError{ "Invalid argument count" };
 
   if (arguments.at(0).kind != TemplateArgument::TypeArgument)
     throw TemplateInstantiationError{ "Argument must be a type" };
 
   const Type element_type = arguments.at(0).type.baseType();
 
-  Engine *e = builder.getTemplate().engine();
- 
+  Engine * e = builder.getTemplate().engine();
+
   builder.name = std::string("InitializerList<") + e->typeSystem()->typeName(element_type) + std::string(">");
 
 
@@ -229,7 +229,7 @@ Class instantiate_initializer_list_class(ClassTemplateInstanceBuilder & builder)
   const Type ilist_type = ilist_class.id();
 
   Class iter_type = register_ilist_iterator(ilist_class);
-  
+
   ilist_class.newConstructor(callbacks::initializer_list::default_ctor).create();
 
   ilist_class.newConstructor(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
@@ -264,7 +264,7 @@ ClassTemplate register_initialize_list_template(Engine *e)
   ClassTemplate ilist_template = Symbol{ root }.newClassTemplate("InitializerList")
     .setParams(std::move(params))
     .setScope(Scope{ root })
-    .setCallback(instantiate_initializer_list_class)
+    .withBackend<InitializerListTemplate>()
     .get();
 
   return ilist_template;

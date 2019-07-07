@@ -14,6 +14,7 @@ namespace script
 
 class Class;
 class ClassTemplateImpl;
+class ClassTemplateNativeBackend;
 class ClassTemplateSpecializationBuilder;
 class PartialTemplateSpecialization;
 class PartialTemplateSpecializationImpl;
@@ -27,8 +28,7 @@ public:
 
   explicit ClassTemplate(const std::shared_ptr<ClassTemplateImpl> & impl);
 
-  bool is_native() const;
-  NativeClassTemplateInstantiationFunction native_callback() const;
+  ClassTemplateNativeBackend* backend() const;
 
   bool hasInstance(const std::vector<TemplateArgument> & args, Class *value = nullptr) const;
   Class getInstance(const std::vector<TemplateArgument> & args);
@@ -46,7 +46,7 @@ public:
 };
 
 /// TODO: try move outside of this file
-class LIBSCRIPT_API PartialTemplateSpecialization : public Template
+class LIBSCRIPT_API PartialTemplateSpecialization
 {
 public:
   PartialTemplateSpecialization() = default;
@@ -55,13 +55,27 @@ public:
 
   PartialTemplateSpecialization(const std::shared_ptr<PartialTemplateSpecializationImpl> & impl);
 
+  bool isNull() const;
+
+  const std::vector<TemplateParameter>& parameters() const;
+  
+  [[deprecated("TODO:remove")]] Scope scope() const;
+  [[deprecated("TODO:remove")]] Scope argumentScope(const std::vector<TemplateArgument>& args) const;
+  [[deprecated("TODO:remove")]] Scope parameterScope() const;
+
   const std::vector<std::shared_ptr<ast::Node>> & arguments() const;
   ClassTemplate specializationOf() const;
 
   std::shared_ptr<PartialTemplateSpecializationImpl> impl() const;
 
-  PartialTemplateSpecialization & operator=(const PartialTemplateSpecialization & other) = default;
+  PartialTemplateSpecialization & operator=(const PartialTemplateSpecialization & ) = default;
+
+private:
+  std::shared_ptr<PartialTemplateSpecializationImpl> d;
 };
+
+bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs);
+inline bool operator!=(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs) { return !(lhs == rhs); }
 
 } // namespace script
 

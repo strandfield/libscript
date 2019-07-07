@@ -130,7 +130,7 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
   {
     ClassTemplateSpecializationBuilder builder = ClassTemplate{ ct }.Specialization(std::vector<TemplateArgument>{args});
 
-    auto class_decl = ct.impl()->definition.get_class_decl();
+    auto class_decl = static_cast<ScriptClassTemplateBackend*>(ct.backend())->definition.get_class_decl();
     builder.name = readClassName(class_decl);
     builder.base = readClassBase(class_decl);
 
@@ -747,12 +747,12 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
-    .setCallback(nullptr)
+    .withBackend<ScriptClassTemplateBackend>()
     .get();
 
   scp.invalidateCache(Scope::InvalidateTemplateCache);
 
-  ct.impl()->definition = TemplateDefinition::make(script(), decl);
+  static_cast<ScriptClassTemplateBackend*>(ct.backend())->definition = TemplateDefinition::make(script(), decl);
 }
 
 void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)
@@ -765,12 +765,12 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
-    .deduce(nullptr).substitute(nullptr).instantiate(nullptr)
+    .withBackend<ScriptFunctionTemplateBackend>()
     .get();
 
   scp.invalidateCache(Scope::InvalidateTemplateCache);
 
-  ft.impl()->definition = TemplateDefinition::make(script(), decl);
+  static_cast<ScriptFunctionTemplateBackend*>(ft.backend())->definition = TemplateDefinition::make(script(), decl);
 }
 
 Namespace ScriptCompiler::findEnclosingNamespace(const Scope & scp) const
@@ -834,7 +834,9 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
   auto ps = std::make_shared<PartialTemplateSpecializationImpl>(ct, std::move(params), scp, engine(), scp.symbol().impl());
   ps->definition = TemplateDefinition::make(script(), decl);
 
-  ct.impl()->specializations.push_back(PartialTemplateSpecialization{ ps });
+  auto* back = dynamic_cast<ScriptClassTemplateBackend*>(ct.backend());
+
+  back->specializations.push_back(PartialTemplateSpecialization(ps));
 }
 
 void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared_ptr<ast::TemplateDeclaration> & decl, const std::shared_ptr<ast::FunctionDecl> & fundecl)

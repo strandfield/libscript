@@ -14,7 +14,9 @@
 namespace script
 {
 
+class FunctionBuilder;
 class FunctionTemplateImpl;
+class FunctionTemplateNativeBackend;
 struct TemplateArgumentComparison;
 
 namespace program
@@ -31,8 +33,7 @@ public:
 
   explicit FunctionTemplate(const std::shared_ptr<FunctionTemplateImpl> & impl);
 
-  bool is_native() const;
-  const FunctionTemplateCallbacks & native_callbacks() const;
+  FunctionTemplateNativeBackend* backend() const;
 
   bool hasInstance(const std::vector<TemplateArgument> & args, Function *value = nullptr) const;
   Function getInstance(const std::vector<TemplateArgument> & args);

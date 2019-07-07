@@ -5,9 +5,10 @@
 #ifndef LIBSCRIPT_TEMPLATE_BUILDER_H
 #define LIBSCRIPT_TEMPLATE_BUILDER_H
 
+#include "script/classtemplatenativebackend.h"
+#include "script/functiontemplatenativebackend.h"
 #include "script/scope.h"
 #include "script/symbol.h"
-#include "script/templatecallbacks.h"
 #include "script/templateparameter.h"
 
 namespace script
@@ -67,20 +68,22 @@ private:
   typedef TemplateBuilder<FunctionTemplateBuilder> Base;
 
 public:
-  FunctionTemplateCallbacks callbacks;
+  std::unique_ptr<FunctionTemplateNativeBackend> backend;
 
 public:
   FunctionTemplateBuilder() = delete;
-  FunctionTemplateBuilder(const FunctionTemplateBuilder &) = default;
+  FunctionTemplateBuilder(FunctionTemplateBuilder &&) = default;
   ~FunctionTemplateBuilder() = default;
 
   FunctionTemplateBuilder(const Symbol & s, const std::string & name);
   FunctionTemplateBuilder(const Symbol & s, std::string && name);
 
-  FunctionTemplateBuilder & setCallbacks(const FunctionTemplateCallbacks & val);
-  FunctionTemplateBuilder & deduce(NativeFunctionTemplateDeductionCallback callback);
-  FunctionTemplateBuilder & substitute(NativeFunctionTemplateSubstitutionCallback callback);
-  FunctionTemplateBuilder & instantiate(NativeFunctionTemplateInstantiationCallback callback);
+  template<typename T>
+  FunctionTemplateBuilder& withBackend()
+  {
+    backend = std::unique_ptr<FunctionTemplateNativeBackend>(new T());
+    return *this;
+  }
 
   FunctionTemplate get();
   void create();
@@ -95,17 +98,22 @@ private:
   typedef TemplateBuilder<ClassTemplateBuilder> Base;
 
 public:
-  NativeClassTemplateInstantiationFunction callback;
+  std::unique_ptr<ClassTemplateNativeBackend> backend;
 
 public:
   ClassTemplateBuilder() = delete;
-  ClassTemplateBuilder(const ClassTemplateBuilder &) = default;
+  ClassTemplateBuilder(ClassTemplateBuilder &&) = default;
   ~ClassTemplateBuilder() = default;
 
   ClassTemplateBuilder(const Symbol & s, const std::string & name);
   ClassTemplateBuilder(const Symbol & s, std::string && name);
 
-  ClassTemplateBuilder & setCallback(NativeClassTemplateInstantiationFunction val);
+  template<typename T>
+  ClassTemplateBuilder& withBackend()
+  {
+    backend = std::unique_ptr<ClassTemplateNativeBackend>(new T());
+    return *this;
+  }
 
   ClassTemplate get();
   void create();

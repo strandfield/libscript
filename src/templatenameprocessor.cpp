@@ -64,22 +64,10 @@ std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp
 
 Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
-  if (ct.is_native())
-  {
-    auto instantiate = ct.native_callback();
-    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
-    Class ret = instantiate(builder);
-    ct.impl()->instances[args] = ret;
-    return ret;
-  }
-  else
-  {
-    Engine *e = ct.engine();
-    compiler::Compiler *cc = e->compiler();
-    Class ret = cc->instantiate(ct, args);
-    ct.impl()->instances[args] = ret;
-    return ret;
-  }
+  ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
+  Class ret = ct.backend()->instantiate(builder);
+  ct.impl()->instances[args] = ret;
+  return ret;
 }
 
 Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)

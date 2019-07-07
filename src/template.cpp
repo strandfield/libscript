@@ -6,20 +6,23 @@
 #include "script/private/template_p.h"
 
 #include "script/classtemplate.h"
+#include "script/classtemplateinstancebuilder.h"
+#include "script/engine.h"
 #include "script/functiontemplate.h"
 #include "script/name.h"
 #include "script/private/symbol_p.h"
 #include "script/private/templateargumentscope_p.h"
 #include "script/symbol.h"
 
+#include "script/compiler/compiler.h"
+
 #include <algorithm> // std::max
 
 namespace script
 {
 
-TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
+TemplateImpl::TemplateImpl(std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
   : SymbolImpl(es)
-  , name(n)
   , parameters(std::move(params))
   , scope(scp)
   , engine(e)
@@ -29,18 +32,17 @@ TemplateImpl::TemplateImpl(const std::string & n, std::vector<TemplateParameter>
 
 Name TemplateImpl::get_name() const
 {
-  return Name{ this->name };
+  return Name{ this->name() };
 }
 
 
-FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, NativeFunctionTemplateDeductionCallback deduc,
-  NativeFunctionTemplateSubstitutionCallback sub, NativeFunctionTemplateInstantiationCallback inst,
+FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, std::unique_ptr<FunctionTemplateNativeBackend>&& back,
   Engine *e, std::shared_ptr<SymbolImpl> es)
-  : TemplateImpl(n, std::move(params), scp, e, es)
+  : TemplateImpl(std::move(params), scp, e, es),
+    function_name(n),
+    backend(std::move(back))
 {
-  callbacks.deduction = deduc;
-  callbacks.substitution = sub;
-  callbacks.instantiation = inst;
+
 }
 
 FunctionTemplateImpl::~FunctionTemplateImpl()
@@ -48,14 +50,19 @@ FunctionTemplateImpl::~FunctionTemplateImpl()
 
 }
 
+const std::string& FunctionTemplateImpl::name() const
+{
+  return function_name;
+}
 
 ClassTemplateImpl::ClassTemplateImpl(const std::string & n, 
   std::vector<TemplateParameter> && params, 
   const Scope & scp,
-  NativeClassTemplateInstantiationFunction inst,
+  std::unique_ptr<ClassTemplateNativeBackend>&& back,
   Engine *e, std::shared_ptr<SymbolImpl> es)
-  : TemplateImpl(n, std::move(params), scp, e, es)
-  , instantiate(inst)
+  : TemplateImpl(std::move(params), scp, e, es)
+  , class_name(n)
+  , backend(std::move(back))
 {
 
 }
@@ -65,11 +72,39 @@ ClassTemplateImpl::~ClassTemplateImpl()
 
 }
 
+const std::string& ClassTemplateImpl::name() const
+{
+  return class_name;
+}
+
+const std::vector<PartialTemplateSpecialization>& ClassTemplateImpl::specializations() const
+{
+  static const std::vector<PartialTemplateSpecialization> static_instance = {};
+
+  ScriptClassTemplateBackend* back = dynamic_cast<ScriptClassTemplateBackend*>(this->backend.get());
+
+  return back ? back->specializations : static_instance;
+}
+
+Class ScriptClassTemplateBackend::instantiate(ClassTemplateInstanceBuilder& builder)
+{
+  ClassTemplate ct = builder.getTemplate();
+  Engine* e = ct.engine();
+  compiler::Compiler* cc = e->compiler();
+  Class ret = cc->instantiate(ct, builder.arguments());
+  return ret;
+}
+
 PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
-  : TemplateImpl(std::string{}, std::move(params), scp, e, es)
-  , class_template(ct.impl())
+  : TemplateImpl(std::move(params), scp, e, es),
+    class_template(ct.impl())
 {
 
+}
+
+const std::string& PartialTemplateSpecializationImpl::name() const
+{
+  return class_template.lock()->name();
 }
 
 TemplateArgument::TemplateArgument()
@@ -207,7 +242,7 @@ FunctionTemplate Template::asFunctionTemplate() const
 
 const std::string & Template::name() const
 {
-  return d->name;
+  return d->name();
 }
 
 const std::vector<TemplateParameter> & Template::parameters() const

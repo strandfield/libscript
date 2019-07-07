@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include "script/classtemplatenativebackend.h"
+
 namespace script
 {
 
@@ -34,7 +36,11 @@ public:
   InitializerList & operator=(const InitializerList &) = default;
 };
 
-} // namespace script
+class LIBSCRIPT_API InitializerListTemplate : public ClassTemplateNativeBackend
+{
+  Class instantiate(ClassTemplateInstanceBuilder& builder) override;
+};
 
+} // namespace script
 
 #endif // LIBSCRIPT_INITIALIZER_LIST_H

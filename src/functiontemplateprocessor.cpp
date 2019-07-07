@@ -51,26 +51,32 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   FunctionTemplate ft = f.instanceOf();
   const std::vector<TemplateArgument> & targs = f.arguments();
 
-  if (ft.is_native())
-  {
-    auto result = ft.native_callbacks().instantiation(ft, f);
+  auto result = ft.backend()->instantiate(f);
+  
+  if(result.first)
     f.impl()->implementation.callback = result.first;
-    f.impl()->data = result.second;
-  }
-  else
-  {
-    Engine *e = ft.engine();
-    compiler::Compiler* compiler = e->compiler();
-    auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
-    compiler->instantiate(decl, f, ft.argumentScope(f.arguments()));
-  }
+
+  f.impl()->data = result.second;
+
+  //if (ft.is_native())
+  //{
+  //  auto result = ft.native_callbacks().instantiation(ft, f);
+  //  f.impl()->implementation.callback = result.first;
+  //  f.impl()->data = result.second;
+  //}
+  //else
+  //{
+  //  Engine *e = ft.engine();
+  //  compiler::Compiler* compiler = e->compiler();
+  //  auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
+  //  compiler->instantiate(decl, f, ft.argumentScope(f.arguments()));
+  //}
 
   ft.impl()->instances[targs] = f;
 }
 
 Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)
 {
-  const bool is_native = ft.is_native();
   const std::vector<TemplateArgument> *template_args = &args;
   std::vector<TemplateArgument> targs_copy;
 
@@ -78,10 +84,12 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   {
     TemplateArgumentDeduction deduction_result;
 
-    if (is_native)
-      ft.native_callbacks().deduction(deduction_result, ft, args, types);
-    else
-      deduction_result.fill(ft, args, types, ft.impl()->definition.decl_);
+    ft.backend()->deduce(deduction_result, args, types);
+
+    //if (is_native)
+    //  ft.native_callbacks().deduction(deduction_result, ft, args, types);
+    //else
+    //  deduction_result.fill(ft, args, types, ft.impl()->definition.decl_);
 
     if (!deduction_result.success())
       return Function{};
@@ -124,7 +132,9 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   
   FunctionBuilder builder = Symbol{ ft.impl()->enclosing_symbol.lock() }.newFunction(std::string{});
 
-  if (is_native)
+  ft.backend()->substitute(builder, *template_args);
+
+ /* if (is_native)
   {
     ft.native_callbacks().substitution(builder, ft, *template_args);
   }
@@ -136,7 +146,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
 
     auto tparamscope = ft.argumentScope(*template_args);
     fp.generic_fill(builder, fundecl, tparamscope);
-  }
+  }*/
 
   // We construct the function manually.
   // We don't use create() to avoid adding the function to the namespace or class.
