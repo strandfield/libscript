@@ -26,17 +26,6 @@ private:
   std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op) override;
 };
 
-class CapturelessLambdaProcessor : public LambdaProcessor
-{
-public:
-  CapturelessLambdaProcessor(Engine *e);
-  ~CapturelessLambdaProcessor() = default;
-
-  Engine* engine_;
-
-  std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
-};
-
 class CommandCompiler
 {
 public:
@@ -53,7 +42,6 @@ protected:
 private:
   Engine *mEngine;
   CommandExpressionCompiler expr_;
-  CapturelessLambdaProcessor lambda_;
 };
 
 

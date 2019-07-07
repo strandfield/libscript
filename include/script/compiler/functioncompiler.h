@@ -53,22 +53,6 @@ public:
   EnterScope(const EnterScope &) = delete;
 };
 
-class FunctionCompilerLambdaProcessor : public LambdaProcessor
-{
-protected:
-  Stack * stack_;
-  Script script_;
-  FunctionCompiler* fcomp_;
-public:
-  FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc);
-  ~FunctionCompilerLambdaProcessor() = default;
-
-  inline const Stack & stack() const { return *stack_; }
-  inline Script & script() { return script_; }
-
-  std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le) override;
-};
-
 class FunctionCompiler
 {
 public:
@@ -191,7 +175,6 @@ protected:
 
   TypeResolver type_;
   ExpressionCompiler expr_;
-  FunctionCompilerLambdaProcessor lambda_;
   ScopeStatementProcessor scope_statements_;
   ImportProcessor modules_;
 

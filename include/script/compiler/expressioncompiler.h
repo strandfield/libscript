@@ -32,15 +32,26 @@ namespace compiler
 {
 
 class ExpressionCompiler;
+class FunctionCompiler;
+class Logger;
 
 class LambdaProcessor
 {
+private:
+  Engine* engine_ = nullptr;
+  Stack* stack_ = nullptr;
+  Logger* logger_ = nullptr;
 public:
-  LambdaProcessor() = default;
+  LambdaProcessor(Engine* e);
   LambdaProcessor(const LambdaProcessor &) = delete;
-  virtual ~LambdaProcessor() = default;
+  ~LambdaProcessor() = default;
 
-  virtual std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le);
+  bool allowCaptures() const { return stack_ != nullptr; }
+
+  void setLogger(Logger* l);
+  void setStack(Stack* s);
+
+  std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le);
 
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
@@ -49,13 +60,12 @@ class ExpressionCompiler
 {
 private:
   Scope scope_;
-  Function caller_; 
-  
+  Function caller_;
+  Stack* stack_ = nullptr;
+  Logger* logger_ = nullptr;
+
 private:
   TypeResolver type_resolver;
-
-  LambdaProcessor default_lambda_;
-  LambdaProcessor *lambda_;
 
   VariableAccessor variables_;
 
@@ -68,17 +78,19 @@ public:
   ExpressionCompiler(const Scope & scp);
 
   inline const Scope & scope() const { return scope_; }
-  inline void setScope(const Scope & scp) { scope_ = scp; }
+  void setScope(const Scope& scp);
 
   inline const Function & caller() const { return caller_; }
   void setCaller(const Function & func);
+
+  void setLogger(Logger* l);
+  void setLogger(Logger& l);
+
+  void setStack(Stack* s);
   
   inline Engine* engine() const { return scope_.engine(); }
 
   VariableAccessor& variableAccessor() { return variables_; }
-
-  inline LambdaProcessor & lambdaProcessor() { return *lambda_; }
-  inline void setLambdaProcessor(LambdaProcessor & lp) { lambda_ = &lp; }
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);

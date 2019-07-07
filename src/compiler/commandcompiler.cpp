@@ -41,35 +41,10 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   return ExpressionCompiler::generateOperation(op);
 }
 
-CapturelessLambdaProcessor::CapturelessLambdaProcessor(Engine *e)
-  : engine_(e)
-{
-
-}
-
-std::shared_ptr<program::LambdaExpression> CapturelessLambdaProcessor::generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le)
-{
-  const auto & p = le->pos();
-
-  if (le->captures.size() > 0)
-    throw LambdaMustBeCaptureless{ diagnostic::pos_t{ p.line, p.col } };
-
-  CompileLambdaTask task;
-  task.lexpr = le;
-  task.scope = script::Scope{ engine_->rootNamespace() }; /// TODO : make this customizable !
-
-  /// TODO: set tnp, module loader and so on
-  LambdaCompiler compiler{ engine_ };
-  LambdaCompilationResult result = compiler.compile(task);
-
-  return result.expression;
-}
-
 CommandCompiler::CommandCompiler(Engine *e)
   : mEngine(e)
-  , lambda_(e)
 {
-  expr_.setLambdaProcessor(lambda_);
+
 }
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context)

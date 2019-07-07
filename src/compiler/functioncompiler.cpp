@@ -277,30 +277,6 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-FunctionCompilerLambdaProcessor::FunctionCompilerLambdaProcessor(Stack & s, FunctionCompiler* fc)
-  : stack_(&s)
-  , fcomp_(fc)
-{
-
-}
-
-std::shared_ptr<program::LambdaExpression> FunctionCompilerLambdaProcessor::generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le)
-{
-  CompileLambdaTask task;
-  task.lexpr = le;
-  task.scope = ec.scope();
-
-  const int first_capturable = 1;
-  LambdaCompiler::preprocess(task, &ec, stack(), first_capturable);
-
-  LambdaCompiler compiler{ fcomp_->engine() };
-  compiler.setLogger(fcomp_->logger());
-  LambdaCompilationResult result = compiler.compile(task);
-
-  return result.expression;
-}
-
-
 Class FunctionCompilerExtension::currentClass() const 
 { 
   return mCompiler->classScope(); 
@@ -345,12 +321,12 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 
 FunctionCompiler::FunctionCompiler(Engine *e)
   : mEngine(e)
-  , lambda_(mStack, this)
   , modules_(e)
 {
   expr_.variableAccessor().setStack(&mStack);
 
-  expr_.setLambdaProcessor(lambda_);
+  expr_.setStack(&mStack);
+
   scope_statements_.scope_ = &mCurrentScope;
   
   logger_ = &default_logger_;
@@ -366,7 +342,6 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
   Script s = task.function.script();
 
-  lambda_.script() = s;
   expr_.setCaller(task.function);
   
   mFunction = task.function;
