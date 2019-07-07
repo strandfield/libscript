@@ -26,21 +26,27 @@ class LIBSCRIPT_API TemplateNameProcessor
 public:
   TemplateNameProcessor() = default;
   TemplateNameProcessor(const TemplateNameProcessor &) = delete;
-  virtual ~TemplateNameProcessor() = default;
+  ~TemplateNameProcessor() = default;
 
-  virtual Class process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt);
+  void deactivate();
+  void activate();
+
+  Class process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt);
 
   static const std::vector<std::shared_ptr<ast::Node>> & getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname);
 
   TemplateNameProcessor & operator=(const TemplateNameProcessor &) = delete;
 
   /// TODO: make protected
-  virtual Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args);
+  Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args);
   std::vector<TemplateArgument> arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args);
-  virtual TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg);
+  TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg);
 
 protected:
-  virtual void complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);
+  void complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);
+
+private:
+  bool m_active = true;
 };
 
 } // namespace script

@@ -4,8 +4,6 @@
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilesession.h"
-#include "script/compiler/cfunctiontemplateprocessor.h"
-#include "script/compiler/ctemplatenameprocessor.h"
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
@@ -93,11 +91,8 @@ CompileSession::CompileSession(Compiler *c)
   , mState(State::ProcessingDeclarations)
   , error(false)
   , mLogger(this)
-  , mFTP(c)
-  , mTNP(c)
 {
-  mTNP.compiler_ = c;
-  mFTP.set_name_processor(mTNP);
+
 }
 
 CompileSession::CompileSession(Compiler *c, const Script & s)
@@ -106,11 +101,8 @@ CompileSession::CompileSession(Compiler *c, const Script & s)
   , script(s)
   , error(false)
   , mLogger(this)
-  , mFTP(c)
-  , mTNP(c)
 {
-  mTNP.compiler_ = c;
-  mFTP.set_name_processor(mTNP);
+
 }
 
 Engine* CompileSession::engine() const
@@ -268,7 +260,6 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
   FunctionCompiler fc{ engine() };
   fc.setLogger(session()->mLogger);
-  fc.setFunctionTemplateProcessor(session()->mFTP);
 
   CompileFunctionTask task;
   task.declaration = decl;
@@ -325,12 +316,10 @@ ScriptCompiler * Compiler::getScriptCompiler()
   {
     mScriptCompiler = std::make_unique<ScriptCompiler>(engine());
     mScriptCompiler->setLogger(mSession->mLogger);
-    mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
   }
   else
   {
     mScriptCompiler->setLogger(mSession->mLogger);
-    mScriptCompiler->setFunctionTemplateProcessor(mSession->mFTP);
   }
 
   return mScriptCompiler.get();
@@ -344,7 +333,6 @@ FunctionCompiler * Compiler::getFunctionCompiler()
   }
 
   mFunctionCompiler->setLogger(mSession->mLogger);
-  mFunctionCompiler->setFunctionTemplateProcessor(mSession->mFTP);
 
   return mFunctionCompiler.get();
 }
@@ -414,47 +402,6 @@ void CompileSession::log(const CompilerException & ex)
   mssg << ex;
   this->messages.push_back(mssg.build());
   this->error = true;
-}
-
-
-
-Class CTemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
-{
-  if (ct.is_native())
-  {
-    auto instantiate = ct.native_callback();
-    ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
-    Class ret = instantiate(builder);
-    ct.impl()->instances[args] = ret;
-    compiler_->session()->generated.classes.push_back(ret);
-    return ret;
-  }
-  else
-  {
-    Class ret = compiler_->instantiate(ct, args);
-    ct.impl()->instances[args] = ret;
-    return ret;
-  }
-}
-
-void CFunctionTemplateProcessor::instantiate(Function & f)
-{
-  FunctionTemplate ft = f.instanceOf();
-  const std::vector<TemplateArgument> & targs = f.arguments();
-
-  if (ft.is_native())
-  {
-    auto result = ft.native_callbacks().instantiation(ft, f);
-    f.impl()->implementation.callback = result.first;
-    f.impl()->data = result.second;
-  }
-  else
-  {
-    auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
-    compiler_->instantiate(decl, f, ft.argumentScope(f.arguments()));
-  }
-
-  ft.impl()->instances[targs] = f;
 }
 
 } // namespace compiler

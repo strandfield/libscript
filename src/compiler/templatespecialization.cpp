@@ -4,12 +4,11 @@
 
 #include "script/compiler/templatespecialization.h"
 
-#include "script/compiler/dummytemplatenameprocessor.h"
-
 #include "script/classtemplate.h"
 #include "script/functiontemplate.h"
 #include "script/namelookup.h"
 #include "script/templateargumentdeduction.h"
+#include "script/templatenameprocessor.h"
 #include "script/templatepatternmatching.h"
 
 #include "script/private/template_p.h"
@@ -95,7 +94,8 @@ TemplatePartialOrdering TemplateSpecialization::compare(const SType & a, const S
   else if (!a.value.type->is<ast::TemplateIdentifier>() && b.value.type->is<ast::TemplateIdentifier>())
     return TemplatePartialOrdering::SecondIsMoreSpecialized;
 
-  DummyTemplateNameProcessor tname_;
+  TemplateNameProcessor tname_;
+  tname_.deactivate();
   NameLookup lookup_a = NameLookup::resolve(a.value.type, a.scope, tname_);
   NameLookup lookup_b = NameLookup::resolve(b.value.type, b.scope, tname_);
 

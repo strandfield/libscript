@@ -7,8 +7,6 @@
 
 #include "libscriptdefs.h"
 
-#include "script/compiler/cfunctiontemplateprocessor.h"
-#include "script/compiler/ctemplatenameprocessor.h"
 #include "script/compiler/logger.h"
 
 #include "script/diagnosticmessage.h"
@@ -81,8 +79,6 @@ public:
   Script script;
 
   SessionLogger mLogger;
-  CTemplateNameProcessor mTNP;
-  CFunctionTemplateProcessor mFTP;
 
   void log(const diagnostic::Message & mssg);
   void log(const CompilerException & exception);

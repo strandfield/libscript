@@ -65,9 +65,9 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   else
   {
     Engine *e = ft.engine();
-    compiler::Compiler compiler{ e };
+    compiler::Compiler* compiler = e->compiler();
     auto decl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
-    compiler.instantiate(decl, f, ft.argumentScope(f.arguments()));
+    compiler->instantiate(decl, f, ft.argumentScope(f.arguments()));
   }
 
   ft.impl()->instances[targs] = f;

@@ -22,6 +22,16 @@
 namespace script
 {
 
+void TemplateNameProcessor::deactivate()
+{
+  m_active = false;
+}
+
+void TemplateNameProcessor::activate()
+{
+  m_active = true;
+}
+
 TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())
@@ -64,6 +74,11 @@ std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp
 
 Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
+  if (!m_active)
+  {
+    return Class{};
+  }
+
   if (ct.is_native())
   {
     auto instantiate = ct.native_callback();
@@ -75,8 +90,8 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
   else
   {
     Engine *e = ct.engine();
-    compiler::Compiler cc{ e };
-    Class ret = cc.instantiate(ct, args);
+    compiler::Compiler *cc = e->compiler();
+    Class ret = cc->instantiate(ct, args);
     ct.impl()->instances[args] = ret;
     return ret;
   }
@@ -84,6 +99,11 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
 
 Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
 {
+  if (!m_active)
+  {
+    return Class{};
+  }
+
   try 
   {
     std::vector<TemplateArgument> targs = arguments(scp, tmplt->arguments);
