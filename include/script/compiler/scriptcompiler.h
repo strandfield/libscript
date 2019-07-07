@@ -62,7 +62,6 @@ public:
 
   ImportProcessor & importProcessor() { return modules_; }
   void setLogger(Logger & lg);
-  void setFunctionTemplateProcessor(FunctionTemplateProcessor &ftp);
 
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
@@ -156,13 +155,11 @@ protected:
   /// TODO: maybe merge this with 'mProcessingQueue'
   std::queue<ScopedDeclaration> mIncompleteFunctionDeclarations;
 
-  ExtendedNameResolver name_resolver;
-  TypeResolver<ExtendedNameResolver> type_resolver;
+  TypeResolver type_resolver;
 
-  typedef BasicPrototypeResolver<TypeResolver<ExtendedNameResolver>> PrototypeResolver;
-  FunctionProcessor<PrototypeResolver> function_processor_;
+  FunctionProcessor function_processor_;
 
-  ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
+  ScopeStatementProcessor scope_statements_;
 
   ImportProcessor modules_;
 
@@ -171,8 +168,7 @@ protected:
   Logger default_logger_;
   Logger *logger_;
 
-  FunctionTemplateProcessor default_ftp_;
-  FunctionTemplateProcessor *ftp_;
+  FunctionTemplateProcessor templates_;
 
   bool mReprocessingIncompleteFunctions;
 };

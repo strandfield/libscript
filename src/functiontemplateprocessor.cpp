@@ -23,11 +23,6 @@
 namespace script
 {
 
-FunctionTemplateProcessor::FunctionTemplateProcessor()
-{
-  name_ = &default_name_;
-}
-
 void FunctionTemplateProcessor::remove_duplicates(std::vector<FunctionTemplate> & list)
 {
   std::sort(list.begin(), list.end());
@@ -107,7 +102,8 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
 
         Scope scp = ft.argumentScope(targs_copy);
         try {
-          TemplateArgument arg = name_->argument(scp, ft.parameters().at(i).defaultValue());
+          TemplateNameProcessor tnp;
+          TemplateArgument arg = tnp.argument(scp, ft.parameters().at(i).defaultValue());
           targs_copy.push_back(arg);
         }
         catch (const compiler::InvalidTemplateArgument &)
@@ -134,15 +130,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   }
   else
   {
-    compiler::ExtendedNameResolver nr{ name_ };
-    using TypeResolver = compiler::TypeResolver<compiler::ExtendedNameResolver>;
-    TypeResolver tr;
-    tr.name_resolver() = nr;
-    using PrototypeResolver = compiler::BasicPrototypeResolver<TypeResolver>;
-    PrototypeResolver pr;
-    pr.type_ = tr;
-    compiler::FunctionProcessor<PrototypeResolver> fp;
-    fp.prototype_ = pr;
+    compiler::FunctionProcessor fp;
 
     auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(ft.impl()->definition.decl_->declaration);
 

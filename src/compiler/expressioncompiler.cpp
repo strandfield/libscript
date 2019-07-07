@@ -42,8 +42,6 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
 ExpressionCompiler::ExpressionCompiler()
 {
   lambda_ = &default_lambda_;
-  templates_ = &default_templates_;
-  type_resolver.name_resolver().set_tnp(templates_->name_processor());
   variable_ = &default_variable_;
 
 }
@@ -52,7 +50,6 @@ ExpressionCompiler::ExpressionCompiler(const Scope & scp)
   : scope_(scp)
 {
   lambda_ = &default_lambda_;
-  templates_ = &default_templates_;
   variable_ = &default_variable_;
 }
 
@@ -66,12 +63,6 @@ void ExpressionCompiler::setCaller(const Function & func)
     implicit_object_ = nullptr;
   else
     implicit_object_ = program::StackValue::New(1, Type::ref(caller_.memberOf().id()));
-}
-
-void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
-{
-  templates_ = &ftp;
-  type_resolver.name_resolver().set_tnp(ftp.name_processor());
 }
 
 std::vector<Function> ExpressionCompiler::getBinaryOperators(OperatorName op, Type a, Type b)
@@ -305,9 +296,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     const std::vector<Type> types = getTypes(args);
 
     const auto& ast_targs = getTemplateArgs(callee);
-    const std::vector<TemplateArgument> targs = templateProcessor().name_processor().arguments(scope(), ast_targs);
+    const std::vector<TemplateArgument> targs = TemplateNameProcessor::arguments(scope(), ast_targs);
 
-    templateProcessor().complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
+    templates_.complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
   }
 
   assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName || lookup.resultType() == NameLookup::TemplateName);
@@ -328,7 +319,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
   {
     /// TODO: catch instantiation errors (e.g. TemplateInstantiationError)
-    templateProcessor().instantiate(selected);
+    templates_.instantiate(selected);
   }
 
   if (selected.hasImplicitObject() && object != nullptr)
@@ -482,7 +473,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const s
 
 NameLookup ExpressionCompiler::resolve(const std::shared_ptr<ast::Identifier> & identifier)
 {
-  return NameLookup::resolve(identifier, scope(), templateProcessor().name_processor());
+  return NameLookup::resolve(identifier, scope());
 }
 
 std::vector<Type> ExpressionCompiler::getTypes(const std::vector<std::shared_ptr<program::Expression>>& exprs)

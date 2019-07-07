@@ -52,7 +52,7 @@ private:
   Function caller_; 
   
 private:
-  TypeResolver<ExtendedNameResolver> type_resolver;
+  TypeResolver type_resolver;
 
   LambdaProcessor default_lambda_;
   LambdaProcessor *lambda_;
@@ -60,8 +60,7 @@ private:
   VariableAccessor default_variable_;
   VariableAccessor *variable_;
 
-  FunctionTemplateProcessor default_templates_;
-  FunctionTemplateProcessor *templates_;
+  FunctionTemplateProcessor templates_;
 
   std::shared_ptr<program::Expression> implicit_object_;
 
@@ -82,9 +81,6 @@ public:
 
   inline VariableAccessor & variableAccessor() { return *variable_; }
   inline void setVariableAccessor(VariableAccessor & va) { variable_ = &va; }
-
-  inline FunctionTemplateProcessor & templateProcessor() { return *templates_; }
-  void setTemplateProcessor(FunctionTemplateProcessor & ftp);
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);
   std::vector<std::shared_ptr<program::Expression>> generateExpressions(const std::vector<std::shared_ptr<ast::Expression>> & expressions);

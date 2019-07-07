@@ -7,52 +7,17 @@
 
 #include "script/namelookup.h"
 #include "script/scope.h"
-#include "script/templatenameprocessor.h"
-
 #include "script/ast/node.h"
 
 namespace script
 {
 
-namespace compiler
-{
-
-class BasicNameResolver
+class NameResolver
 {
 public:
-  BasicNameResolver() = default;
-  BasicNameResolver(const BasicNameResolver &) = default;
-  ~BasicNameResolver() = default;
 
-  inline static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-  {
-    return NameLookup::resolve(name, scp);
-  }
-
-  BasicNameResolver & operator=(const BasicNameResolver &) = default;
+  NameLookup resolve(const std::shared_ptr<ast::Identifier>& name, const Scope& scp);
 };
-
-class ExtendedNameResolver
-{
-public:
-  TemplateNameProcessor *tnp_;
-
-  ExtendedNameResolver() : tnp_(nullptr) {}
-  explicit ExtendedNameResolver(TemplateNameProcessor *tnp) : tnp_(tnp) { }
-  ExtendedNameResolver(const ExtendedNameResolver &) = default;
-  ~ExtendedNameResolver() = default;
-
-  inline NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope & scp)
-  {
-    return NameLookup::resolve(name, scp, *tnp_);
-  }
-
-  void set_tnp(TemplateNameProcessor & tnp) { tnp_ = &tnp; }
-
-  ExtendedNameResolver & operator=(const ExtendedNameResolver &) = default;
-};
-
-} // namespace compiler
 
 } // namespace script
 

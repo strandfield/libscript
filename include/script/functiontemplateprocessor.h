@@ -15,17 +15,10 @@ namespace script
 
 class LIBSCRIPT_API FunctionTemplateProcessor
 {
-private:
-  TemplateNameProcessor *name_;
-  TemplateNameProcessor default_name_;
-
 public:
-  FunctionTemplateProcessor();
+  FunctionTemplateProcessor() = default;
   FunctionTemplateProcessor(const FunctionTemplateProcessor & ) = default;
   ~FunctionTemplateProcessor() = default;
-
-  inline TemplateNameProcessor & name_processor() { return *name_; }
-  inline void set_name_processor(TemplateNameProcessor & np) { name_ = &np; }
 
   static void remove_duplicates(std::vector<FunctionTemplate> & list);
 

@@ -39,8 +39,8 @@ public:
 
   /// TODO: make protected
   Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args);
-  std::vector<TemplateArgument> arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args);
-  TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg);
+  static std::vector<TemplateArgument> arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args);
+  static TemplateArgument argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg);
 
 protected:
   void complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);

@@ -15,6 +15,7 @@
 
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/diagnostichelper.h"
+#include "script/compiler/nameresolver.h"
 
 namespace script
 {
@@ -22,58 +23,23 @@ namespace script
 namespace compiler
 {
 
-class TypeResolverBase
-{
-public:
-  static Type complete(Type t, const ast::QualifiedType & qt)
-  {
-    if (qt.isRef())
-      t = t.withFlag(Type::ReferenceFlag);
-    else if (qt.isRefRef())
-      t = t.withFlag(Type::ForwardReferenceFlag);
-
-    if (qt.constQualifier.isValid())
-      t = t.withFlag(Type::ConstFlag);
-
-    return t;
-  }
-};
-
-template<typename NameResolver>
-class TypeResolver : public TypeResolverBase
+class LIBSCRIPT_API TypeResolver
 {
 private:
   NameResolver name_;
 public:
   TypeResolver() = default;
-  TypeResolver(const TypeResolver &) = default;
+  TypeResolver(const TypeResolver&) = default;
   ~TypeResolver() = default;
 
-  inline NameResolver & name_resolver() { return name_; }
+  inline NameResolver& name_resolver() { return name_; }
 
-  Type resolve(const ast::QualifiedType & qt, const Scope & scp)
-  {
-    if (qt.isFunctionType())
-      return complete(handle_function(qt.functionType, scp), qt);
+  Type resolve(const ast::QualifiedType& qt, const Scope& scp);
 
-    NameLookup lookup = name_.resolve(qt.type, scp);
-    if (lookup.resultType() != NameLookup::TypeName)
-      throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
-
-    return complete(lookup.typeResult(), qt);
-  }
+  static Type complete(Type t, const ast::QualifiedType& qt);
 
 protected:
-  Type handle_function(const std::shared_ptr<ast::FunctionType> & ft, const Scope & scp)
-  {
-    DynamicPrototype proto;
-    proto.setReturnType(resolve(ft->returnType, scp));
-
-    for (const auto & p : ft->params)
-      proto.push(resolve(p, scp));
-
-    return scp.engine()->typeSystem()->getFunctionType(proto).type();
-  }
+  Type handle_function(const std::shared_ptr<ast::FunctionType>& ft, const Scope& scp);
 };
 
 } // namespace compiler

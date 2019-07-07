@@ -19,8 +19,7 @@ namespace script
 namespace compiler
 {
 
-template<typename TypeResolver>
-class BasicPrototypeResolver
+class PrototypeResolver
 {
 public:
   TypeResolver type_;
@@ -46,8 +45,6 @@ public:
   }
 };
 
-
-template<typename PrototypeResolver>
 class FunctionProcessor
 {
 public:
@@ -109,7 +106,6 @@ public:
 
     builder.setAccessibility(scp.accessibility());
   }
-
 };
 
 } // namespace compiler

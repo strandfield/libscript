@@ -98,8 +98,7 @@ public:
   const std::shared_ptr<ast::Declaration> & declaration() const;
   const Function & compiledFunction() const;
 
-  void setFunctionTemplateProcessor(FunctionTemplateProcessor & ftp);
-  inline FunctionTemplateProcessor & functionTemplateProcessor() { return *ftp_; }
+  inline FunctionTemplateProcessor & functionTemplateProcessor() { return ftp_; }
   inline Logger & logger() { return *logger_; }
   void setLogger(Logger & lg);
 
@@ -203,17 +202,16 @@ protected:
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
 
-  TypeResolver<ExtendedNameResolver> type_;
+  TypeResolver type_;
   ExpressionCompiler expr_;
   FunctionCompilerLambdaProcessor lambda_;
-  ScopeStatementProcessor<ExtendedNameResolver> scope_statements_;
+  ScopeStatementProcessor scope_statements_;
   ImportProcessor modules_;
 
   Logger default_logger_;
   Logger *logger_;
 
-  FunctionTemplateProcessor default_ftp_;
-  FunctionTemplateProcessor *ftp_;
+  FunctionTemplateProcessor ftp_;
 
 private:
   StackVariableAccessor variable_;

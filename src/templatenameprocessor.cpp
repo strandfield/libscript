@@ -56,7 +56,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
   else if (arg->is<ast::TypeNode>())
   {
     auto type = std::static_pointer_cast<ast::TypeNode>(arg);
-    compiler::TypeResolver<compiler::BasicNameResolver> r;
+    compiler::TypeResolver r;
     return TemplateArgument{ r.resolve(type->value, scp) };
   }
 
