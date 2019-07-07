@@ -28,9 +28,6 @@ public:
   TemplateNameProcessor(const TemplateNameProcessor &) = delete;
   ~TemplateNameProcessor() = default;
 
-  void deactivate();
-  void activate();
-
   Class process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt);
 
   static const std::vector<std::shared_ptr<ast::Node>> & getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname);
@@ -44,9 +41,6 @@ public:
 
 protected:
   void complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args);
-
-private:
-  bool m_active = true;
 };
 
 } // namespace script

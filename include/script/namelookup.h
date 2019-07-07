@@ -21,6 +21,29 @@ class Template;
 class TemplateNameProcessor;
 class Value;
 
+class NameLookupOptions
+{
+public:
+  NameLookupOptions();
+  NameLookupOptions(const NameLookupOptions&) = default;
+  ~NameLookupOptions() = default;
+
+  enum TemplateInstantiationPolicy
+  {
+    IgnoreTemplateArguments = 1,
+  };
+
+  NameLookupOptions(TemplateInstantiationPolicy tip);
+
+  bool test(TemplateInstantiationPolicy flag) const;
+  void set(TemplateInstantiationPolicy flag, bool on = true);
+
+  NameLookupOptions& operator=(const NameLookupOptions&) = default;
+
+private:
+  uint16_t d;
+};
+
 class LIBSCRIPT_API NameLookup
 {
 public:
@@ -35,7 +58,7 @@ public:
   const Scope & scope() const;
   const std::shared_ptr<ast::Identifier> & identifier() const;
 
-  TemplateNameProcessor & template_processor();
+  NameLookupOptions options() const;
 
   enum ResultType {
     UnknownName,
@@ -73,7 +96,7 @@ public:
   static NameLookup resolve(const std::string & name, const Scope & scope);
   static NameLookup resolve(OperatorName op, const Scope & scope);
 
-  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, TemplateNameProcessor & tnp);
+  static NameLookup resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, NameLookupOptions opts);
   
   static NameLookup member(const std::string & name, const Class & cla);
 

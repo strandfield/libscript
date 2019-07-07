@@ -45,13 +45,48 @@ NameLookupImpl::NameLookupImpl()
   , captureIndex(-1)
   , templateParameterIndex(-1)
 {
-  template_ = &default_template_;
+
 }
 
 NameLookupImpl::~NameLookupImpl()
 {
 }
 
+Class NameLookupImpl::getClassTemplateInstance(const Scope& scp, ClassTemplate& ct, const std::shared_ptr<ast::TemplateIdentifier>& tmplt)
+{
+  if (this->options.test(NameLookupOptions::IgnoreTemplateArguments))
+  {
+    return {};
+  }
+
+  TemplateNameProcessor tnp;
+  return tnp.process(scp, ct, tmplt);
+}
+
+NameLookupOptions::NameLookupOptions()
+  : d(0)
+{
+
+}
+
+NameLookupOptions::NameLookupOptions(TemplateInstantiationPolicy tip)
+  : d(tip)
+{
+
+}
+
+bool NameLookupOptions::test(TemplateInstantiationPolicy flag) const
+{
+  return d & flag;
+}
+
+void NameLookupOptions::set(TemplateInstantiationPolicy flag, bool on)
+{
+  if (on)
+    d |= flag;
+  else
+    d &= ~flag;
+}
 
 NameLookup::NameLookup(const std::shared_ptr<NameLookupImpl> & impl)
   : d(impl)
@@ -69,9 +104,9 @@ const std::shared_ptr<ast::Identifier> & NameLookup::identifier() const
   return d->identifier;
 }
 
-TemplateNameProcessor & NameLookup::template_processor()
+NameLookupOptions NameLookup::options() const
 {
-  return *(d->template_);
+  return d->options;
 }
 
 NameLookup::ResultType NameLookup::resultType() const
@@ -312,7 +347,7 @@ Scope NameLookup::qualified_scope_lookup(const std::shared_ptr<ast::Identifier> 
     if (cla_tmplt.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    Class result = d->template_->process(d->scope, cla_tmplt, tempid);
+    Class result = d->getClassTemplateInstance(d->scope, cla_tmplt, tempid);
     if (!result.isNull())
       return result;
     return Scope{};
@@ -343,7 +378,7 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
     if (cla_tmplt.isNull())
       throw std::runtime_error{ "Name does not refer to a template" };
 
-    Class result = d->template_->process(d->scope, cla_tmplt, tempid);
+    Class result = d->getClassTemplateInstance(d->scope, cla_tmplt, tempid);
     if (!result.isNull())
       return result;
     return Scope{};
@@ -362,12 +397,12 @@ Scope NameLookup::unqualified_scope_lookup(const std::shared_ptr<ast::Identifier
   return unqualified_scope_lookup(name, scope.parent());
 }
  
-NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, TemplateNameProcessor & tnp)
+NameLookup NameLookup::resolve(const std::shared_ptr<ast::Identifier> & name, const Scope &scp, NameLookupOptions opts)
 {
   auto result = std::make_shared<NameLookupImpl>();
   result->identifier = name;
   result->scope = scp;
-  result->template_ = &tnp;
+  result->options = opts;
 
   NameLookup l{ result };
   l.process();
@@ -615,7 +650,7 @@ void NameLookup::process()
     {
       if (!d->classTemplateResult.isNull())
       {
-        Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+        Class cla = d->getClassTemplateInstance(d->scope, d->classTemplateResult, tempid);
         if (!cla.isNull())
         {
           d->classTemplateResult = ClassTemplate{};
@@ -661,7 +696,7 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
     {
       if (!d->classTemplateResult.isNull())
       {
-        Class cla = d->template_->process(d->scope, d->classTemplateResult, tempid);
+        Class cla = d->getClassTemplateInstance(d->scope, d->classTemplateResult, tempid);
         if (!cla.isNull())
         {
           d->classTemplateResult = ClassTemplate{};
