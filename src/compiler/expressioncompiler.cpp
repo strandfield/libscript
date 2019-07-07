@@ -76,12 +76,12 @@ void ExpressionCompiler::setTemplateProcessor(FunctionTemplateProcessor & ftp)
 
 std::vector<Function> ExpressionCompiler::getBinaryOperators(OperatorName op, Type a, Type b)
 {
-  return NameLookup::resolve(op, a, b, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
+  return NameLookup::resolve(op, a, b, scope());
 }
 
 std::vector<Function> ExpressionCompiler::getUnaryOperators(OperatorName op, Type a)
 {
-  return NameLookup::resolve(op, a, scope(), OperatorLookup::ConsiderCurrentScope | OperatorLookup::FetchParentOperators);
+  return NameLookup::resolve(op, a, scope());
 }
 
 std::vector<Function> ExpressionCompiler::getLiteralOperators(const std::string & suffix)

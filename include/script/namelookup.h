@@ -21,10 +21,6 @@ class Template;
 class TemplateNameProcessor;
 class Value;
 
-struct OperatorLookup {
-  enum Value { RemoveDuplicates = 1, FetchParentOperators = 2, ConsiderCurrentScope = 4 };
-};
-
 class LIBSCRIPT_API NameLookup
 {
 public:
@@ -81,8 +77,8 @@ public:
   
   static NameLookup member(const std::string & name, const Class & cla);
 
-  static std::vector<Function> resolve(OperatorName op, const Type & arg, const Scope & scp, int opts);
-  static std::vector<Function> resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp, int opts);
+  static std::vector<Function> resolve(OperatorName op, const Type & arg, const Scope & scp);
+  static std::vector<Function> resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp);
 
   NameLookup & operator=(const NameLookup &) = default;
 

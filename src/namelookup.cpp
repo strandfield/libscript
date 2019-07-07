@@ -427,7 +427,7 @@ static void remove_duplicated_operators(std::vector<Function> & list)
   // we need to check if that is faster to remove the duplicates or not
 }
 
-static void get_scope_operators(std::vector<Function> & list, OperatorName op, const script::Scope & scp, int opts)
+static void get_scope_operators(std::vector<Function> & list, OperatorName op, const script::Scope & scp)
 {
   const auto & candidates = scp.operators();
   for (const auto & c : candidates)
@@ -437,11 +437,10 @@ static void get_scope_operators(std::vector<Function> & list, OperatorName op, c
     list.push_back(c);
   }
 
-  if ((opts & OperatorLookup::FetchParentOperators) && !scp.parent().isNull())
-    get_scope_operators(list, op, scp.parent(), OperatorLookup::FetchParentOperators);
-
-  if (opts & OperatorLookup::RemoveDuplicates)
-    return remove_duplicated_operators(list);
+  if (list.empty() && !scp.parent().isNull())
+  {
+    get_scope_operators(list, op, scp.parent());
+  }
 }
 
 static void get_operators(std::vector<Function> & list, OperatorName op, const Namespace & ns)
@@ -482,7 +481,7 @@ static void resolve_operators(std::vector<Function> &result, OperatorName op, co
     resolve_operators(result, op, type.parent());
 }
 
-static void resolve_operators(std::vector<Function> &result, OperatorName op, const Type & type, const Scope & scp, int opts)
+static void resolve_operators(std::vector<Function> &result, OperatorName op, const Type & type, const Scope & scp)
 {
   Engine *engine = scp.engine();
   TypeSystem* ts = engine->typeSystem();
@@ -517,30 +516,33 @@ static void resolve_operators(std::vector<Function> &result, OperatorName op, co
     Namespace type_namespace = Scope::enclosingNamespace(type, engine);
     get_operators(result, op, type_namespace);
   }
-
-  if (opts & OperatorLookup::ConsiderCurrentScope)
-  {
-    /// TODO : check if type_decl_scope == scp to avoid unesseccary operation
-    get_scope_operators(result, op, scp, OperatorLookup::FetchParentOperators);
-  }
-
-  if (opts & OperatorLookup::RemoveDuplicates)
-    remove_duplicated_operators(result);
 }
 
-std::vector<Function> NameLookup::resolve(OperatorName op, const Type & type, const Scope & scp, int opts)
+std::vector<Function> NameLookup::resolve(OperatorName op, const Type & type, const Scope & scp)
 {
   std::vector<Function> result;
-  resolve_operators(result, op, type, scp, opts);
+
+  get_scope_operators(result, op, scp);
+
+  resolve_operators(result, op, type, scp);
+
+  remove_duplicated_operators(result);
+
   return result;
 }
 
-std::vector<Function> NameLookup::resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp, int opts)
+std::vector<Function> NameLookup::resolve(OperatorName op, const Type & lhs, const Type & rhs, const Scope & scp)
 {
   /// TODO : this needs some optimization !!
   std::vector<Function> result;
-  resolve_operators(result, op, lhs, scp, opts);
-  resolve_operators(result, op, rhs, scp, opts & ~OperatorLookup::ConsiderCurrentScope);
+
+  get_scope_operators(result, op, scp);
+
+  resolve_operators(result, op, lhs, scp);
+  resolve_operators(result, op, rhs, scp);
+
+  remove_duplicated_operators(result);
+
   return result;
 }
 
