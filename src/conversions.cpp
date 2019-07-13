@@ -5,6 +5,7 @@
 #include "script/conversions.h"
 
 #include "script/engine.h"
+#include "script/enumerator.h"
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/typesystem.h"
@@ -504,6 +505,72 @@ StandardConversion StandardConversion::compute(const Type & src, const Type & de
   return StandardConversion::NotConvertible();
 }
 
+
+template<typename T>
+T fundamental_value_cast(const Value& v)
+{
+  switch (v.type().baseType().data())
+  {
+  case Type::Boolean:
+    return static_cast<T>(v.toBool());
+  case Type::Char:
+    return static_cast<T>(v.toChar());
+  case Type::Int:
+    return static_cast<T>(v.toInt());
+  case Type::Float:
+    return static_cast<T>(v.toFloat());
+  case Type::Double:
+    return static_cast<T>(v.toDouble());
+  default:
+    break;
+  }
+
+  if (v.type().isEnumType())
+    return (T)v.toEnumerator().value();
+
+  throw std::runtime_error{ "fundamental_value_cast : Implementation error" };
+}
+
+Value fundamental_conversion(const Value& src, int destType, Engine* e)
+{
+  switch (destType)
+  {
+  case Type::Boolean:
+    return e->newBool(fundamental_value_cast<bool>(src));
+  case Type::Char:
+    return e->newChar(fundamental_value_cast<char>(src));
+  case Type::Int:
+    return e->newInt(fundamental_value_cast<int>(src));
+  case Type::Float:
+    return e->newFloat(fundamental_value_cast<float>(src));
+  case Type::Double:
+    return e->newDouble(fundamental_value_cast<double>(src));
+  default:
+    break;
+  }
+
+  throw std::runtime_error{ "fundamental_conversion : Implementation error" };
+}
+
+Value StandardConversion::apply(const StandardConversion& conv, const Value& val)
+{
+  if (conv.isReferenceConversion())
+    return val;
+
+  if (conv.isCopy())
+    return val.engine()->copy(val);
+
+  if (conv.isDerivedToBaseConversion())
+  {
+    Class target = val.engine()->typeSystem()->getClass(val.type()).indirectBase(conv.derivedToBaseConversionDepth());
+    Value result = val.engine()->allocate(target.id());
+    target.copyConstructor().invoke({ result, val });
+    return result;
+  }
+
+  return fundamental_conversion(val, conv.destType().baseType().data(), val.engine());
+}
+
 bool StandardConversion::operator==(const StandardConversion & other) const
 {
   return d == other.d;
@@ -759,6 +826,46 @@ int Conversion::comp(const Conversion & a, const Conversion & b)
   else if (b.conv3 < a.conv3)
     return 1;
   return 0;
+}
+
+Value Conversion::apply(const Conversion& conv, const Value& val)
+{
+  if (!conv.isUserDefinedConversion())
+    return StandardConversion::apply(conv.firstStandardConversion(), val);
+
+  Engine* e = val.engine();
+  Value ret = StandardConversion::apply(conv.firstStandardConversion(), val);
+  
+  if (!conv.firstStandardConversion().isReferenceConversion())
+    e->manage(ret); /// TODO: avoid that by using RAII
+
+  if (conv.userDefinedConversion().isCast())
+  {
+    ret = conv.userDefinedConversion().invoke({ ret });
+  }
+  else
+  {
+    Value obj = e->allocate(conv.destType());
+    conv.userDefinedConversion().invoke({ obj, ret });
+    ret = obj;
+  }
+
+  return  StandardConversion::apply(conv.secondStandardConversion(), ret);
+}
+
+/*!
+ * \fn void apply(const std::vector<Conversion>& conv, std::vector<Value>& values)
+ * \param conversions to be applied
+ * \param input values
+ * \brief Applies conversions to a range of value.
+ *
+ */
+void Conversion::apply(const std::vector<Conversion>& conv, std::vector<Value>& values)
+{
+  for (size_t i(0); i < conv.size(); ++i)
+  {
+    values[i] = Conversion::apply(conv.at(i), values.at(i));
+  }
 }
 
 bool Conversion::operator==(const Conversion & other) const

@@ -53,96 +53,6 @@
 namespace script
 {
 
-
-template<typename T>
-T fundamental_value_cast(const Value & v)
-{
-  switch (v.type().baseType().data())
-  {
-  case Type::Boolean:
-    return static_cast<T>(v.toBool());
-  case Type::Char:
-    return static_cast<T>(v.toChar());
-  case Type::Int:
-    return static_cast<T>(v.toInt());
-  case Type::Float:
-    return static_cast<T>(v.toFloat());
-  case Type::Double:
-    return static_cast<T>(v.toDouble());
-  default:
-    break;
-  }
-
-  if (v.type().isEnumType())
-    return (T) v.toEnumerator().value();
-
-  throw std::runtime_error{ "fundamental_value_cast : Implementation error" };
-}
-
-
-Value fundamental_conversion(const Value & src, int destType, Engine *e)
-{
-  switch (destType)
-  {
-  case Type::Boolean:
-    return e->newBool(fundamental_value_cast<bool>(src));
-  case Type::Char:
-    return e->newChar(fundamental_value_cast<char>(src));
-  case Type::Int:
-    return e->newInt(fundamental_value_cast<int>(src));
-  case Type::Float:
-    return e->newFloat(fundamental_value_cast<float>(src));
-  case Type::Double:
-    return e->newDouble(fundamental_value_cast<double>(src));
-  default:
-    break;
-  }
-
-  throw std::runtime_error{ "fundamental_conversion : Implementation error" };
-}
-
-static Value apply_standard_conversion(const Value & arg, const StandardConversion & conv, Engine *engine)
-{
-  if (conv.isReferenceConversion())
-    return arg;
-
-  if (conv.isCopy())
-    return engine->copy(arg);
-
-  if (conv.isDerivedToBaseConversion())
-  {
-    Class target = engine->typeSystem()->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
-    Value result = engine->allocate(target.id());
-    target.copyConstructor().invoke({ result, arg });
-    return result;
-  }
-
-  return fundamental_conversion(arg, conv.destType().baseType().data(), engine);
-}
-
-static Value apply_conversion(const Value & arg, const Conversion & conv, Engine *engine)
-{
-  if (!conv.isUserDefinedConversion())
-    return apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
-
-  Value ret = apply_standard_conversion(arg, conv.firstStandardConversion(), engine);
-  if(!conv.firstStandardConversion().isReferenceConversion())
-    engine->manage(ret);
-
-  if (conv.userDefinedConversion().isCast())
-  {
-    ret = conv.userDefinedConversion().invoke({ ret });
-  }
-  else
-  {
-    Value obj = engine->allocate(conv.destType());
-    conv.userDefinedConversion().invoke( { obj, ret });
-    ret = obj;
-  }
-
-  return apply_standard_conversion(ret, conv.secondStandardConversion(), engine);
-}
-
 EngineImpl::EngineImpl(Engine *e)
   : engine(e)
   , garbage_collector_running(false)
@@ -475,6 +385,8 @@ static Value default_construct_fundamental(int type, Engine *e)
   std::abort();
 }
 
+extern Value fundamental_conversion(const Value& src, int destType, Engine* e); // defined in conversions.cpp
+
 /*!
  * \fn Value construct(Type t, const std::vector<Value> & args)
  * \param type of the value to construct
@@ -748,20 +660,6 @@ Value Engine::copy(const Value & val)
   throw CopyError{};
 }
 
-
-/*!
- * \fn void applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
- * \param input values
- * \param conversions to be applied
- * \brief Applies conversions to a range of value.
- *
- */
-void Engine::applyConversions(std::vector<script::Value> & values, const std::vector<Conversion> & conversions)
-{
-  for (size_t i(0); i < values.size(); ++i)
-    values[i] = apply_conversion(values.at(i), conversions.at(i), this);
-}
-
 /*!
  * \fn bool canConvert(const Type & srcType, const Type & destType)
  * \param source type
@@ -788,7 +686,7 @@ Value Engine::convert(const Value& val, const Type& type)
   if (conv.isInvalid())
     throw ConversionError{};
 
-  return apply_conversion(val, conv, this);
+  return Conversion::apply(conv, val);
 }
 
 /*!

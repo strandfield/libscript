@@ -104,6 +104,8 @@ public:
 
   static StandardConversion compute(const Type & src, const Type & dest, Engine *e);
 
+  static Value apply(const StandardConversion& conv, const Value& val);
+
   bool operator==(const StandardConversion & other) const;
   inline bool operator!=(const StandardConversion & other) const { return !((*this) == other); }
   bool operator<(const StandardConversion & other) const;
@@ -148,6 +150,9 @@ public:
   static Conversion compute(const std::shared_ptr<program::Expression> & expr, const Type & dest, Engine *engine);
 
   static int comp(const Conversion & a, const Conversion & b);
+
+  static Value apply(const Conversion& conv, const Value& val);
+  static void apply(const std::vector<Conversion>& conv, std::vector<Value>& values);
 
   bool operator==(const Conversion & other) const;
   inline bool operator!=(const Conversion & other) const { return !((*this) == other); }
