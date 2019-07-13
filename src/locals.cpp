@@ -20,24 +20,6 @@ namespace script
  * \fn Locals()
  */
 
- /*!
-  * \fn Locals(const Locals& other)
-  * \brief Copy constructor
-  *
-  * Constructs a copy of each \t Value in \a other.
-  *
-  * \sa Engine::copy()
-  */
-Locals::Locals(const Locals& other)
-{
-  m_values.reserve(other.data().size());
-
-  for (const auto& v : other.data())
-  {
-    m_values.push_back(v.engine()->copy(v));
-  }
-}
-
 /*!
  * \fn Locals(Locals&& other)
  * \brief Move constructor
@@ -134,27 +116,6 @@ const std::vector<Value>& Locals::data() const
 }
 
 /*!
- * \fn Locals& operator=(const Locals& other)
- * \brief Assignment operator
- *
- * Destroys all the variables owned by this Locals object, 
- * and copies every variable in \a other.
- */
-Locals& Locals::operator=(const Locals& other)
-{
-  destroy();
-
-  m_values.reserve(other.data().size());
-
-  for (const auto& v : other.data())
-  {
-    m_values.push_back(v.engine()->copy(v));
-  }
-
-  return *this;
-}
-
-/*!
  * \fn Locals& operator=(Locals&& other)
  * \brief Assignment operator
  *
@@ -217,7 +178,7 @@ LocalsProxy& LocalsProxy::operator=(const LocalsProxy& other)
   }
 
   const Value& val = other.l->at(other.i);
-  l->m_values[i] = val.engine()->copy(val);
+  l->m_values[i] = val;
 
   return *this;
 }
@@ -230,7 +191,7 @@ LocalsProxy& LocalsProxy::operator=(const Value& value)
     v.engine()->destroy(v);
   }
 
-  l->m_values[i] = value.engine()->copy(value);
+  l->m_values[i] = value;
 
   return *this;
 }

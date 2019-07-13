@@ -18,7 +18,7 @@ class LIBSCRIPT_API Locals
 {
 public:
   Locals() = default;
-  Locals(const Locals& other);
+  Locals(const Locals& ) = delete;
   Locals(Locals&& other);
   ~Locals();
 
@@ -32,7 +32,7 @@ public:
 
   const std::vector<Value>& data() const;
 
-  Locals& operator=(const Locals& other);
+  Locals& operator=(const Locals& ) = delete;
   Locals& operator=(Locals&& other);
 
   LocalsProxy operator[](size_t index);
