@@ -24,6 +24,7 @@ namespace script
 {
 
 class Engine;
+class TypeSystemTransaction;
 
 class TypeSystemImpl
 {
@@ -48,6 +49,8 @@ public:
   } reservations;
 
   std::vector<std::unique_ptr<TypeSystemListener>> listeners;
+
+  TypeSystemTransaction* active_transaction = nullptr;
 
 public:
   void reserveTypes();

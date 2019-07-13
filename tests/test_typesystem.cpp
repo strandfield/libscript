@@ -28,11 +28,13 @@ TEST(TypeSystemTests, transaction) {
   }
 
   ASSERT_TRUE(engine.typeSystem()->exists(A));
+  ASSERT_FALSE(engine.typeSystem()->hasActiveTransaction());
 
   Type B;
 
   try {
     TypeSystemTransaction tr{ engine.typeSystem() };
+    ASSERT_TRUE(engine.typeSystem()->hasActiveTransaction());
     B = ns.newClass("B").get().id();
     throw std::runtime_error{ "Nope" };
   }

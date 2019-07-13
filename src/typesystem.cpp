@@ -629,6 +629,11 @@ void TypeSystem::removeListener(TypeSystemListener* listener)
   }
 }
 
+bool TypeSystem::hasActiveTransaction() const
+{
+  return d->active_transaction != nullptr;
+}
+
 TypeSystemImpl* TypeSystem::impl() const
 {
   return d.get();

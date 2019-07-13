@@ -67,6 +67,11 @@ bool TypeSystemTransaction::isActive() const
 void TypeSystemTransaction::start()
 {
   m_target->addListener(this);
+
+  if (m_target->impl()->active_transaction == nullptr)
+  {
+    m_target->impl()->active_transaction = this;
+  }
 }
 
 /*!
@@ -87,6 +92,11 @@ void TypeSystemTransaction::commit()
 {
   TypeSystemListener::typeSystem()->removeListener(this);
   m_types.clear();
+
+  if (m_target->impl()->active_transaction == this)
+  {
+    m_target->impl()->active_transaction = nullptr;
+  }
 }
 
 /*!
@@ -105,6 +115,11 @@ void TypeSystemTransaction::rollback()
 
   TypeSystemListener::typeSystem()->removeListener(this);
   m_types.clear();
+
+  if (m_target->impl()->active_transaction == this)
+  {
+    m_target->impl()->active_transaction = nullptr;
+  }
 }
 
 void TypeSystemTransaction::created(const Type& t)

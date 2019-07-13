@@ -62,6 +62,8 @@ public:
   void addListener(TypeSystemListener* listener);
   void removeListener(TypeSystemListener* listener);
 
+  bool hasActiveTransaction() const;
+
   TypeSystemImpl* impl() const;
 
   TypeSystem& operator=(const TypeSystem& ) = delete;
