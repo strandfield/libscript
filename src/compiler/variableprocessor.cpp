@@ -174,7 +174,7 @@ void VariableProcessor::default_initialization(Variable & v)
 
   try
   {
-    engine->invoke(ctor, { val });
+    ctor.invoke({ val });
   }
   catch (...)
   {
@@ -232,7 +232,7 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
     if(copy_ctor.isNull())
       throw FailedToInitializeStaticVariable{};
 
-    engine->invoke(copy_ctor, { var.variable, arg });
+    copy_ctor.invoke({ var.variable, arg });
   }
   else
   {
@@ -250,7 +250,7 @@ void VariableProcessor::constructor_initialization(Variable & var, const std::sh
     args.push_back(var.variable);
     for (const auto & a : call->arguments)
       args.push_back(eval(a));
-    engine->invoke(call->constructor, args);
+    call->constructor.invoke(args);
   }
   catch (...)
   {
@@ -309,7 +309,10 @@ Value VariableProcessor::visit(const program::ConstructorCall & cc)
   std::vector<Value> args;
   for (const auto & a : cc.arguments)
     args.push_back(eval(a));
-  return manage(engine()->invoke(cc.constructor, args));
+  // TODO: check correctness
+  Value result = args.front();
+  cc.constructor.invoke(args);
+  return manage(result);
 }
 
 Value VariableProcessor::visit(const program::Copy & c)
@@ -328,7 +331,7 @@ Value VariableProcessor::visit(const program::FunctionCall & fc)
   std::vector<Value> args;
   for (const auto & a : fc.args)
     args.push_back(eval(a));
-  Value ret = engine()->invoke(fc.callee, args);
+  Value ret = fc.callee.invoke(args);
   if (fc.callee.returnType().isReference())
     return ret;
   return manage(ret);

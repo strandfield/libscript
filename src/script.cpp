@@ -69,7 +69,7 @@ void Script::run()
     engine()->manage(v);
   d->globals.clear();
 
-  engine()->call(d->program, {});
+  d->program.invoke({});
 }
 
 void Script::clear()

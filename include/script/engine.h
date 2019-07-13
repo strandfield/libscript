@@ -44,6 +44,11 @@ namespace compiler
 class Compiler;
 } // namespace compiler
 
+namespace interpreter
+{
+class Interpreter;
+} // namespace interpreter
+
 namespace program
 {
 class Expression;
@@ -155,7 +160,6 @@ public:
   Namespace rootNamespace() const;
 
   Script newScript(const SourceFile & source);
-  compiler::Compiler* compiler() const;
   bool compile(Script s);
   void destroy(Script s);
 
@@ -173,10 +177,8 @@ public:
 
   Value eval(const std::string & command);
 
-  Value call(const Function & f, std::initializer_list<Value> && args);
-  Value call(const Function & f, const std::vector<Value> & args);
-  Value invoke(const Function & f, std::initializer_list<Value> && args);
-  Value invoke(const Function & f, const std::vector<Value> & args);
+  compiler::Compiler* compiler() const;
+  interpreter::Interpreter* interpreter() const;
 
   const std::map<std::type_index, Template>& templateMap() const;
 

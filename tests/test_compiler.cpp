@@ -12,6 +12,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
+#include "script/locals.h"
 #include "script/namespace.h"
 #include "script/script.h"
 #include "script/staticdatamember.h"
@@ -137,7 +138,7 @@ TEST(CompilerTests, function1) {
 
   Value input = engine.newInt(3);
   engine.manage(input);
-  Value val = engine.call(f, { input , input });
+  Value val = f.invoke({ input , input });
   ASSERT_TRUE(val.type() == Type::Int);
   ASSERT_EQ(val.toInt(), 0);
 }
@@ -168,11 +169,10 @@ TEST(CompilerTests, function2) {
 
   auto code = f.program();
 
-  Value a = engine.newInt(3);
-  engine.manage(a);
-  Value b = engine.newInt(4);
-  engine.manage(b);
-  Value val = engine.call(f, { a , b });
+  Locals args;
+  args.push(engine.newInt(3));
+  args.push(engine.newInt(4));
+  Value val = f.call(args);
   ASSERT_TRUE(val.type() == Type::Int);
   ASSERT_EQ(val.toInt(), 4);
 }

@@ -21,6 +21,7 @@ namespace program { class Expression; class Statement; }
 class FunctionImpl;
 class FunctionTemplate;
 class LiteralOperator;
+class Locals;
 class Name;
 class Namespace;
 class Operator;
@@ -99,8 +100,14 @@ public:
 
   const std::shared_ptr<UserData> & data() const;
 
-  Engine * engine() const;
+  Engine* engine() const;
   inline const std::shared_ptr<FunctionImpl> & impl() const { return d; }
+
+  Value call(Locals& locals) const;
+
+  Value invoke(std::initializer_list<Value>&& args) const;
+  Value invoke(const std::vector<Value>& args) const;
+  Value invoke(const Value* begin, const Value* end) const;
 
   Function & operator=(const Function & other);
   bool operator==(const Function & other) const;

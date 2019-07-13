@@ -7,12 +7,16 @@
 
 #include "script/cast.h"
 #include "script/class.h"
+#include "script/engine.h"
 #include "script/functionbuilder.h"
 #include "script/literals.h"
+#include "script/locals.h"
 #include "script/name.h"
 #include "script/namespace.h"
 #include "script/operator.h"
 #include "script/script.h"
+
+#include "script/interpreter/interpreter.h"
 
 #include "script/program/expression.h"
 
@@ -548,6 +552,59 @@ const std::shared_ptr<UserData> & Function::data() const
 Engine * Function::engine() const
 {
   return d->engine;
+}
+
+/*!
+ * \fn Value call(Locals& locals) const
+ * \brief Calls the function with the given locals
+ *
+ * This function converts all the locals to the parameter's type 
+ * before calling \m invoke().
+ */
+Value Function::call(Locals& locals) const
+{
+  const int offset = (hasImplicitObject() ? 1 : 0);
+
+  for (size_t i = offset; i < locals.size(); ++i)
+  {
+    locals[i] = engine()->convert(locals[i], parameter(i));
+  }
+
+  return invoke(locals.data());
+}
+
+/*!
+ * \fn Value invoke(std::initializer_list<Value>&& args) const
+ * \brief Invokes the function with the given args
+ *
+ * No conversion nor any type-checking is performed. 
+ */
+Value Function::invoke(std::initializer_list<Value>&& args) const
+{
+  return d->engine->interpreter()->invoke(*this, nullptr, args.begin(), args.end());
+}
+
+/*!
+ * \fn Value invoke(const std::vector<Value>& args) const
+ * \brief Overloads invoke()
+ */
+Value Function::invoke(const std::vector<Value>& args) const
+{
+  if (args.empty())
+  {
+    return invoke({});
+  }
+
+  return d->engine->interpreter()->invoke(*this, nullptr, &(*args.begin()), &(*args.begin()) + args.size());
+}
+
+/*!
+ * \fn Value invoke(const Value* begin, const Value* end) const
+ * \brief Overloads invoke()
+ */
+Value Function::invoke(const Value* begin, const Value* end) const
+{
+  return d->engine->interpreter()->invoke(*this, nullptr, begin, end);
 }
 
 Function & Function::operator=(const Function & other)

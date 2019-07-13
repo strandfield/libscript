@@ -51,7 +51,7 @@ script::Value max_function(script::FunctionCall *c)
     args.push_back(max);
     args.push_back(c->arg(i));
     e->applyConversions(args, data->conversions);
-    script::Value is_less = e->invoke(data->less, args);
+    script::Value is_less = data->less.invoke(args);
     if (is_less.toBool())
       max = c->arg(i);
     e->destroy(is_less);

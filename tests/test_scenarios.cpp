@@ -46,7 +46,7 @@ TEST(Scenarios, manual_construction_and_delegate_ctor) {
   ASSERT_FALSE(default_ctor.isNull());
 
   // We manually call Foo's constructor
-  engine.invoke(default_ctor, { val });
+  default_ctor.invoke({ val });
 
   Object obj = val.toObject();
   ASSERT_EQ(obj.size(), 1);
@@ -58,7 +58,7 @@ TEST(Scenarios, manual_construction_and_delegate_ctor) {
   ASSERT_FALSE(dtor.isNull());
 
   // We call the destructor manually
-  engine.invoke(dtor, { val });
+  dtor.invoke({ val });
 
   // We free the memory
   engine.free(val);

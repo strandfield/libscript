@@ -40,50 +40,6 @@ Interpreter::~Interpreter()
   // and thus its destructor is not available (causes a compile error).
 }
 
-Value Interpreter::call(const Function & f, const Value *obj, const Value *begin, const Value *end)
-{
-  Engine *e = f.engine();
-  const int sp = mExecutionContext->stack.size;
-
-  mExecutionContext->stack.push(Value::Void);
-
-  if (obj)
-    mExecutionContext->stack.push(*obj);
-  
-  const Prototype & proto = f.prototype();
-  const int argc = std::distance(begin, end);
-
-  assert(argc + (obj ? 1 : 0) == f.prototype().count());
-
-  try
-  {
-    const int offset = (obj != nullptr ? 1 : 0);
-    for (int i(0); i < argc; ++i)
-    {
-      Value arg = e->convert(begin[i], proto.at(i + offset));
-      if (!proto.at(i).isReference())
-        e->manage(arg);
-      mExecutionContext->stack.push(arg);
-    }
-  }
-  catch (const std::runtime_error &)
-  {
-    // pop the arguments
-    while (mExecutionContext->stack.size > sp + 1)
-      mExecutionContext->stack.pop();
-
-    mExecutionContext->stack.pop();
-
-    throw;
-  }
-
-  mExecutionContext->push(f, sp);
-
-  invoke(f);
-
-  return mExecutionContext->pop();
-}
-
 Value Interpreter::invoke(const Function & f, const Value *obj, const Value *begin, const Value *end)
 {
   mExecutionContext->push(f, obj, begin, end);

@@ -17,6 +17,7 @@
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/lambda.h"
+#include "script/locals.h"
 #include "script/module.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
@@ -111,7 +112,9 @@ static Value apply_standard_conversion(const Value & arg, const StandardConversi
   if (conv.isDerivedToBaseConversion())
   {
     Class target = engine->typeSystem()->getClass(arg.type()).indirectBase(conv.derivedToBaseConversionDepth());
-    return engine->invoke(target.copyConstructor(), { arg });
+    Value result = engine->allocate(target.id());
+    target.copyConstructor().invoke({ result, arg });
+    return result;
   }
 
   return fundamental_conversion(arg, conv.destType().baseType().data(), engine);
@@ -128,12 +131,12 @@ static Value apply_conversion(const Value & arg, const Conversion & conv, Engine
 
   if (conv.userDefinedConversion().isCast())
   {
-    ret = engine->invoke(conv.userDefinedConversion(), { ret });
+    ret = conv.userDefinedConversion().invoke({ ret });
   }
   else
   {
     Value obj = engine->allocate(conv.destType());
-    engine->invoke(conv.userDefinedConversion(), { obj, ret });
+    conv.userDefinedConversion().invoke( { obj, ret });
     ret = obj;
   }
 
@@ -150,7 +153,11 @@ EngineImpl::EngineImpl(Engine *e)
 Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
-    return engine->invoke(ctor, { engine->allocate(t.withoutRef()) });
+  {
+    Value ret = engine->allocate(t.withoutRef());
+    ctor.invoke({ ret });
+    return ret;
+  }
   else
   {
     switch (t.baseType().data())
@@ -174,9 +181,15 @@ Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 Value EngineImpl::copy(const Value & val, const Function & copyctor)
 {
   if (!copyctor.isNull())
-    return engine->invoke(copyctor, { val });
+  {
+    Value ret = engine->allocate(val.type());
+    copyctor.invoke({ ret, val });
+    return ret;
+  }
   else
+  {
     return engine->copy(val);
+  }
 }
 
 void EngineImpl::destroy(const Value & val, const Function & dtor)
@@ -184,7 +197,9 @@ void EngineImpl::destroy(const Value & val, const Function & dtor)
   auto *impl = val.impl();
 
   if (impl->type.isObjectType())
-    engine->invoke(dtor, { val });
+  {
+    dtor.invoke({ val });
+  }
 
   impl->clear();
 
@@ -487,7 +502,17 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
       throw ConstructorIsDeleted{};
 
     Value result = allocate(t.withoutRef());
-    d->interpreter->call(selected, &result, args.data(), args.data() + args.size());
+
+    Locals arguments;
+    arguments.push(result);
+
+    for (const auto& a : args)
+    {
+      arguments.push(a);
+    }
+
+    selected.call(arguments);
+
     return result;
   }
   else if (t.isFundamentalType())
@@ -535,7 +560,7 @@ void Engine::destroy(Value val)
   if (impl->type.isObjectType())
   {
     Function dtor = typeSystem()->getClass(val.type()).destructor();
-    invoke(dtor, { val });
+    dtor.invoke({ val });
   }
 
   impl->clear();
@@ -710,7 +735,7 @@ Value Engine::copy(const Value & val)
       throw CopyError{};
 
     Value object = allocate(cla.id());
-    invoke(copyCtor, { object, val });
+    copyCtor.invoke({ object, val });
     return object;
   }
   else if (val.type().isFunctionType())
@@ -784,6 +809,16 @@ Namespace Engine::rootNamespace() const
 compiler::Compiler* Engine::compiler() const
 {
   return d->compiler.get();
+}
+
+/*!
+ * \fn interpreter::Interpreter* interpreter() const
+ * \brief Returns the engine's interpreter.
+ *
+ */
+interpreter::Interpreter* Engine::interpreter() const
+{
+  return d->interpreter.get();
 }
 
 /*!
@@ -967,55 +1002,6 @@ Value Engine::eval(const std::string & command)
   }
 
   return d->interpreter->eval(expr);
-}
-
-/*!
- * \fn Value call(const Function & f, std::initializer_list<Value> && args)
- * \param function
- * \param arguments
- * \brief Calls a function with the given arguments.
- *
- */
-Value Engine::call(const Function & f, std::initializer_list<Value> && args)
-{
-  return d->interpreter->call(f, nullptr, args.begin(), args.end());
-}
-
-/*!
- * \fn Value call(const Function & f, const std::vector<Value> & args)
- * \param function
- * \param arguments
- * \brief Calls a function with the given arguments.
- *
- */
-Value Engine::call(const Function & f, const std::vector<Value> & args)
-{
-  return d->interpreter->call(f, nullptr, &args.front(), (&args.front()) + args.size());
-}
-
-/*!
- * \fn Value invoke(const Function & f, std::initializer_list<Value> && args)
- * \param function
- * \param arguments
- * \brief Calls a function with the given arguments.
- *
- */
-Value Engine::invoke(const Function & f, std::initializer_list<Value> && args)
-{
-  return d->interpreter->invoke(f, nullptr, args.begin(), args.end());
-}
-
-/*!
- * \fn Value invoke(const Function & f, const std::vector<Value> & args)
- * \param function
- * \param arguments
- * \brief Calls a function with the given arguments.
- *
- */
-
-Value Engine::invoke(const Function & f, const std::vector<Value> & args)
-{
-  return d->interpreter->invoke(f, nullptr, &(args.front()), (&args.front()) + args.size());
 }
 
 const std::map<std::type_index, Template>& Engine::templateMap() const

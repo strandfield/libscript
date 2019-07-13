@@ -24,7 +24,6 @@ public:
   Interpreter(std::shared_ptr<ExecutionContext> ec, Engine *e);
   ~Interpreter();
 
-  Value call(const Function & f, const Value *obj, const Value *begin, const Value *end);
   Value invoke(const Function & f, const Value *obj, const Value *begin, const Value *end);
 
   Value eval(const std::shared_ptr<program::Expression> & expr);
