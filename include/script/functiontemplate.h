@@ -53,7 +53,7 @@ public:
 };
 
 template<typename T>
-inline static FunctionTemplate FunctionTemplate::get(Engine* e)
+inline FunctionTemplate FunctionTemplate::get(Engine* e)
 {
   static_assert(std::is_base_of<FunctionTemplateNativeBackend, T>::value, "T must be derived from FunctionTemplateNativeBackend");
 

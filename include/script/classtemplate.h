@@ -83,7 +83,7 @@ bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateS
 inline bool operator!=(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs) { return !(lhs == rhs); }
 
 template<typename T>
-inline static ClassTemplate ClassTemplate::get(Engine* e)
+inline ClassTemplate ClassTemplate::get(Engine* e)
 {
   static_assert(std::is_base_of<ClassTemplateNativeBackend, T>::value, "T must be derived from ClassTemplateNativeBackend");
 
