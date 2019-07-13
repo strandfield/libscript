@@ -1018,29 +1018,10 @@ Value Engine::invoke(const Function & f, const std::vector<Value> & args)
   return d->interpreter->invoke(f, nullptr, &(args.front()), (&args.front()) + args.size());
 }
 
-
-/*!
- * \fn ClassTemplate getTemplate(...) const
- * \param which template
- * \brief Returns a built-in class template.
- *
- * Currently supported: \c{Engine::ArrayTemplate}, \c{Engine::InitializerListTemplate}.
- */
-
-const Engine::array_template_t Engine::ArrayTemplate = Engine::array_template_t{};
-
-ClassTemplate Engine::getTemplate(array_template_t) const
+const std::map<std::type_index, Template>& Engine::templateMap() const
 {
-  return d->templates.array;
+  return d->templates.dict;
 }
-
-const Engine::initializer_list_template_t Engine::InitializerListTemplate = Engine::initializer_list_template_t{};
-
-ClassTemplate Engine::getTemplate(initializer_list_template_t) const
-{
-  return d->templates.initializer_list;
-}
-
 
 /*!
  * \fn const std::vector<Script> & scripts() const

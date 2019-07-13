@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_ENGINE_H
 #define LIBSCRIPT_ENGINE_H
 
+#include <map>
+#include <typeindex>
 #include <vector>
 
 #include "script/exception.h"
@@ -79,7 +81,6 @@ struct EvaluationError : EngineError
   std::string message;
   EvaluationError(const std::string & mssg) : EngineError(ErrorCode::E_EvaluationError), message(mssg) {} 
 };
-
 
 class LIBSCRIPT_API Engine
 {
@@ -177,13 +178,7 @@ public:
   Value invoke(const Function & f, std::initializer_list<Value> && args);
   Value invoke(const Function & f, const std::vector<Value> & args);
 
-  struct array_template_t {};
-  static const array_template_t ArrayTemplate;
-  ClassTemplate getTemplate(array_template_t) const;
-
-  struct initializer_list_template_t {};
-  static const initializer_list_template_t InitializerListTemplate;
-  ClassTemplate getTemplate(initializer_list_template_t) const;
+  const std::map<std::type_index, Template>& templateMap() const;
 
   const std::vector<Script> & scripts() const;
 

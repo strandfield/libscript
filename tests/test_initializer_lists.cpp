@@ -25,7 +25,7 @@ TEST(InitializerLists, class_template) {
   Engine engine;
   engine.setup();
   
-  ClassTemplate ilist_template = engine.getTemplate(Engine::InitializerListTemplate);
+  ClassTemplate ilist_template = ClassTemplate::get<InitializerListTemplate>(&engine);
 
   Class ilist_int = ilist_template.getInstance({
     TemplateArgument{ Type{Type::Int} }
@@ -85,7 +85,7 @@ TEST(InitializerLists, initializer_list_creation) {
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
 
-  ClassTemplate ilist_template = engine.getTemplate(Engine::InitializerListTemplate);
+  ClassTemplate ilist_template = ClassTemplate::get<InitializerListTemplate>(&engine);
 
   Class ilist_int = ilist_template.getInstance({
     TemplateArgument{ Type{ Type::Int } }
@@ -119,7 +119,7 @@ TEST(InitializerLists, initializer_list_conversion) {
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
 
-  ClassTemplate ilist_template = engine.getTemplate(Engine::InitializerListTemplate);
+  ClassTemplate ilist_template = ClassTemplate::get<InitializerListTemplate>(&engine);
 
   Class ilist_int = ilist_template.getInstance({
     TemplateArgument{ Type{ Type::Int } }

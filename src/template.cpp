@@ -293,6 +293,11 @@ std::weak_ptr<TemplateImpl> Template::weakref() const
   return std::weak_ptr<TemplateImpl>(d);
 }
 
+const std::map<std::type_index, Template>& Template::get_template_map(Engine* e)
+{
+  return e->templateMap();
+}
+
 bool Template::operator==(const Template & other) const
 {
   return d == other.d;

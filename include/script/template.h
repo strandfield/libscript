@@ -5,6 +5,9 @@
 #ifndef LIBSCRIPT_TEMPLATE_H
 #define LIBSCRIPT_TEMPLATE_H
 
+#include <map>
+#include <typeindex>
+
 #include "script/templateargument.h"
 #include "script/templateparameter.h"
 
@@ -63,6 +66,9 @@ public:
   inline bool operator!=(const Template & other) const { return !operator==(other); }
 
   inline bool operator<(const Template & other) const { return d < other.d; }
+
+protected:
+  static const std::map<std::type_index, Template>& get_template_map(Engine* e);
 
 protected:
   std::shared_ptr<TemplateImpl> d;

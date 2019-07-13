@@ -5,8 +5,11 @@
 #include "script/templatebuilder.h"
 
 #include "script/classtemplate.h"
+#include "script/engine.h"
 #include "script/functiontemplate.h"
+
 #include "script/private/class_p.h"
+#include "script/private/engine_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/template_p.h"
 
@@ -28,6 +31,8 @@ FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, std::string &
 FunctionTemplate FunctionTemplateBuilder::get()
 {
   /// TODO: perform checks
+  const auto ti = std::type_index(typeid(*this->backend.get()));
+
   FunctionTemplate ret{ std::make_shared<FunctionTemplateImpl>(std::move(name), std::move(this->parameters), this->scope,
     std::move(this->backend), symbol.engine(), this->symbol.impl()) };
 
@@ -37,6 +42,11 @@ FunctionTemplate FunctionTemplateBuilder::get()
     symbol.toClass().impl()->templates.push_back(ret);
   else if (symbol.isNamespace())
     symbol.toNamespace().impl()->templates.push_back(ret);
+
+  if (ti != std::type_index(typeid(ScriptFunctionTemplateBackend)))
+  {
+    ret.engine()->implementation()->templates.dict[ti] = ret;
+  }
 
   return ret;
 }
@@ -61,6 +71,8 @@ ClassTemplateBuilder::ClassTemplateBuilder(const Symbol & s, std::string && name
 
 ClassTemplate ClassTemplateBuilder::get()
 {
+  const auto ti = std::type_index(typeid(*this->backend.get()));
+
   /// TODO: perform checks
   ClassTemplate ret{ std::make_shared<ClassTemplateImpl>(std::move(this->name), 
     std::move(this->parameters), this->scope, std::move(this->backend), this->symbol.engine(), this->symbol.impl()) };
@@ -69,6 +81,11 @@ ClassTemplate ClassTemplateBuilder::get()
     symbol.toClass().impl()->templates.push_back(ret);
   else if (symbol.isNamespace())
     symbol.toNamespace().impl()->templates.push_back(ret);
+
+  if (ti != std::type_index(typeid(ScriptClassTemplateBackend)))
+  {
+    ret.engine()->implementation()->templates.dict[ti] = ret;
+  }
 
   return ret;
 }

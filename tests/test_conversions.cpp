@@ -16,6 +16,7 @@
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/initializerlist.h"
 #include "script/namespace.h"
 #include "script/typesystem.h"
 
@@ -416,7 +417,7 @@ TEST(Initializations, list_initialization_initializer_list) {
   auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
-  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+  Type initializer_list_int = ClassTemplate::get<InitializerListTemplate>(&e)
     .getInstance({ TemplateArgument{Type::Int} }).id();
 
   Initialization init = Initialization::compute(initializer_list_int, listexpr, &e);
@@ -439,7 +440,7 @@ TEST(Initializations, list_initialization_initializer_list_ctor) {
   auto listexpr = parse_list_expr(&e, "{1, 2, 3}");
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
-  Type initializer_list_int = e.getTemplate(Engine::InitializerListTemplate)
+  Type initializer_list_int = ClassTemplate::get<InitializerListTemplate>(&e)
     .getInstance({ TemplateArgument{ Type::Int } }).id();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();

@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_ENGINE_P_H
 #define LIBSCRIPT_ENGINE_P_H
 
+#include <map>
+#include <typeindex>
 #include <vector>
 
 #include "script/enum.h"
@@ -52,6 +54,7 @@ public:
   {
     ClassTemplate array;
     ClassTemplate initializer_list;
+    std::map<std::type_index, Template> dict;
   }templates;
 
 public:

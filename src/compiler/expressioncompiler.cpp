@@ -16,6 +16,7 @@
 
 #include "script/program/expression.h"
 
+#include "script/arraytemplate.h"
 #include "script/datamember.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
@@ -232,7 +233,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
     conversions.push_back(conv);
   }
 
-  auto array_template = engine()->getTemplate(Engine::ArrayTemplate);
+  auto array_template = ClassTemplate::get<ArrayTemplate>(engine());
   Class array_class = array_template.getInstance({ TemplateArgument{element_type} });
 
   for (size_t i(0); i < args.size(); ++i)

@@ -42,6 +42,13 @@ Testing function template creation
 #include "script/template.h"
 #include "script/templatebuilder.h"
 
+class DummyClassTemplateBackend : public script::ClassTemplateNativeBackend
+{
+  script::Class instantiate(script::ClassTemplateInstanceBuilder&)
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+};
 
 class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBackend
 {
@@ -119,6 +126,7 @@ TEST(Symbols, class_template_create) {
 
   // We cannot use get() here because ClassTemplate has not been defined yet
   s.newClassTemplate("Bar").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+    .withBackend<DummyClassTemplateBackend>()
     .setScope(e.rootNamespace()).create();
 
   ASSERT_EQ(e.rootNamespace().templates().size(), nb_templates + 1);
@@ -137,6 +145,7 @@ TEST(Symbols, class_template_get) {
   ClassTemplate Bar = s.newClassTemplate("Bar").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
+    .withBackend<DummyClassTemplateBackend>()
     .setScope(e.rootNamespace()).get();
 
   ASSERT_EQ(Bar.name(), "Bar");

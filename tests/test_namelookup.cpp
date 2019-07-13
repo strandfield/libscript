@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "script/arraytemplate.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
@@ -140,7 +141,7 @@ TEST(NameLookup, array_template) {
 
   NameLookup lookup = NameLookup::resolve("Array", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::TemplateName);
-  ASSERT_EQ(lookup.classTemplateResult(), e.getTemplate(Engine::ArrayTemplate));
+  ASSERT_EQ(lookup.classTemplateResult(), ClassTemplate::get<ArrayTemplate>(&e));
 }
 
 TEST(NameLookup, operators) {

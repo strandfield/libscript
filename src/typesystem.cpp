@@ -11,6 +11,7 @@
 #include "script/scope.h"
 
 #include "script/private/class_p.h"
+#include "script/private/engine_p.h"
 #include "script/private/enum_p.h"
 #include "script/private/lambda_p.h"
 #include "script/private/operator_p.h"
@@ -592,7 +593,8 @@ bool TypeSystem::isInitializerList(const Type& t) const
   if (!t.isObjectType())
     return false;
 
-  return getClass(t).isTemplateInstance() && getClass(t).instanceOf() == engine()->getTemplate(Engine::InitializerListTemplate);
+  return getClass(t).isTemplateInstance() 
+    && getClass(t).instanceOf() == engine()->implementation()->templates.initializer_list;
 }
 
 /*!

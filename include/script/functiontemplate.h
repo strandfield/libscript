@@ -42,10 +42,33 @@ public:
 
   const std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> & instances() const;
 
+  using Template::get;
+
+  template<typename T>
+  static FunctionTemplate get(Engine* e);
+
   std::shared_ptr<FunctionTemplateImpl> impl() const;
 
   FunctionTemplate & operator=(const FunctionTemplate & other) = default;
 };
+
+template<typename T>
+inline static FunctionTemplate FunctionTemplate::get(Engine* e)
+{
+  static_assert(std::is_base_of<FunctionTemplateNativeBackend, T>::value, "T must be derived from FunctionTemplateNativeBackend");
+
+  const auto& map = get_template_map(e);
+  auto it = map.find(std::type_index(typeid(T)));
+
+  if (it == map.end())
+  {
+    return {};
+  }
+  else
+  {
+    return (*it).second.asFunctionTemplate();
+  }
+}
 
 } // namespace script
 

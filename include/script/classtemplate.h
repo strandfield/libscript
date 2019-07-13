@@ -40,6 +40,11 @@ public:
 
   const std::map<std::vector<TemplateArgument>, Class, TemplateArgumentComparison> & instances() const;
 
+  using Template::get;
+
+  template<typename T>
+  static ClassTemplate get(Engine* e);
+
   std::shared_ptr<ClassTemplateImpl> impl() const;
 
   ClassTemplate & operator=(const ClassTemplate & other) = default;
@@ -76,6 +81,24 @@ private:
 
 bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs);
 inline bool operator!=(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs) { return !(lhs == rhs); }
+
+template<typename T>
+inline static ClassTemplate ClassTemplate::get(Engine* e)
+{
+  static_assert(std::is_base_of<ClassTemplateNativeBackend, T>::value, "T must be derived from ClassTemplateNativeBackend");
+
+  const auto& map = get_template_map(e);
+  auto it = map.find(std::type_index(typeid(T)));
+
+  if (it == map.end())
+  {
+    return {};
+  }
+  else
+  {
+    return (*it).second.asClassTemplate();
+  }
+}
 
 } // namespace script
 

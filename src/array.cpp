@@ -3,6 +3,7 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/array.h"
+#include "script/arraytemplate.h"
 
 #include "script/engine.h"
 #include "script/classtemplateinstancebuilder.h"
@@ -113,83 +114,79 @@ Value assign(FunctionCall *c)
 } // namespace callbacks
 
 
-
-class ArrayTemplate : public ClassTemplateNativeBackend
+Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
 {
-  Class instantiate(ClassTemplateInstanceBuilder& builder) override
+  const auto& arguments = builder.arguments();
+
+  if (arguments.size() != 1)
+    throw TemplateInstantiationError{ "Invalid argument count" };
+
+  if (arguments.at(0).kind != TemplateArgument::TypeArgument)
+    throw TemplateInstantiationError{ "Argument must be a type" };
+
+  const Type element_type = arguments.at(0).type.baseType();
+
+  if (element_type.isEnumType())
+    throw TemplateInstantiationError{ "Argument cannot be an enumeration" };
+
+  Engine * e = builder.getTemplate().engine();
+  ArrayData data;
+  data.elementType = element_type;
+
+  if (element_type.isObjectType())
   {
-    const auto& arguments = builder.arguments();
+    Class element_class = e->typeSystem()->getClass(element_type);
+    data.constructor = element_class.defaultConstructor();
+    data.copyConstructor = element_class.copyConstructor();
+    data.destructor = element_class.destructor();
 
-    if (arguments.size() != 1)
-      throw TemplateInstantiationError{ "Invalid argument count" };
-
-    if (arguments.at(0).kind != TemplateArgument::TypeArgument)
-      throw TemplateInstantiationError{ "Argument must be a type" };
-
-    const Type element_type = arguments.at(0).type.baseType();
-
-    if (element_type.isEnumType())
-      throw TemplateInstantiationError{ "Argument cannot be an enumeration" };
-
-    Engine * e = builder.getTemplate().engine();
-    ArrayData data;
-    data.elementType = element_type;
-
-    if (element_type.isObjectType())
-    {
-      Class element_class = e->typeSystem()->getClass(element_type);
-      data.constructor = element_class.defaultConstructor();
-      data.copyConstructor = element_class.copyConstructor();
-      data.destructor = element_class.destructor();
-
-      if (data.constructor.isNull())
-        throw TemplateInstantiationError{ "Type must be default-cosntructible" };
-      if (data.copyConstructor.isNull())
-        throw TemplateInstantiationError{ "Type must be copy-cosntructible" };
-      if (data.destructor.isNull())
-        throw TemplateInstantiationError{ "Type must be destructible" };
-    }
-
-
-    builder.name = std::string("Array<") + e->typeSystem()->typeName(element_type) + std::string(">");
-
-    auto shared_data = std::make_shared<SharedArrayData>(data);
-    builder.setData(shared_data);
-
-    Class array_class = builder.get();
-    shared_data->data.typeId = array_class.id();
-    Type array_type = array_class.id();
-
-    array_class.newConstructor(callbacks::array::default_ctor).create();
-
-    array_class.newConstructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
-
-    array_class.newConstructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
-
-    array_class.newDestructor(callbacks::array::dtor).create();
-
-    array_class.newMethod("size", callbacks::array::size)
-      .setConst().returns(Type::Int).create();
-
-    array_class.newMethod("resize", callbacks::array::resize)
-      .params(Type::cref(Type::Int)).create();
-
-    array_class.newOperator(AssignmentOperator, callbacks::array::assign)
-      .returns(Type::ref(array_type))
-      .params(Type::cref(array_type)).create();
-
-    array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
-      .returns(Type::ref(element_type))
-      .params(Type::cref(Type::Int)).create();
-
-    array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
-      .setConst()
-      .returns(Type::cref(element_type))
-      .params(Type::cref(Type::Int)).create();
-
-    return array_class;
+    if (data.constructor.isNull())
+      throw TemplateInstantiationError{ "Type must be default-cosntructible" };
+    if (data.copyConstructor.isNull())
+      throw TemplateInstantiationError{ "Type must be copy-cosntructible" };
+    if (data.destructor.isNull())
+      throw TemplateInstantiationError{ "Type must be destructible" };
   }
-};
+
+
+  builder.name = std::string("Array<") + e->typeSystem()->typeName(element_type) + std::string(">");
+
+  auto shared_data = std::make_shared<SharedArrayData>(data);
+  builder.setData(shared_data);
+
+  Class array_class = builder.get();
+  shared_data->data.typeId = array_class.id();
+  Type array_type = array_class.id();
+
+  array_class.newConstructor(callbacks::array::default_ctor).create();
+
+  array_class.newConstructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
+
+  array_class.newConstructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
+
+  array_class.newDestructor(callbacks::array::dtor).create();
+
+  array_class.newMethod("size", callbacks::array::size)
+    .setConst().returns(Type::Int).create();
+
+  array_class.newMethod("resize", callbacks::array::resize)
+    .params(Type::cref(Type::Int)).create();
+
+  array_class.newOperator(AssignmentOperator, callbacks::array::assign)
+    .returns(Type::ref(array_type))
+    .params(Type::cref(array_type)).create();
+
+  array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
+    .returns(Type::ref(element_type))
+    .params(Type::cref(Type::Int)).create();
+
+  array_class.newOperator(SubscriptOperator, callbacks::array::subscript)
+    .setConst()
+    .returns(Type::cref(element_type))
+    .params(Type::cref(Type::Int)).create();
+
+  return array_class;
+}
 
 ClassTemplate ArrayImpl::register_array_template(Engine *e)
 {
