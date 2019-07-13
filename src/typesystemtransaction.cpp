@@ -6,6 +6,8 @@
 
 #include "script/private/typesystem_p.h"
 
+#include <algorithm>
+
 namespace script
 {
 
