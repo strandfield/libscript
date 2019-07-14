@@ -31,7 +31,7 @@ public:
 
   template<typename T, typename...Args>
   std::enable_if_t<std::is_same<typename details::tag_resolver<T>::tag_type, details::large_object_tag>::value, void>
-    construct(Args&& ... args)
+    init(Args&& ... args)
   {
     void* mem = get().acquireMemory();
     new (mem) details::PtrWrapper(new T(std::forward<Args>(args)...));

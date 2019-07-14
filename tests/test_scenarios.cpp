@@ -105,3 +105,65 @@ TEST(Scenarios, accessing_ast) {
   s.clearAst();
 }
 
+#include "script/classbuilder.h"
+#include "script/constructorbuilder.h"
+#include "script/destructorbuilder.h"
+#include "script/interpreter/executioncontext.h"
+
+struct SmallObject
+{
+  bool data;
+};
+
+struct LargeObject
+{
+  int data[1024];
+};
+
+script::Value smallobject_default_ctor(script::FunctionCall* c)
+{
+  c->thisObject().init<SmallObject>();
+  return c->arg(0);
+}
+
+script::Value smallobject_dtor(script::FunctionCall* c)
+{
+  c->thisObject().destroy<SmallObject>();
+  return script::Value::Void;
+}
+
+script::Value largeobject_default_ctor(script::FunctionCall* c)
+{
+  c->thisObject().init<LargeObject>();
+  return c->arg(0);
+}
+
+script::Value largeobject_dtor(script::FunctionCall* c)
+{
+  c->thisObject().destroy<LargeObject>();
+  return script::Value::Void;
+}
+
+
+TEST(Scenarios, custom_type) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+  
+  Class largeobject = engine.rootNamespace().newClass("LargeObject").get();
+  largeobject.newConstructor(largeobject_default_ctor).create();
+  largeobject.newDestructor(largeobject_dtor).create();
+
+  Value val = engine.construct(largeobject.id(), {});
+  ASSERT_EQ(val.type(), largeobject.id());
+  engine.destroy(val);
+
+  Class smallobject = engine.rootNamespace().newClass("SmallObject").get();
+  smallobject.newConstructor(smallobject_default_ctor).create();
+  smallobject.newDestructor(smallobject_dtor).create();
+
+  val = engine.construct(smallobject.id(), {});
+  ASSERT_EQ(val.type(), smallobject.id());
+  engine.destroy(val);
+}
