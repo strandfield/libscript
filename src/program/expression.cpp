@@ -4,6 +4,8 @@
 
 #include "script/program/expression.h"
 
+#include <stdexcept>
+
 namespace script
 {
 namespace program

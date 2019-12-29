@@ -542,6 +542,12 @@ MessageBuilder & MessageBuilder::operator<<(int n)
   return *(this);
 }
 
+MessageBuilder& MessageBuilder::operator<<(size_t n)
+{
+  mBuffer += std::to_string(n);
+  return *(this);
+}
+
 MessageBuilder & MessageBuilder::operator<<(line_t l)
 {
   mLine = l.line;

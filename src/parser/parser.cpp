@@ -5,6 +5,7 @@
 #include "script/parser/parser.h"
 
 #include <map>
+#include <stdexcept>
 
 #include "script/operator.h"
 

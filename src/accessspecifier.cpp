@@ -8,6 +8,7 @@
 #include "script/function.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace script
 {

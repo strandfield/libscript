@@ -106,8 +106,8 @@ public:
 
   inline static std::string repr(bool b) { return std::to_string(b); }
   inline static std::string repr(char c) { return std::string{ c }; }
-  inline static std::string repr(unsigned int n) { return std::to_string(int(n)); }
-  inline static std::string repr(unsigned long n) { return std::to_string(int(n)); }
+  //inline static std::string repr(unsigned int n) { return std::to_string(int(n)); }
+  //inline static std::string repr(unsigned long n) { return std::to_string(int(n)); }
   inline static std::string repr(int n) { return std::to_string(n); }
   inline static const std::string & repr(const std::string & str) { return str; }
   static std::string repr(script::AccessSpecifier as);
@@ -123,6 +123,7 @@ public:
   }
 
   MessageBuilder & operator<<(int n);
+  MessageBuilder & operator<<(size_t n);
   MessageBuilder & operator<<(line_t l);
   MessageBuilder & operator<<(pos_t p);
   MessageBuilder & operator<<(const std::string & str);

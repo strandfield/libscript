@@ -13,6 +13,8 @@
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/valueconstructor.h"
 
+#include <stdexcept>
+
 namespace script
 {
 

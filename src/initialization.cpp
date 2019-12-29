@@ -12,6 +12,7 @@
 #include "script/program/expression.h"
 
 #include <algorithm>
+#include <stdexcept>
 
 namespace script
 {

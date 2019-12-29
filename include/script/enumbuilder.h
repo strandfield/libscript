@@ -8,6 +8,8 @@
 
 #include "script/symbol.h"
 
+#include <stdexcept>
+
 namespace script
 {
 

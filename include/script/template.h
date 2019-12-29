@@ -6,6 +6,7 @@
 #define LIBSCRIPT_TEMPLATE_H
 
 #include <map>
+#include <stdexcept>
 #include <typeindex>
 
 #include "script/templateargument.h"

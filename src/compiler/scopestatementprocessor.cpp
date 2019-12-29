@@ -6,6 +6,8 @@
 
 #include "script/compiler/diagnostichelper.h"
 
+#include <stdexcept>
+
 namespace script
 {
 

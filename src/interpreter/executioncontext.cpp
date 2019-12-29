@@ -8,6 +8,8 @@
 #include "script/value.h"
 #include "script/private/value_p.h"
 
+#include <stdexcept>
+
 namespace script
 {
 
