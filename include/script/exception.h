@@ -7,6 +7,9 @@
 
 #include "script/errorcodes.h"
 
+#include <stdexcept>
+#include <system_error>
+
 #include <string>
 
 namespace script
@@ -51,6 +54,30 @@ public:
   /// TODO: add StackTrace
 
   ErrorCode code() const override { return ErrorCode::RuntimeError; }
+};
+
+} // namespace script
+
+namespace script
+{
+
+class Exceptional : public std::exception
+{
+protected:
+  std::error_code m_error_code;
+
+public:
+  explicit Exceptional(const std::error_code& err)
+    : m_error_code{ err }
+  {
+
+  }
+
+  const std::error_code& errorCode() const { return m_error_code; }
+
+  const char* what() const noexcept override { return "script-engine-execption"; }
+
+  Exceptional& operator=(const Exceptional&) = delete;
 };
 
 } // namespace script

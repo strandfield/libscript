@@ -41,7 +41,7 @@ void FunctionTemplateProcessor::complete(std::vector<Function> & functions, cons
   }
 }
 
-diagnostic::Message FunctionTemplateProcessor::emitDiagnostic() const
+diagnostic::DiagnosticMessage FunctionTemplateProcessor::emitDiagnostic() const
 {
   throw std::runtime_error{ "Not implemented : FunctionTemplateProcessor::emitDiagnostic()" };
 }

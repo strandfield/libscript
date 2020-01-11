@@ -171,6 +171,8 @@ public:
 
   std::shared_ptr<ast::AST> ast() const;
 
+  SourceLocation location() const;
+
 protected:
   bool atEnd() const;
   bool eof() const;

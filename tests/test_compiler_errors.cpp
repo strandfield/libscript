@@ -35,7 +35,7 @@ TEST(CompilerErrors, illegal_this) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::IllegalUseOfThis{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::IllegalUseOfThis{}.code());
 }
 
 TEST(CompilerErrors, no_destructor) {
@@ -62,7 +62,7 @@ TEST(CompilerErrors, no_destructor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ObjectHasNoDestructor{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ObjectHasNoDestructor{}.code());
 }
 
 
@@ -88,7 +88,7 @@ TEST(CompilerErrors, invalid_use_delegated_ctor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InvalidUseOfDelegatedConstructor{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InvalidUseOfDelegatedConstructor{}.code());
 }
 
 
@@ -111,7 +111,7 @@ TEST(CompilerErrors, not_data_member) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::NotDataMember(diagnostic::nullpos(), "n").code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::NotDataMember(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, initializing_inherited_data_member) {
@@ -139,7 +139,7 @@ TEST(CompilerErrors, initializing_inherited_data_member) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InheritedDataMember(diagnostic::nullpos(), "n").code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InheritedDataMember(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, multiple_initializers) {
@@ -162,7 +162,7 @@ TEST(CompilerErrors, multiple_initializers) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::DataMemberAlreadyHasInitializer(diagnostic::nullpos(), "n").code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::DataMemberAlreadyHasInitializer(diagnostic::nullpos(), "n").code());
 }
 
 TEST(CompilerErrors, could_not_find_delegate_ctor) {
@@ -187,7 +187,7 @@ TEST(CompilerErrors, could_not_find_delegate_ctor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::NoDelegatingConstructorFound{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::NoDelegatingConstructorFound{}.code());
 }
 
 TEST(CompilerErrors, no_valid_base_ctor) {
@@ -215,7 +215,7 @@ TEST(CompilerErrors, no_valid_base_ctor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::CouldNotFindValidBaseConstructor{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::CouldNotFindValidBaseConstructor{}.code());
 }
 
 TEST(CompilerErrors, init_list_first_array_element) {
@@ -234,7 +234,7 @@ TEST(CompilerErrors, init_list_first_array_element) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InitializerListAsFirstArrayElement{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InitializerListAsFirstArrayElement{}.code());
 }
 
 TEST(CompilerErrors, return_without_value) {
@@ -253,7 +253,7 @@ TEST(CompilerErrors, return_without_value) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ReturnStatementWithoutValue{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ReturnStatementWithoutValue{}.code());
 }
 
 TEST(CompilerErrors, return_with_value) {
@@ -272,7 +272,7 @@ TEST(CompilerErrors, return_with_value) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ReturnStatementWithValue{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ReturnStatementWithValue{}.code());
 }
 
 TEST(CompilerErrors, ref_not_initialized) {
@@ -291,7 +291,7 @@ TEST(CompilerErrors, ref_not_initialized) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ReferencesMustBeInitialized{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ReferencesMustBeInitialized{}.code());
 }
 
 TEST(CompilerErrors, enum_not_initialized) {
@@ -310,7 +310,7 @@ TEST(CompilerErrors, enum_not_initialized) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::EnumerationsMustBeInitialized{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::EnumerationsMustBeInitialized{}.code());
 }
 
 TEST(CompilerErrors, funvar_not_initialized) {
@@ -329,7 +329,7 @@ TEST(CompilerErrors, funvar_not_initialized) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::FunctionVariablesMustBeInitialized{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::FunctionVariablesMustBeInitialized{}.code());
 }
 
 TEST(CompilerErrors, not_default_constructible) {
@@ -348,7 +348,7 @@ TEST(CompilerErrors, not_default_constructible) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::VariableCannotBeDefaultConstructed(diagnostic::nullpos(), script::Type()).code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::VariableCannotBeDefaultConstructed(diagnostic::nullpos(), script::Type()).code());
 }
 
 TEST(CompilerErrors, invalid_param_count_op_overload) {
@@ -367,7 +367,7 @@ TEST(CompilerErrors, invalid_param_count_op_overload) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InvalidParamCountInOperatorOverload(diagnostic::nullpos(), 1, 3).code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InvalidParamCountInOperatorOverload(diagnostic::nullpos(), 1, 3).code());
 }
 
 TEST(CompilerErrors, data_member_auto) {
@@ -386,7 +386,7 @@ TEST(CompilerErrors, data_member_auto) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::DataMemberCannotBeAuto{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::DataMemberCannotBeAuto{}.code());
 }
 
 TEST(CompilerErrors, missing_static_data_member_init) {
@@ -405,7 +405,7 @@ TEST(CompilerErrors, missing_static_data_member_init) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::MissingStaticInitialization{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::MissingStaticInitialization{}.code());
 }
 
 TEST(CompilerErrors, invalid_base_class) {
@@ -424,7 +424,7 @@ TEST(CompilerErrors, invalid_base_class) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InvalidBaseClass{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InvalidBaseClass{}.code());
 }
 
 TEST(CompilerErrors, invalid_default_arg) {
@@ -443,7 +443,7 @@ TEST(CompilerErrors, invalid_default_arg) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::InvalidUseOfDefaultArgument{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::InvalidUseOfDefaultArgument{}.code());
 }
 
 TEST(CompilerErrors, array_elem_not_convertible) {
@@ -462,7 +462,7 @@ TEST(CompilerErrors, array_elem_not_convertible) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ArrayElementNotConvertible{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ArrayElementNotConvertible{}.code());
 }
 
 TEST(CompilerErrors, invalid_array_subscript) {
@@ -481,7 +481,7 @@ TEST(CompilerErrors, invalid_array_subscript) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ArraySubscriptOnNonObject{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ArraySubscriptOnNonObject{}.code());
 }
 
 TEST(CompilerErrors, too_many_args_in_init_1) {
@@ -500,7 +500,7 @@ TEST(CompilerErrors, too_many_args_in_init_1) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::TooManyArgumentInVariableInitialization{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::TooManyArgumentInVariableInitialization{}.code());
 }
 
 TEST(CompilerErrors, base_no_copy_ctor) {
@@ -520,7 +520,7 @@ TEST(CompilerErrors, base_no_copy_ctor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ParentHasNoCopyConstructor{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ParentHasNoCopyConstructor{}.code());
 }
 
 
@@ -541,7 +541,7 @@ TEST(CompilerErrors, base_deleted_move_ctor) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::ParentHasDeletedMoveConstructor{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::ParentHasDeletedMoveConstructor{}.code());
 }
 
 TEST(CompilerErrors, no_valid_literal_operator) {
@@ -560,7 +560,7 @@ TEST(CompilerErrors, no_valid_literal_operator) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::CouldNotFindValidLiteralOperator{}.code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::CouldNotFindValidLiteralOperator{}.code());
 }
 
 TEST(CompilerErrors, narrowing_conversion) {
@@ -579,5 +579,5 @@ TEST(CompilerErrors, narrowing_conversion) {
 
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), compiler::NarrowingConversionInBraceInitialization(Type::Double, Type::Int).code());
+  ASSERT_EQ(static_cast<ErrorCode>(errors.front().code().value()), compiler::NarrowingConversionInBraceInitialization(Type::Double, Type::Int).code());
 }

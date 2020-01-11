@@ -98,7 +98,7 @@ const std::vector<Value> & Script::globals() const
   return d->globals;
 }
 
-const std::vector<diagnostic::Message> & Script::messages() const
+const std::vector<diagnostic::DiagnosticMessage> & Script::messages() const
 {
   return d->messages;
 }

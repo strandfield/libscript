@@ -47,7 +47,7 @@ std::string AST::text(const parser::Token & tok)
   return std::string(source.data() + tok.pos, tok.length);
 }
 
-void AST::log(const diagnostic::Message & mssg)
+void AST::log(const diagnostic::DiagnosticMessage & mssg)
 {
   messages.push_back(mssg);
 }
@@ -114,13 +114,13 @@ bool Ast::hasErrors() const
 }
 
 /*!
- * \fn const std::vector<diagnostic::Message> & messages() const
+ * \fn const std::vector<diagnostic::DiagnosticMessage> & messages() const
  * \brief Returns the messages produced during the construction of this ast.
  *
  * Note that this may be non-empty even if the ast contains no errors; e.g.,  
  * warning message may be produced.
  */
-const std::vector<diagnostic::Message> & Ast::messages() const
+const std::vector<diagnostic::DiagnosticMessage> & Ast::messages() const
 {
   return d->messages;
 }

@@ -20,7 +20,7 @@ class LIBSCRIPT_API Logger
 public:
   virtual ~Logger();
 
-  virtual void log(const diagnostic::Message & mssg);
+  virtual void log(const diagnostic::DiagnosticMessage & mssg);
   virtual void log(const CompilerException & exception);
 };
 

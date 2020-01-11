@@ -49,7 +49,8 @@ Token AbstractFragment::read()
 Token AbstractFragment::peek() const
 {
   if (atEnd())
-    throw UnexpectedFragmentEnd{};
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
+
   return mData->unsafe_peek();
 }
 
@@ -272,7 +273,7 @@ bool ParserData::atEnd() const
 Token ParserData::read()
 {
   if (mIndex == mBuffer.size())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   const Token ret = mBuffer[mIndex++];
   fetchNext();
@@ -297,7 +298,8 @@ void ParserData::unread()
 Token ParserData::peek()
 {
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+
   return mBuffer[mIndex];
 }
 
@@ -382,6 +384,26 @@ std::shared_ptr<ast::AST> ParserBase::ast() const
   return mFragment->data()->mAst;
 }
 
+SourceLocation ParserBase::location() const
+{
+  SourceLocation loc;
+  loc.m_source = ast()->source;
+  
+  if (!atEnd())
+  {
+    const Token tok = unsafe_peek();
+    loc.m_pos.pos = tok.pos;
+    loc.m_pos.col = tok.column;
+    loc.m_pos.line = tok.line;
+  }
+  else
+  {
+    loc.m_pos.pos = ast()->source.content().length();
+  }
+
+  return loc;
+}
+
 bool ParserBase::atEnd() const
 {
   return mFragment->atEnd();
@@ -406,8 +428,10 @@ Token ParserBase::unsafe_read()
 Token ParserBase::read(const Token::Type & type)
 {
   Token ret = read();
+
   if (ret.type != type)
-    throw UnexpectedToken{ ret, type };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ret, type} };
+
   return ret;
 }
 
@@ -476,7 +500,7 @@ std::shared_ptr<ast::Literal> LiteralParser::parse()
     break;
   }
 
-  throw ExpectedLiteral{ lit };
+  throw SyntaxError{ ParserError::ExpectedLiteral, errors::ActualToken{lit} };
 }
 
 ExpressionParser::ExpressionParser(AbstractFragment *fragment)
@@ -526,7 +550,7 @@ bool ExpressionParser::isInfixOperator(const Token & tok)
 std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
 {
   if (atEnd())
-    throw UnexpectedFragmentEnd{};
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
 
   auto p = pos();
   Token t = unsafe_peek();
@@ -536,9 +560,8 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   if (t.isOperator())
   {
     if (!isPrefixOperator(t))
-      throw ExpectedPrefixOperator{ t };
+      throw SyntaxError{ ParserError::ExpectedPrefixOperator, errors::ActualToken{t} };
 
-    assert(isPrefixOperator(t));
     read();
     operand = readOperand();
     operand = ast::Operation::New(t, operand);
@@ -546,8 +569,10 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   else if (t.type == Token::LeftPar) 
   {
     unsafe_read();
+
     if (peek().type == Token::RightPar) // we just read '()'
-      throw InvalidEmptyOperand{};
+      throw SyntaxError{ ParserError::InvalidEmptyOperand };
+
     SentinelFragment sentinel{ Token::RightPar, fragment() };
     ExpressionParser exprParser{ &sentinel };
     operand = exprParser.parse();
@@ -615,11 +640,15 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     else if (t.type == Token::LeftBracket) // subscript operator
     {
       auto leftBracket = read();
+
       if (atEnd())
-        throw UnexpectedEndOfInput{};
+        throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+
       Token next = peek();
+
       if (next == Token::RightBracket)
-        throw InvalidEmptyBrackets{};
+        throw SyntaxError{ ParserError::InvalidEmptyBrackets };
+
       SentinelFragment sentinel{ Token::RightBracket, fragment() };
       ExpressionParser exprParser{ &sentinel };
       auto arg = exprParser.parse();
@@ -652,7 +681,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
         continue;
       }
 
-      throw UnexpectedToken{ t };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{t, Token::Invalid} };
     }
   }
 
@@ -668,9 +697,9 @@ Token ExpressionParser::readBinaryOperator()
     return read();
 
   if (!t.isOperator())
-    throw ExpectedOperator{ t };
+    throw SyntaxError{ ParserError::ExpectedOperator, errors::ActualToken{t} };
   else if (!isInfixOperator(t))
-    throw ExpectedBinaryOperator{ t };
+    throw SyntaxError{ ParserError::ExpectedBinaryOperator, errors::ActualToken{t} };
 
   return read();
 }
@@ -740,7 +769,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
     }
 
     if (colonIndex == -1)
-      throw MissingConditionalColon{};
+      throw SyntaxError{ ParserError::MissingConditionalColon };
 
     auto onTrue = buildExpression(exprBegin + (index + 1), exprBegin + (colonIndex + 1), opBegin + (index + 1), opBegin + colonIndex);
     auto onFalse = buildExpression(exprBegin + (colonIndex + 1), exprEnd, opBegin + (colonIndex + 1), opEnd);
@@ -771,10 +800,14 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
 
   readBracketContent();
 
-  if (atEnd()) {
+  if (atEnd()) 
+  {
     if (mDecision == ParsingLambda)
-      throw UnexpectedFragmentEnd{};
-    else {
+    {
+      throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
+    }
+    else 
+    {
       setDecision(ParsingArray);
       return mArray;
     }
@@ -784,7 +817,7 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
   {
     if (mDecision == ParsingLambda)
     {
-      throw UnexpectedToken{ peek(), Token::LeftPar };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftPar} };
     }
     else
     {
@@ -816,7 +849,7 @@ void LambdaParser::readBracketContent()
         auto elem = ep.parse();
         mArray->elements.push_back(elem);
       }
-      catch (const ParserException &)
+      catch (const SyntaxError &)
       {
         if (mDecision == ParsingArray)
           throw;
@@ -836,7 +869,8 @@ void LambdaParser::readBracketContent()
       if (!capp.detect())
       {
         if (mDecision == ParsingLambda)
-          throw CouldNotParseLambdaCapture{};
+          throw SyntaxError{ ParserError::CouldNotParseLambdaCapture };
+
         setDecision(ParsingArray);
         seek(savedPos);
         listfrag.consumeComma();
@@ -848,7 +882,7 @@ void LambdaParser::readBracketContent()
         auto capture = capp.parse();
         mLambda->captures.push_back(capture);
       }
-      catch (const ParserException &)
+      catch (const SyntaxError&)
       {
         if (mDecision == ParsingLambda)
           throw;
@@ -895,10 +929,10 @@ void LambdaParser::readParams()
 std::shared_ptr<ast::CompoundStatement> LambdaParser::readBody()
 {
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   if (peek() != Token::LeftBrace)
-    throw UnexpectedToken{ peek(), Token::LeftBrace };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
 
   ProgramParser pParser{ fragment() };
   return std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
@@ -921,14 +955,14 @@ bool LambdaCaptureParser::detect() const
 ast::LambdaCapture LambdaCaptureParser::parse()
 {
   if (atEnd())
-    throw UnexpectedFragmentEnd{};
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
 
   ast::LambdaCapture cap;
 
   if (peek() == Token::Eq) {
     cap.byValueSign = read();
     if (!atEnd())
-      throw UnexpectedToken{ cap.byValueSign };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{cap.byValueSign, Token::RightBracket} };
     return cap;
   }
   else if (peek() == Token::Ref) {
@@ -1017,7 +1051,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
   case Token::Namespace:
     return parseNamespace();
   case Token::Friend:
-    throw IllegalUseOfKeyword{ t };
+    throw SyntaxError{ ParserError::IllegalUseOfKeyword, errors::KeywordToken{t} };
   case Token::Export:
   case Token::Import:
     return parseImport();
@@ -1046,7 +1080,7 @@ std::shared_ptr<ast::Statement> ProgramParser::parseAmbiguous()
 
 std::shared_ptr<ast::ClassDecl> ProgramParser::parseClassDeclaration()
 {
-  throw UnexpectedToken{ peek() };
+  throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{peek(), Token::Invalid} };
 }
 
 std::shared_ptr<ast::EnumDeclaration> ProgramParser::parseEnumDeclaration()
@@ -1271,17 +1305,17 @@ std::shared_ptr<ast::Identifier> IdentifierParser::parse()
     break;
   }
 
-  throw ExpectedIdentifier{ t };
+  throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{t} };
 }
 
 std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
 {
   if (!testOption(ParseOperatorName))
-    throw UnexpectedToken{ peek() };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{peek(), Token::Invalid} };
 
   Token opkw = read();
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   Token op = peek();
   if(op.type & Token::OperatorToken)
@@ -1290,10 +1324,10 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
   {
     const Token lp = read();
     if (atEnd())
-      throw UnexpectedEndOfInput{};
+      throw SyntaxError{ ParserError::UnexpectedEndOfInput };
     const Token rp = read(Token::RightPar);
     if (lp.column + 1 != rp.column)
-      throw UnexpectedToken{ lp, Token::LeftRightPar };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lp, Token::LeftRightPar} };
     return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, lp.pos, 2, lp.line, lp.column, lp.src });
   }
   else if (op == Token::LeftBracket)
@@ -1301,13 +1335,14 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token lb = read();
     const Token rb = read(Token::RightBracket);
     if (lb.column + 1 != rb.column)
-      throw UnexpectedToken{ lb, Token::LeftRightBracket };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lb, Token::LeftRightBracket} };
     return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, lb.pos, 2, lb.line, lb.column, lb.src });
   }
   else if (op.type == Token::StringLiteral)
   {
     if (op.length != 2)
-      throw ExpectedEmptyStringLiteral{ op };
+      throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} };
+
     IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to remove this cast
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
@@ -1317,21 +1352,24 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
   {
     op = unsafe_read();
     const auto & str = text(op);
+
     if(str.find("\"\"") != 0)
-      throw ExpectedEmptyStringLiteral{ op }; /// TODO ? should this have a different error than the previous
+      throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} }; /// TODO ? should this have a different error than the previous
+
     Token quotes{ Token::StringLiteral, op.pos, 2, op.line, op.column, op.src };
     Token suffixName{ Token::UserDefinedName, op.pos + 2, op.length - 2, op.line, op.column + 2, op.src };
     return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
   }
 
-  throw ExpectedOperatorSymbol{ op };
+  throw SyntaxError{ ParserError::ExpectedOperatorSymbol, errors::ActualToken{op} };
 }
 
 std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
 {
   const Token base = read();
+
   if (base != Token::UserDefinedName)
-    throw ExpectedUserDefinedName{ base };
+    throw SyntaxError{ ParserError::ExpectedUserDefinedName, errors::ActualToken{base} };
 
   if(atEnd())
     return ast::SimpleIdentifier::New(base, ast());
@@ -1346,7 +1384,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
     {
       ret = readTemplateArguments(base);
     }
-    catch (const ParserException & )
+    catch (const SyntaxError& )
     {
       seek(savepoint);
       return ret;
@@ -1425,7 +1463,7 @@ std::shared_ptr<ast::Node> TemplateArgParser::parse()
       if (atEnd())
         return ast::TypeNode::New(type);
     }
-    catch (const ParserException &)
+    catch (const SyntaxError&)
     {
 
     }
@@ -1490,7 +1528,7 @@ ast::QualifiedType TypeParser::parse()
       auto fsig = tryReadFunctionSignature(ret);
       return fsig;
     }
-    catch (const ParserException &)
+    catch (const SyntaxError&)
     {
       seek(save_point);
     }
@@ -1522,7 +1560,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
     ret.functionType->params.push_back(param);
 
     if (!listfrag.atEnd())
-      throw UnexpectedToken{ listfrag.peek() };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{listfrag.peek(), Token::Invalid} };
 
     listfrag.consumeComma();
   }
@@ -1646,7 +1684,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalVirtual())
   {
     if (!isParsingMember())
-      throw IllegalUseOfKeyword{ mVirtualKw };
+      throw SyntaxError{ ParserError::IllegalUseOfKeyword, errors::KeywordToken{mVirtualKw} };
   }
 
   readOptionalStatic();
@@ -1654,7 +1692,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalExplicit())
   {
     if (!isParsingMember())
-      throw IllegalUseOfKeyword{ mExplicitKw };
+      throw SyntaxError{ ParserError::IllegalUseOfKeyword, errors::KeywordToken{mExplicitKw} };
   }
 }
 
@@ -1672,7 +1710,7 @@ bool DeclParser::readTypeSpecifier()
   {
     mType = tp.parse();
   }
-  catch (const ParserException & )
+  catch (const SyntaxError& )
   {
     if (mDecision != Undecided)
       throw;
@@ -1732,7 +1770,7 @@ bool DeclParser::readDeclarator()
   {
     mName = ip.parse();
   }
-  catch (const ParserException &)
+  catch (const SyntaxError&)
   {
     if (mDecision != Undecided)
       throw;
@@ -1848,7 +1886,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   }
   else
   {
-    throw UnexpectedToken{ peek() };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
   }
 
   readArgsOrParams();
@@ -1864,7 +1902,8 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   if (peek() == Token::LeftBrace)
   {
     if (mDecision == ParsingVariable)
-      throw UnexpectedToken{ peek() };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+
     mDecision = ParsingFunction;
     mVarDecl = nullptr;
     mFuncDecl->body = readFunctionBody();
@@ -1873,13 +1912,13 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   else if (peek() == Token::Semicolon)
   {
     if (mDecision == ParsingFunction)
-      throw UnexpectedToken{ peek(), Token::LeftBrace };
+      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
 
     mVarDecl->semicolon = read();
     return mVarDecl;
   }
 
-  throw UnexpectedToken{ peek() };
+  throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
 }
 
 std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
@@ -2120,7 +2159,7 @@ void DeclParser::readArgsOrParams()
         auto expr = ep.parse();
         mVarDecl->init->as<ast::ConstructorInitialization>().args.push_back(expr);
       }
-      catch (const ParserException &)
+      catch (const SyntaxError&)
       {
         if (mDecision == ParsingVariable)
           throw;
@@ -2143,7 +2182,7 @@ void DeclParser::readArgsOrParams()
         auto param = pp.parse();
         mFuncDecl->params.push_back(param);
       }
-      catch (const ParserException &)
+      catch (const SyntaxError&)
       {
         if (isParsingFunction())
           throw;
@@ -2173,7 +2212,8 @@ bool DeclParser::readOptionalConst()
     return false;
   
   if (mDecision == ParsingVariable)
-    throw UnexpectedToken{ peek() };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
   mFuncDecl->constQualifier = read();
@@ -2193,7 +2233,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   const Token eqSign = read();
 
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   if (peek() != Token::Delete)
   {
@@ -2208,7 +2248,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   mVarDecl = nullptr;
 
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   read(Token::Semicolon);
 
@@ -2227,7 +2267,7 @@ bool DeclParser::readOptionalDefaultSpecifier()
   const Token eqSign = read();
 
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   if (peek() != Token::Default)
   {
@@ -2266,7 +2306,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
   mFuncDecl->virtualPure = read();
 
   if (text(mFuncDecl->virtualPure) != "0")
-    throw UnexpectedToken{ mFuncDecl->virtualPure, parser::Token::Zero};
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::Zero} };
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -2280,7 +2320,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
 std::shared_ptr<ast::CompoundStatement> DeclParser::readFunctionBody()
 {
   if (peek() != Token::LeftBrace)
-    throw UnexpectedToken{ peek(), Token::LeftBrace };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
 
   ProgramParser pParser{ fragment() };
   return std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
@@ -2303,7 +2343,7 @@ bool DeclParser::detectCtorDecl()
       return false;
     }
   }
-  catch (const ParserException &)
+  catch (const SyntaxError&)
   {
     seek(p);
     return false;
@@ -2329,13 +2369,13 @@ bool DeclParser::detectDtorDecl()
 
   const Token tilde = unsafe_read();
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   IdentifierParser ip{ fragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
   auto iden = ip.parse();
 
   if (!isClassName(iden))
-    throw ExpectedCurrentClassName{};
+    throw SyntaxError{ ParserError::ExpectedCurrentClassName };
 
   mDecision = ParsingDestructor;
   auto dtor = ast::DestructorDecl::New(iden);
@@ -2360,11 +2400,11 @@ bool DeclParser::detectCastDecl()
   {
     type = tp.parse();
   }
-  catch (const ParserException &)
+  catch (const SyntaxError&)
   {
     if (mExplicitKw.isValid())
     {
-      throw CouldNotReadType{};
+      throw SyntaxError{ ParserError::CouldNotReadType };
     }
     else 
     {
@@ -2544,7 +2584,7 @@ std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 void ClassParser::readOptionalParent()
 {
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   if (peek() != Token::Colon)
     return;
@@ -2552,7 +2592,7 @@ void ClassParser::readOptionalParent()
   mClass->colon = unsafe_read();
 
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   IdentifierParser nameParser{ fragment(), IdentifierParser::ParseTemplateId | IdentifierParser::ParseQualifiedId}; // TODO : forbid read operator name directly here
   auto parent = nameParser.parse();
@@ -2565,12 +2605,12 @@ void ClassParser::readOptionalParent()
 void ClassParser::readDecl()
 {
   if (atEnd())
-    throw UnexpectedEndOfInput{};
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   DeclParser dp{ fragment(), mClass->name };
   
   if (!dp.detectDecl())
-    throw ExpectedDeclaration{};
+    throw SyntaxError{ ParserError::ExpectedDeclaration };
 
   mClass->content.push_back(dp.parse());
 }
@@ -2739,8 +2779,10 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
   std::vector<Token> names;
 
   Token tok = read();
+
   if (!tok.isIdentifier())
-    throw ExpectedIdentifier{ tok };
+    throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{tok} };
+
   names.push_back(tok);
 
   while (peek() == Token::Dot)
@@ -2748,8 +2790,10 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
     unsafe_read();
 
     tok = read();
+
     if (!tok.isIdentifier())
-      throw ExpectedIdentifier{ tok };
+      throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{tok} };
+
     names.push_back(tok);
   }
 
@@ -2804,8 +2848,10 @@ std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
 
   DeclParser funcparser{ fragment() };
   funcparser.setDeclaratorOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName | IdentifierParser::ParseTemplateId);
+
   if (!funcparser.detectDecl())
-    throw ExpectedDeclaration{};
+    throw SyntaxError{ ParserError::ExpectedDeclaration };
+
   funcparser.setDecision(DeclParser::ParsingFunction);
   return funcparser.parse();
 }
@@ -2829,10 +2875,10 @@ ast::TemplateParameter TemplateParameterParser::parse()
   else if (unsafe_peek() == Token::Bool)
     result.kind = unsafe_read();
   else
-    throw UnexpectedToken{ peek() };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
 
   if (!peek().isIdentifier())
-    throw ExpectedIdentifier{ peek() };
+    throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{unsafe_peek()} };
 
   result.name = unsafe_read();
 
@@ -2880,13 +2926,14 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
       fragment()->data()->clearBuffer();
     }
   }
-  catch (const ParserException & e)
+  catch (SyntaxError& ex)
   {
+    ex.location = location();
     ret->hasErrors = true;
-    if(atEnd())
-      ret->log(diagnostic::error() << e.what());
-    else
-      ret->log(diagnostic::error() << diagnostic::pos(peek().line, peek().column) << e.what());
+    // TODO: allow customization point
+    diagnostic::MessageBuilder builder{ diagnostic::Severity::Error };
+    builder << ex;
+    ret->log(builder.build());
   }
 
   return ret;
@@ -2906,13 +2953,14 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
     auto expr = ep.parse();
     ret->root = expr;
   }
-  catch (const ParserException & e)
+  catch (SyntaxError & ex)
   {
+    ex.location = location();
     ret->hasErrors = true;
-    if (atEnd())
-      ret->log(diagnostic::error() << e.what());
-    else
-      ret->log(diagnostic::error() << diagnostic::pos(peek().line, peek().column) << e.what());
+    // TODO: allow customization point
+    diagnostic::MessageBuilder builder{ diagnostic::Severity::Error };
+    builder << ex;
+    ret->log(builder.build());
   }
 
   return ret;

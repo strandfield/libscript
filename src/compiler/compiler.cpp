@@ -30,7 +30,7 @@ namespace script
 namespace compiler
 {
 
-void SessionLogger::log(const diagnostic::Message & mssg)
+void SessionLogger::log(const diagnostic::DiagnosticMessage & mssg)
 {
   session_->log(mssg);
 }
@@ -389,7 +389,7 @@ void Compiler::finalizeSession()
 }
 
 
-void CompileSession::log(const diagnostic::Message & mssg)
+void CompileSession::log(const diagnostic::DiagnosticMessage & mssg)
 {
   this->messages.push_back(mssg);
   if (mssg.severity() == diagnostic::Error)

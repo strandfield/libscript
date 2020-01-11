@@ -39,7 +39,7 @@ public:
 
   ~SessionLogger() = default;
 
-  void log(const diagnostic::Message & mssg) override;
+  void log(const diagnostic::DiagnosticMessage & mssg) override;
   void log(const CompilerException & exception) override;
 };
 
@@ -74,13 +74,13 @@ public:
     std::vector<Script> scripts;
   } generated;
 
-  std::vector<diagnostic::Message> messages;
+  std::vector<diagnostic::DiagnosticMessage> messages;
   bool error;
   Script script;
 
   SessionLogger mLogger;
 
-  void log(const diagnostic::Message & mssg);
+  void log(const diagnostic::DiagnosticMessage & mssg);
   void log(const CompilerException & exception);
 
   void clear();

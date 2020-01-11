@@ -422,7 +422,7 @@ const std::shared_ptr<program::Expression> & OverloadResolution::implicit_object
   return d->implicit_object;
 }
 
-diagnostic::Message OverloadResolution::emitDiagnostic() const
+diagnostic::DiagnosticMessage OverloadResolution::emitDiagnostic() const
 {
   if (success())
     return diagnostic::info() << "Overload resolution succeeded";

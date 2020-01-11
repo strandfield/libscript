@@ -8,10 +8,13 @@
 #include "libscriptdefs.h"
 
 #include "script/exception.h"
+#include "script/sourcefile.h"
+
 #include "script/operators.h"
 #include "script/parser/token.h"
 
 #include <string>
+#include <system_error>
 
 namespace script
 {
@@ -22,7 +25,7 @@ class Type;
 
 namespace parser
 {
-class ParserException;
+class SyntaxError;
 } // namespace parser
 
 namespace compiler
@@ -52,39 +55,82 @@ enum Verbosity {
   Pedantic = 4,
 };
 
+template<diagnostic::Severity S>
+class Message
+{
+private:
+  std::error_code m_error_code;
+  SourceLocation m_location;
+  std::string m_content;
+
+public:
+  Message() = default;
+  Message(const Message<S>&) = default;
+  Message(Message<S>&&) = default;
+  ~Message() = default;
+
+  Message(std::error_code ec, std::string text)
+    : m_error_code(ec),
+      m_location(),
+      m_content(std::move(text))
+  {
+
+  }
+
+  Message(std::error_code ec, SourceLocation loc, std::string text)
+    : m_error_code(ec),
+      m_location(loc),
+      m_content(std::move(text))
+  {
+
+  }
+
+  constexpr Severity severity() const { return S; }
+  constexpr bool isInfo() const { return severity() == Severity::Info; }
+  constexpr bool isWarning() const { return severity() == Severity::Warning; }
+  constexpr bool isError() const { return severity() == Severity::Error; }
+
+  std::error_code errorCode() const { return m_error_code; }
+  const SourceLocation& location() const { return m_location; }
+  const std::string& content() const { return m_content; }
+  
+  Message& operator=(const Message<S>&) = default;
+  Message& operator=(Message<S>&&) = default;
+};
+
 /// Format : [Severity]line:col: content
-class LIBSCRIPT_API Message
+class LIBSCRIPT_API DiagnosticMessage
 {
 public:
-  Message(Severity severity = Info, ErrorCode code = ErrorCode::NoError);
-  Message(const Message &) = default;
+  DiagnosticMessage() = default;
+  DiagnosticMessage(const DiagnosticMessage&) = default;
+  DiagnosticMessage(DiagnosticMessage&&) = default;
+  ~DiagnosticMessage() = default;
 
-  Message(const std::string & str, Severity severity = Info, ErrorCode code = ErrorCode::NoError);
-  Message(std::string && str, Severity severity = Info, ErrorCode code = ErrorCode::NoError);
-  ~Message() = default;
+  DiagnosticMessage(Severity s, std::error_code ec, SourceLocation loc, std::string text);
+  DiagnosticMessage(Severity s, std::error_code ec, std::string text);
 
   inline Severity severity() const { return mSeverity; }
   std::string message() const;
   inline std::string to_string() const { return message(); }
-  const std::string & content() const;
+  const std::string& content() const;
 
-  inline const ErrorCode & code() const { return mCode; }
+  inline const std::error_code& code() const { return mCode; }
 
-  inline int line() const { return mLine; }
-  inline int column() const { return mColumn; }
+  const SourceLocation& location() const { return mLocation; }
+  inline int line() const { return static_cast<int>(location().m_pos.line); }
+  inline int column() const { return static_cast<int>(location().m_pos.col); }
 
-  Message & operator=(const Message & other) = default;
-  Message & operator=(Message && other);
+  DiagnosticMessage& operator=(const DiagnosticMessage& ) = default;
+  DiagnosticMessage& operator=(DiagnosticMessage&& ) = default;
 
 private:
   friend class MessageBuilder;
-  int16_t mLine;
-  int16_t mColumn;
-  Severity mSeverity;
-  ErrorCode mCode;
+  Severity mSeverity = Severity::Info;
+  SourceLocation mLocation;
+  std::error_code mCode;
   std::string mContent;
 };
-
 
 struct line_t { int line; };
 line_t line(int l);
@@ -129,8 +175,8 @@ public:
   MessageBuilder & operator<<(const std::string & str);
   MessageBuilder & operator<<(std::string && str);
   MessageBuilder & operator<<(const Exception & ex);
-  MessageBuilder & operator<<(const parser::ParserException & ex);
   MessageBuilder & operator<<(const compiler::CompilerException & ex);
+  MessageBuilder& operator<<(const parser::SyntaxError& ex);
   inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }
 
   inline MessageBuilder & operator<<(Engine *e) { mEngine = e; return *(this); }
@@ -141,11 +187,11 @@ public:
     return (*this) << repr(as);
   }
 
-  Message build() const;
-  operator Message() const;
+  DiagnosticMessage build() const;
+  operator DiagnosticMessage() const;
 
   Engine *mEngine;
-  ErrorCode mCode;
+  std::error_code mCode;
   Severity mSeverity;
   std::string mBuffer;
   int mLine;
@@ -157,6 +203,8 @@ MessageBuilder warning(Engine *e = nullptr);
 MessageBuilder error(Engine *e = nullptr);
 
 } // namespace diagnostic
+
+typedef diagnostic::DiagnosticMessage DiagnosticMessage;
 
 } // namespace script
 

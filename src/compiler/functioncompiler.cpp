@@ -683,7 +683,7 @@ void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::sha
   processExitScope(scp);
 }
 
-void FunctionCompiler::log(const diagnostic::Message & mssg)
+void FunctionCompiler::log(const diagnostic::DiagnosticMessage & mssg)
 {
   logger_->log(mssg);
 }

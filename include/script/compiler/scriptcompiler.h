@@ -118,7 +118,7 @@ protected:
   void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
-  void log(const diagnostic::Message & mssg);
+  void log(const diagnostic::DiagnosticMessage & mssg);
   void log(const CompilerException & exception);
 
 protected:

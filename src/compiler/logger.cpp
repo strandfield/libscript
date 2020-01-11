@@ -17,7 +17,7 @@ Logger::~Logger()
 
 }
 
-void Logger::log(const diagnostic::Message & mssg)
+void Logger::log(const diagnostic::DiagnosticMessage & mssg)
 {
   (void)mssg;
 }

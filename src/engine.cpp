@@ -894,7 +894,7 @@ Value Engine::eval(const std::string & command)
   {
     diagnostic::MessageBuilder msb{ diagnostic::Error, this };
     msb << ex;
-    diagnostic::Message mssg = msb.build();
+    diagnostic::DiagnosticMessage mssg = msb.build();
 
     throw EvaluationError{ mssg.to_string() };
   }

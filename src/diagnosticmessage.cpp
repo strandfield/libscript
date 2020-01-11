@@ -9,6 +9,7 @@
 #include "script/operator.h"
 #include "script/typesystem.h"
 
+#include "script/parser/token.h"
 #include "script/parser/parsererrors.h"
 #include "script/compiler/compilererrors.h"
 
@@ -391,36 +392,24 @@ std::string format(std::string str, const std::string & arg1, const std::string 
   return format(format(str, arg1, arg2, arg3), arg3, arg4);
 }
 
-Message::Message(Severity severity, ErrorCode code)
-  : mLine(-1)
-  , mColumn(-1)
-  , mSeverity(severity)
-  , mCode(code)
+DiagnosticMessage::DiagnosticMessage(Severity s, std::error_code ec, SourceLocation loc, std::string text)
+  : mSeverity(s),
+    mCode(ec),
+    mLocation(loc),
+    mContent(std::move(text))
 {
 
 }
 
-Message::Message(const std::string & str, Severity severity, ErrorCode code)
-  : mLine(-1)
-  , mColumn(-1)
-  , mSeverity(severity)
-  , mCode(code)
-  , mContent(str)
+DiagnosticMessage::DiagnosticMessage(Severity s, std::error_code ec, std::string text)
+  : mSeverity(s),
+    mCode(ec),
+    mContent(std::move(text))
 {
 
 }
 
-Message::Message(std::string && str, Severity severity, ErrorCode code)
-  : mLine(-1)
-  , mColumn(-1)
-  , mSeverity(severity)
-  , mCode(code)
-  , mContent(std::move(str))
-{
-
-}
-
-std::string Message::message() const
+std::string DiagnosticMessage::message() const
 {
   std::string result;
 
@@ -437,18 +426,18 @@ std::string Message::message() const
     break;
   }
 
-  if (mCode != ErrorCode::NoError)
+  if (!mCode)
   {
     /// TODO: do something with that ?
   }
 
 
-  if (mLine >= 0)
+  if (line() != std::numeric_limits<uint16_t>::max())
   {
-    result += std::to_string(mLine);
+    result += std::to_string(line());
     result += std::string{ ":" };
-    if (mColumn >= 0)
-      result += std::to_string(mColumn) + std::string{ ":" };
+    if (column() != std::numeric_limits<uint16_t>::max())
+      result += std::to_string(column()) + std::string{ ":" };
   }
 
   result += " ";
@@ -458,20 +447,9 @@ std::string Message::message() const
   return result;
 }
 
-const std::string & Message::content() const
+const std::string & DiagnosticMessage::content() const
 {
   return mContent;
-}
-
-Message & Message::operator=(Message && other)
-{
-  this->mCode = other.mCode;
-  other.mCode = ErrorCode::NoError;
-  this->mSeverity = other.mSeverity;
-  this->mLine = other.mLine;
-  this->mColumn = other.mColumn;
-  this->mContent = std::move(other.mContent);
-  return *(this);
 }
 
 line_t line(int l)
@@ -487,7 +465,7 @@ pos_t pos(int l, int col)
 MessageBuilder::MessageBuilder(Severity s, Engine *e)
   : mEngine(e)
   , mSeverity(s)
-  , mCode(ErrorCode::NoError)
+  , mCode()
   , mLine(-1)
   , mColumn(-1)
 {
@@ -575,43 +553,13 @@ MessageBuilder & MessageBuilder::operator<<(std::string && str)
 
 MessageBuilder & MessageBuilder::operator<<(const Exception & ex)
 {
-  if (ex.is<parser::ParserException>())
-    return *(this) << ex.as<parser::ParserException>();
-  else if (ex.is<compiler::CompilerException>())
+  if (ex.is<compiler::CompilerException>())
     return *(this) << ex.as<compiler::CompilerException>();
   
-  mCode = ex.code();
+  mCode = std::error_code(static_cast<int>(ex.code()), std::generic_category());
   mBuffer += "Not implemented (print exception)";
 
   return *(this);
-}
-
-MessageBuilder & MessageBuilder::operator<<(const parser::ParserException & ex)
-{
-  mCode = ex.code();
-  mBuffer += "ParserError: ";
-
-  std::string fmt = gMessageDatabase->messages[static_cast<int>(ex.code())];
-
-  switch (ex.code())
-  {
-  case ErrorCode::P_UnexpectedToken:
-  {
-    const auto & unexpected_token = ex.as<parser::UnexpectedToken>();
-    (*this) << diagnostic::pos_t{ unexpected_token.actual.line, unexpected_token.actual.column };
-    if (unexpected_token.expected != parser::Token::Invalid)
-      fmt = fmt.substr(0, fmt.find("||"));
-    else
-      fmt = fmt.substr(fmt.find("||") + 2);
-    mBuffer += format(fmt, unexpected_token.actual, unexpected_token.expected);
-    break;
-  }
-  default:
-    mBuffer += fmt;
-    break;
-  }
-
-  return *this;
 }
 
 #define CASE_1(Name, m1) case ErrorCode::C_##Name: \
@@ -629,7 +577,7 @@ MessageBuilder & MessageBuilder::operator<<(const parser::ParserException & ex)
 MessageBuilder & MessageBuilder::operator<<(const compiler::CompilerException & ex)
 {
   (*this) << ex.pos;
-  mCode = ex.code();
+  mCode = std::error_code(static_cast<int>(ex.code()), std::generic_category());
 
   const std::string & fmt = gMessageDatabase->messages[static_cast<int>(ex.code())];
 
@@ -669,15 +617,58 @@ MessageBuilder & MessageBuilder::operator<<(const compiler::CompilerException & 
 #undef CASE_2
 #undef CASE_3
 
-Message MessageBuilder::build() const
+MessageBuilder& MessageBuilder::operator<<(const parser::SyntaxError& ex)
 {
-  Message result{ std::move(mBuffer), mSeverity, mCode };
-  result.mLine = mLine;
-  result.mColumn = mColumn;
+  mCode = ex.errorCode();
+  mLine = ex.location.m_pos.line;
+  mColumn = ex.location.m_pos.col;
+
+  const std::string& fmt = gMessageDatabase->messages[ex.errorCode().value() + static_cast<int>(ErrorCode::FirstParserError)];
+
+  if (!ex.data)
+  {
+    mBuffer += fmt;
+  }
+  else
+  {
+    switch (static_cast<ParserError>(ex.errorCode().value()))
+    {
+    case ParserError::UnexpectedToken:
+    {
+      const auto& data = ex.data->get<parser::errors::UnexpectedToken>();
+
+      if (data.expected != parser::Token::Invalid)
+      {
+        mBuffer += format(fmt, data.actual);
+      }
+      else
+      {
+        mBuffer += format(fmt, data.actual, data.expected);
+      }
+    }
+    break;
+    case ParserError::IllegalUseOfKeyword:
+      mBuffer += format(fmt, ex.data->get<parser::errors::KeywordToken>().keyword);
+      break;
+    default:
+      mBuffer += fmt;
+      break;
+    }
+
+  }
+
+  return *this;
+}
+
+DiagnosticMessage MessageBuilder::build() const
+{
+  DiagnosticMessage result{ mSeverity, mCode, std::move(mBuffer) };
+  result.mLocation.m_pos.line = mLine;
+  result.mLocation.m_pos.col = mColumn;
   return result;
 }
 
-MessageBuilder::operator Message() const
+MessageBuilder::operator DiagnosticMessage() const
 {
   return build();
 }

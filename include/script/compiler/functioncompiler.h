@@ -136,7 +136,7 @@ protected:
   void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
 
 protected:
-  void log(const diagnostic::Message & mssg);
+  void log(const diagnostic::DiagnosticMessage & mssg);
   void log(const CompilerException & exception);
 
 private:

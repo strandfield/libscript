@@ -13,7 +13,7 @@ namespace script
 
 namespace diagnostic
 {
-class Message;
+class DiagnosticMessage;
 class MessageBuilder;
 } // namespace diagnostic
 
@@ -77,7 +77,7 @@ public:
 
   const std::shared_ptr<program::Expression> & implicit_object() const;
 
-  diagnostic::Message emitDiagnostic() const;
+  diagnostic::DiagnosticMessage emitDiagnostic() const;
 
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
   bool process(const std::vector<Function> & candidates, const std::vector<Value> & values);

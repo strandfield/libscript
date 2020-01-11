@@ -2,10 +2,8 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#ifndef LIBSCRIPT_PARSER_ERRORS_H
-#define LIBSCRIPT_PARSER_ERRORS_H
-
-#include <tuple>
+#ifndef LIBSCRIPT_PARSER_PARSERERRORS_H
+#define LIBSCRIPT_PARSER_PARSERERRORS_H
 
 #include "script/parser/lexer.h"
 #include "script/ast/ast_p.h"
@@ -13,217 +11,89 @@
 #include "script/diagnosticmessage.h"
 #include "script/exception.h"
 
+#include "script/parser/errors.h"
+
 namespace script
 {
 
 namespace parser
 {
 
-class ParserException : public Exception
+struct ParserErrorData
 {
-public:
-  ParserException() = default;
-  ParserException(const ParserException &) = default;
-  virtual ~ParserException() = default;
-  
-  virtual std::string what() const { return "no implemented"; };
+  virtual ~ParserErrorData();
+
+  template<typename T>
+  T& get();
 };
 
-class UnexpectedEndOfInput : public ParserException
+template<typename T>
+struct ParserErrorDataWrapper : ParserErrorData
 {
 public:
-  UnexpectedEndOfInput() = default;
-  ~UnexpectedEndOfInput() = default;
-  ErrorCode code() const override { return ErrorCode::P_UnexpectedEndOfInput; }
+  T value;
+
+public:
+  ParserErrorDataWrapper(const ParserErrorDataWrapper<T>&) = delete;
+  ~ParserErrorDataWrapper() = default;
+
+  ParserErrorDataWrapper(T&& data) : value(std::move(data)) { }
 };
 
-class UnexpectedFragmentEnd : public ParserException
+template<typename T>
+inline T& ParserErrorData::get()
+{
+  return static_cast<ParserErrorDataWrapper<T>*>(this)->value;
+}
+
+class SyntaxError : public Exceptional
 {
 public:
-  UnexpectedFragmentEnd() = default;
-  ~UnexpectedFragmentEnd() = default;
-  ErrorCode code() const override { return ErrorCode::P_UnexpectedFragmentEnd; }
+  SourceLocation location;
+  std::unique_ptr<ParserErrorData> data;
+
+public:
+
+  SyntaxError(SyntaxError&&) noexcept = default;
+
+  explicit SyntaxError(ParserError e)
+    : Exceptional(e)
+  {
+
+  }
+
+  template<typename T>
+  SyntaxError(ParserError e, T&& d)
+    : Exceptional(e)
+  {
+    data = std::make_unique<ParserErrorDataWrapper<T>>(std::move(d));
+  }
 };
 
-
-class UnexpectedToken : public ParserException
+namespace errors
 {
-public:
+
+struct ActualToken
+{
+  Token token;
+};
+
+struct KeywordToken
+{
+  Token keyword;
+};
+
+struct UnexpectedToken
+{
   Token actual;
   Token::Type expected;
-
-public:
-  UnexpectedToken(const Token & got, Token::Type expect = Token::Invalid) : actual(got), expected(expect) { }
-  ~UnexpectedToken() = default;
-  ErrorCode code() const override { return ErrorCode::P_UnexpectedToken; }
 };
 
-class IllegalUseOfKeyword : public ParserException
-{
-public:
-  Token keyword;
-
-public:
-  IllegalUseOfKeyword(const Token & got) : keyword(got) { }
-  ~IllegalUseOfKeyword() = default;
-  ErrorCode code() const override { return ErrorCode::P_IllegalUseOfKeyword; }
-};
-
-class ExpectedEmptyStringLiteral : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedEmptyStringLiteral(const Token & got) : actual(got) { }
-  ~ExpectedEmptyStringLiteral() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedEmptyStringLiteral; }
-};
-
-class ExpectedOperatorSymbol : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedOperatorSymbol(const Token & got) : actual(got) { }
-  ~ExpectedOperatorSymbol() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedOperatorSymbol; }
-};
-
-class ExpectedIdentifier : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedIdentifier(const Token & got) : actual(got) { }
-  ~ExpectedIdentifier() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedIdentifier; }
-};
-
-class ExpectedUserDefinedName : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedUserDefinedName(const Token & got) : actual(got) { }
-  ~ExpectedUserDefinedName() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedUserDefinedName; }
-};
-
-
-class ExpectedLiteral : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedLiteral(const Token & got) : actual(got) { }
-  ~ExpectedLiteral() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedLiteral; }
-};
-
-class InvalidEmptyOperand : public ParserException
-{
-public:
-  InvalidEmptyOperand() = default;
-  ~InvalidEmptyOperand() = default;
-  ErrorCode code() const override { return ErrorCode::P_InvalidEmptyOperand; }
-};
-
-class InvalidEmptyBrackets : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  InvalidEmptyBrackets() = default;
-  ~InvalidEmptyBrackets() = default;
-  ErrorCode code() const override { return ErrorCode::P_InvalidEmptyBrackets; }
-};
-
-class ExpectedOperator : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedOperator(const Token & got) : actual(got) { }
-  ~ExpectedOperator() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedOperator; }
-};
-
-class ExpectedBinaryOperator : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedBinaryOperator(const Token & got) : actual(got) { }
-  ~ExpectedBinaryOperator() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedBinaryOperator; }
-};
-
-class ExpectedPrefixOperator : public ParserException
-{
-public:
-  Token actual;
-
-public:
-  ExpectedPrefixOperator(const Token & got) : actual(got) { }
-  ~ExpectedPrefixOperator() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedPrefixOperator; }
-};
-
-class MissingConditionalColon : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  MissingConditionalColon() = default;
-  ~MissingConditionalColon() = default;
-  ErrorCode code() const override { return ErrorCode::P_MissingConditionalColon; }
-};
-
-
-class CouldNotParseLambdaCapture : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  CouldNotParseLambdaCapture() = default;
-  ~CouldNotParseLambdaCapture() = default;
-  ErrorCode code() const override { return ErrorCode::P_CouldNotParseLambdaCapture; }
-};
-
-class ExpectedCurrentClassName : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  ExpectedCurrentClassName() = default;
-  ~ExpectedCurrentClassName() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedCurrentClassName; }
-};
-
-class CouldNotReadType : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  CouldNotReadType() = default;
-  ~CouldNotReadType() = default;
-  ErrorCode code() const override { return ErrorCode::P_CouldNotReadType; }
-};
-
-class ExpectedDeclaration : public ParserException
-{
-  /// TODO: add pos ?
-public:
-  ExpectedDeclaration() = default;
-  ~ExpectedDeclaration() = default;
-  ErrorCode code() const override { return ErrorCode::P_ExpectedDeclaration; }
-};
+} // namespace errors
 
 } // namespace parser
 
 } // namespace script
 
 
-#endif // LIBSCRIPT_PARSER_ERRORS_H
+#endif // LIBSCRIPT_PARSER_PARSERERRORS_H

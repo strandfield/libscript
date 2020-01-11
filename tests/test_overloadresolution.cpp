@@ -83,7 +83,7 @@ TEST(OverloadResolution, failure_indistinguishable) {
   resol.process(overloads, types);
   ASSERT_FALSE(resol.success());
 
-  diagnostic::Message mssg = resol.emitDiagnostic();
+  diagnostic::DiagnosticMessage mssg = resol.emitDiagnostic();
   //std::cout << mssg.to_string() << std::endl;
   ASSERT_TRUE(mssg.message().find("indistinguishable") != std::string::npos);
 }
@@ -112,7 +112,7 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
   ASSERT_EQ(resol.typeInputs().size(), 2);
   ASSERT_EQ(resol.typeInputs().back(), Type::Float);
 
-  diagnostic::Message mssg = resol.emitDiagnostic();
+  diagnostic::DiagnosticMessage mssg = resol.emitDiagnostic();
   //std::cout << mssg.to_string() << std::endl;
   ASSERT_TRUE(mssg.message().find("expects 1 but 2 were provided") != std::string::npos);
   ASSERT_TRUE(mssg.message().find("Could not convert argument 2") != std::string::npos);

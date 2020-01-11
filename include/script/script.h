@@ -57,7 +57,7 @@ public:
   inline const std::vector<Template> & templates() const { return rootNamespace().templates(); }
   inline const std::vector<Typedef> & typedefs() const { return rootNamespace().typedefs(); }
 
-  const std::vector<diagnostic::Message> & messages() const;
+  const std::vector<diagnostic::DiagnosticMessage> & messages() const;
 
   Scope exports() const;
 

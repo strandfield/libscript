@@ -899,7 +899,7 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
 }
 
-void ScriptCompiler::log(const diagnostic::Message & mssg)
+void ScriptCompiler::log(const diagnostic::DiagnosticMessage & mssg)
 {
   logger_->log(mssg);
 }

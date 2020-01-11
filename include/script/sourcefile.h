@@ -48,6 +48,12 @@ private:
   std::shared_ptr<SourceFileImpl> d;
 };
 
+struct LIBSCRIPT_API SourceLocation
+{
+  SourceFile m_source;
+  SourceFile::Position m_pos;
+};
+
 } // namespace script
 
 #endif // LIBSCRIPT_SOURCE_FILE_H

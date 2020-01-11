@@ -27,7 +27,7 @@ public:
   Function deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types);
   void instantiate(Function & f);
  
-  diagnostic::Message emitDiagnostic() const;
+  diagnostic::DiagnosticMessage emitDiagnostic() const;
 
   FunctionTemplateProcessor & operator=(const FunctionTemplateProcessor & ) = default;
 };
