@@ -4,6 +4,7 @@
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilesession.h"
+#include "script/compiler/component.h"
 
 #include "script/engine.h"
 #include "script/private/engine_p.h"
@@ -143,6 +144,42 @@ void CompileSession::clear()
 }
 
 
+Component::Component(Compiler* c)
+  : m_compiler{ c }
+{
+
+}
+
+Component::~Component()
+{
+
+}
+
+Engine* Component::engine() const
+{
+  return m_compiler->engine();
+}
+
+Compiler* Component::compiler() const
+{
+  return m_compiler;
+}
+
+const std::shared_ptr<CompileSession>& Component::session() const
+{
+  return m_compiler->session();
+}
+
+void Component::log(const diagnostic::DiagnosticMessage& mssg)
+{
+  session()->log(mssg);
+}
+
+void Component::log(const CompilerException& exception)
+{
+  session()->log(exception);
+}
+
 Compiler::Compiler(Engine *e)
   : mEngine(e)
 {
@@ -258,8 +295,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
 
   SessionManager manager{ this };
 
-  FunctionCompiler fc{ engine() };
-  fc.setLogger(session()->mLogger);
+  FunctionCompiler fc{ this };
 
   CompileFunctionTask task;
   task.declaration = decl;
@@ -299,7 +335,7 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd,
 {
   SessionManager manager{ this };
 
-  CommandCompiler cc{ engine() };
+  CommandCompiler cc{ this };
   auto result = cc.compile(cmmd, con);
 
   if (manager.started_session())
@@ -313,14 +349,7 @@ std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd,
 ScriptCompiler * Compiler::getScriptCompiler()
 {
   if (mScriptCompiler == nullptr)
-  {
-    mScriptCompiler = std::make_unique<ScriptCompiler>(engine());
-    mScriptCompiler->setLogger(mSession->mLogger);
-  }
-  else
-  {
-    mScriptCompiler->setLogger(mSession->mLogger);
-  }
+    mScriptCompiler = std::make_unique<ScriptCompiler>(this);
 
   return mScriptCompiler.get();
 }
@@ -329,10 +358,8 @@ FunctionCompiler * Compiler::getFunctionCompiler()
 {
   if (mFunctionCompiler == nullptr)
   {
-    mFunctionCompiler = std::make_unique<FunctionCompiler>(engine());
+    mFunctionCompiler = std::make_unique<FunctionCompiler>(this);
   }
-
-  mFunctionCompiler->setLogger(mSession->mLogger);
 
   return mFunctionCompiler.get();
 }

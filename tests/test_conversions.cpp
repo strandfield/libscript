@@ -379,7 +379,7 @@ static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engi
 
   auto astlistexpr = parser.parse();
 
-  compiler::ExpressionCompiler ec;
+  compiler::ExpressionCompiler ec{ e->compiler() };
   ec.setScope(Scope{ e->rootNamespace() });
   return ec.generateExpression(astlistexpr);
 }

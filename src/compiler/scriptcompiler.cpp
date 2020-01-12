@@ -70,16 +70,15 @@ ScriptCompiler::StateGuard::~StateGuard()
   compiler->mCurrentScript = script;
 }
 
-ScriptCompiler::ScriptCompiler(Engine *e)
-  : mEngine(e)
-  , variable_(e)
-  , modules_(e)
+ScriptCompiler::ScriptCompiler(Compiler *c)
+  : Component(c)
+  , variable_(c)
+  , modules_(c->engine())
+  , default_arguments_(c)
   , mReprocessingIncompleteFunctions(false)
 {
 
   scope_statements_.scope_ = &mCurrentScope;
-
-  logger_ = &default_logger_;
 }
 
 ScriptCompiler::~ScriptCompiler()
@@ -95,7 +94,7 @@ void ScriptCompiler::add(const Script & task)
   if (ast->hasErrors)
   {
     for (const auto & m : ast->messages)
-      logger_->log(m);
+      log(m);
     return; /// TODO: should we throw instead ?
   }
 
@@ -189,11 +188,6 @@ void ScriptCompiler::processNext()
 
     return;
   }
-}
-
-void ScriptCompiler::setLogger(Logger & lg)
-{
-  logger_ = &lg;
 }
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
@@ -897,16 +891,6 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
   if (f.isDeleted() || f.isPureVirtual())
     return;
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
-}
-
-void ScriptCompiler::log(const diagnostic::DiagnosticMessage & mssg)
-{
-  logger_->log(mssg);
-}
-
-void ScriptCompiler::log(const CompilerException & exception)
-{
-  logger_->log(exception);
 }
 
 const std::shared_ptr<ast::AST> & ScriptCompiler::currentAst() const

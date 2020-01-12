@@ -26,13 +26,11 @@ private:
   std::shared_ptr<program::Expression> generateOperation(const std::shared_ptr<ast::Expression> & op) override;
 };
 
-class CommandCompiler
+class CommandCompiler : Component
 {
 public:
-  explicit CommandCompiler(Engine *e);
+  explicit CommandCompiler(Compiler *c);
   ~CommandCompiler() = default;
-
-  inline Engine* engine() const { return mEngine; }
 
   std::shared_ptr<program::Expression> compile(const std::string & expr, Context context);
   std::shared_ptr<program::Expression> compile(const std::shared_ptr<ast::Expression> & expr, const Context & context);
@@ -40,7 +38,6 @@ public:
 protected:
 
 private:
-  Engine *mEngine;
   CommandExpressionCompiler expr_;
 };
 

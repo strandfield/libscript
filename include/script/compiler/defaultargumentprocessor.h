@@ -6,8 +6,11 @@
 #define LIBSCRIPT_DEFAULT_ARGUMENT_PROCESSOR_H
 
 #include "script/ast/node.h"
+
+#include "script/compiler/component.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/diagnostichelper.h"
+
 #include "script/functionbuilder.h"
 #include "script/scope.h"
 
@@ -17,9 +20,11 @@ namespace script
 namespace compiler
 {
 
-class LIBSCRIPT_API DefaultArgumentProcessor
+class LIBSCRIPT_API DefaultArgumentProcessor : Component
 {
 public:
+
+  using Component::Component;
 
   template<typename Builder>
   void generic_process(const std::vector<ast::FunctionParameter> & params, Builder & builder, const Scope & scp)

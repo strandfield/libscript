@@ -5,7 +5,7 @@
 #ifndef LIBSCRIPT_FUNCTION_COMPILER_EXTENSION_H
 #define LIBSCRIPT_FUNCTION_COMPILER_EXTENSION_H
 
-#include "libscriptdefs.h"
+#include "script/compiler/component.h"
 
 #include <memory>
 #include <string>
@@ -30,16 +30,13 @@ class ExpressionCompiler;
 class FunctionCompiler;
 class Stack;
 
-class FunctionCompilerExtension
+class FunctionCompilerExtension : public Component
 {
 private:
-  FunctionCompiler *mCompiler;
-public:
-  explicit FunctionCompilerExtension(FunctionCompiler *c)
-    : mCompiler(c)
-  {
+  FunctionCompiler *m_function_compiler;
 
-  }
+public:
+  explicit FunctionCompilerExtension(FunctionCompiler* c);
 
   ~FunctionCompilerExtension() = default;
 

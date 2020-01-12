@@ -19,7 +19,7 @@ namespace compiler
 
 std::shared_ptr<program::Expression> DefaultArgumentProcessor::generateDefaultArgument(const Scope & scp, const ast::FunctionParameter & param, const Type & t)
 {
-  ExpressionCompiler ec{ scp };
+  ExpressionCompiler ec{ compiler(), scp };
   auto expr = ec.generateExpression(param.defaultValue);
 
   Conversion conv = Conversion::compute(expr, t, scp.engine());

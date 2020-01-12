@@ -25,10 +25,10 @@ namespace script
 namespace compiler
 {
 
-VariableProcessor::VariableProcessor(Engine *e)
-  : engine_(e)
+VariableProcessor::VariableProcessor(Compiler *c)
+  : expr_(c)
 {
-
+  engine_ = expr_.engine();
 }
 
 void VariableProcessor::process(const std::shared_ptr<ast::VariableDecl> & decl, const Scope & scp)

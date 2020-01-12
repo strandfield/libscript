@@ -35,15 +35,10 @@ namespace script
 namespace compiler
 {
 
-LambdaProcessor::LambdaProcessor(Engine* e)
-  : engine_(e)
+LambdaProcessor::LambdaProcessor(Compiler* c)
+  : Component(c)
 {
 
-}
-
-void LambdaProcessor::setLogger(Logger* l)
-{
-  logger_ = l;
 }
 
 void LambdaProcessor::setStack(Stack* s)
@@ -62,12 +57,9 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
     const int first_capturable = 1;
     LambdaCompiler::preprocess(task, &ec, *stack_, first_capturable);
 
-    LambdaCompiler compiler{ engine_ };
+    LambdaCompiler lambda_compiler{ compiler() };
 
-    if (logger_)
-      compiler.setLogger(*logger_);
-
-    LambdaCompilationResult result = compiler.compile(task);
+    LambdaCompilationResult result = lambda_compiler.compile(task);
 
     return result.expression;
   }
@@ -80,26 +72,25 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
 
     CompileLambdaTask task;
     task.lexpr = le;
-    task.scope = script::Scope{ engine_->rootNamespace() }; /// TODO : make this customizable !
+    task.scope = script::Scope{ engine()->rootNamespace() }; /// TODO : make this customizable !
 
-    LambdaCompiler compiler{ engine_ };
+    LambdaCompiler lambda_compiler{ compiler() };
 
-    if (logger_)
-      compiler.setLogger(*logger_);
-
-    LambdaCompilationResult result = compiler.compile(task);
+    LambdaCompilationResult result = lambda_compiler.compile(task);
 
     return result.expression;
   }
 }
 
-ExpressionCompiler::ExpressionCompiler()
+ExpressionCompiler::ExpressionCompiler(Compiler* c)
+  : Component(c)
 {
 
 }
 
-ExpressionCompiler::ExpressionCompiler(const Scope & scp)
-  : scope_(scp)
+ExpressionCompiler::ExpressionCompiler(Compiler* c, const Scope & scp)
+  : Component(c),
+    scope_(scp)
 {
 
 }
@@ -119,16 +110,6 @@ void ExpressionCompiler::setCaller(const Function & func)
     implicit_object_ = nullptr;
   else
     implicit_object_ = program::StackValue::New(1, Type::ref(caller_.memberOf().id()));
-}
-
-void ExpressionCompiler::setLogger(Logger* l)
-{
-  logger_ = l;
-}
-
-void ExpressionCompiler::setLogger(Logger& l)
-{
-  logger_ = &l;
 }
 
 void ExpressionCompiler::setStack(Stack* s)
@@ -527,8 +508,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
 
 std::shared_ptr<program::LambdaExpression> ExpressionCompiler::generateLambdaExpression(const std::shared_ptr<ast::LambdaExpression> & lambda_expr)
 {
-  LambdaProcessor lambda{ engine() };
-  lambda.setLogger(logger_);
+  LambdaProcessor lambda{ compiler() };
   lambda.setStack(stack_);
   return lambda.generate(*this, lambda_expr);
 }

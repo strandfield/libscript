@@ -277,34 +277,42 @@ void EnterScope::leave()
   compiler = nullptr;
 }
 
-Class FunctionCompilerExtension::currentClass() const 
-{ 
-  return mCompiler->classScope(); 
+
+FunctionCompilerExtension::FunctionCompilerExtension(FunctionCompiler* c)
+  : Component(c->compiler()),
+   m_function_compiler(c)
+{
+
 }
 
-FunctionCompiler * FunctionCompilerExtension::compiler() const 
+Class FunctionCompilerExtension::currentClass() const 
+{ 
+  return m_function_compiler->classScope(); 
+}
+
+FunctionCompiler* FunctionCompilerExtension::compiler() const 
 {
-  return mCompiler; 
+  return m_function_compiler;
 }
 
 const std::shared_ptr<ast::Declaration> & FunctionCompilerExtension::declaration() const
 { 
-  return mCompiler->declaration();
+  return m_function_compiler->declaration();
 }
 
 Engine * FunctionCompilerExtension::engine() const 
 { 
-  return mCompiler->engine(); 
+  return m_function_compiler->engine();
 }
 
 Stack & FunctionCompilerExtension::stack()
 {
-  return mCompiler->mStack; 
+  return m_function_compiler->mStack;
 }
 
 ExpressionCompiler & FunctionCompilerExtension::ec() 
 { 
-  return mCompiler->expr_; 
+  return m_function_compiler->expr_;
 }
 
 std::string FunctionCompilerExtension::dstr(const std::shared_ptr<ast::Identifier> & id)
@@ -314,22 +322,21 @@ std::string FunctionCompilerExtension::dstr(const std::shared_ptr<ast::Identifie
 
 NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identifier> & name)
 {
-  return mCompiler->resolve(name);
+  return m_function_compiler->resolve(name);
 }
 
 
 
-FunctionCompiler::FunctionCompiler(Engine *e)
-  : mEngine(e)
-  , modules_(e)
+FunctionCompiler::FunctionCompiler(Compiler *c)
+  : Component(c)
+  , expr_{c}
+  , modules_(c->engine())
 {
   expr_.variableAccessor().setStack(&mStack);
 
   expr_.setStack(&mStack);
 
   scope_statements_.scope_ = &mCurrentScope;
-  
-  logger_ = &default_logger_;
 }
 
 FunctionCompiler::~FunctionCompiler()
@@ -416,11 +423,6 @@ std::shared_ptr<ast::CompoundStatement> FunctionCompiler::bodyDeclaration()
 bool FunctionCompiler::canUseThis() const
 {
   return mFunction.hasImplicitObject();
-}
-
-void FunctionCompiler::setLogger(Logger & lg)
-{
-  logger_ = &lg;
 }
 
 std::shared_ptr<program::Expression> FunctionCompiler::generate(const std::shared_ptr<ast::Expression> & e)
@@ -681,16 +683,6 @@ void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::sha
 {
   BufferSwap swap{ mBuffer, statements };
   processExitScope(scp);
-}
-
-void FunctionCompiler::log(const diagnostic::DiagnosticMessage & mssg)
-{
-  logger_->log(mssg);
-}
-
-void FunctionCompiler::log(const CompilerException & exception)
-{
-  logger_->log(exception);
 }
 
 void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)

@@ -40,8 +40,8 @@ Capture::Capture(const std::string & n, const std::shared_ptr<program::Expressio
 
 }
 
-LambdaCompiler::LambdaCompiler(Engine* e)
-  : FunctionCompiler(e)
+LambdaCompiler::LambdaCompiler(Compiler* c)
+  : FunctionCompiler(c)
   , mCurrentTask(nullptr)
 {
 
@@ -164,7 +164,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   auto builder = Class{ mLambda.impl() }.newFunctionCallOperator();
   builder.proto_ = computePrototype();
-  DefaultArgumentProcessor default_arguments;
+  DefaultArgumentProcessor default_arguments{ compiler() };
   default_arguments.generic_process(task.lexpr->params, builder, task.scope);
 
   Function function = builder.get();

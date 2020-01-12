@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_COMPILE_EXPRESSION_H
 #define LIBSCRIPT_COMPILE_EXPRESSION_H
 
+#include "script/compiler/component.h"
+
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
@@ -35,20 +37,18 @@ class ExpressionCompiler;
 class FunctionCompiler;
 class Logger;
 
-class LambdaProcessor
+class LambdaProcessor : Component
 {
 private:
-  Engine* engine_ = nullptr;
   Stack* stack_ = nullptr;
-  Logger* logger_ = nullptr;
+
 public:
-  LambdaProcessor(Engine* e);
+  LambdaProcessor(Compiler* c);
   LambdaProcessor(const LambdaProcessor &) = delete;
   ~LambdaProcessor() = default;
 
   bool allowCaptures() const { return stack_ != nullptr; }
 
-  void setLogger(Logger* l);
   void setStack(Stack* s);
 
   std::shared_ptr<program::LambdaExpression> generate(ExpressionCompiler & ec, const std::shared_ptr<ast::LambdaExpression> & le);
@@ -56,13 +56,12 @@ public:
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
 
-class ExpressionCompiler
+class ExpressionCompiler : public Component
 {
 private:
   Scope scope_;
   Function caller_;
   Stack* stack_ = nullptr;
-  Logger* logger_ = nullptr;
 
 private:
   TypeResolver type_resolver;
@@ -74,8 +73,8 @@ private:
   std::shared_ptr<program::Expression> implicit_object_;
 
 public:
-  ExpressionCompiler();
-  ExpressionCompiler(const Scope & scp);
+  explicit ExpressionCompiler(Compiler *c);
+  ExpressionCompiler(Compiler* c, const Scope & scp);
 
   inline const Scope & scope() const { return scope_; }
   void setScope(const Scope& scp);
@@ -83,13 +82,8 @@ public:
   inline const Function & caller() const { return caller_; }
   void setCaller(const Function & func);
 
-  void setLogger(Logger* l);
-  void setLogger(Logger& l);
-
   void setStack(Stack* s);
   
-  inline Engine* engine() const { return scope_.engine(); }
-
   VariableAccessor& variableAccessor() { return variables_; }
 
   std::shared_ptr<program::Expression> generateExpression(const std::shared_ptr<ast::Expression> & expr);

@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILE_SCRIPT_H
 #define LIBSCRIPT_COMPILE_SCRIPT_H
 
+#include "script/compiler/component.h"
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/defaultargumentprocessor.h"
 #include "script/compiler/expressioncompiler.h"
@@ -46,13 +47,12 @@ struct ScopedDeclaration
 };
 
 
-class ScriptCompiler
+class ScriptCompiler : Component
 {
 public:
-  explicit ScriptCompiler(Engine *e);
+  explicit ScriptCompiler(Compiler *c);
+  ScriptCompiler(const ScriptCompiler&) = delete;
   ~ScriptCompiler();
-
-  inline Engine* engine() const { return mEngine; }
 
   void add(const Script & task);
   Class instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & args);
@@ -61,7 +61,6 @@ public:
   void processNext();
 
   ImportProcessor & importProcessor() { return modules_; }
-  void setLogger(Logger & lg);
 
   inline Script script() const { return mCurrentScript; }
   inline const Scope & currentScope() const { return mCurrentScope; }
@@ -118,10 +117,6 @@ protected:
   void schedule(Function & f, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp);
 
 protected:
-  void log(const diagnostic::DiagnosticMessage & mssg);
-  void log(const CompilerException & exception);
-
-protected:
   class StateGuard
   {
   private:
@@ -141,7 +136,6 @@ protected:
   const std::shared_ptr<ast::AST> & currentAst() const;
 
 protected:
-  Engine *mEngine;
   Script mCurrentScript;
 
   std::queue<ScopedDeclaration> mProcessingQueue; // data members (including static data members), friend declarations
@@ -164,9 +158,6 @@ protected:
   ImportProcessor modules_;
 
   DefaultArgumentProcessor default_arguments_;
-
-  Logger default_logger_;
-  Logger *logger_;
 
   FunctionTemplateProcessor templates_;
 

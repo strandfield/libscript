@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILE_FUNCTION_H
 #define LIBSCRIPT_COMPILE_FUNCTION_H
 
+#include "script/compiler/component.h"
 #include "script/compiler/compilefunctiontask.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
@@ -53,13 +54,11 @@ public:
   EnterScope(const EnterScope &) = delete;
 };
 
-class FunctionCompiler
+class FunctionCompiler : public Component
 {
 public:
-  explicit FunctionCompiler(Engine *e);
+  explicit FunctionCompiler(Compiler *c);
   ~FunctionCompiler();
-
-  inline Engine* engine() const { return mEngine; }
 
   void compile(const CompileFunctionTask & task);
 
@@ -70,8 +69,6 @@ public:
   const Function & compiledFunction() const;
 
   inline FunctionTemplateProcessor & functionTemplateProcessor() { return ftp_; }
-  inline Logger & logger() { return *logger_; }
-  void setLogger(Logger & lg);
 
 protected:
   bool canUseThis() const;
@@ -135,10 +132,6 @@ protected:
   void processExitScope(const Scope & scp);
   void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
 
-protected:
-  void log(const diagnostic::DiagnosticMessage & mssg);
-  void log(const CompilerException & exception);
-
 private:
   void processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
   void processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es);
@@ -177,9 +170,6 @@ protected:
   ExpressionCompiler expr_;
   ScopeStatementProcessor scope_statements_;
   ImportProcessor modules_;
-
-  Logger default_logger_;
-  Logger *logger_;
 
   FunctionTemplateProcessor ftp_;
 };

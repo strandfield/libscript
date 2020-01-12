@@ -40,10 +40,10 @@ private:
   TypeResolver type_;
 
 public:
-  VariableProcessor(Engine *e);
+  VariableProcessor(Compiler *c);
   ~VariableProcessor() = default;
 
-  inline Engine * engine() const { return engine_; }
+  inline Engine* engine() const { return engine_; }
 
   inline ExpressionCompiler & expressionCompiler() { return expr_; }
   inline TypeResolver & typeResolver() { return type_; }

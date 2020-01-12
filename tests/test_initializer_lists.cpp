@@ -79,7 +79,7 @@ TEST(InitializerLists, initializer_list_creation) {
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
 
-  compiler::ExpressionCompiler ec;
+  compiler::ExpressionCompiler ec{ engine.compiler() };
   ec.setScope(Scope{ engine.rootNamespace() });
   auto listexpr = ec.generateExpression(astlistexpr);
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
@@ -113,7 +113,7 @@ TEST(InitializerLists, initializer_list_conversion) {
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
 
-  compiler::ExpressionCompiler ec;
+  compiler::ExpressionCompiler ec{ engine.compiler() };
   ec.setScope(Scope{ engine.rootNamespace() });
   auto listexpr = ec.generateExpression(astlistexpr);
   ASSERT_TRUE(listexpr->is<program::InitializerList>());

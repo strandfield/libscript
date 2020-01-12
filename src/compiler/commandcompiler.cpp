@@ -41,8 +41,9 @@ std::shared_ptr<program::Expression> CommandExpressionCompiler::generateOperatio
   return ExpressionCompiler::generateOperation(op);
 }
 
-CommandCompiler::CommandCompiler(Engine *e)
-  : mEngine(e)
+CommandCompiler::CommandCompiler(Compiler *c)
+  : Component(c),
+    expr_(c)
 {
 
 }

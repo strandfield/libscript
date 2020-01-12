@@ -58,7 +58,7 @@ class LambdaCompiler;
 class LambdaCompiler : public FunctionCompiler
 {
 public:
-  explicit LambdaCompiler(Engine *e);
+  explicit LambdaCompiler(Compiler *c);
 
   static void preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset);
 
