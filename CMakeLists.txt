@@ -7,6 +7,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
   # disables warning about DLL export 
   # this is annoying when using C++ STL
   add_compile_options(/wd4251)  
+  add_compile_options(/wd4275) 
 endif()
 
 ##################################################################
