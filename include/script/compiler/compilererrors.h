@@ -21,46 +21,6 @@ namespace script
 namespace compiler
 {
 
-class CompilerException : public Exception
-{
-public:
-  diagnostic::pos_t pos;
-
-public:
-  CompilerException() : pos{-1, -1} { }
-  CompilerException(const CompilerException &) { }
-  virtual ~CompilerException() = default;
-
-  CompilerException(const diagnostic::pos_t & p) : pos(p) {}
-};
-
-
-#define CE(Name) public: \
-  ~Name() = default; \
-  ErrorCode code() const override { return ErrorCode::C_##Name; }
-
-
-#define GENERIC_COMPILER_EXCEPTION(Name) class Name : public CompilerException \
-{ \
-public: \
-  Name(diagnostic::pos_t p = diagnostic::pos_t{-1,-1}) : CompilerException(p) { } \
-  ErrorCode code() const override { return ErrorCode::C_##Name; } \
-  ~Name() = default; \
-}
-
-#undef CE
-#undef GENERIC_COMPILER_EXCEPTION
-
-} // namespace compiler
-
-} // namespace script
-
-namespace script
-{
-
-namespace compiler
-{
-
 struct CompilerErrorData
 {
   virtual ~CompilerErrorData();

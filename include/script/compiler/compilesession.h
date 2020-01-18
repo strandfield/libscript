@@ -46,7 +46,6 @@ public:
   ~SessionLogger() = default;
 
   void log(const diagnostic::DiagnosticMessage & mssg) override;
-  void log(const CompilerException & exception) override;
 };
 
 class CompileSession
@@ -90,7 +89,6 @@ public:
   SessionLogger mLogger;
 
   void log(const diagnostic::DiagnosticMessage & mssg);
-  void log(const CompilerException & exception);
   void log(const CompilationFailure& ex);
 
   void clear();

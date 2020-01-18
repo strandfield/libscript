@@ -83,11 +83,6 @@ Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, cons
       return c;
     return instantiate(ct, targs);
   }
-  catch (const compiler::CompilerException & ce)
-  {
-    // silently discard the error
-    (void)ce;
-  }
   catch (const compiler::CompilationFailure& ex)
   {
     // silently discard the error

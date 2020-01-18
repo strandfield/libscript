@@ -545,47 +545,11 @@ MessageBuilder & MessageBuilder::operator<<(std::string && str)
 
 MessageBuilder & MessageBuilder::operator<<(const Exception & ex)
 {
-  if (ex.is<compiler::CompilerException>())
-    return *(this) << ex.as<compiler::CompilerException>();
-  
   mCode = std::error_code(static_cast<int>(ex.code()), std::generic_category());
   mBuffer += "Not implemented (print exception)";
 
   return *(this);
 }
-
-#define CASE_1(Name, m1) case ErrorCode::C_##Name: \
-  mBuffer += format(fmt, ex.as<compiler::Name>().m1); \
-  break
-
-#define CASE_2(Name, m1, m2) case ErrorCode::C_##Name: \
-  mBuffer += format(fmt, ex.as<compiler::Name>().m1, ex.as<compiler::Name>().m2); \
-  break
-
-#define CASE_3(Name, m1, m2, m3) case ErrorCode::C_##Name: \
-  mBuffer += format(fmt, ex.as<compiler::Name>().m1, ex.as<compiler::Name>().m2, ex.as<compiler::Name>().m3); \
-  break
-
-MessageBuilder & MessageBuilder::operator<<(const compiler::CompilerException & ex)
-{
-  (*this) << ex.pos;
-  mCode = std::error_code(static_cast<int>(ex.code()), std::generic_category());
-
-  const std::string & fmt = gMessageDatabase->messages[static_cast<int>(ex.code())];
-
-  switch (ex.code())
-  {
-  default:
-    mBuffer += fmt;
-    break;
-  }
-
-  return *this;
-}
-
-#undef CASE_1
-#undef CASE_2
-#undef CASE_3
 
 MessageBuilder& MessageBuilder::operator<<(const parser::SyntaxError& ex)
 {

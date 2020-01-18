@@ -36,7 +36,6 @@ namespace compiler
 {
 
 class Compiler;
-class CompilerException;
 class CompileSession;
 class FunctionCompiler;
 class ScriptCompiler;

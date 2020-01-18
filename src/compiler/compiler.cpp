@@ -38,11 +38,6 @@ void SessionLogger::log(const diagnostic::DiagnosticMessage & mssg)
   session_->log(mssg);
 }
 
-void SessionLogger::log(const CompilerException & exception)
-{
-  session_->log(exception);
-}
-
 SessionManager::SessionManager(Compiler *c)
   : mCompiler(c)
   , mStartedSession(false)
@@ -163,11 +158,6 @@ void Component::log(const diagnostic::DiagnosticMessage& mssg)
   session()->log(mssg);
 }
 
-void Component::log(const CompilerException& exception)
-{
-  session()->log(exception);
-}
-
 Compiler::Compiler(Engine *e)
   : mEngine(e)
 {
@@ -207,10 +197,6 @@ bool Compiler::compile(Script s)
     }
 
     s.impl()->loaded = true;
-  }
-  catch (const CompilerException & e)
-  {
-    session()->log(e);
   }
   catch (const CompilationFailure& ex)
   {
@@ -270,15 +256,6 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
     return result;
   }
-  catch (const CompilerException & ex)
-  {
-    session()->clear();
-
-    auto mssg = diagnostic::error(engine());
-    mssg << ex;
-
-    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
-  }
   catch (const CompilationFailure& ex)
   {
     session()->clear();
@@ -320,15 +297,6 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
         processAllDeclarations();
       }
     }
-  }
-  catch (const CompilerException & ex)
-  {
-    session()->clear();
-
-    auto mssg = diagnostic::error(engine());
-    mssg << ex;
-
-    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
   }
   catch (const CompilationFailure& ex)
   {
@@ -431,14 +399,6 @@ void CompileSession::log(const diagnostic::DiagnosticMessage & mssg)
   this->messages.push_back(mssg);
   if (mssg.severity() == diagnostic::Error)
     this->error = true;
-}
-
-void CompileSession::log(const CompilerException & ex)
-{
-  auto mssg = diagnostic::error(engine());
-  mssg << ex;
-  this->messages.push_back(mssg.build());
-  this->error = true;
 }
 
 void CompileSession::log(const CompilationFailure& ex)

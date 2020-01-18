@@ -30,7 +30,6 @@ class SyntaxError;
 
 namespace compiler
 {
-class CompilerException;
 class CompilationFailure;
 } // namespace compiler
 
@@ -176,7 +175,6 @@ public:
   MessageBuilder & operator<<(const std::string & str);
   MessageBuilder & operator<<(std::string && str);
   MessageBuilder & operator<<(const Exception & ex);
-  MessageBuilder & operator<<(const compiler::CompilerException & ex);
   MessageBuilder& operator<<(const parser::SyntaxError& ex);
   MessageBuilder& operator<<(const compiler::CompilationFailure& ex);
   inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }

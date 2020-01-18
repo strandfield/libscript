@@ -24,7 +24,6 @@ namespace compiler
 
 class Compiler;
 class CompileSession;
-class CompilerException;
 
 class LIBSCRIPT_API Component
 {
@@ -41,7 +40,6 @@ public:
 
 protected:
   void log(const diagnostic::DiagnosticMessage& mssg);
-  void log(const CompilerException& exception);
 };
 
 } // namespace compiler

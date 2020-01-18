@@ -22,11 +22,6 @@ void Logger::log(const diagnostic::DiagnosticMessage & mssg)
   (void)mssg;
 }
 
-void Logger::log(const CompilerException & exception)
-{
-  (void)exception;
-}
-
 } // namespace compiler
 
 } // namespace script
