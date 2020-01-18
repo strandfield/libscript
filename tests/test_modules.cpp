@@ -94,7 +94,7 @@ TEST(ModuleTests, unknown_module) {
   ASSERT_FALSE(success);
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code().value(), static_cast<int>(compiler::UnknownModuleName(diagnostic::nullpos(), "math").code()));
+  ASSERT_EQ(errors.front().code(), CompilerError::UnknownModuleName);
 }
 
 void load_trig_module(script::Module trig)
@@ -212,7 +212,7 @@ TEST(ModuleTests, unknown_submodule) {
   ASSERT_FALSE(success);
   ASSERT_EQ(errors.size(), 1);
   //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code().value(), static_cast<int>(compiler::UnknownSubModuleName(diagnostic::nullpos(), "trig", "math").code()));
+  ASSERT_EQ(errors.front().code(), CompilerError::UnknownSubModuleName);
 }
 
 

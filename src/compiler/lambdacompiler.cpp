@@ -56,26 +56,28 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
   // fetching all captures
   const parser::Token capture_all_by_value = LambdaCompiler::captureAllByValue(*task.lexpr);
   const parser::Token capture_all_by_reference = LambdaCompiler::captureAllByReference(*task.lexpr);
-  parser::Token catpure_this = LambdaCompiler::captureThis(*task.lexpr);
-  if (!catpure_this.isValid() && can_use_this())
+  parser::Token capture_this = LambdaCompiler::captureThis(*task.lexpr);
+  if (!capture_this.isValid() && can_use_this())
   {
     if (capture_all_by_reference.isValid())
-      catpure_this = capture_all_by_reference;
+      capture_this = capture_all_by_reference;
     else
-      catpure_this = capture_all_by_value;
+      capture_this = capture_all_by_value;
   }
 
   if (capture_all_by_reference.isValid() && capture_all_by_value.isValid())
-    throw CannotCaptureByValueAndByRef{ dpos(capture_all_by_reference) };
+    throw CompilationFailure{ CompilerError::CannotCaptureByValueAndByRef };
 
   std::vector<bool> capture_flags(stack.size, false);
   std::vector<Capture> captures;
 
   Class captured_class;
-  if (catpure_this.isValid())
+  if (capture_this.isValid())
   {
+    TranslationTarget target{ c, capture_this };
+
     if (!can_use_this())
-      throw CannotCaptureThis{ dpos(catpure_this) };
+      throw CompilationFailure{ CompilerError::CannotCaptureThis };
 
     std::shared_ptr<program::Expression> this_object = program::StackValue::New(first_capture_offset, stack.at(first_capture_offset).type);
     capture_flags[first_capture_offset] = true;
@@ -89,21 +91,29 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
     if (cap.byValueSign.isValid() || (cap.reference.isValid() && !cap.name.isValid()))
       continue;
 
+    TranslationTarget target{ c, cap.name };
+
     const auto & name = task.lexpr->captureName(cap);
     std::shared_ptr<program::Expression> value;
     if (cap.value != nullptr)
+    {
       value = c->generateExpression(cap.value);
+    }
     else
     {
       const int offset = stack.lastIndexOf(name);
+
       if (offset == -1)
-        throw UnknownCaptureName{ dpos(cap.name) };
+        throw CompilationFailure{ CompilerError::UnknownCaptureName };
+
       value = program::StackValue::New(offset, stack.at(offset).type);
       if (!cap.reference.isValid())
       {
         StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+
         if (conv == StandardConversion::NotConvertible())
-          throw CannotCaptureNonCopyable{ dpos(cap.name) };
+          throw CompilationFailure{ CompilerError::CannotCaptureNonCopyable };
+
         value = ConversionProcessor::sconvert(c->engine(), value, conv);
       }
 
@@ -117,14 +127,18 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
 
   if (capture_all_by_value.isValid())
   {
+    TranslationTarget target{ c, capture_all_by_value };
+
     for (int i(first_capture_offset); i < stack.size; ++i)
     {
       if (capture_flags[i])
         continue;
       std::shared_ptr<program::Expression> value = program::StackValue::New(i, stack.at(i).type);
       StandardConversion conv = StandardConversion::compute(value->type(), value->type().baseType(), c->engine());
+
       if (conv == StandardConversion::NotConvertible())
-        throw SomeLocalsCannotBeCaptured{ dpos(capture_all_by_value) };
+        throw CompilationFailure{ CompilerError::SomeLocalsCannotBeCaptured };
+
       value = ConversionProcessor::sconvert(c->engine(), value, conv);
       captures.push_back(Capture{ stack.at(i).name, value });
     }
@@ -261,7 +275,7 @@ void LambdaCompiler::deduceReturnType(const std::shared_ptr<ast::ReturnStatement
   }
 
   if (val->type() == Type::InitializerList)
-    throw CannotDeduceLambdaReturnType{ dpos(rs) };
+    throw CompilationFailure{ CompilerError::CannotDeduceLambdaReturnType };
 
   mFunction.impl()->set_return_type(val->type().baseType());
 }
@@ -278,14 +292,14 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
   if (rs->expression == nullptr)
   {
     if (mFunction.prototype().returnType() != Type::Void)
-      throw ReturnStatementWithoutValue{};
+      throw CompilationFailure{ CompilerError::ReturnStatementWithoutValue };
 
     return write(program::ReturnStatement::New(nullptr, std::move(statements)));
   }
   else
   {
     if (mFunction.prototype().returnType() == Type::Void)
-      throw ReturnStatementWithValue{};
+      throw CompilationFailure{ CompilerError::ReturnStatementWithValue };
   }
 
   const Conversion conv = Conversion::compute(retval, mFunction.prototype().returnType(), engine());

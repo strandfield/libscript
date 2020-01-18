@@ -17,8 +17,9 @@ namespace compiler
 void ScopeStatementProcessor::processUsingDirective(const std::shared_ptr<ast::UsingDirective>& decl)
 {
   NameLookup lookup = name_.resolve(decl->namespace_name, *scope_);
+
   if (lookup.resultType() != NameLookup::NamespaceName)
-    throw InvalidNameInUsingDirective{ dpos(decl), dstr(decl->namespace_name) };
+    throw CompilationFailure{ CompilerError::InvalidNameInUsingDirective, errors::InvalidName{dstr(decl->namespace_name)} };
 
   scope_->inject(lookup.scopeResult());
 }
@@ -58,7 +59,7 @@ void ScopeStatementProcessor::processTypeAlias(const std::shared_ptr<ast::TypeAl
 
   NameLookup lookup = name_.resolve(decl->aliased_type, *scope_);
   if (lookup.typeResult().isNull())
-    throw InvalidTypeName{ dpos(decl), dstr(decl->aliased_type) };
+    throw CompilationFailure{ CompilerError::InvalidTypeName, errors::InvalidName{dstr(decl->aliased_type)} };
 
   scope_->inject(name, lookup.typeResult());
 }

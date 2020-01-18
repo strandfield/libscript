@@ -17,7 +17,7 @@ Type TypeResolver::resolve(const ast::QualifiedType& qt, const Scope& scp)
 
   NameLookup lookup = name_.resolve(qt.type, scp);
   if (lookup.resultType() != NameLookup::TypeName)
-    throw InvalidTypeName{ dpos(qt.type), dstr(qt.type) };
+    throw CompilationFailure{ CompilerError::InvalidTypeName, errors::InvalidName{dstr(qt.type)} };
 
   return complete(lookup.typeResult(), qt);
 }

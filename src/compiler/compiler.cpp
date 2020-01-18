@@ -25,6 +25,8 @@
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 
+#include <exception>
+
 namespace script
 {
 
@@ -40,20 +42,6 @@ void SessionLogger::log(const CompilerException & exception)
 {
   session_->log(exception);
 }
-
-class SessionManager
-{
-private:
-  Compiler* mCompiler;
-  bool mStartedSession;
-
-public:
-  explicit SessionManager(Compiler *c);
-  SessionManager(Compiler *c, const Script &s);
-  ~SessionManager();
-
-  inline bool started_session() const { return mStartedSession; }
-};
 
 SessionManager::SessionManager(Compiler *c)
   : mCompiler(c)
@@ -224,6 +212,10 @@ bool Compiler::compile(Script s)
   {
     session()->log(e);
   }
+  catch (const CompilationFailure& ex)
+  {
+    session()->log(ex);
+  }
   catch (const NotImplemented & ex)
   {
     session()->log(diagnostic::error() << "NotImplemented: " << ex.message);
@@ -287,6 +279,15 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
     throw TemplateInstantiationError{ mssg.build().to_string().data() };
   }
+  catch (const CompilationFailure& ex)
+  {
+    session()->clear();
+
+    auto mssg = diagnostic::error(engine());
+    mssg << ex;
+
+    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+  }
 }
 
 void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Function & func, const Scope & scp)
@@ -321,6 +322,15 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
     }
   }
   catch (const CompilerException & ex)
+  {
+    session()->clear();
+
+    auto mssg = diagnostic::error(engine());
+    mssg << ex;
+
+    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+  }
+  catch (const CompilationFailure& ex)
   {
     session()->clear();
 
@@ -429,6 +439,39 @@ void CompileSession::log(const CompilerException & ex)
   mssg << ex;
   this->messages.push_back(mssg.build());
   this->error = true;
+}
+
+void CompileSession::log(const CompilationFailure& ex)
+{
+  auto mssg = diagnostic::error(engine());
+  mssg << ex;
+  this->messages.push_back(mssg.build());
+  this->error = true;
+}
+
+TranslationTarget::TranslationTarget(const Component* c, std::shared_ptr<ast::Node> node)
+  : m_component(c),
+    m_current_node(c->session()->current_node),
+    m_current_token(c->session()->current_token)
+{
+  c->session()->current_node = node;
+}
+
+TranslationTarget::TranslationTarget(const Component* c, parser::Token tok)
+  : m_component(c),
+    m_current_node(c->session()->current_node),
+    m_current_token(c->session()->current_token)
+{
+
+}
+
+TranslationTarget::~TranslationTarget()
+{
+  if (!std::uncaught_exception())
+  {
+    m_component->session()->current_node = m_current_node;
+    m_component->session()->current_token = m_current_token;
+  }
 }
 
 } // namespace compiler

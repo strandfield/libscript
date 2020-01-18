@@ -68,6 +68,11 @@ bool ScriptModule::is_module() const
 }
 
 
+const char* ModuleLoadingError::what() const noexcept
+{
+  return "module-loading-error";
+}
+
 /*!
  * \class Module
  * \brief Provides module features

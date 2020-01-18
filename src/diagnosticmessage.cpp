@@ -204,12 +204,10 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_FunctionVariablesMustBeInitialized, "Variables of function-type must be initialized" },
     { ErrorCode::C_VariableCannotBeDefaultConstructed, "Class '%1' does not provide a default constructor" },
     { ErrorCode::C_ClassHasDeletedDefaultCtor, "Class '%1' has a deleted default constructor" },
-    { ErrorCode::C_VariableCannotBeDestroyed, "Class '%1' does not provide a destructor" },
     { ErrorCode::C_CouldNotResolveOperatorName, "Could not resolve operator name based on parameter count and operator symbol." },
     { ErrorCode::C_InvalidParamCountInOperatorOverload, "Invalid parameter count found in operator overload, expected %1 got %2" },
     { ErrorCode::C_OpOverloadMustBeDeclaredAsMember, "This operator can only be overloaded as a member" },
     { ErrorCode::C_InvalidTypeName, "%1 does not name a type" },
-    { ErrorCode::C_DeclarationProcessingError, "Some declarations could not be processed." },
     { ErrorCode::C_DataMemberCannotBeAuto, "Data members cannot be declared 'auto'." },
     { ErrorCode::C_MissingStaticInitialization, "A static variable must be initialized." },
     { ErrorCode::C_InvalidStaticInitialization, "Static variables can only be initialized through assignment." },
@@ -228,7 +226,6 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_CouldNotFindValidConstructor, "Could not find valid constructor." },
     { ErrorCode::C_CouldNotFindValidMemberFunction, "Could not find valid member function for call." },
     { ErrorCode::C_CouldNotFindValidOperator, "Could not find valid operator overload." },
-    { ErrorCode::C_CouldNotFindValidOverload, "Overload resolution failed." },
     { ErrorCode::C_CouldNotFindValidCallOperator, "Could not find valid operator() overload for call." },
     { ErrorCode::C_AmbiguousFunctionName, "Name does not refer to a single function" },
     { ErrorCode::C_TemplateNamesAreNotExpressions, "Name refers to a template and cannot be used inside an expression" },
@@ -237,15 +234,12 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_TooManyArgumentInVariableInitialization, "Too many arguments provided in variable initialization." },
     { ErrorCode::C_TooManyArgumentInInitialization, "Too many arguments provided in initialization." },
     { ErrorCode::C_TooManyArgumentInReferenceInitialization, "More than one argument provided in reference initialization." },
-    { ErrorCode::C_TooManyArgumentsInMemberInitialization, "Too many arguments in member initialization." },
     { ErrorCode::C_CouldNotConvert, "Could not convert from %1 to %2" },
     { ErrorCode::C_CouldNotFindCommonType, "Could not find common type of %1 and %2 in conditionnal expression" },
     { ErrorCode::C_CannotAccessMemberOfNonObject, "Cannot access member of non object type." },
     { ErrorCode::C_NoSuchMember, "Object has no such member." },
     { ErrorCode::C_InvalidTemplateArgument, "Invalid template argument." },
     { ErrorCode::C_InvalidLiteralTemplateArgument, "Only integer and boolean literals can be used as template arguments." },
-    { ErrorCode::C_NonConstExprTemplateArgument, "Template arguments must be constant expressions." },
-    { ErrorCode::C_InvalidTemplateArgumentType, "This constant epression does not evaluate to an int or a bool." },
     { ErrorCode::C_MissingNonDefaultedTemplateParameter, "Missing non-defaulted template parameter." },
     { ErrorCode::C_CouldNotFindPrimaryClassTemplate, "Could not find primary class template (must be declared in the same namespace)." },
     { ErrorCode::C_CouldNotFindPrimaryFunctionTemplate, "Could not find primary function template (must be declared in the same namespace)." },
@@ -262,7 +256,6 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_ParentHasNoCopyConstructor, "Cannot generate defaulted copy constructor because parent has no copy constructor." },
     { ErrorCode::C_ParentHasDeletedCopyConstructor, "Cannot generate defaulted copy constructor because parent copy constructor is deleted." },
     { ErrorCode::C_DataMemberIsNotCopyable, "Cannot generate defaulted copy constructor because at least one data member is not copyable." },
-    { ErrorCode::C_ParentHasNoMoveConstructor, "Cannot generate defaulted move constructor because parent has no move constructor." },
     { ErrorCode::C_ParentHasDeletedMoveConstructor, "Cannot generate defaulted move constructor because parent move constructor is deleted." },
     { ErrorCode::C_DataMemberIsNotMovable, "Cannot generate defaulted move constructor because at least one data member is not movable." },
     { ErrorCode::C_ParentHasNoAssignmentOperator, "Cannot generate defaulted assignment operator because parent has no assignment operator." },
@@ -270,12 +263,6 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_DataMemberHasNoAssignmentOperator, "Cannot generate defaulted assignment operator because at least one data member has no assignment operator." },
     { ErrorCode::C_DataMemberHasDeletedAssignmentOperator, "Cannot generate defaulted assignment operator because at least one data member has a deleted assignment operator." },
     { ErrorCode::C_DataMemberIsReferenceAndCannotBeAssigned, "Cannot generate defaulted assignment operator because at least one data member is a reference." },
-    { ErrorCode::C_InvalidArgumentCountInDataMemberRefInit, "Only one value must be provided to initialize a data member of reference type." },
-    { ErrorCode::C_CannotInitializeNonConstRefDataMemberWithConst, "Cannot initialize a data member of non-const reference type with a const value." },
-    { ErrorCode::C_BadDataMemberRefInit, "Bad reference initialization of data member %1." },
-    { ErrorCode::C_EnumMemberCannotBeDefaultConstructed, "Data member %1 of enumeration type %2 cannot be default constructed." },
-    { ErrorCode::C_DataMemberHasNoDefaultConstructor, "Data member %1 of type %2 has no default constructor." },
-    { ErrorCode::C_DataMemberHasDeletedDefaultConstructor, "Data member %1 of type %2 has a deleted default constructor." },
     { ErrorCode::C_InvalidCharacterLiteral, "A character literal must contain only one character." },
     { ErrorCode::C_CouldNotFindValidLiteralOperator, "Could not find valid literal operator." },
     { ErrorCode::C_UnknownTypeInBraceInitialization, "Unknown type %1 in brace initialization" },
@@ -289,7 +276,7 @@ static std::shared_ptr<MessageDatabase> build_message_database()
     { ErrorCode::C_FriendMustBeAClass, "Friend must be a class" },
     { ErrorCode::C_UnknownModuleName, "Unknown module '%1'" },
     { ErrorCode::C_UnknownSubModuleName, "'%1' is not a submodule of '%2'" },
-    { ErrorCode::C_ModuleImportationError, "Failed to import module '%1'\n%2" },
+    { ErrorCode::C_ModuleImportationFailed, "Failed to import module '%1'\n%2" },
     { ErrorCode::C_InvalidNameInUsingDirective, "%1 does not name a namespace" },
     { ErrorCode::C_NoSuchCallee, "Callee was not declared in this scope" },
     { ErrorCode::C_LiteralOperatorNotInNamespace, "Literal operators can only appear at namespace level" },
@@ -472,6 +459,11 @@ MessageBuilder::MessageBuilder(Severity s, Engine *e)
 
 }
 
+MessageBuilder::~MessageBuilder()
+{
+
+}
+
 std::string MessageBuilder::repr(script::AccessSpecifier as)
 {
   if (as == AccessSpecifier::Protected)
@@ -583,28 +575,6 @@ MessageBuilder & MessageBuilder::operator<<(const compiler::CompilerException & 
 
   switch (ex.code())
   {
-  CASE_1(BadDataMemberRefInit, name);
-  CASE_1(ClassHasDeletedDefaultCtor, type);
-  CASE_2(CouldNotConvert, source, destination);
-  CASE_2(CouldNotFindCommonType, first, second);
-  CASE_1(DataMemberAlreadyHasInitializer, name);
-  CASE_2(DataMemberHasDeletedDefaultConstructor, type, name);
-  CASE_2(DataMemberHasNoDefaultConstructor, type, name);
-  CASE_2(EnumMemberCannotBeDefaultConstructed, type, name);
-  CASE_2(InaccessibleMember, name, access);
-  CASE_1(InheritedDataMember, name);
-  CASE_1(InvalidNameInUsingDirective, name);
-  CASE_2(InvalidParamCountInOperatorOverload, expected, actual);
-  CASE_1(InvalidTypeName, name);
-  CASE_2(ModuleImportationError, name, message);
-  CASE_2(NarrowingConversionInBraceInitialization, source, destination);
-  CASE_1(NotDataMember, name);
-  CASE_1(OpOverloadMustBeDeclaredAsMember, name);
-  CASE_1(UnknownModuleName, name);
-  CASE_2(UnknownSubModuleName, name, moduleName);
-  CASE_1(UnknownTypeInBraceInitialization, name);
-  CASE_1(VariableCannotBeDefaultConstructed, type);
-  CASE_1(VariableCannotBeDestroyed, type);
   default:
     mBuffer += fmt;
     break;
@@ -650,6 +620,32 @@ MessageBuilder& MessageBuilder::operator<<(const parser::SyntaxError& ex)
     case ParserError::IllegalUseOfKeyword:
       mBuffer += format(fmt, ex.data->get<parser::errors::KeywordToken>().keyword);
       break;
+    default:
+      mBuffer += fmt;
+      break;
+    }
+
+  }
+
+  return *this;
+}
+
+MessageBuilder& MessageBuilder::operator<<(const compiler::CompilationFailure& ex)
+{
+  mCode = ex.errorCode();
+  mLine = ex.location.m_pos.line;
+  mColumn = ex.location.m_pos.col;
+
+  const std::string& fmt = gMessageDatabase->messages[ex.errorCode().value() - 1 + static_cast<int>(ErrorCode::FirstCompilerError)];
+
+  if (!ex.data)
+  {
+    mBuffer += fmt;
+  }
+  else
+  {
+    switch (static_cast<CompilerError>(ex.errorCode().value()))
+    {
     default:
       mBuffer += fmt;
       break;

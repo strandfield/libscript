@@ -62,15 +62,15 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   assert(!ns.isNull());
 
   if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
-    throw GlobalVariablesCannotBeAuto{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::GlobalVariablesCannotBeAuto };
 
   Type var_type = type_.resolve(decl->variable_type, scp);
 
   if (decl->init == nullptr)
-    throw GlobalVariablesMustBeInitialized{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::GlobalVariablesMustBeInitialized };
 
   if (decl->init->is<ast::ConstructorInitialization>() || decl->init->is<ast::BraceInitialization>())
-    throw GlobalVariablesMustBeAssigned{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::GlobalVariablesMustBeAssigned };
 
   auto expr = decl->init->as<ast::AssignmentInitialization>().value;
   Value val;
@@ -98,17 +98,17 @@ void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableD
   assert(!c.isNull());
 
   if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
-    throw DataMemberCannotBeAuto{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::DataMemberCannotBeAuto };
 
   Type var_type = type_.resolve(decl->variable_type, scp);
 
   if (decl->staticSpecifier.isValid())
   {
     if (decl->init == nullptr)
-      throw MissingStaticInitialization{ dpos(decl) };
+      throw CompilationFailure{ CompilerError::MissingStaticInitialization };
 
     if (decl->init->is<ast::ConstructorInitialization>() || decl->init->is<ast::BraceInitialization>())
-      throw InvalidStaticInitialization{ dpos(decl) };
+      throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 
     auto expr = decl->init->as<ast::AssignmentInitialization>().value;
     if (var_type.isFundamentalType() && expr->is<ast::Literal>() && !expr->is<ast::UserDefinedLiteral>())
@@ -162,15 +162,15 @@ void VariableProcessor::default_initialization(Variable & v)
   if (val.type().isFundamentalType())
     return;
   else if (val.type().isEnumType())
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
   else if (val.type().isFunctionType() || val.type().isClosureType())
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
 
   assert(val.type().isObjectType());
 
   Function ctor = engine->typeSystem()->getClass(val.type()).defaultConstructor();
   if (ctor.isNull())
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
 
   try
   {
@@ -178,7 +178,7 @@ void VariableProcessor::default_initialization(Variable & v)
   }
   catch (...)
   {
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
   }
 }
 
@@ -191,7 +191,7 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
 
   Value arg = eval(value);
   if(var.variable.type() != arg.type())
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
 
   const Type t = arg.type();
 
@@ -230,13 +230,13 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
   {
     Function copy_ctor = engine->typeSystem()->getClass(t).copyConstructor();
     if(copy_ctor.isNull())
-      throw FailedToInitializeStaticVariable{};
+      throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
 
     copy_ctor.invoke({ var.variable, arg });
   }
   else
   {
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
   }
 }
 
@@ -254,7 +254,7 @@ void VariableProcessor::constructor_initialization(Variable & var, const std::sh
   }
   catch (...)
   {
-    throw FailedToInitializeStaticVariable{};
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
   }
 }
 
@@ -284,17 +284,17 @@ Value VariableProcessor::visit(const program::ArrayExpression & ae)
 
 Value VariableProcessor::visit(const program::BindExpression &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::CaptureAccess &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::CommaExpression &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::ConditionalExpression & ce)
@@ -323,7 +323,7 @@ Value VariableProcessor::visit(const program::Copy & c)
 
 Value VariableProcessor::visit(const program::FetchGlobal &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::FunctionCall & fc)
@@ -339,7 +339,7 @@ Value VariableProcessor::visit(const program::FunctionCall & fc)
 
 Value VariableProcessor::visit(const program::FunctionVariableCall & fvc)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::FundamentalConversion & fc)
@@ -352,12 +352,12 @@ Value VariableProcessor::visit(const program::FundamentalConversion & fc)
 
 Value VariableProcessor::visit(const program::InitializerList &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::LambdaExpression & le)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::Literal & l)
@@ -389,7 +389,7 @@ Value VariableProcessor::visit(const program::MemberAccess & ma)
 
 Value VariableProcessor::visit(const program::StackValue &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 Value VariableProcessor::visit(const program::VariableAccess & va)
@@ -400,7 +400,7 @@ Value VariableProcessor::visit(const program::VariableAccess & va)
 
 Value VariableProcessor::visit(const program::VirtualCall &)
 {
-  throw InvalidStaticInitialization{};
+  throw CompilationFailure{ CompilerError::InvalidStaticInitialization };
 }
 
 } // namespace compiler

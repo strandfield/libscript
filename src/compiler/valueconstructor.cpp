@@ -40,21 +40,21 @@ std::shared_ptr<program::Expression> ValueConstructor::fundamental(Engine *e, co
 std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::nullptr_t, diagnostic::pos_t dp)
 {
   if (type.isReference() || type.isRefRef())
-    throw ReferencesMustBeInitialized{ dp };
+    throw CompilationFailure{ CompilerError::ReferencesMustBeInitialized };
 
   if (type.isFundamentalType())
     return ValueConstructor::fundamental(e, type, true);
   else if (type.isEnumType())
-    throw EnumerationsCannotBeDefaultConstructed{ dp };
+    throw CompilationFailure{ CompilerError::EnumerationsCannotBeDefaultConstructed };
   else if (type.isFunctionType())
-    throw FunctionVariablesMustBeInitialized{ dp };
+    throw CompilationFailure{ CompilerError::FunctionVariablesMustBeInitialized };
   else if (type.isObjectType())
   {
     Function default_ctor = e->typeSystem()->getClass(type).defaultConstructor();
     if (default_ctor.isNull())
-      throw VariableCannotBeDefaultConstructed{ dp, type };
+      throw CompilationFailure{ CompilerError::VariableCannotBeDefaultConstructed };
     else if (default_ctor.isDeleted())
-      throw ClassHasDeletedDefaultCtor{ dp, type };
+      throw CompilationFailure{ CompilerError::ClassHasDeletedDefaultCtor, errors::VariableType{type} };
 
     return program::ConstructorCall::New(default_ctor, {});
   }
@@ -68,19 +68,20 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     return construct(e, type, nullptr, dp);
 
   if (!type.isObjectType() && args.size() != 1)
-    throw TooManyArgumentInInitialization{ dp };
+    throw CompilationFailure{ CompilerError::TooManyArgumentInInitialization };
 
   if ((type.isReference() || type.isRefRef()) && args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dp };
+    throw CompilationFailure{ CompilerError::TooManyArgumentInReferenceInitialization };
 
   if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
   {
     Conversion conv = Conversion::compute(args.front(), type, e);
+
     if (conv == Conversion::NotConvertible())
-      throw CouldNotConvert{ dp, args.front()->type(), type };
+      throw CompilationFailure{ CompilerError::CouldNotConvert, errors::ConversionFailure{args.front()->type(), type} };
 
     if (conv.isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ dp, args.front()->type(), type };
+      throw CompilationFailure{ CompilerError::NarrowingConversionInBraceInitialization, errors::NarrowingConversion{args.front()->type(), type} };
 
     return ConversionProcessor::convert(e, args.front(), conv);
   }
@@ -89,8 +90,9 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
+
     if (!resol.process(ctors, args, alloc))
-      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
+      throw CompilationFailure{ CompilerError::CouldNotFindValidConstructor };
 
     const Function ctor = resol.selectedOverload();
     const auto & inits = resol.initializations();
@@ -98,7 +100,7 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     {
       const auto & init = inits.at(i);
       if (init.isNarrowing())
-        throw NarrowingConversionInBraceInitialization{ dp, args.at(i)->type(), ctor.parameter(i) };
+        throw CompilationFailure{ CompilerError::NarrowingConversionInBraceInitialization, errors::NarrowingConversion{args.at(i)->type(), ctor.parameter(i)} };
     }
 
     ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
@@ -114,16 +116,17 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
     return construct(e, type, nullptr, dp);
 
   if (!type.isObjectType() && args.size() != 1)
-    throw TooManyArgumentInInitialization{ dp };
+    throw CompilationFailure{ CompilerError::TooManyArgumentInInitialization };
 
   if ((type.isReference() || type.isRefRef()) && args.size() != 1)
-    throw TooManyArgumentInReferenceInitialization{ dp };
+    throw CompilationFailure{ CompilerError::TooManyArgumentInReferenceInitialization };
 
   if (type.isFundamentalType() || type.isEnumType() || type.isFunctionType())
   {
     Conversion conv = Conversion::compute(args.front(), type, e);
+
     if (conv == Conversion::NotConvertible())
-      throw CouldNotConvert{ dp, args.front()->type(), type };
+      throw CompilationFailure{ CompilerError::CouldNotConvert, errors::ConversionFailure{args.front()->type(), type} };
 
     return ConversionProcessor::convert(e, args.front(), conv);
   }
@@ -132,8 +135,9 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
     auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution resol = OverloadResolution::New(e);
+
     if (!resol.process(ctors, args, alloc))
-      throw CouldNotFindValidConstructor{ dp }; /// TODO add a better diagnostic message
+      throw CompilationFailure{ CompilerError::CouldNotFindValidConstructor };
 
     const Function ctor = resol.selectedOverload();
     const auto & inits = resol.initializations();

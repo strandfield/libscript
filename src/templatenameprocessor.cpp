@@ -28,6 +28,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
   {
     auto name = std::static_pointer_cast<ast::Identifier>(arg);
     NameLookup lookup = NameLookup::resolve(name, scp);
+
     if (lookup.resultType() == NameLookup::TypeName)
       return TemplateArgument{ lookup.typeResult() };
     else
@@ -86,6 +87,11 @@ Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, cons
   {
     // silently discard the error
     (void)ce;
+  }
+  catch (const compiler::CompilationFailure& ex)
+  {
+    // silently discard the error
+    (void)ex;
   }
   catch (const TemplateInstantiationError & error)
   {

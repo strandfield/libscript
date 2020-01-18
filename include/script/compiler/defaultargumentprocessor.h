@@ -41,8 +41,10 @@ public:
     size_t i = params.size();
     while (i-- > first_default_index)
     {
+      TranslationTarget target{ this, params.at(i).name };
+
       if (params.at(i).defaultValue == nullptr)
-        throw InvalidUseOfDefaultArgument{ dpos(params.at(i).name) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfDefaultArgument };
 
       builder.addDefaultArgument(generateDefaultArgument(scp, params.at(i), builder.proto_.parameter(i + param_offset)));
     }

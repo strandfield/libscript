@@ -6,6 +6,7 @@
 #define LIBSCRIPT_MODULE_H
 
 #include "script/modulecallbacks.h"
+#include "script/exception.h"
 
 #include <string>
 #include <vector>
@@ -20,6 +21,13 @@ class Script;
 class SourceFile;
 
 class NamespaceImpl;
+
+struct ModuleLoadingError : public std::exception // TODO: derive from script::Exception
+{
+  std::string message;
+
+  const char* what() const noexcept override;
+};
 
 class LIBSCRIPT_API Module
 {

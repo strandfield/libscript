@@ -35,11 +35,26 @@ class Expression;
 namespace compiler
 {
 
+class Compiler;
 class CompilerException;
 class CompileSession;
 class FunctionCompiler;
 class ScriptCompiler;
 class SessionManager;
+
+class LIBSCRIPT_API SessionManager
+{
+private:
+  Compiler* mCompiler;
+  bool mStartedSession;
+
+public:
+  explicit SessionManager(Compiler* c);
+  SessionManager(Compiler* c, const Script& s);
+  ~SessionManager();
+
+  inline bool started_session() const { return mStartedSession; }
+};
 
 class Compiler
 {

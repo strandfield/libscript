@@ -5,6 +5,7 @@
 #include "script/compiler/constructorcompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/valueconstructor.h"
 
@@ -38,6 +39,8 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
 
   auto ctor_decl = std::static_pointer_cast<ast::ConstructorDecl>(declaration());
 
+  TranslationTarget main_target{ this, ctor_decl };
+
   auto this_object = ec().implicit_object();
 
   std::vector<ast::MemberInitialization> initializers = ctor_decl->memberInitializationList;
@@ -46,11 +49,17 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
   for (size_t i(0); i < initializers.size(); ++i)
   {
     const auto & minit = initializers.at(i);
+
+    TranslationTarget target{ this, minit.name };
+
     NameLookup lookup = resolve(minit.name);
+
     if (lookup.typeResult() == current_class.id()) // delegating constructor
     {
       if (initializers.size() != 1)
-        throw InvalidUseOfDelegatedConstructor{ dpos(minit.name) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfDelegatedConstructor };
+
+      TranslationTarget nested_target{ this, minit.init };
 
       if (minit.init->is<ast::ConstructorInitialization>())
       {
@@ -65,6 +74,8 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
     }
     else if (!current_class.parent().isNull() && lookup.typeResult() == current_class.parent().id()) // parent constructor call
     {
+      TranslationTarget nested_target{ this, minit.init };
+
       if (minit.init->is<ast::ConstructorInitialization>())
       {
         std::vector<std::shared_ptr<program::Expression>> args = ec().generateExpressions(minit.init->as<ast::ConstructorInitialization>().args);
@@ -95,18 +106,21 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateHeader(
   std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
   for (const auto & minit : initializers)
   {
+    TranslationTarget target{ this, minit.name };
+
     NameLookup lookup = resolve(minit.name);
+
     if (lookup.resultType() != NameLookup::DataMemberName)
-      throw NotDataMember{ dpos(minit.name), dstr(minit.name) };
+      throw CompilationFailure{ CompilerError::NotDataMember, errors::DataMemberName{dstr(minit.name)} };
 
     if (lookup.dataMemberIndex() - data_members_offset < 0)
-      throw InheritedDataMember{ dpos(minit.name), dstr(minit.name) };
+      throw CompilationFailure{ CompilerError::InheritedDataMember, errors::DataMemberName{dstr(minit.name)} };
 
     assert(lookup.dataMemberIndex() - data_members_offset < static_cast<int>(members_initialization.size()));
 
     const int index = lookup.dataMemberIndex() - data_members_offset;
     if (members_initialization.at(index) != nullptr)
-      throw DataMemberAlreadyHasInitializer{ dpos(minit.name), data_members.at(index).name };
+      throw CompilationFailure{ CompilerError::DataMemberAlreadyHasInitializer, errors::DataMemberName{data_members.at(index).name} };
 
     const auto & dm = data_members.at(index);
 
@@ -149,9 +163,9 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefault
   {
     Function parent_default_ctor = cla.parent().defaultConstructor();
     if (parent_default_ctor.isNull())
-      throw ParentHasNoDefaultConstructor{};
+      throw CompilationFailure{ CompilerError::ParentHasNoDefaultConstructor };
     else if (parent_default_ctor.isDeleted())
-      throw ParentHasDeletedDefaultConstructor{};
+      throw CompilationFailure{ CompilerError::ParentHasDeletedDefaultConstructor };
 
     parent_ctor_call = program::PlacementStatement::New(this_object, parent_default_ctor, { });
   }
@@ -186,26 +200,27 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
   {
     Function parent_copy_ctor = cla.parent().copyConstructor();
     if (parent_copy_ctor.isNull())
-      throw ParentHasNoCopyConstructor{};
+      throw CompilationFailure{ CompilerError::ParentHasNoCopyConstructor };
     else if (parent_copy_ctor.isDeleted())
-      throw ParentHasDeletedCopyConstructor{};
+      throw CompilationFailure{ CompilerError::ParentHasDeletedCopyConstructor };
 
     parent_ctor_call = program::PlacementStatement::New(this_object, parent_copy_ctor, { other_object });
   }
 
   // Initializating data members
-  const auto & data_members = cla.dataMembers();
+  const std::vector<script::DataMember> & data_members = cla.dataMembers();
   const int data_members_offset = cla.attributesOffset();
   std::vector<std::shared_ptr<program::Statement>> members_initialization{ data_members.size(), nullptr };
   for (size_t i(0); i < data_members.size(); ++i)
   {
-    const auto & dm = data_members.at(i);
+    const script::DataMember& dm = data_members.at(i);
 
     const std::shared_ptr<program::Expression> member_access = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);
 
     const Initialization init = Initialization::compute(dm.type, member_access, cla.engine());
+
     if (!init.isValid())
-      throw DataMemberIsNotCopyable{};
+      throw CompilationFailure{ CompilerError::DataMemberIsNotCopyable };
 
     members_initialization[i] = program::PushDataMember::New(ValueConstructor::construct(cla.engine(), dm.type, member_access, init));
   }
@@ -233,16 +248,17 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
     if (!parent_move_ctor.isNull())
     {
       if (parent_move_ctor.isDeleted())
-        throw ParentHasDeletedMoveConstructor{};
+        throw CompilationFailure{ CompilerError::ParentHasDeletedMoveConstructor };
+
       parent_ctor_call = program::PlacementStatement::New(this_object, parent_move_ctor, { other_object });
     }
     else
     {
       Function parent_copy_ctor = cla.parent().copyConstructor();
       if (parent_copy_ctor.isNull())
-        throw ParentHasNoCopyConstructor{};
+        throw CompilationFailure{ CompilerError::ParentHasNoCopyConstructor };
       else if (parent_copy_ctor.isDeleted())
-        throw ParentHasDeletedCopyConstructor{};
+        throw CompilationFailure{ CompilerError::ParentHasDeletedCopyConstructor };
 
       parent_ctor_call = program::PlacementStatement::New(this_object, parent_copy_ctor, { other_object });
     }
@@ -268,22 +284,26 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
         if (!dm_move_ctor.isNull())
         {
           if (dm_move_ctor.isDeleted())
-            throw DataMemberIsNotMovable{};
+            throw CompilationFailure{ CompilerError::DataMemberIsNotMovable };
+
           member_value = program::ConstructorCall::New(dm_move_ctor, { member_access });
         }
         else
         {
           Function dm_copy_ctor = ts->getClass(dm.type).copyConstructor();
+
           if (dm_copy_ctor.isNull() || dm_copy_ctor.isDeleted())
-            throw DataMemberIsNotMovable{};
+            throw CompilationFailure{ CompilerError::DataMemberIsNotMovable };
+
           member_value = program::ConstructorCall::New(dm_copy_ctor, { member_access });
         }
       }
       else
       {
         const Initialization init = Initialization::compute(dm.type, member_access, cla.engine());
+
         if (!init.isValid())
-          throw DataMemberIsNotCopyable{};
+          throw CompilationFailure{ CompilerError::DataMemberIsNotCopyable };
 
         member_value = ValueConstructor::construct(cla.engine(), dm.type, member_access, init);
       }
@@ -306,7 +326,7 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initializa
   for (size_t i(1); i < inits.size(); ++i)
   {
     if (inits.at(i).isNarrowing())
-      throw NarrowingConversionInBraceInitialization{ args.at(i-1)->type(), proto.at(i) };
+      throw CompilationFailure{ CompilerError::NarrowingConversionInBraceInitialization, errors::NarrowingConversion{args.at(i - 1)->type(), proto.at(i)} };
   }
 }
 
@@ -315,7 +335,7 @@ OverloadResolution ConstructorCompiler::getDelegateConstructor(const Class & cla
   const std::vector<Function> & ctors = cla.constructors();
   OverloadResolution resol = OverloadResolution::New(cla.engine());
   if (!resol.process(ctors, args, program::AllocateExpression::New(cla.id())))
-    throw NoDelegatingConstructorFound{};
+    throw CompilationFailure{ CompilerError::NoDelegatingConstructorFound };
   return resol;
 }
 
@@ -346,7 +366,7 @@ OverloadResolution ConstructorCompiler::getParentConstructor(const Class & cla, 
   const std::vector<Function> & ctors = cla.parent().constructors();
   OverloadResolution resol = OverloadResolution::New(cla.engine());
   if (!resol.process(ctors, args, program::AllocateExpression::New(cla.parent().id())))
-    throw CouldNotFindValidBaseConstructor{};
+    throw CompilationFailure{ CompilerError::CouldNotFindValidBaseConstructor };
   return resol;
 }
 

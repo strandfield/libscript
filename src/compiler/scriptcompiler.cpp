@@ -73,6 +73,7 @@ ScriptCompiler::StateGuard::~StateGuard()
 ScriptCompiler::ScriptCompiler(Compiler *c)
   : Component(c)
   , variable_(c)
+  , function_processor_{ c }
   , modules_(c->engine())
   , default_arguments_(c)
   , mReprocessingIncompleteFunctions(false)
@@ -267,6 +268,8 @@ void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Decl
 
 void ScriptCompiler::processOrCollectDeclaration(const std::shared_ptr<ast::Declaration> & declaration)
 {
+  TranslationTarget target{ this, declaration };
+
   switch (declaration->type())
   {
   case ast::NodeType::ClassDeclaration:
@@ -316,12 +319,14 @@ void ScriptCompiler::processFriendDecl(const std::shared_ptr<ast::FriendDeclarat
 
   const auto & pal = decl->as<ast::ClassFriendDeclaration>();
 
+  TranslationTarget target{ this, pal.class_name };
+
   NameLookup lookup = resolve(pal.class_name);
   if (lookup.typeResult().isNull())
-    throw InvalidTypeName{ dpos(pal.class_name), dstr(pal.class_name) };
+    throw CompilationFailure{ CompilerError::InvalidTypeName, errors::InvalidName{dstr(pal.class_name)} };
 
   if (!lookup.typeResult().isObjectType())
-    throw FriendMustBeAClass{ dpos(pal.class_name) };
+    throw CompilationFailure{ CompilerError::FriendMustBeAClass };
 
   currentScope().asClass().addFriend(engine()->typeSystem()->getClass(lookup.typeResult()));
 }
@@ -395,9 +400,11 @@ Type ScriptCompiler::readClassBase(const std::shared_ptr<ast::ClassDecl> & decl)
   if (decl->parent == nullptr)
     return Type{};
 
+  TranslationTarget target{ this, decl->parent };
+
   NameLookup lookup = resolve(decl->parent);
   if (lookup.resultType() != NameLookup::TypeName || !lookup.typeResult().isObjectType())
-    throw InvalidBaseClass{ dpos(decl->parent) };
+    throw CompilationFailure{ CompilerError::InvalidBaseClass };
   return lookup.typeResult();
 }
 
@@ -463,7 +470,7 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   const ast::NamespaceDeclaration & ndecl = *decl;
 
   if (!scp.isNamespace())
-    throw NamespaceDeclarationCannotAppearAtThisLevel{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::NamespaceDeclarationCannotAppearAtThisLevel };
 
   Namespace parent_ns = scp.asNamespace();
   const std::string name = ndecl.namespace_name->getName();
@@ -474,7 +481,7 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   for (const auto & s : ndecl.statements)
   {
     if (!s->is<ast::Declaration>())
-      throw ExpectedDeclaration{ dpos(s) };
+      throw CompilationFailure{ CompilerError::ExpectedDeclaration };
 
     processOrCollectDeclaration(std::static_pointer_cast<ast::Declaration>(s), child_scope);
   }
@@ -516,9 +523,9 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
       throw std::runtime_error{ "Bad call to ScriptCompiler::processFunctionDeclaration()" };
     }
   }
-  catch (compiler::InvalidTypeName &)
+  catch (compiler::CompilationFailure& ex)
   {
-    if (mReprocessingIncompleteFunctions)
+    if (mReprocessingIncompleteFunctions || ex.errorCode() != CompilerError::InvalidTypeName)
       throw;
 
     log(diagnostic::warning() << dpos(declaration) << "Type name could not be resolved, function will be reprocessed later");
@@ -582,7 +589,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
   Scope scp = currentScope().escapeTemplate();
 
   if (!scp.isNamespace())
-    throw LiteralOperatorNotInNamespace{ dpos(decl) };
+    throw CompilationFailure{ CompilerError::LiteralOperatorNotInNamespace };
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
@@ -622,7 +629,9 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
       opname = op_symbol == parser::Token::PlusPlus ? PostIncrementOperator : PostDecrementOperator;
     }
     else
-      throw CouldNotResolveOperatorName{ dpos(over_decl) };
+    {
+      throw CompilationFailure{ CompilerError::CouldNotResolveOperatorName };
+    }
   }
 
   if (opname == OperatorName::FunctionCallOperator)
@@ -634,12 +643,12 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   const bool is_member = currentScope().isClass();
 
   if (Operator::isBinary(builder.operation) && arity != 2)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 2, int(arity) };
+    throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 2} };
   else if (Operator::isUnary(builder.operation) && builder.proto_.count() != 1)
-    throw InvalidParamCountInOperatorOverload{ dpos(over_decl), 1, int(arity) };
+    throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 1} };
 
   if (Operator::onlyAsMember(builder.operation) && !is_member)
-    throw OpOverloadMustBeDeclaredAsMember{ dpos(over_decl), builder.operation };
+    throw CompilationFailure{ CompilerError::OpOverloadMustBeDeclaredAsMember };
 
   /// TODO: check that the user does not declare any default arguments
 
@@ -795,7 +804,7 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
   ClassTemplate ct = findClassTemplate(classdecl->name->as<ast::TemplateIdentifier>().getName(), ns.templates());
 
   if (ct.isNull())
-    throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
+    throw CompilationFailure{ CompilerError::CouldNotFindPrimaryClassTemplate };
 
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
   std::vector<TemplateArgument> args = TemplateNameProcessor::arguments(scp, template_full_name->arguments);
@@ -821,7 +830,7 @@ void ScriptCompiler::processClassTemplatePartialSpecialization(const std::shared
   ClassTemplate ct = findClassTemplate(classdecl->name->as<ast::TemplateIdentifier>().getName(), ns.templates());
 
   if (ct.isNull())
-    throw CouldNotFindPrimaryClassTemplate{ dpos(classdecl) };
+    throw CompilationFailure{ CompilerError::CouldNotFindPrimaryClassTemplate };
 
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
@@ -844,7 +853,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   const std::vector<Template> & tmplts = ns.templates();
 
   if (tmplts.empty())
-    throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
+    throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   std::vector<TemplateArgument> args;
   if (fundecl->name->is<ast::TemplateIdentifier>())
@@ -862,7 +871,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   auto selection = selector.select(tmplts, args, builder.proto_);
 
   if(selection.first.isNull())
-    throw CouldNotFindPrimaryFunctionTemplate{ dpos(fundecl) };
+    throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments

@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_COMPILER_FUNCTION_PROCESSOR_H
 #define LIBSCRIPT_COMPILER_FUNCTION_PROCESSOR_H
 
+#include "script/compiler/component.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
 
@@ -45,13 +47,13 @@ public:
   }
 };
 
-class FunctionProcessor
+class FunctionProcessor : public Component
 {
 public:
   PrototypeResolver prototype_;
 
 public:
-  FunctionProcessor() = default;
+  using Component::Component;
 
   template<typename Builder>
   void generic_fill(Builder & builder, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
@@ -68,15 +70,19 @@ public:
 
     if (fundecl->explicitKeyword.isValid())
     {
+      TranslationTarget target{ this, fundecl->explicitKeyword };
+
       if (!fundecl->is<ast::ConstructorDecl>())
-        throw InvalidUseOfExplicitKeyword{ dpos(fundecl->explicitKeyword) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfExplicitKeyword };
 
       builder.setExplicit();
     }
     else if (fundecl->staticKeyword.isValid())
     {
+      TranslationTarget target{ this, fundecl->staticKeyword };
+
       if (!scp.isClass())
-        throw InvalidUseOfStaticKeyword{ dpos(fundecl->staticKeyword) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfStaticKeyword };
 
       /// TODO: is the following line needed ?
       builder.symbol = Symbol{ scp.asClass() };
@@ -85,6 +91,8 @@ public:
     }
     else if (fundecl->virtualKeyword.isValid())
     {
+      TranslationTarget target{ this, fundecl->virtualKeyword };
+
       try
       {
         builder.setVirtual();
@@ -93,14 +101,17 @@ public:
       }
       catch (...)
       {
-        throw InvalidUseOfVirtualKeyword{ dpos(fundecl->virtualKeyword) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfVirtualKeyword };
       }
     }
 
     if (fundecl->constQualifier.isValid())
     {
+      TranslationTarget target{ this, fundecl->constQualifier };
+
       if (!scp.isClass() || fundecl->is<ast::ConstructorDecl>() || fundecl->is<ast::DestructorDecl>() || fundecl->staticKeyword.isValid())
-        throw InvalidUseOfConstKeyword{ dpos(fundecl->constQualifier) };
+        throw CompilationFailure{ CompilerError::InvalidUseOfConstKeyword };
+
       builder.setConst();
     }
 

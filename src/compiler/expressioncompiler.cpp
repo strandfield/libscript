@@ -5,6 +5,7 @@
 #include "script/compiler/expressioncompiler.h"
 
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/conversionprocessor.h"
 #include "script/compiler/diagnostichelper.h"
 #include "script/compiler/lambdacompiler.h"
@@ -68,7 +69,7 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
     const auto& p = le->pos();
 
     if (le->captures.size() > 0)
-      throw LambdaMustBeCaptureless{ diagnostic::pos_t{ p.line, p.col } };
+      throw CompilationFailure{ CompilerError::LambdaMustBeCaptureless };
 
     CompileLambdaTask task;
     task.lexpr = le;
@@ -201,15 +202,16 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArrayConstructi
 
   const Type element_type = args.front()->type().baseType();
   if (element_type == Type::InitializerList)
-    throw InitializerListAsFirstArrayElement{};
+    throw CompilationFailure{ CompilerError::InitializerListAsFirstArrayElement };
 
   std::vector<Conversion> conversions;
   conversions.reserve(args.size());
   for (const auto & arg : args)
   {
     auto conv = Conversion::compute(arg, element_type, engine());
+
     if (conv == Conversion::NotConvertible())
-      throw ArrayElementNotConvertible{};
+      throw CompilationFailure{ CompilerError::ArrayElementNotConvertible };
 
     conversions.push_back(conv);
   }
@@ -228,13 +230,14 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBraceConstructi
   using diagnostic::dstr;
 
   NameLookup lookup = resolve(bc->temporary_type);
+
   if (lookup.typeResult().isNull())
-    throw UnknownTypeInBraceInitialization{ dpos(bc), dstr(bc->temporary_type) };
+    throw CompilationFailure{ CompilerError::UnknownTypeInBraceInitialization, errors::InvalidName{dstr(bc->temporary_type)} };
 
   const Type & type = lookup.typeResult();
 
   if (!type.isObjectType() && bc->arguments.size() != 1)
-    throw TooManyArgumentInVariableInitialization{ dpos(bc) };
+    throw CompilationFailure{ CompilerError::TooManyArgumentInVariableInitialization };
 
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(bc->arguments);
 
@@ -260,17 +263,17 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateArraySubscript(
 
   const Type & objType = obj->type();
   if (!objType.isObjectType())
-    throw ArraySubscriptOnNonObject{ dpos(as) };
+    throw CompilationFailure{ CompilerError::ArraySubscriptOnNonObject };
 
   const Type & argType = index->type();
 
   std::vector<Function> candidates = this->getBinaryOperators(SubscriptOperator, objType, argType);
   if (candidates.empty())
-    throw CouldNotFindValidSubscriptOperator{ dpos(as) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidSubscriptOperator };
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(candidates, std::vector<Type>{objType, argType}))
-    throw CouldNotFindValidSubscriptOperator{ dpos(as) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidSubscriptOperator };
 
   Function selected = resol.selectedOverload();
 
@@ -357,17 +360,18 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   assert(lookup.resultType() == NameLookup::FunctionName || lookup.resultType() == NameLookup::UnknownName || lookup.resultType() == NameLookup::TemplateName);
 
   if (lookup.resultType() == NameLookup::UnknownName)
-    throw NoSuchCallee{ dpos(callee) };
+    throw CompilationFailure{ CompilerError::NoSuchCallee };
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(lookup.functions(), args, object))
-    throw CouldNotFindValidMemberFunction{ dpos(call) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidMemberFunction };
 
   Function selected = resol.selectedOverload();
+
   if (selected.isDeleted())
-    throw CallToDeletedFunction{ dpos(call) };
+    throw CompilationFailure{ CompilerError::CallToDeletedFunction };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(call), dstr(callee), selected.accessibility() };
+    throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{dstr(callee), selected.accessibility()} };
 
   if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
   {
@@ -408,15 +412,16 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
   
   std::vector<Function> functions = getCallOperator(functor->type());
   OverloadResolution resol = OverloadResolution::New(engine());
+
   if (!resol.process(functions, args, functor))
-    throw CouldNotFindValidCallOperator{ dpos(call) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidCallOperator };
 
   Function selected = resol.selectedOverload();
 
   if (selected.isDeleted())
-    throw CallToDeletedFunction{ dpos(call) };
+    throw CompilationFailure{ CompilerError::CallToDeletedFunction };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(call), "operator()", selected.accessibility() };
+    throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{"operator()", selected.accessibility()} };
 
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
@@ -436,8 +441,10 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
   {
     const auto & a = args.at(i);
     Initialization init = Initialization::compute(proto.at(i), a, engine());
+
     if (!init.isValid())
-      throw CouldNotConvert{ dpos(call->arguments.at(i)), a->type(), proto.at(i) };
+      throw CompilationFailure{ CompilerError::CouldNotConvert, errors::ConversionFailure{a->type(), proto.at(i)} };
+
     inits.push_back(init);
   }
 
@@ -447,6 +454,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionVariabl
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateExpression(const std::shared_ptr<ast::Expression> & expr)
 {
+  TranslationTarget target{ this, expr };
+
   switch (expr->type())
   {
   case ast::NodeType::Operation:
@@ -496,8 +505,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
 
   const auto & lops = getLiteralOperators(suffix);
   OverloadResolution resol = OverloadResolution::New(engine());
+
   if (!resol.process(lops, args))
-    throw CouldNotFindValidLiteralOperator{ dpos(udl) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidLiteralOperator };
 
   Function selected = resol.selectedOverload();
   const auto & inits = resol.initializations();
@@ -593,12 +603,14 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
   auto object = generateExpression(operation->arg1);
 
   if (!object->type().isObjectType())
-    throw CannotAccessMemberOfNonObject{ dpos(operation) };
+    throw CompilationFailure{ CompilerError::CannotAccessMemberOfNonObject };
 
   Class cla = engine()->typeSystem()->getClass(object->type());
-  const int attr_index = cla.attributeIndex(operation->arg2->as<ast::SimpleIdentifier>().getName());
+  const std::string mname = operation->arg2->as<ast::SimpleIdentifier>().getName();
+  const int attr_index = cla.attributeIndex(mname);
+
   if (attr_index == -1)
-    throw NoSuchMember{ dpos(operation) };
+    throw CompilationFailure{ CompilerError::NoSuchMember, errors::DataMemberName{mname} };
 
   return VariableAccessor::generateMemberAccess(*this, object, attr_index, dpos(operation));
 }
@@ -618,7 +630,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBinaryOperation
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(operators, std::vector<Type>{lhs->type(), rhs->type()}))
-    throw CouldNotFindValidOperator{ dpos(operation) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidOperator };
 
   Operator selected = resol.selectedOverload().toOperator();
   std::vector<std::shared_ptr<program::Expression>> args{ lhs, rhs };
@@ -641,14 +653,14 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
 
   OverloadResolution resol = OverloadResolution::New(engine());
   if (!resol.process(operators, std::vector<Type>{operand->type()}))
-    throw CouldNotFindValidOperator{ dpos(operation) };
+    throw CompilationFailure{ CompilerError::CouldNotFindValidOperator };
 
   Operator selected = resol.selectedOverload().toOperator();
 
   if (selected.isDeleted())
-    throw CallToDeletedFunction{ dpos(operation) };
+    throw CompilationFailure{ CompilerError::CallToDeletedFunction };
   else if (!Accessibility::check(caller(), selected))
-    throw InaccessibleMember{ dpos(operation), Operator::getFullName(selected.operatorId()), selected.accessibility() };
+    throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{Operator::getFullName(selected.operatorId()), selected.accessibility()} };
 
   std::vector<std::shared_ptr<program::Expression>> args{ operand };
   const auto & inits = resol.initializations();
@@ -665,8 +677,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateConditionalExpr
   auto tru = generateExpression(ce->onTrue);
   auto fal = generateExpression(ce->onFalse);
   script::Type common_type = ConversionProcessor::common_type(engine(), tru, fal);
+
   if (common_type.isNull())
-    throw CouldNotFindCommonType{ dpos(ce), tru->type(), fal->type() };
+    throw CompilationFailure{ CompilerError::CouldNotFindCommonType, errors::NoCommonType{tru->type(), fal->type()} };
 
   tru = ConversionProcessor::convert(engine(), tru, Conversion::compute(tru, common_type, engine()));
   fal = ConversionProcessor::convert(engine(), fal, Conversion::compute(fal, common_type, engine()));
@@ -686,9 +699,9 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::FunctionName:
     return generateFunctionAccess(identifier, lookup);
   case NameLookup::TemplateName:
-    throw TemplateNamesAreNotExpressions{ dpos(identifier) };
+    throw CompilationFailure{ CompilerError::TemplateNamesAreNotExpressions };
   case NameLookup::TypeName:
-    throw TypeNameInExpression{ dpos(identifier) };
+    throw CompilationFailure{ CompilerError::TypeNameInExpression };
   case NameLookup::VariableName:
     return program::VariableAccess::New(lookup.variable());
   case NameLookup::StaticDataMemberName:
@@ -704,7 +717,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::EnumValueName:
     return program::Literal::New(Value::fromEnumerator(lookup.enumeratorResult()));
   case NameLookup::NamespaceName:
-    throw NamespaceNameInExpression{ dpos(identifier) };
+    throw CompilationFailure{ CompilerError::NamespaceNameInExpression };
   default:
     break;
   }
@@ -715,7 +728,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
 std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(const std::shared_ptr<ast::Identifier> & identifier, const NameLookup & lookup)
 {
   if (lookup.functions().size() != 1)
-    throw AmbiguousFunctionName{ dpos(identifier) };
+    throw CompilationFailure{ CompilerError::AmbiguousFunctionName };
 
   Function f = lookup.functions().front();
   FunctionType ft = engine()->typeSystem()->getFunctionType(f.prototype());
@@ -730,7 +743,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateStaticDataMembe
   const Class::StaticDataMember & sdm = lookup.staticDataMemberResult();
 
   if (!Accessibility::check(caller(), c, sdm.accessibility()))
-    throw InaccessibleMember{ dpos(id), sdm.name, sdm.accessibility() };
+    throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{ sdm.name, sdm.accessibility()} };
 
   return program::VariableAccess::New(sdm.value);
 }

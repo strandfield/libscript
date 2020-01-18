@@ -898,6 +898,14 @@ Value Engine::eval(const std::string & command)
 
     throw EvaluationError{ mssg.to_string() };
   }
+  catch (compiler::CompilationFailure& ex)
+  {
+    diagnostic::MessageBuilder msb{ diagnostic::Error, this };
+    msb << ex;
+    diagnostic::DiagnosticMessage mssg = msb.build();
+
+    throw EvaluationError{ mssg.to_string() };
+  }
 
   return d->interpreter->eval(expr);
 }

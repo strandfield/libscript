@@ -20,6 +20,8 @@
 #include "script/namespace.h"
 #include "script/typesystem.h"
 
+#include "script/compiler/compiler.h"
+
 TEST(Conversions, fundamentals) {
   using namespace script;
 
@@ -378,6 +380,8 @@ static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engi
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();
+
+  compiler::SessionManager session{ e->compiler() };
 
   compiler::ExpressionCompiler ec{ e->compiler() };
   ec.setScope(Scope{ e->rootNamespace() });

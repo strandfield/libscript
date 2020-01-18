@@ -44,7 +44,7 @@ public:
   explicit TemplateArgument(std::vector<TemplateArgument> && args);
 };
 
-bool operator==(const TemplateArgument & lhs, const TemplateArgument & rhs);
+LIBSCRIPT_API bool operator==(const TemplateArgument & lhs, const TemplateArgument & rhs);
 inline bool operator!=(const TemplateArgument & lhs, const TemplateArgument & rhs) { return !(lhs == rhs); }
 
 class LIBSCRIPT_API TemplateArgumentPack

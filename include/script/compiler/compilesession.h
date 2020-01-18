@@ -19,9 +19,15 @@
 namespace script
 {
 
+namespace ast
+{
+class Node;
+} // namespace ast
+
 namespace compiler
 {
 
+class Component;
 class Compiler;
 class CompileSession;
 
@@ -78,12 +84,29 @@ public:
   bool error;
   Script script;
 
+  std::shared_ptr<ast::Node> current_node;
+  parser::Token current_token;
+
   SessionLogger mLogger;
 
   void log(const diagnostic::DiagnosticMessage & mssg);
   void log(const CompilerException & exception);
+  void log(const CompilationFailure& ex);
 
   void clear();
+};
+
+class TranslationTarget
+{
+private:
+  const Component* m_component;
+  std::shared_ptr<ast::Node> m_current_node;
+  parser::Token m_current_token;
+
+public:
+  TranslationTarget(const Component* c, std::shared_ptr<ast::Node> node);
+  TranslationTarget(const Component* c, parser::Token tok);
+  ~TranslationTarget();
 };
 
 } // namespace compiler

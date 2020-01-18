@@ -40,10 +40,13 @@ Value LiteralProcessor::generate(Engine *e, const std::shared_ptr<ast::Literal> 
   {
     std::string str = l->toString();
     postprocess(str);
+
     if (str.front() == '"')
       return e->newString(StringBackend::convert(std::string(str.begin() + 1, str.end() - 1)));
+
     if (str.size() != 3)
-      throw InvalidCharacterLiteral{ };
+      throw CompilationFailure{ CompilerError::InvalidCharacterLiteral };
+
     return e->newChar(str.at(1));
   }
   case ast::NodeType::UserDefinedLiteral:
@@ -62,10 +65,13 @@ Value LiteralProcessor::generate(Engine *e, std::string & str)
   if (str.front() == '\'' || str.front() == '"')
   {
     postprocess(str);
+
     if (str.front() == '"')
       return e->newString(StringBackend::convert(std::string(str.begin() + 1, str.end() - 1)));
+
     if (str.size() != 3)
-      throw InvalidCharacterLiteral{};
+      throw CompilationFailure{ CompilerError::InvalidCharacterLiteral };
+
     return e->newChar(str.at(1));
   }
   else if (str.find('.') != str.npos || str.find('e') != str.npos)

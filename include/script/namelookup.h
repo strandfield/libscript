@@ -18,7 +18,6 @@ class Enumerator;
 class NameLookupImpl;
 class StaticDataMember;
 class Template;
-class TemplateNameProcessor;
 class Value;
 
 class NameLookupOptions

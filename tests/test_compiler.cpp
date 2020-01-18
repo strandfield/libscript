@@ -20,6 +20,7 @@
 #include "script/typesystem.h"
 
 #include "script/compiler/compiler.h"
+#include "script/compiler/errors.h"
 
 #include "script/program/expression.h"
 #include "script/program/statements.h"
@@ -1388,10 +1389,10 @@ TEST(CompilerTests, protected_static_member_function) {
   ASSERT_FALSE(success);
 
   // The error messages should refer to the 'protected' keyword.
-  bool protected_keyword = false;
+  bool found_error = false;
   for (const auto & e : errors)
-    protected_keyword = protected_keyword || e.to_string().find("protected") != std::string::npos;
-  ASSERT_TRUE(protected_keyword);
+    found_error = found_error || e.code() == CompilerError::InaccessibleMember;
+  ASSERT_TRUE(found_error);
 }
 
 TEST(CompilerTests, access_static_member_function_through_object) {

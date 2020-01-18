@@ -27,19 +27,27 @@ ImportProcessor::ImportProcessor(Engine *e)
 Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & decl)
 {
   Module m = engine()->getModule(decl->at(0));
+
   if (m.isNull())
-    throw UnknownModuleName{ dpos(decl), decl->at(0) };
+    throw CompilationFailure{ CompilerError::UnknownModuleName, errors::InvalidName{decl->at(0)} };
 
   for (size_t i(1); i < decl->size(); ++i)
   {
     Module child = m.getSubModule(decl->at(i));
     if (child.isNull())
-      throw UnknownSubModuleName{ dpos(decl), decl->at(i), m.name() };
+      throw CompilationFailure{ CompilerError::UnknownSubModuleName, errors::InvalidName{decl->at(i)} };
 
     m = child;
   }
 
-  m.load();
+  try
+  {
+    m.load();
+  }
+  catch (ModuleLoadingError& ex)
+  {
+    throw CompilationFailure{ CompilerError::ModuleImportationFailed, errors::ModuleImportationFailed{ex.message} };
+  }
 
   return m.scope();
 }

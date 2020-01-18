@@ -31,6 +31,7 @@ class SyntaxError;
 namespace compiler
 {
 class CompilerException;
+class CompilationFailure;
 } // namespace compiler
 
 namespace diagnostic
@@ -146,7 +147,7 @@ class MessageBuilder
 public:
   MessageBuilder(Severity s, Engine *e = nullptr);
   MessageBuilder(const MessageBuilder &) = default;
-  ~MessageBuilder() = default;
+  virtual ~MessageBuilder();
   
   inline Engine * engine() const { return mEngine; }
 
@@ -177,6 +178,7 @@ public:
   MessageBuilder & operator<<(const Exception & ex);
   MessageBuilder & operator<<(const compiler::CompilerException & ex);
   MessageBuilder& operator<<(const parser::SyntaxError& ex);
+  MessageBuilder& operator<<(const compiler::CompilationFailure& ex);
   inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }
 
   inline MessageBuilder & operator<<(Engine *e) { mEngine = e; return *(this); }

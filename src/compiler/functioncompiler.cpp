@@ -77,7 +77,7 @@ bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
   if (name == "this")
   {
     if (!mCompiler->canUseThis())
-      throw IllegalUseOfThis{ diagnostic::pos_t{-1, -1} };
+      throw CompilationFailure{ CompilerError::IllegalUseOfThis };
 
     nl->localIndex = 1;
     return true;
@@ -516,7 +516,7 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
       return AssignmentCompiler{ this }.generateAssignmentOperator();
   }
 
-  throw FunctionCannotBeDefaulted{ dpos(mDeclaration) };
+  throw CompilationFailure{ CompilerError::FunctionCannotBeDefaulted };
 }
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateConstructorHeader()
@@ -609,6 +609,7 @@ std::shared_ptr<program::Statement> FunctionCompiler::generate(const std::shared
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
 {
+  TranslationTarget target{ this, cs };
   EnterScope guard{ this, scopeType };
 
   const auto size = buffer_size();
@@ -623,6 +624,8 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundSt
 
 void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
 {
+  TranslationTarget target{ this, s };
+
   switch (s->type())
   {
   case ast::NodeType::NullStatement:
@@ -687,6 +690,7 @@ void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::sha
 
 void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
 {
+  TranslationTarget target{ this, cs };
   EnterScope guard{ this, scopeType };
 
   for (const auto & s : cs->statements)
@@ -803,14 +807,14 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
   if (rs->expression == nullptr)
   {
     if (mFunction.prototype().returnType() != Type::Void)
-      throw ReturnStatementWithoutValue{};
+      throw CompilationFailure{ CompilerError::ReturnStatementWithoutValue };
 
     return write(program::ReturnStatement::New(nullptr, std::move(statements)));
   }
   else
   {
     if (mFunction.prototype().returnType() == Type::Void)
-      throw ReturnStatementWithValue{};
+      throw CompilationFailure{ CompilerError::ReturnStatementWithValue };
   }
 
   auto retval = generate(rs->expression);
@@ -819,7 +823,7 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 
   if (conv == Conversion::NotConvertible())
   {
-    throw CouldNotConvert(dpos(rs), retval->type(), mFunction.prototype().returnType());
+    throw CompilationFailure{ CompilerError::CouldNotConvert, errors::ConversionFailure{retval->type(), mFunction.prototype().returnType()} };
   }
 
   /// TODO : write a dedicated function for this, don't use prepareFunctionArg()
@@ -851,48 +855,57 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, std::nullptr_t)
 {
   if (var_type.baseType() == Type::Auto)
-    throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
+    throw CompilationFailure{ CompilerError::AutoMustBeUsedWithAssignment };
 
   try
   {
     expr_.setScope(mCurrentScope);
     processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(engine(), var_type, nullptr, dpos(var_decl)));
   }
-  catch (const EnumerationsCannotBeDefaultConstructed & e)
+  catch (const CompilationFailure & ex)
   {
-    throw EnumerationsMustBeInitialized{ e.pos };
+    if (ex.errorCode() == CompilerError::EnumerationsCannotBeDefaultConstructed)
+      throw CompilationFailure{ CompilerError::EnumerationsMustBeInitialized };
+    else
+      throw;
   }
 }
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::ConstructorInitialization> & init)
 {
   if (var_type.baseType() == Type::Auto)
-    throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
+    throw CompilationFailure{ CompilerError::AutoMustBeUsedWithAssignment };
 
   try
   {
     expr_.setScope(mCurrentScope);
     processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
   }
-  catch (const TooManyArgumentInInitialization & e)
+  catch (const CompilationFailure& ex)
   {
-    throw TooManyArgumentInVariableInitialization{ e.pos };
+    if (ex.errorCode() == CompilerError::TooManyArgumentInInitialization)
+      throw CompilationFailure{ CompilerError::TooManyArgumentInVariableInitialization };
+    else
+      throw;
   }
 }
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl, const Type & var_type, const std::shared_ptr<ast::BraceInitialization> & init)
 {
   if (var_type.baseType() == Type::Auto)
-    throw AutoMustBeUsedWithAssignment{ dpos(var_decl) };
+    throw CompilationFailure{ CompilerError::AutoMustBeUsedWithAssignment };
 
   try
   {
     expr_.setScope(mCurrentScope);
     processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
   }
-  catch (const TooManyArgumentInInitialization & e)
+  catch (const CompilationFailure& ex)
   {
-    throw TooManyArgumentInVariableInitialization{ e.pos };
+    if (ex.errorCode() == CompilerError::TooManyArgumentInInitialization)
+      throw CompilationFailure{ CompilerError::TooManyArgumentInVariableInitialization };
+    else
+      throw;
   }
 }
 
@@ -915,8 +928,9 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 
   /// TODO: use Initialization instead
   Conversion conv = Conversion::compute(value, var_type, engine());
+
   if (conv == Conversion::NotConvertible())
-    throw CouldNotConvert{ dpos(init), value->type(), var_type };
+    throw CompilationFailure{ CompilerError::CouldNotConvert, errors::ConversionFailure{value->type(), var_type} };
 
   /// TODO : this is not optimal I believe
   // we could add copy elision
@@ -958,7 +972,7 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
   {
     Function dtor = engine()->typeSystem()->getClass(var.type).destructor();
     if (dtor.isNull())
-      throw ObjectHasNoDestructor{};
+      throw CompilationFailure{ CompilerError::ObjectHasNoDestructor };
 
     return write(program::PopValue::New(destroy, dtor, var.index));
   }

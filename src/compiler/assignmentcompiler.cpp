@@ -44,9 +44,9 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
   {
     Operator parent_assign = findAssignmentOperator(current_class.parent().id());
     if (parent_assign.isNull())
-      throw ParentHasNoAssignmentOperator{};
+      throw CompilationFailure{ CompilerError::ParentHasNoAssignmentOperator };
     else if (parent_assign.isDeleted())
-      throw ParentHasDeletedAssignmentOperator{};
+      throw CompilationFailure{ CompilerError::ParentHasDeletedAssignmentOperator };
 
     parent_assign_call = program::ExpressionStatement::New(program::FunctionCall::New(parent_assign, { this_object, other_object }));
   }
@@ -59,15 +59,15 @@ std::shared_ptr<program::CompoundStatement> AssignmentCompiler::generateAssignme
   {
     const auto & dm = data_members.at(i);
     if (dm.type.isReference())
-      throw DataMemberIsReferenceAndCannotBeAssigned{};
+      throw CompilationFailure{ CompilerError::DataMemberIsReferenceAndCannotBeAssigned };
     if (dm.type.isConst())
       throw NotImplemented{ "Data member is const and cannot be assigned" };
 
     Operator dm_assign = findAssignmentOperator(dm.type);
     if (dm_assign.isNull())
-      throw DataMemberHasNoAssignmentOperator{};
+      throw CompilationFailure{ CompilerError::DataMemberHasNoAssignmentOperator };
     else if (dm_assign.isDeleted())
-      throw DataMemberHasDeletedAssignmentOperator{};
+      throw CompilationFailure{ CompilerError::DataMemberHasDeletedAssignmentOperator };
 
     auto fetch_this_member = program::MemberAccess::New(dm.type, this_object, i + data_members_offset);
     auto fetch_other_member = program::MemberAccess::New(dm.type, other_object, i + data_members_offset);

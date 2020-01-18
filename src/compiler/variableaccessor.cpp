@@ -86,14 +86,14 @@ std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(Expr
   int relative_index = offset;
   while (relative_index - int(cla.dataMembers().size()) >= 0)
   {
-    relative_index = relative_index - cla.dataMembers().size();
+    relative_index = relative_index - static_cast<int>(cla.dataMembers().size());
     cla = cla.parent();
   }
 
   const auto & dm = cla.dataMembers().at(relative_index);
 
   if (!Accessibility::check(ec.caller(), cla, dm.accessibility()))
-    throw InaccessibleMember{ dpos, dm.name, dm.accessibility() };
+    throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{dm.name, dm.accessibility()} };
 
   const Type access_type = object->type().isConst() ? Type::cref(dm.type) : Type::ref(dm.type);
   return program::MemberAccess::New(access_type, object, offset);
