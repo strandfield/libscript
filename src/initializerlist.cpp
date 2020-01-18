@@ -213,10 +213,10 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
   const auto& arguments = builder.arguments();
 
   if (arguments.size() != 1)
-    throw TemplateInstantiationError{ "Invalid argument count" };
+    throw TemplateInstantiationError{ TemplateInstantiationError::InvalidArgumentCount };
 
   if (arguments.at(0).kind != TemplateArgument::TypeArgument)
-    throw TemplateInstantiationError{ "Argument must be a type" };
+    throw TemplateInstantiationError{ TemplateInstantiationError::ArgumentMustBeAType };
 
   const Type element_type = arguments.at(0).type.baseType();
 

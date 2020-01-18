@@ -114,11 +114,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
           TemplateArgument arg = tnp.argument(scp, ft.parameters().at(i).defaultValue());
           targs_copy.push_back(arg);
         }
-        catch (const compiler::InvalidTemplateArgument &)
-        {
-          return Function{};
-        }
-        catch (const compiler::InvalidLiteralTemplateArgument &)
+        catch (const compiler::CompilationFailure&)
         {
           return Function{};
         }

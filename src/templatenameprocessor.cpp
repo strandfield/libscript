@@ -32,7 +32,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
     if (lookup.resultType() == NameLookup::TypeName)
       return TemplateArgument{ lookup.typeResult() };
     else
-      throw compiler::InvalidTemplateArgument{ dpos(arg) };
+      throw compiler::CompilationFailure{ CompilerError::InvalidTemplateArgument };
   }
   else if (arg->is<ast::Literal>())
   {
@@ -42,7 +42,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
     else if (l.is<ast::IntegerLiteral>())
       return TemplateArgument{ compiler::LiteralProcessor::generate(std::static_pointer_cast<ast::IntegerLiteral>(arg)) };
     else
-      throw compiler::InvalidLiteralTemplateArgument{ dpos(arg) };
+      throw compiler::CompilationFailure{ CompilerError::InvalidLiteralTemplateArgument };
   }
   else if (arg->is<ast::TypeNode>())
   {
@@ -51,7 +51,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
     return TemplateArgument{ r.resolve(type->value, scp) };
   }
 
-  throw compiler::InvalidTemplateArgument{ dpos(arg) };
+  throw compiler::CompilationFailure{ CompilerError::InvalidTemplateArgument };
 }
 
 std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args)
@@ -110,7 +110,7 @@ void TemplateNameProcessor::complete(const Template & t, const Scope &scp, std::
   for (size_t i(0); i < t.parameters().size(); ++i)
   {
     if (!t.parameters().at(i).hasDefaultValue())
-      throw compiler::MissingNonDefaultedTemplateParameter{};
+      throw compiler::CompilationFailure{ CompilerError::MissingNonDefaultedTemplateParameter };
 
     TemplateArgument arg = argument(scp, t.parameters().at(i).defaultValue());
     args.push_back(arg);

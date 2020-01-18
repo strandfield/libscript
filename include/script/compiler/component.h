@@ -26,7 +26,7 @@ class Compiler;
 class CompileSession;
 class CompilerException;
 
-class Component
+class LIBSCRIPT_API Component
 {
 private:
   Compiler* m_compiler;

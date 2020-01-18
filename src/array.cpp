@@ -119,15 +119,15 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
   const auto& arguments = builder.arguments();
 
   if (arguments.size() != 1)
-    throw TemplateInstantiationError{ "Invalid argument count" };
+    throw TemplateInstantiationError{ TemplateInstantiationError::InvalidArgumentCount };
 
   if (arguments.at(0).kind != TemplateArgument::TypeArgument)
-    throw TemplateInstantiationError{ "Argument must be a type" };
+    throw TemplateInstantiationError{ TemplateInstantiationError::ArgumentMustBeAType };
 
   const Type element_type = arguments.at(0).type.baseType();
 
   if (element_type.isEnumType())
-    throw TemplateInstantiationError{ "Argument cannot be an enumeration" };
+    throw TemplateInstantiationError{ TemplateInstantiationError::ArgumentCannotBeAnEnumeration };
 
   Engine * e = builder.getTemplate().engine();
   ArrayData data;
@@ -141,11 +141,11 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
     data.destructor = element_class.destructor();
 
     if (data.constructor.isNull())
-      throw TemplateInstantiationError{ "Type must be default-cosntructible" };
+      throw TemplateInstantiationError{ TemplateInstantiationError::TypeMustBeDefaultConstructible };
     if (data.copyConstructor.isNull())
-      throw TemplateInstantiationError{ "Type must be copy-cosntructible" };
+      throw TemplateInstantiationError{ TemplateInstantiationError::TypeMustBeCopyConstructible };
     if (data.destructor.isNull())
-      throw TemplateInstantiationError{ "Type must be destructible" };
+      throw TemplateInstantiationError{ TemplateInstantiationError::TypeMustBeDestructible };
   }
 
 

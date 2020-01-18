@@ -277,7 +277,7 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
     auto mssg = diagnostic::error(engine());
     mssg << ex;
 
-    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
   }
   catch (const CompilationFailure& ex)
   {
@@ -286,7 +286,7 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
     auto mssg = diagnostic::error(engine());
     mssg << ex;
 
-    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
   }
 }
 
@@ -328,7 +328,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
     auto mssg = diagnostic::error(engine());
     mssg << ex;
 
-    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
   }
   catch (const CompilationFailure& ex)
   {
@@ -337,7 +337,7 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
     auto mssg = diagnostic::error(engine());
     mssg << ex;
 
-    throw TemplateInstantiationError{ mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
   }
 }
 

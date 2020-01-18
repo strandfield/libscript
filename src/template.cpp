@@ -21,7 +21,7 @@
 namespace script
 {
 
-TemplateImpl::TemplateImpl(std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
+TemplateImpl::TemplateImpl(std::vector<TemplateParameter>&& params, const Scope& scp, Engine* e, std::shared_ptr<SymbolImpl> es)
   : SymbolImpl(es)
   , parameters(std::move(params))
   , scope(scp)
@@ -36,11 +36,11 @@ Name TemplateImpl::get_name() const
 }
 
 
-FunctionTemplateImpl::FunctionTemplateImpl(const std::string & n, std::vector<TemplateParameter> && params, const Scope & scp, std::unique_ptr<FunctionTemplateNativeBackend>&& back,
-  Engine *e, std::shared_ptr<SymbolImpl> es)
+FunctionTemplateImpl::FunctionTemplateImpl(const std::string& n, std::vector<TemplateParameter>&& params, const Scope& scp, std::unique_ptr<FunctionTemplateNativeBackend>&& back,
+  Engine* e, std::shared_ptr<SymbolImpl> es)
   : TemplateImpl(std::move(params), scp, e, es),
-    function_name(n),
-    backend(std::move(back))
+  function_name(n),
+  backend(std::move(back))
 {
 
 }
@@ -55,11 +55,11 @@ const std::string& FunctionTemplateImpl::name() const
   return function_name;
 }
 
-ClassTemplateImpl::ClassTemplateImpl(const std::string & n, 
-  std::vector<TemplateParameter> && params, 
-  const Scope & scp,
+ClassTemplateImpl::ClassTemplateImpl(const std::string& n,
+  std::vector<TemplateParameter>&& params,
+  const Scope& scp,
   std::unique_ptr<ClassTemplateNativeBackend>&& back,
-  Engine *e, std::shared_ptr<SymbolImpl> es)
+  Engine* e, std::shared_ptr<SymbolImpl> es)
   : TemplateImpl(std::move(params), scp, e, es)
   , class_name(n)
   , backend(std::move(back))
@@ -95,9 +95,9 @@ Class ScriptClassTemplateBackend::instantiate(ClassTemplateInstanceBuilder& buil
   return ret;
 }
 
-PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate & ct, std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es)
+PartialTemplateSpecializationImpl::PartialTemplateSpecializationImpl(const ClassTemplate& ct, std::vector<TemplateParameter>&& params, const Scope& scp, Engine* e, std::shared_ptr<SymbolImpl> es)
   : TemplateImpl(std::move(params), scp, e, es),
-    class_template(ct.impl())
+  class_template(ct.impl())
 {
 
 }
@@ -110,10 +110,10 @@ const std::string& PartialTemplateSpecializationImpl::name() const
 TemplateArgument::TemplateArgument()
   : kind(UnspecifiedArgument), integer(0), boolean(false) { }
 
-TemplateArgument::TemplateArgument(const Type & t)
+TemplateArgument::TemplateArgument(const Type& t)
   : kind(TypeArgument), type(t), integer(0), boolean(false) { }
 
-TemplateArgument::TemplateArgument(const Type::BuiltInType & t)
+TemplateArgument::TemplateArgument(const Type::BuiltInType& t)
   : kind(TypeArgument), type(t), integer(0), boolean(false) { }
 
 TemplateArgument::TemplateArgument(int n)
@@ -122,7 +122,7 @@ TemplateArgument::TemplateArgument(int n)
 TemplateArgument::TemplateArgument(bool b)
   : kind(BoolArgument), integer(0), boolean(b) { }
 
-TemplateArgument::TemplateArgument(std::vector<TemplateArgument> && args)
+TemplateArgument::TemplateArgument(std::vector<TemplateArgument>&& args)
   : kind(PackArgument), integer(0), boolean(false)
 {
   pack = std::make_shared<TemplateArgumentPack>(std::move(args));
@@ -138,7 +138,7 @@ inline static int compare(int a, int b)
   return  a < b ? -1 : (a == b ? 0 : 1);
 }
 
-int TemplateArgumentComparison::compare(const TemplateArgument & a, const TemplateArgument & b)
+int TemplateArgumentComparison::compare(const TemplateArgument& a, const TemplateArgument& b)
 {
   if (a.kind < b.kind)
     return -1;
@@ -157,7 +157,7 @@ int TemplateArgumentComparison::compare(const TemplateArgument & a, const Templa
   assert(common_kind == TemplateArgument::PackArgument);
 
   if (a.pack->size() != b.pack->size())
-    return script::compare((int) a.pack->size(), (int) b.pack->size());
+    return script::compare((int)a.pack->size(), (int)b.pack->size());
 
   for (size_t i(0); i < a.pack->size(); ++i)
   {
@@ -169,12 +169,12 @@ int TemplateArgumentComparison::compare(const TemplateArgument & a, const Templa
   return 0;
 }
 
-bool TemplateArgumentComparison::operator()(const TemplateArgument & a, const TemplateArgument & b) const
+bool TemplateArgumentComparison::operator()(const TemplateArgument& a, const TemplateArgument& b) const
 {
   return compare(a, b) < 0;
 }
 
-bool TemplateArgumentComparison::operator()(const std::vector<TemplateArgument> & a, const std::vector<TemplateArgument> & b) const
+bool TemplateArgumentComparison::operator()(const std::vector<TemplateArgument>& a, const std::vector<TemplateArgument>& b) const
 {
   if (a.size() != b.size())
     return a.size() < b.size();
@@ -190,15 +190,51 @@ bool TemplateArgumentComparison::operator()(const std::vector<TemplateArgument> 
 }
 
 
-bool operator==(const TemplateArgument & lhs, const TemplateArgument & rhs)
+bool operator==(const TemplateArgument& lhs, const TemplateArgument& rhs)
 {
   return TemplateArgumentComparison::compare(lhs, rhs) == 0;
 }
 
+namespace errors
+{
+
+class TemplateInstantiationCategory : public std::error_category
+{
+public:
+
+  const char* name() const noexcept override
+  {
+    return "template-instantiation-category";
+  }
+
+  std::string message(int) const override
+  {
+    return "template-instantiation-error";
+  }
+};
+
+const std::error_category& template_instantiation_category() noexcept
+{
+  static const TemplateInstantiationCategory static_instance = {};
+  return static_instance;
+}
+
+} // namespace errors
 
 
+TemplateInstantiationError::TemplateInstantiationError(ErrorCode ec)
+  : Exceptional(ec)
+{
 
-Template::Template(const std::shared_ptr<TemplateImpl> & impl)
+}
+
+TemplateInstantiationError::TemplateInstantiationError(ErrorCode ec, std::string mssg)
+  : Exceptional(ec, std::move(mssg))
+{
+
+}
+
+Template::Template(const std::shared_ptr<TemplateImpl>& impl)
   : d(impl)
 {
 
@@ -214,7 +250,7 @@ Script Template::script() const
   return Symbol{ d->enclosing_symbol.lock() }.script();
 }
 
-Engine * Template::engine() const
+Engine* Template::engine() const
 {
   return d->engine;
 }
@@ -240,12 +276,12 @@ FunctionTemplate Template::asFunctionTemplate() const
   return FunctionTemplate{ std::dynamic_pointer_cast<FunctionTemplateImpl>(d) };
 }
 
-const std::string & Template::name() const
+const std::string& Template::name() const
 {
   return d->name();
 }
 
-const std::vector<TemplateParameter> & Template::parameters() const
+const std::vector<TemplateParameter>& Template::parameters() const
 {
   return d->parameters;
 }
@@ -255,7 +291,7 @@ Scope Template::scope() const
   return d->scope;
 }
 
-Scope Template::argumentScope(const std::vector<TemplateArgument> & args) const
+Scope Template::argumentScope(const std::vector<TemplateArgument>& args) const
 {
   auto ret = std::make_shared<TemplateArgumentScope>(*this, args);
   ret->parent = d->scope.impl();
@@ -269,7 +305,7 @@ Scope Template::parameterScope() const
   return Scope{ tparamscope };
 }
 
-TemplateArgument Template::get(const std::string & name, const std::vector<TemplateArgument> & args) const
+TemplateArgument Template::get(const std::string& name, const std::vector<TemplateArgument>& args) const
 {
   /// TODO : should we throw if the sizes are different ?
   size_t s = std::max(d->parameters.size(), args.size());
@@ -298,7 +334,7 @@ const std::map<std::type_index, Template>& Template::get_template_map(Engine* e)
   return e->templateMap();
 }
 
-bool Template::operator==(const Template & other) const
+bool Template::operator==(const Template& other) const
 {
   return d == other.d;
 }

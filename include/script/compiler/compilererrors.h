@@ -48,10 +48,6 @@ public: \
   ~Name() = default; \
 }
 
-GENERIC_COMPILER_EXCEPTION(InvalidTemplateArgument);
-GENERIC_COMPILER_EXCEPTION(InvalidLiteralTemplateArgument);
-GENERIC_COMPILER_EXCEPTION(MissingNonDefaultedTemplateParameter);
-
 #undef CE
 #undef GENERIC_COMPILER_EXCEPTION
 
