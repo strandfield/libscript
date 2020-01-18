@@ -169,6 +169,38 @@ void EngineImpl::destroy(Script s)
     this->scripts.pop_back();
 }
 
+namespace errors
+{
+
+class EngineCategory : public std::error_category
+{
+public:
+
+  const char* name() const noexcept override
+  {
+    return "engine-category";
+  }
+
+  std::string message(int) const override
+  {
+    return "engine-error";
+  }
+};
+
+
+const std::error_category& engine_category() noexcept
+{
+  static const EngineCategory static_instance = {};
+  return static_instance;
+}
+
+} // namespace errors
+
+EngineError::EngineError(ErrorCode ec)
+  : Exceptional(ec)
+{
+
+}
 
 /*!
  * \class Engine
@@ -409,9 +441,9 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
     const auto & ctors = cla.constructors();
     Function selected = OverloadResolution::selectConstructor(ctors, args);
     if (selected.isNull())
-      throw NoMatchingConstructor{};
+      throw ConstructionError{EngineError::NoMatchingConstructor };
     else if (selected.isDeleted())
-      throw ConstructorIsDeleted{};
+      throw ConstructionError{ EngineError::ConstructorIsDeleted };
 
     Value result = allocate(t.withoutRef());
 
@@ -430,7 +462,7 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   else if (t.isFundamentalType())
   {
     if (args.size() > 1)
-      throw TooManyArgumentInInitialization{};
+      throw ConstructionError{ EngineError::TooManyArgumentInInitialization };
 
     if (args.size() == 0)
       return default_construct_fundamental(t.baseType().data(), this);
@@ -444,13 +476,13 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   else if (t.isEnumType())
   {
     if (args.size() > 1)
-      throw TooManyArgumentInInitialization{};
+      throw ConstructionError{ EngineError::TooManyArgumentInInitialization };
     else if(args.size() == 0)
-      throw TooFewArgumentInInitialization{};
+      throw ConstructionError{ EngineError::TooFewArgumentInInitialization };
 
     Value arg = args.front();
     if (arg.type().baseType() != t.baseType())
-      throw NoMatchingConstructor{}; /// TODO: throw something else ?
+      throw ConstructionError{ EngineError::NoMatchingConstructor };
     return copy(arg);
   }
 

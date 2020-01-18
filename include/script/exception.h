@@ -44,21 +44,6 @@ public:
   ErrorCode code() const override { return EC; }
 };
 
-class NotImplemented : public GenericException<ErrorCode::NotImplementedError>
-{
-public:
-  std::string message;
-
-  NotImplemented(std::string&& mssg) : message(std::move(mssg)) {}
-};
-
-class RuntimeError : public Exception
-{
-public:
-  /// TODO: add StackTrace
-
-  ErrorCode code() const override { return ErrorCode::RuntimeError; }
-};
 
 } // namespace script
 

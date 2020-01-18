@@ -66,7 +66,7 @@ TEST(Eval, failure1) {
   }
   catch (EngineError & error)
   {
-    ASSERT_EQ(error.code(), ErrorCode::E_EvaluationError);
+    ASSERT_EQ(error.errorCode(), EngineError::EvaluationError);
   }
 }
 

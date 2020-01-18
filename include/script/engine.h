@@ -6,6 +6,7 @@
 #define LIBSCRIPT_ENGINE_H
 
 #include <map>
+#include <string>
 #include <typeindex>
 #include <vector>
 
@@ -54,37 +55,67 @@ namespace program
 class Expression;
 } // namespace program
 
+namespace errors
+{
+
+const std::error_category& engine_category() noexcept;
+
+} // namespace errors
+
 // base class for all engine exception
-class EngineError : public Exception 
+class LIBSCRIPT_API EngineError : public Exceptional 
 { 
 public:
-  ErrorCode code_;
   
-  EngineError(ErrorCode c) : code_(c) {}
-  ErrorCode code() const override { return code_; }
+  enum ErrorCode {
+    NotImplemented = 1,
+    RuntimeError = 2,
+    EvaluationError,
+    ConversionError,
+    CopyError,
+    UnknownType,
+    NoMatchingConstructor,
+    ConstructorIsDeleted,
+    TooManyArgumentInInitialization,
+    TooFewArgumentInInitialization,
+  };
+
+  explicit EngineError(ErrorCode ec);
 };
 
 // errors returned by Engine::construct 
-struct ConstructionError : EngineError { using EngineError::EngineError; };
-struct NoMatchingConstructor : ConstructionError { NoMatchingConstructor() : ConstructionError(ErrorCode::E_NoMatchingConstructor) {} };
-struct ConstructorIsDeleted : ConstructionError { ConstructorIsDeleted() : ConstructionError(ErrorCode::E_ConstructorIsDeleted) {} };
-struct TooManyArgumentInInitialization : ConstructionError { TooManyArgumentInInitialization() : ConstructionError(ErrorCode::E_TooManyArgumentInInitialization) {} };
-struct TooFewArgumentInInitialization : ConstructionError { TooFewArgumentInInitialization() : ConstructionError(ErrorCode::E_TooFewArgumentInInitialization) {} };
+struct LIBSCRIPT_API ConstructionError : EngineError { using EngineError::EngineError; };
 
 // error returned by Engine::copy
-struct CopyError : EngineError { CopyError() : EngineError(ErrorCode::E_CopyError) {} };
+struct LIBSCRIPT_API CopyError : EngineError { CopyError() : EngineError(EngineError::CopyError) {} };
 
 // error returned by Engine::cast
-struct ConversionError : EngineError { ConversionError() : EngineError(ErrorCode::E_ConversionError) {} };
+struct LIBSCRIPT_API ConversionError : EngineError { ConversionError() : EngineError(EngineError::ConversionError) {} };
 
 // error returned by Engine::typeId
-struct UnknownTypeError : EngineError { UnknownTypeError() : EngineError(ErrorCode::E_UnknownTypeError) {} };
+struct LIBSCRIPT_API UnknownTypeError : EngineError { UnknownTypeError() : EngineError(ErrorCode::UnknownType) {} };
 
 // error returned by Engine::eval
-struct EvaluationError : EngineError 
+struct LIBSCRIPT_API EvaluationError : EngineError
 { 
   std::string message;
-  EvaluationError(const std::string & mssg) : EngineError(ErrorCode::E_EvaluationError), message(mssg) {} 
+  EvaluationError(const std::string & mssg) : EngineError(EngineError::EvaluationError), message(mssg) {}
+};
+
+struct LIBSCRIPT_API NotImplemented : public EngineError
+{
+public:
+  std::string message;
+
+  NotImplemented(std::string&& mssg) : EngineError(EngineError::NotImplemented), message(std::move(mssg)) {}
+};
+
+struct LIBSCRIPT_API RuntimeError : public EngineError
+{
+public:
+  /// TODO: add StackTrace
+
+  RuntimeError() : EngineError(EngineError::RuntimeError) { }
 };
 
 class LIBSCRIPT_API Engine
@@ -191,5 +222,17 @@ protected:
 };
 
 } // namespace script
+
+namespace std
+{
+
+template<> struct is_error_code_enum<script::EngineError::ErrorCode> : std::true_type { };
+
+inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcept
+{
+  return std::error_code(static_cast<int>(e), script::errors::engine_category());
+}
+
+} // namespace std
 
 #endif // LIBSCRIPT_ENGINE_H
