@@ -19,37 +19,6 @@
 namespace script
 {
 
-class Exception
-{
-public:
-  Exception() = default;
-  Exception(const Exception&) = default;
-  virtual ~Exception() = default;
-
-  virtual ErrorCode code() const = 0;
-
-  template<typename T>
-  const T& as() const { return *dynamic_cast<const T*>(this); }
-
-  template<typename T>
-  bool is() const { return dynamic_cast<const T*>(this) != nullptr; }
-
-  Exception& operator=(const Exception&) = delete;
-};
-
-template<ErrorCode EC>
-class GenericException : public Exception
-{
-public:
-  ErrorCode code() const override { return EC; }
-};
-
-
-} // namespace script
-
-namespace script
-{
-
 class LIBSCRIPT_API ExceptionData
 {
 public:

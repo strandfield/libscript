@@ -543,14 +543,6 @@ MessageBuilder & MessageBuilder::operator<<(std::string && str)
   return *(this);
 }
 
-MessageBuilder & MessageBuilder::operator<<(const Exception & ex)
-{
-  mCode = std::error_code(static_cast<int>(ex.code()), std::generic_category());
-  mBuffer += "Not implemented (print exception)";
-
-  return *(this);
-}
-
 MessageBuilder& MessageBuilder::operator<<(const parser::SyntaxError& ex)
 {
   mCode = ex.errorCode();
