@@ -7,8 +7,6 @@
 
 #include "libscriptdefs.h"
 
-#include "script/errorcodes.h"
-
 #include <memory>
 #include <stdexcept>
 #include <system_error>
