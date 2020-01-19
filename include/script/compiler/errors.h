@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_COMPILER_ERRORS_H
 #define LIBSCRIPT_COMPILER_ERRORS_H
 
+#include <functional>
 #include <system_error>
 
 namespace script
@@ -118,6 +119,15 @@ enum class CompilerError {
 
 namespace std
 {
+
+// No longer required in C++14
+template<> struct hash<script::CompilerError>
+{
+  size_t operator()(script::CompilerError e) const
+  {
+    return static_cast<size_t>(e);
+  }
+};
 
 template<> struct is_error_code_enum<script::CompilerError> : std::true_type { };
 

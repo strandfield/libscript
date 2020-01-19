@@ -19,38 +19,10 @@ namespace script
 namespace parser
 {
 
-struct ParserErrorData
-{
-  virtual ~ParserErrorData();
-
-  template<typename T>
-  T& get();
-};
-
-template<typename T>
-struct ParserErrorDataWrapper : ParserErrorData
-{
-public:
-  T value;
-
-public:
-  ParserErrorDataWrapper(const ParserErrorDataWrapper<T>&) = delete;
-  ~ParserErrorDataWrapper() = default;
-
-  ParserErrorDataWrapper(T&& data) : value(std::move(data)) { }
-};
-
-template<typename T>
-inline T& ParserErrorData::get()
-{
-  return static_cast<ParserErrorDataWrapper<T>*>(this)->value;
-}
-
 class SyntaxError : public Exceptional
 {
 public:
   SourceLocation location;
-  std::unique_ptr<ParserErrorData> data;
 
 public:
 
@@ -64,9 +36,9 @@ public:
 
   template<typename T>
   SyntaxError(ParserError e, T&& d)
-    : Exceptional(e)
+    : Exceptional(e, std::forward<T>(d))
   {
-    data = std::make_unique<ParserErrorDataWrapper<T>>(std::move(d));
+
   }
 };
 

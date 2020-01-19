@@ -68,15 +68,5 @@ const std::error_category& parser_category() noexcept
 
 } // namespace errors
 
-namespace parser
-{
-
-ParserErrorData::~ParserErrorData()
-{
-
-}
-
-} // namespace parser
-
 } // namespace script
 

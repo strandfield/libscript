@@ -54,7 +54,6 @@ enum Verbosity {
   Terse = 1,
   Normal = 2,
   Verbose = 3,
-  Pedantic = 4,
 };
 
 template<diagnostic::Severity S>

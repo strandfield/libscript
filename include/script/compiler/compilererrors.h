@@ -21,38 +21,10 @@ namespace script
 namespace compiler
 {
 
-struct CompilerErrorData
-{
-  virtual ~CompilerErrorData();
-
-  template<typename T>
-  T& get();
-};
-
-template<typename T>
-struct CompilerErrorDataWrapper : CompilerErrorData
-{
-public:
-  T value;
-
-public:
-  CompilerErrorDataWrapper(const CompilerErrorDataWrapper<T>&) = delete;
-  ~CompilerErrorDataWrapper() = default;
-
-  CompilerErrorDataWrapper(T&& data) : value(std::move(data)) { }
-};
-
-template<typename T>
-inline T& CompilerErrorData::get()
-{
-  return static_cast<CompilerErrorDataWrapper<T>*>(this)->value;
-}
-
 class CompilationFailure : public Exceptional
 {
 public:
   SourceLocation location;
-  std::unique_ptr<CompilerErrorData> data;
 
 public:
 
@@ -66,9 +38,9 @@ public:
 
   template<typename T>
   CompilationFailure(CompilerError e, T&& d)
-    : Exceptional(e)
+    : Exceptional(e, std::forward<T>(d))
   {
-    data = std::make_unique<CompilerErrorDataWrapper<T>>(std::move(d));
+
   }
 };
 

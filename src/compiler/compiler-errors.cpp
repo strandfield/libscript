@@ -224,15 +224,5 @@ const std::error_category& compiler_category() noexcept
 
 } // namespace errors
 
-namespace compiler
-{
-
-CompilerErrorData::~CompilerErrorData()
-{
-
-}
-
-} // namespace compiler
-
 } // namespace script
 
