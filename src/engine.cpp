@@ -183,9 +183,33 @@ public:
     return "engine-category";
   }
 
-  std::string message(int) const override
+  std::string message(int code) const override
   {
-    return "engine-error";
+    switch (static_cast<EngineError::ErrorCode>(code))
+    {
+    case EngineError::NotImplemented:
+      return "not implemented";
+    case EngineError::RuntimeError:
+      return "runtime error";
+    case EngineError::EvaluationError:
+      return "evaluation error";
+    case EngineError::ConversionError:
+      return "conversion error";
+    case EngineError::CopyError:
+      return "copy error";
+    case EngineError::UnknownType:
+      return "unknown type";
+    case EngineError::NoMatchingConstructor:
+      return "no matching constructor";
+    case EngineError::ConstructorIsDeleted:
+      return "constructor is deleted";
+    case EngineError::TooManyArgumentInInitialization:
+      return "too many argument in initialization";
+    case EngineError::TooFewArgumentInInitialization:
+      return "too few argument in initialization";
+    default:
+      return "unknown engine error";
+    }
   }
 };
 
