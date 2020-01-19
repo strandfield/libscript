@@ -42,13 +42,13 @@ public:
   const std::vector<std::shared_ptr<program::CaptureAccess>>& generatedCaptures() const { return captures_; }
 
   /// TODO: maybe pass ast::Expression instead of dpos
-  std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
-  std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos);
+  std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset);
+  std::shared_ptr<program::Expression> accessGlobal(ExpressionCompiler & ec, int offset);
+  std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset);
+  std::shared_ptr<program::Expression> accessCapture(ExpressionCompiler & ec, int offset);
   /// TODO: add accessStaticDataMember
 
-  static std::shared_ptr<program::Expression> generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index, const diagnostic::pos_t dpos);
+  static std::shared_ptr<program::Expression> generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int index);
 
   VariableAccessor & operator=(const VariableAccessor &) = delete;
 

@@ -10,7 +10,6 @@
 #include "script/compiler/expressioncompiler.h"
 #include "script/private/functionscope_p.h" 
 #include "script/compiler/importprocessor.h"
-#include "script/compiler/logger.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/stack.h"
 

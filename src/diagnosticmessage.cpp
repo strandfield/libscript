@@ -6,7 +6,9 @@
 
 #include "script/accessspecifier.h"
 #include "script/engine.h"
+#include "script/initialization.h"
 #include "script/operator.h"
+#include "script/overloadresolution.h"
 #include "script/typesystem.h"
 
 #include "script/parser/token.h"
@@ -15,6 +17,7 @@
 
 #include <cstring>
 #include <initializer_list>
+#include <sstream>
 
 namespace script
 {
@@ -26,21 +29,17 @@ class MessageDatabase
 {
 public:
   std::vector<std::string> messages;
-  std::vector<std::string> tokens;
 
 public:
   MessageDatabase()
   {
     messages.resize(static_cast<int>(ErrorCode::LastCompilerError) + 1);
-    tokens.resize(static_cast<int>(parser::Token::MultiLineComment) + 1);
   }
 
 public:
   void setMessage(ErrorCode c, std::string && mssg);
   void setMessages(std::initializer_list<std::pair<ErrorCode, std::string>> && list);
 
-  void setToken(parser::Token::Type, std::string && mssg);
-  void setTokens(std::initializer_list<std::pair<parser::Token::Type, std::string>> && list);
 };
 
 void MessageDatabase::setMessage(ErrorCode c, std::string && mssg)
@@ -55,117 +54,9 @@ void MessageDatabase::setMessages(std::initializer_list<std::pair<ErrorCode, std
     setMessage(p.first, std::string{ p.second });
 }
 
-void MessageDatabase::setToken(parser::Token::Type tt, std::string && mssg)
-{
-  tokens[static_cast<int>(tt) & 0xFFFF] = std::move(mssg);
-}
-
-void MessageDatabase::setTokens(std::initializer_list<std::pair<parser::Token::Type, std::string>> && list)
-{
-  for (auto & p : list)
-    setToken(p.first, std::string{ p.second });
-}
-
-
 static std::shared_ptr<MessageDatabase> build_message_database()
 {
   auto ret = std::make_shared<MessageDatabase>();
-  
-  ret->setTokens({
-    { parser::Token::LeftPar, "(" },
-    { parser::Token::RightPar, ")" },
-    { parser::Token::LeftBracket, "[" },
-    { parser::Token::RightBracket, "]" },
-    { parser::Token::LeftBrace, "{" },
-    { parser::Token::RightBrace, "}" },
-    { parser::Token::Semicolon, " }," },
-    { parser::Token::Colon, ":" },
-    { parser::Token::Dot, "." },
-    { parser::Token::QuestionMark, "?" },
-    { parser::Token::SlashSlash, "//" },
-    { parser::Token::SlashStar, "/*" },
-    { parser::Token::StarSlash, "*/" },
-    // keywords 
-    { parser::Token::Auto, "auto" },
-    { parser::Token::Bool, "bool" },
-    { parser::Token::Break, "break" },
-    { parser::Token::Char, "char" },
-    { parser::Token::Class, "class" },
-    { parser::Token::Const, "const" },
-    { parser::Token::Continue, "continue" },
-    { parser::Token::Default, "default" },
-    { parser::Token::Delete, "delete" },
-    { parser::Token::Double, "double" },
-    { parser::Token::Else, "else" },
-    { parser::Token::Enum, "enum" },
-    { parser::Token::Explicit, "explicit" },
-    { parser::Token::Export, "export" },
-    { parser::Token::False, "false" },
-    { parser::Token::Float, "float" },
-    { parser::Token::For, "for" },
-    { parser::Token::Friend, "friend" },
-    { parser::Token::If, "if" },
-    { parser::Token::Import, "import" },
-    { parser::Token::Int, "int" },
-    { parser::Token::Mutable, "mutable" },
-    { parser::Token::Namespace, "namespace" },
-    { parser::Token::Operator, "operator" },
-    { parser::Token::Private, "private" },
-    { parser::Token::Protected, "protected" },
-    { parser::Token::Public, "public" },
-    { parser::Token::Return, "return" },
-    { parser::Token::Static, "static" },
-    { parser::Token::Struct, "struct" },
-    { parser::Token::Template, "template" },
-    { parser::Token::This, "this" },
-    { parser::Token::True, "true" },
-    { parser::Token::Typedef, "typedef" },
-    { parser::Token::Typeid, "typeid" },
-    { parser::Token::Typename, "typename" },
-    { parser::Token::Using, "using" },
-    { parser::Token::Virtual, "virtual" },
-    { parser::Token::Void, "void" },
-    { parser::Token::While, "while" },
-    //Operators
-    { parser::Token::ScopeResolution, "::" },
-    { parser::Token::PlusPlus, "++" },
-    { parser::Token::MinusMinus, "--" },
-    { parser::Token::Plus, "+" },
-    { parser::Token::Minus, "-" },
-    { parser::Token::LogicalNot, "!" },
-    { parser::Token::BitwiseNot, "~" },
-    { parser::Token::Mul, "*" },
-    { parser::Token::Div, "/" },
-    { parser::Token::Remainder, "%" },
-    { parser::Token::LeftShift, "<<" },
-    { parser::Token::RightShift, ">>" },
-    { parser::Token::Less, "<" },
-    { parser::Token::GreaterThan, ">" },
-    { parser::Token::LessEqual, "<=" },
-    { parser::Token::GreaterThanEqual, ">=" },
-    { parser::Token::EqEq, "==" },
-    { parser::Token::Neq, "!=" },
-    { parser::Token::BitwiseAnd, "&" },
-    { parser::Token::BitwiseOr, "|" },
-    { parser::Token::BitwiseXor, "^" },
-    { parser::Token::LogicalAnd, "&&" },
-    { parser::Token::LogicalOr, "||" },
-    { parser::Token::Eq, "=" },
-    { parser::Token::MulEq, "*=" },
-    { parser::Token::DivEq, "/=" },
-    { parser::Token::AddEq, "+=" },
-    { parser::Token::SubEq, "-=" },
-    { parser::Token::RemainderEq, "%=" },
-    { parser::Token::LeftShiftEq, "<<=" },
-    { parser::Token::RightShiftEq, ">>=" },
-    { parser::Token::BitAndEq, "&=" },
-    { parser::Token::BitOrEq, "|=" },
-    { parser::Token::BitXorEq, "^=" },
-    { parser::Token::Comma, "," },
-    { parser::Token::LeftRightPar, "()" },
-    { parser::Token::LeftRightBracket, "[]" },
-    { parser::Token::Zero, "0" },
-  });
 
   ret->setMessages({
     { ErrorCode::P_UnexpectedEndOfInput, "Unexpected end of input" },
@@ -287,13 +178,6 @@ static std::shared_ptr<MessageDatabase> build_message_database()
 
 static const std::shared_ptr<MessageDatabase> gMessageDatabase = build_message_database();
 
-
-bool isCompilerError(ErrorCode code)
-{
-  return static_cast<int>(ErrorCode::FirstCompilerError) <= static_cast<int>(code)
-    && static_cast<int>(code) <= static_cast<int>(ErrorCode::LastCompilerError);
-}
-
 inline static bool is_digit(const char c)
 {
   return c >= '0' && c <= '9';
@@ -379,6 +263,12 @@ std::string format(std::string str, const std::string & arg1, const std::string 
   return format(format(str, arg1, arg2, arg3), arg3, arg4);
 }
 
+DiagnosticMessage::DiagnosticMessage(Severity s)
+  : mSeverity(s)
+{
+
+}
+
 DiagnosticMessage::DiagnosticMessage(Severity s, std::error_code ec, SourceLocation loc, std::string text)
   : mSeverity(s),
     mCode(ec),
@@ -394,6 +284,11 @@ DiagnosticMessage::DiagnosticMessage(Severity s, std::error_code ec, std::string
     mContent(std::move(text))
 {
 
+}
+
+void DiagnosticMessage::setSeverity(Severity sev)
+{
+  mSeverity = sev;
 }
 
 std::string DiagnosticMessage::message() const
@@ -439,22 +334,23 @@ const std::string & DiagnosticMessage::content() const
   return mContent;
 }
 
-line_t line(int l)
+void DiagnosticMessage::setContent(std::string str)
 {
-  return line_t{ l };
+  mContent = std::move(str);
 }
 
-pos_t pos(int l, int col)
+void DiagnosticMessage::setCode(std::error_code ec)
 {
-  return pos_t{ l, col };
+  mCode = ec;
 }
 
-MessageBuilder::MessageBuilder(Severity s, Engine *e)
+void DiagnosticMessage::setLocation(const SourceLocation& loc)
+{
+  mLocation = loc;
+}
+
+MessageBuilder::MessageBuilder(Engine* e)
   : mEngine(e)
-  , mSeverity(s)
-  , mCode()
-  , mLine(-1)
-  , mColumn(-1)
 {
 
 }
@@ -464,181 +360,58 @@ MessageBuilder::~MessageBuilder()
 
 }
 
-std::string MessageBuilder::repr(script::AccessSpecifier as)
+Verbosity MessageBuilder::verbosity() const
 {
-  if (as == AccessSpecifier::Protected)
-    return "protected";
-  else if (as == AccessSpecifier::Private)
-    return "private";
-  return "public";
+  return mVerbosity;
 }
 
-std::string MessageBuilder::repr(script::OperatorName op)
+void MessageBuilder::setVerbosity(Verbosity ver)
 {
-  return script::Operator::getFullName(op);
+  mVerbosity = ver;
 }
 
-std::string MessageBuilder::repr(const Type & t) const
+void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& ex)
 {
-  if (mEngine == nullptr)
-    return diagnostic::format("Type<%1>", repr(t.data()));
-
-  std::string result = mEngine->typeSystem()->typeName(t);
-  if (t.isConst())
-    result = std::string{ "const " } +result;
-  if (t.isReference())
-    result = result + std::string{ " &" };
-  else if (t.isRefRef())
-    result = result + std::string{ " &&" };
-  return result;
+  mssg.setCode(ex.errorCode());
+  mssg.setLocation(ex.location);
+  mssg.setContent(ex.errorCode().message());
 }
 
-std::string MessageBuilder::repr(const parser::Token & tok) const
+void MessageBuilder::build(DiagnosticMessage& mssg, const compiler::CompilationFailure& ex)
 {
-  if (tok.type != parser::Token::UserDefinedLiteral && tok.type != parser::Token::UserDefinedName)
-    return repr(tok.type);
-
-  return std::string{ "Not implemented (print token)" };
+  mssg.setCode(ex.errorCode());
+  mssg.setLocation(ex.location);
+  mssg.setContent(ex.errorCode().message());
 }
 
-const std::string & MessageBuilder::repr(const parser::Token::Type & tok) const
+std::string MessageBuilder::produce(const OverloadResolution& resol) const
 {
-  return gMessageDatabase->tokens.at(static_cast<int>(tok) & 0xFFFF);
-}
+  if (resol.success())
+    return "Overload resolution succeeded";
 
-MessageBuilder & MessageBuilder::operator<<(int n)
-{
-  mBuffer += std::to_string(n);
-  return *(this);
-}
+  std::stringstream ss;
 
-MessageBuilder& MessageBuilder::operator<<(size_t n)
-{
-  mBuffer += std::to_string(n);
-  return *(this);
-}
-
-MessageBuilder & MessageBuilder::operator<<(line_t l)
-{
-  mLine = l.line;
-  return *(this);
-}
-
-MessageBuilder & MessageBuilder::operator<<(pos_t p)
-{
-  mLine = p.line;
-  mColumn = p.column;
-  return *(this);
-}
-
-MessageBuilder & MessageBuilder::operator<<(const std::string & str)
-{
-  mBuffer += str;
-  return *(this);
-}
-
-MessageBuilder & MessageBuilder::operator<<(std::string && str)
-{
-  mBuffer += std::move(str);
-  return *(this);
-}
-
-MessageBuilder& MessageBuilder::operator<<(const parser::SyntaxError& ex)
-{
-  mCode = ex.errorCode();
-  mLine = ex.location.m_pos.line;
-  mColumn = ex.location.m_pos.col;
-
-  const std::string& fmt = gMessageDatabase->messages[ex.errorCode().value() + static_cast<int>(ErrorCode::FirstParserError)];
-
-  if (!ex.data)
+  if (!resol.ambiguousOverload().isNull())
   {
-    mBuffer += fmt;
-  }
-  else
-  {
-    switch (static_cast<ParserError>(ex.errorCode().value()))
-    {
-    case ParserError::UnexpectedToken:
-    {
-      const auto& data = ex.data->get<parser::errors::UnexpectedToken>();
-
-      if (data.expected != parser::Token::Invalid)
-      {
-        mBuffer += format(fmt, data.actual);
-      }
-      else
-      {
-        mBuffer += format(fmt, data.actual, data.expected);
-      }
-    }
-    break;
-    case ParserError::IllegalUseOfKeyword:
-      mBuffer += format(fmt, ex.data->get<parser::errors::KeywordToken>().keyword);
-      break;
-    default:
-      mBuffer += fmt;
-      break;
-    }
-
+    ss << "Overload resolution failed because at least two candidates are not comparable or indistinguishable \n";
+    ss << engine()->toString(resol.selectedOverload()) << "\n";
+    ss << engine()->toString(resol.ambiguousOverload()) << "\n";
+    return ss.str();
   }
 
-  return *this;
-}
-
-MessageBuilder& MessageBuilder::operator<<(const compiler::CompilationFailure& ex)
-{
-  mCode = ex.errorCode();
-  mLine = ex.location.m_pos.line;
-  mColumn = ex.location.m_pos.col;
-
-  const std::string& fmt = gMessageDatabase->messages[ex.errorCode().value() - 1 + static_cast<int>(ErrorCode::FirstCompilerError)];
-
-  if (!ex.data)
+  ss << "Overload resolution failed because no viable overload could be found \n";
+  std::vector<Initialization> paraminits;
+  for (const auto& f : resol.candidates())
   {
-    mBuffer += fmt;
+    auto status = resol.getViabilityStatus(f, &paraminits);
+    ss << engine()->toString(f);
+    if (status == OverloadResolution::IncorrectParameterCount)
+      ss << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << resol.inputSize() << " were provided";
+    else if (status == OverloadResolution::CouldNotConvertArgument)
+      ss << "\n" << "Could not convert argument " << paraminits.size();
+    ss << "\n";
   }
-  else
-  {
-    switch (static_cast<CompilerError>(ex.errorCode().value()))
-    {
-    default:
-      mBuffer += fmt;
-      break;
-    }
-
-  }
-
-  return *this;
-}
-
-DiagnosticMessage MessageBuilder::build() const
-{
-  DiagnosticMessage result{ mSeverity, mCode, std::move(mBuffer) };
-  result.mLocation.m_pos.line = mLine;
-  result.mLocation.m_pos.col = mColumn;
-  return result;
-}
-
-MessageBuilder::operator DiagnosticMessage() const
-{
-  return build();
-}
-
-
-MessageBuilder info(Engine *e)
-{
-  return MessageBuilder{ Info, e };
-}
-
-MessageBuilder warning(Engine *e)
-{
-  return MessageBuilder{ Warning, e };
-}
-
-MessageBuilder error(Engine *e)
-{
-  return MessageBuilder{ Error, e };
+  return ss.str();
 }
 
 } // namespace diagnostic

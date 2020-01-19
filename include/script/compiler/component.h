@@ -13,6 +13,7 @@ namespace script
 {
 
 class Engine;
+struct SourceLocation;
 
 namespace diagnostic
 {
@@ -37,6 +38,8 @@ public:
   Engine* engine() const;
   Compiler* compiler() const;
   const std::shared_ptr<CompileSession>& session() const;
+
+  SourceLocation location() const;
 
 protected:
   void log(const diagnostic::DiagnosticMessage& mssg);

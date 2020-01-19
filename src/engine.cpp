@@ -50,6 +50,8 @@
 #include "script/private/typesystem_p.h"
 #include "script/private/value_p.h"
 
+#include <sstream>
+
 namespace script
 {
 
@@ -871,6 +873,69 @@ Type Engine::typeId(const std::string & typeName, Scope scope) const
   return typeSystem()->typeId(typeName, scope);
 }
 
+/*!
+ * \fn std::string toString(const Type& t) const
+ * \param type
+ * \brief Computes a string representation of the given type.
+ */
+std::string Engine::toString(const Type& t) const
+{
+  std::string ret = typeSystem()->typeName(t);
+
+  if (t.isConst())
+    ret = std::string{ "const " } + ret;
+  if (t.isReference())
+    ret = ret + "&";
+  else if (t.isRefRef())
+    ret = ret + "&&";
+
+  return ret;
+}
+
+/*!
+ * \fn std::string toString(const Function& f) const
+ * \param function
+ * \brief Computes a string representation of the function prototype.
+ */
+std::string Engine::toString(const Function & f) const
+{
+  std::stringstream ss;
+
+  if (f.isConstructor())
+    ss << f.memberOf().name();
+  else if (f.isDestructor())
+    ss << "~" << f.memberOf().name();
+  else if (f.isCast())
+  {
+    ss << "operator " << toString(f.returnType());
+  }
+  else if (f.isOperator())
+  {
+    ss << toString(f.returnType());
+    ss << " operator" << Operator::getSymbol(f.toOperator().operatorId());
+  }
+  else
+  {
+    ss << toString(f.returnType()) << " " << f.name();
+  }
+
+  ss << "(";
+  for (int i(0); i < f.prototype().count(); ++i)
+  {
+    ss << toString(f.parameter(i));
+    if (i < f.prototype().count() - 1)
+      ss << ", ";
+  }
+  ss << ")";
+
+  if (f.isDeleted())
+    ss << " = delete";
+  else if (f.isDefaulted())
+    ss << " = default";
+
+  return ss.str();
+}
+
 
 /*!
  * \fn Context newContext()
@@ -924,9 +989,8 @@ Value Engine::eval(const std::string & command)
   }
   catch (compiler::CompilationFailure& ex)
   {
-    diagnostic::MessageBuilder msb{ diagnostic::Error, this };
-    msb << ex;
-    diagnostic::DiagnosticMessage mssg = msb.build();
+    diagnostic::MessageBuilder msb{ this };
+    diagnostic::DiagnosticMessage mssg = msb.error(ex);
 
     throw EvaluationError{ mssg.to_string() };
   }

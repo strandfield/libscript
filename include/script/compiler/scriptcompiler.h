@@ -11,7 +11,6 @@
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
-#include "script/compiler/logger.h"
 #include "script/compiler/scopestatementprocessor.h"
 #include "script/compiler/typeresolver.h"
 #include "script/compiler/variableprocessor.h"

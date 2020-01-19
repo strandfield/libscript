@@ -26,6 +26,7 @@
 #include "script/constructorbuilder.h"
 #include "script/destructorbuilder.h"
 #include "script/enumbuilder.h"
+#include "script/errors.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "script/private/class_p.h"
@@ -423,7 +424,9 @@ void ScriptCompiler::readClassContent(Class & c, const std::shared_ptr<ast::Clas
       processOrCollectDeclaration(std::static_pointer_cast<ast::Declaration>(decl->content.at(i)), class_scope);
     else if (decl->content.at(i)->is<ast::AccessSpecifier>())
     {
-      log(diagnostic::warning() << "Access specifiers are ignored for type members");
+      // TODO: create error code for this
+      log(Info{ EngineError::NotImplemented, location(), "Access specifiers are ignored for type members" });
+
       AccessSpecifier aspec = get_access_specifier(std::static_pointer_cast<ast::AccessSpecifier>(decl->content.at(i)));
       class_scope = Scope{ std::static_pointer_cast<ClassScope>(class_scope.impl())->withAccessibility(aspec) };
     }
@@ -528,7 +531,8 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
     if (mReprocessingIncompleteFunctions || ex.errorCode() != CompilerError::InvalidTypeName)
       throw;
 
-    log(diagnostic::warning() << dpos(declaration) << "Type name could not be resolved, function will be reprocessed later");
+    // TODO: create an error code for this
+    log(Info{ EngineError::NotImplemented, location(), "Type name could not be resolved, function will be reprocessed later" });
     mIncompleteFunctionDeclarations.push(ScopedDeclaration{ currentScope(), declaration });
   }
 }
@@ -544,8 +548,10 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
   if (function.isVirtual() && !fundecl->virtualKeyword.isValid())
-    log(diagnostic::warning() << diagnostic::pos(fundecl->pos().line, fundecl->pos().col)
-      << "Function overriding base virtual member declared without virtual or override specifier");
+  {
+    // TODO: create an error code for this
+    log(Warning{ EngineError::NotImplemented, location(), "Function overriding base virtual member declared without virtual or override specifier" });
+  }
 
   schedule(function, fundecl, scp);
 }

@@ -7,8 +7,6 @@
 
 #include "libscriptdefs.h"
 
-#include "script/compiler/logger.h"
-
 #include "script/diagnosticmessage.h"
 #include "script/function.h"
 #include "script/lambda.h"
@@ -30,23 +28,6 @@ namespace compiler
 class Component;
 class Compiler;
 class CompileSession;
-
-class SessionLogger : public Logger
-{
-public:
-  CompileSession *session_;
-
-public:
-  SessionLogger(CompileSession *s)
-    : session_(s)
-  {
-
-  }
-
-  ~SessionLogger() = default;
-
-  void log(const diagnostic::DiagnosticMessage & mssg) override;
-};
 
 class CompileSession
 {
@@ -86,7 +67,7 @@ public:
   std::shared_ptr<ast::Node> current_node;
   parser::Token current_token;
 
-  SessionLogger mLogger;
+  diagnostic::MessageBuilder& messageBuilder();
 
   void log(const diagnostic::DiagnosticMessage & mssg);
   void log(const CompilationFailure& ex);

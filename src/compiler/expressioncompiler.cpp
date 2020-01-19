@@ -241,12 +241,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateBraceConstructi
 
   std::vector<std::shared_ptr<program::Expression>> args = generateExpressions(bc->arguments);
 
-  return ValueConstructor::brace_construct(engine(), type, std::move(args), dpos(bc));
+  return ValueConstructor::brace_construct(engine(), type, std::move(args));
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateConstructorCall(const std::shared_ptr<ast::FunctionCall> & fc, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
 {
-  return ValueConstructor::construct(engine(), type, std::move(args), dpos(fc));
+  return ValueConstructor::construct(engine(), type, std::move(args));
 }
 
 std::shared_ptr<program::Expression> ExpressionCompiler::generateListExpression(const std::shared_ptr<ast::ListExpression> & list_expr)
@@ -324,7 +324,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     NameLookup lookup = NameLookup::member(member_name, engine()->typeSystem()->getClass(object->type()));
     if (lookup.resultType() == NameLookup::DataMemberName)
     {
-      auto functor = VariableAccessor::generateMemberAccess(*this, object, lookup.dataMemberIndex(), dpos(call));
+      auto functor = VariableAccessor::generateMemberAccess(*this, object, lookup.dataMemberIndex());
       return generateFunctorCall(call, functor, std::move(args));
     }
 
@@ -612,7 +612,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateMemberAccess(co
   if (attr_index == -1)
     throw CompilationFailure{ CompilerError::NoSuchMember, errors::DataMemberName{mname} };
 
-  return VariableAccessor::generateMemberAccess(*this, object, attr_index, dpos(operation));
+  return VariableAccessor::generateMemberAccess(*this, object, attr_index);
 }
 
 
@@ -707,13 +707,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateVariableAccess(
   case NameLookup::StaticDataMemberName:
     return generateStaticDataMemberAccess(identifier, lookup);
   case NameLookup::DataMemberName:
-    return variables_.accessDataMember(*this, lookup.dataMemberIndex(), dpos(identifier));
+    return variables_.accessDataMember(*this, lookup.dataMemberIndex());
   case NameLookup::GlobalName:
-    return variables_.accessGlobal(*this, lookup.globalIndex(), dpos(identifier));
+    return variables_.accessGlobal(*this, lookup.globalIndex());
   case NameLookup::LocalName:
-    return variables_.accessLocal(*this, lookup.localIndex(), dpos(identifier));
+    return variables_.accessLocal(*this, lookup.localIndex());
   case NameLookup::CaptureName:
-    return variables_.accessCapture(*this, lookup.captureIndex(), dpos(identifier));
+    return variables_.accessCapture(*this, lookup.captureIndex());
   case NameLookup::EnumValueName:
     return program::Literal::New(Value::fromEnumerator(lookup.enumeratorResult()));
   case NameLookup::NamespaceName:

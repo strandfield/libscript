@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include <string>
+
 namespace script
 {
 
@@ -24,6 +26,8 @@ struct Accessibility
   static bool check(const Function & f, const Class & cla, AccessSpecifier aspec);
   static bool check(const Function & caller, const Function & member);
 };
+
+LIBSCRIPT_API const std::string& to_string(AccessSpecifier as);
 
 } // namespace script
 

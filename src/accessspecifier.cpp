@@ -70,4 +70,21 @@ bool Accessibility::check(const Function & caller, const Function & member)
   return Accessibility::check(caller, member.memberOf(), member.accessibility());
 }
 
+const std::string& to_string(AccessSpecifier as)
+{
+  static const std::string kw_public = "public";
+  static const std::string kw_protected = "protected";
+  static const std::string kw_private = "private";
+
+  switch (as)
+  {
+  case AccessSpecifier::Private:
+    return kw_private;
+  case AccessSpecifier::Protected:
+    return kw_protected;
+  default:
+    return kw_public;
+  }
+}
+
 } // namespace script

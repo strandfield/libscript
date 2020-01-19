@@ -33,11 +33,6 @@ namespace script
 namespace compiler
 {
 
-void SessionLogger::log(const diagnostic::DiagnosticMessage & mssg)
-{
-  session_->log(mssg);
-}
-
 SessionManager::SessionManager(Compiler *c)
   : mCompiler(c)
   , mStartedSession(false)
@@ -74,7 +69,6 @@ CompileSession::CompileSession(Compiler *c)
   : mCompiler(c)
   , mState(State::ProcessingDeclarations)
   , error(false)
-  , mLogger(this)
 {
 
 }
@@ -84,7 +78,6 @@ CompileSession::CompileSession(Compiler *c, const Script & s)
   , mState(State::ProcessingDeclarations)
   , script(s)
   , error(false)
-  , mLogger(this)
 {
 
 }
@@ -153,13 +146,35 @@ const std::shared_ptr<CompileSession>& Component::session() const
   return m_compiler->session();
 }
 
+SourceLocation Component::location() const
+{
+  SourceLocation loc;
+
+  // TODO: get correct script
+  loc.m_source = session()->script.source();
+
+  loc.m_pos.pos = session()->current_node->pos().pos;
+  loc.m_pos.line = session()->current_node->pos().line;
+  loc.m_pos.col = session()->current_node->pos().col;
+
+  if (session()->current_token.isValid())
+  {
+    loc.m_pos.pos = session()->current_token.pos;
+    loc.m_pos.line = session()->current_token.line;
+    loc.m_pos.col = session()->current_token.column;
+  }
+
+  return loc;
+}
+
 void Component::log(const diagnostic::DiagnosticMessage& mssg)
 {
   session()->log(mssg);
 }
 
 Compiler::Compiler(Engine *e)
-  : mEngine(e)
+  : mEngine(e),
+    mMessageBuilder(std::make_shared<diagnostic::MessageBuilder>(e))
 {
 
 }
@@ -204,7 +219,7 @@ bool Compiler::compile(Script s)
   }
   catch (const NotImplemented & ex)
   {
-    session()->log(diagnostic::error() << "NotImplemented: " << ex.message);
+    session()->log(DiagnosticMessage{diagnostic::Severity::Error, ex.errorCode(), "NotImplemented: "+ ex.message });
   }
   //catch (...)
   //{
@@ -260,10 +275,9 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
   {
     session()->clear();
 
-    auto mssg = diagnostic::error(engine());
-    mssg << ex;
+    DiagnosticMessage mssg = messageBuilder()->error(ex);
 
-    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.to_string() };
   }
 }
 
@@ -302,10 +316,9 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   {
     session()->clear();
 
-    auto mssg = diagnostic::error(engine());
-    mssg << ex;
+    DiagnosticMessage mssg = messageBuilder()->error(ex);
 
-    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.build().to_string().data() };
+    throw TemplateInstantiationError{ TemplateInstantiationError::CompilationFailure, mssg.to_string() };
   }
 }
 
@@ -393,6 +406,10 @@ void Compiler::finalizeSession()
   session()->setState(CompileSession::State::Finished);
 }
 
+diagnostic::MessageBuilder& CompileSession::messageBuilder()
+{
+  return *compiler()->messageBuilder();
+}
 
 void CompileSession::log(const diagnostic::DiagnosticMessage & mssg)
 {
@@ -403,9 +420,8 @@ void CompileSession::log(const diagnostic::DiagnosticMessage & mssg)
 
 void CompileSession::log(const CompilationFailure& ex)
 {
-  auto mssg = diagnostic::error(engine());
-  mssg << ex;
-  this->messages.push_back(mssg.build());
+  DiagnosticMessage mssg = messageBuilder().error(ex);
+  this->messages.push_back(mssg);
   this->error = true;
 }
 

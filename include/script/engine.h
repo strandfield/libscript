@@ -200,6 +200,9 @@ public:
 
   Type typeId(const std::string & typeName, Scope scope = Scope()) const;
 
+  std::string toString(const Type& t) const;
+  std::string toString(const Function& f) const;
+
   Context newContext();
   Context currentContext() const;
   void setContext(Context con);

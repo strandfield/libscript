@@ -765,7 +765,8 @@ void FunctionCompiler::processImportDirective(const std::shared_ptr<ast::ImportD
 {
   if (id->export_keyword.isValid() && !isCompilingAnonymousFunction())
   {
-    log(diagnostic::error() << dpos(id->export_keyword) << "'export' are only allowed at script level");
+    // TODO: create error code for this
+    log(DiagnosticMessage{ diagnostic::Severity::Error, EngineError::NotImplemented, "'export' are only allowed at script level" });
   }
 
   Scope imported = modules_.process(id);
@@ -860,7 +861,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   try
   {
     expr_.setScope(mCurrentScope);
-    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(engine(), var_type, nullptr, dpos(var_decl)));
+    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(engine(), var_type, nullptr));
   }
   catch (const CompilationFailure & ex)
   {

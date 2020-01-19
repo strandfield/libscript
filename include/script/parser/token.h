@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include <string>
+
 namespace script
 {
 
@@ -177,6 +179,7 @@ public:
 
 };
 
+LIBSCRIPT_API const std::string& to_string(Token::Type toktype);
 
 } // parser
 

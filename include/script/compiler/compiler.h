@@ -32,6 +32,11 @@ namespace program
 class Expression;
 } // namespace program
 
+namespace diagnostic
+{
+class MessageBuilder;
+} // namespace diagnostic
+
 namespace compiler
 {
 
@@ -61,8 +66,9 @@ public:
   explicit Compiler(Engine *e);
   ~Compiler();
 
-  inline Engine* engine() const { return mEngine; }
-  inline const std::shared_ptr<CompileSession> & session() const { return mSession; }
+  Engine* engine() const { return mEngine; }
+  const std::shared_ptr<CompileSession> & session() const { return mSession; }
+  const std::shared_ptr<diagnostic::MessageBuilder>& messageBuilder() const { return mMessageBuilder; }
 
   bool hasActiveSession() const;
 
@@ -81,6 +87,7 @@ private:
 private:
   friend class SessionManager;
   Engine* mEngine;
+  std::shared_ptr<diagnostic::MessageBuilder> mMessageBuilder;
   std::shared_ptr<CompileSession> mSession;
   std::unique_ptr<ScriptCompiler> mScriptCompiler;
   std::unique_ptr<FunctionCompiler> mFunctionCompiler;

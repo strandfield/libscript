@@ -2931,9 +2931,8 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
     ex.location = location();
     ret->hasErrors = true;
     // TODO: allow customization point
-    diagnostic::MessageBuilder builder{ diagnostic::Severity::Error };
-    builder << ex;
-    ret->log(builder.build());
+    DiagnosticMessage mssg{ diagnostic::Severity::Error, ex.errorCode(), ex.errorCode().message() };
+    ret->log(std::move(mssg));
   }
 
   return ret;
@@ -2958,9 +2957,8 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
     ex.location = location();
     ret->hasErrors = true;
     // TODO: allow customization point
-    diagnostic::MessageBuilder builder{ diagnostic::Severity::Error };
-    builder << ex;
-    ret->log(builder.build());
+    DiagnosticMessage mssg{ diagnostic::Severity::Error, ex.errorCode(), ex.errorCode().message() };
+    ret->log(std::move(mssg));
   }
 
   return ret;

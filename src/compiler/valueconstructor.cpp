@@ -37,7 +37,7 @@ std::shared_ptr<program::Expression> ValueConstructor::fundamental(Engine *e, co
   return lit;
 }
 
-std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::nullptr_t, diagnostic::pos_t dp)
+std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::nullptr_t)
 {
   if (type.isReference() || type.isRefRef())
     throw CompilationFailure{ CompilerError::ReferencesMustBeInitialized };
@@ -62,10 +62,10 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   throw NotImplemented{ "ValueConstructor::construct() : cannot default construct value" };
 }
 
-std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
+std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
 {
   if (args.size() == 0)
-    return construct(e, type, nullptr, dp);
+    return construct(e, type, nullptr);
 
   if (!type.isObjectType() && args.size() != 1)
     throw CompilationFailure{ CompilerError::TooManyArgumentInInitialization };
@@ -110,10 +110,10 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
     throw NotImplemented{ "ValueConstructor::brace_construct() : type not implemented" };
 }
 
-std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp)
+std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args)
 {
   if (args.size() == 0)
-    return construct(e, type, nullptr, dp);
+    return construct(e, type, nullptr);
 
   if (!type.isObjectType() && args.size() != 1)
     throw CompilationFailure{ CompilerError::TooManyArgumentInInitialization };
@@ -151,13 +151,13 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 std::shared_ptr<program::Expression> ValueConstructor::construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init)
 {
   auto args = ec.generateExpressions(init->args);
-  return construct(ec.engine(), t, std::move(args), dpos(init));
+  return construct(ec.engine(), t, std::move(args));
 }
 
 std::shared_ptr<program::Expression> ValueConstructor::construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::BraceInitialization> & init)
 {
   auto args = ec.generateExpressions(init->args);
-  return brace_construct(ec.engine(), t, std::move(args), dpos(init));
+  return brace_construct(ec.engine(), t, std::move(args));
 }
 
 
@@ -191,7 +191,7 @@ static std::shared_ptr<program::Expression> make_ctor_call(const Function & ctor
 std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & t, const std::shared_ptr<program::Expression> & arg, const Initialization & init)
 {
   if (init.kind() == Initialization::DefaultInitialization)
-    return construct(e, t, nullptr, diagnostic::pos_t{});
+    return construct(e, t, nullptr);
 
 
   if (init.kind() == Initialization::CopyInitialization
@@ -231,7 +231,7 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, const Type & t, std::vector<std::shared_ptr<program::Expression>> && args,  const Initialization & init)
 {
   if (init.kind() == Initialization::DefaultInitialization)
-    return construct(e, t, nullptr, diagnostic::pos_t{});
+    return construct(e, t, nullptr);
 
 
   if (init.kind() == Initialization::CopyInitialization

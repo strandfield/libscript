@@ -83,9 +83,11 @@ TEST(OverloadResolution, failure_indistinguishable) {
   resol.process(overloads, types);
   ASSERT_FALSE(resol.success());
 
-  diagnostic::DiagnosticMessage mssg = resol.emitDiagnostic();
+
+  diagnostic::MessageBuilder builder{ &e };
+  std::string mssg = builder.produce(resol);
   //std::cout << mssg.to_string() << std::endl;
-  ASSERT_TRUE(mssg.message().find("indistinguishable") != std::string::npos);
+  ASSERT_TRUE(mssg.find("indistinguishable") != std::string::npos);
 }
 
 TEST(OverloadResolution, failure_no_viable_candidates) {
@@ -111,10 +113,11 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
   ASSERT_EQ(resol.inputKind(), OverloadResolution::TypeInputs);
   ASSERT_EQ(resol.typeInputs().size(), 2);
   ASSERT_EQ(resol.typeInputs().back(), Type::Float);
-
-  diagnostic::DiagnosticMessage mssg = resol.emitDiagnostic();
+  
+  diagnostic::MessageBuilder builder{ &e };
+  std::string mssg = builder.produce(resol);
   //std::cout << mssg.to_string() << std::endl;
-  ASSERT_TRUE(mssg.message().find("expects 1 but 2 were provided") != std::string::npos);
-  ASSERT_TRUE(mssg.message().find("Could not convert argument 2") != std::string::npos);
+  ASSERT_TRUE(mssg.find("expects 1 but 2 were provided") != std::string::npos);
+  ASSERT_TRUE(mssg.find("Could not convert argument 2") != std::string::npos);
 
 }

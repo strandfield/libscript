@@ -71,13 +71,12 @@ public:
   };
 
   InputKind inputKind() const;
+  size_t inputSize() const;
   const std::vector<Type> & typeInputs() const;
   const std::vector<Value> & valueInputs() const;
   const std::vector<std::shared_ptr<program::Expression>> & expressionInputs() const;
 
   const std::shared_ptr<program::Expression> & implicit_object() const;
-
-  diagnostic::DiagnosticMessage emitDiagnostic() const;
 
   bool process(const std::vector<Function> & candidates, const std::vector<Type> & types);
   bool process(const std::vector<Function> & candidates, const std::vector<Value> & values);
@@ -101,11 +100,6 @@ public:
   static Function selectConstructor(const std::vector<Function> & candidates, const std::vector<Value> & args);
 
   OverloadResolution & operator=(const OverloadResolution & other) = default;
-
-protected:
-  /// TODO: move elsewhere
-  std::string dtype(const Type & t) const;
-  void write_prototype(diagnostic::MessageBuilder & diag, const Function & f) const;
 
 private:
   std::shared_ptr<OverloadResolutionImpl> d;

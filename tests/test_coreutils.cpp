@@ -20,6 +20,7 @@
 #include "script/enum.h"
 #include "script/enumbuilder.h"
 #include "script/enumerator.h"
+#include "script/errors.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
@@ -203,46 +204,6 @@ TEST(CoreUtilsTests, ClassInheritance) {
   ASSERT_EQ(derived.dataMembers().front().type, Type::Boolean);
   ASSERT_EQ(derived.attributesOffset(), 1);
 }
-
-
-
-TEST(CoreUtilsTests, diagnostic) {
-  using namespace script;
-
-  diagnostic::DiagnosticMessage mssg = diagnostic::info() << "Test 1";
-  ASSERT_EQ(mssg.to_string(), "[info] Test 1");
-  ASSERT_EQ(mssg.severity(), diagnostic::Info);
-  ASSERT_EQ(mssg.line(), std::numeric_limits<uint16_t>::max());
-  ASSERT_EQ(mssg.column(), std::numeric_limits<uint16_t>::max());
-
-  mssg = diagnostic::warning() << "Test 2";
-  ASSERT_EQ(mssg.to_string(), "[warning] Test 2");
-  ASSERT_EQ(mssg.severity(), diagnostic::Warning);
-  ASSERT_EQ(mssg.line(), std::numeric_limits<uint16_t>::max());
-  ASSERT_EQ(mssg.column(), std::numeric_limits<uint16_t>::max());
-
-  mssg = diagnostic::error() << "Test 3";
-  ASSERT_EQ(mssg.to_string(), "[error] Test 3");
-  ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.line(), std::numeric_limits<uint16_t>::max());
-  ASSERT_EQ(mssg.column(), std::numeric_limits<uint16_t>::max());
-
-  mssg = diagnostic::error() << "Error message" << diagnostic::line(10);
-  ASSERT_EQ(mssg.to_string(), "[error]10: Error message");
-  ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.line(), 10);
-  ASSERT_EQ(mssg.column(), std::numeric_limits<uint16_t>::max());
-
-  mssg = diagnostic::error() << "Error message" << diagnostic::pos(10, 2);
-  ASSERT_EQ(mssg.to_string(), "[error]10:2: Error message");
-  ASSERT_EQ(mssg.severity(), diagnostic::Error);
-  ASSERT_EQ(mssg.line(), 10);
-  ASSERT_EQ(mssg.column(), 2);
-
-  std::string str = diagnostic::format("Message %1 : this %2 a %3 test", "#1", "is", "great");
-  ASSERT_EQ(str, "Message #1 : this is a great test");
-}
-
 
 TEST(CoreUtilsTests, namespaces) {
   using namespace script;

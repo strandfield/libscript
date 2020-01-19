@@ -402,6 +402,11 @@ OverloadResolution::InputKind OverloadResolution::inputKind() const
   return static_cast<InputKind>(d->inputs.kind);
 }
 
+size_t OverloadResolution::inputSize() const
+{
+  return d->inputs.size();
+}
+
 const std::vector<Type> & OverloadResolution::typeInputs() const
 {
   return *(d->inputs.types);
@@ -420,77 +425,6 @@ const std::vector<std::shared_ptr<program::Expression>> & OverloadResolution::ex
 const std::shared_ptr<program::Expression> & OverloadResolution::implicit_object() const
 {
   return d->implicit_object;
-}
-
-diagnostic::DiagnosticMessage OverloadResolution::emitDiagnostic() const
-{
-  if (success())
-    return diagnostic::info() << "Overload resolution succeeded";
-
-  if (!d->ambiguous_candidate.function.isNull())
-  {
-    auto diag = diagnostic::info() << "Overload resolution failed because at least two candidates are not comparable or indistinguishable \n";
-    write_prototype(diag, d->selected_candidate.function);
-    diag << "\n";
-    write_prototype(diag, d->ambiguous_candidate.function);
-    return diag;
-  }
-  
-  auto diag = diagnostic::info() << "Overload resolution failed because no viable overload could be found \n";
-  std::vector<Initialization> paraminits;
-  for (const auto & f : *(d->candidates))
-  {
-    auto status = getViabilityStatus(f, &paraminits);
-    write_prototype(diag, f);
-    if (status == IncorrectParameterCount)
-      diag << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << d->inputs.size() << " were provided";
-    else if(status == CouldNotConvertArgument)
-      diag << "\n" << "Could not convert argument " << paraminits.size();
-    diag << "\n";
-  }
-  return diag;
-}
-
-std::string OverloadResolution::dtype(const Type & t) const
-{
-  std::string ret = d->engine->typeSystem()->typeName(t);
-  if (t.isConst())
-    ret = std::string{ "const " } + ret;
-  if (t.isReference())
-    ret = ret + "&";
-  else if (t.isRefRef())
-    ret = ret + "&&";
-  return ret;
-}
-
-void OverloadResolution::write_prototype(diagnostic::MessageBuilder & diag, const Function & f) const
-{
-  if (f.isConstructor())
-    diag << f.memberOf().name();
-  else if (f.isDestructor())
-    diag << "~" << f.memberOf().name();
-  else if (f.isCast())
-  {
-    diag << "operator " << dtype(f.returnType());
-  }
-  else if (f.isOperator())
-  {
-    diag << dtype(f.returnType());
-    diag << " operator" << Operator::getSymbol(f.toOperator().operatorId());
-  }
-  else 
-  {
-    diag << dtype(f.returnType()) << " " << f.name();
-  }
-
-  diag << "(";
-  for (int i(0); i < f.prototype().count(); ++i)
-  {
-    diag << dtype(f.parameter(i));
-    if (i < f.prototype().count() - 1)
-      diag << ", ";
-  }
-  diag << ")";
 }
 
 bool OverloadResolution::process(const std::vector<Function> & candidates, const std::vector<Type> & types)

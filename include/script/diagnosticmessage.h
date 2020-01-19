@@ -23,6 +23,8 @@ enum class AccessSpecifier;
 class Engine;
 class Type;
 
+class OverloadResolution;
+
 namespace parser
 {
 class SyntaxError;
@@ -107,19 +109,35 @@ public:
   DiagnosticMessage(DiagnosticMessage&&) = default;
   ~DiagnosticMessage() = default;
 
+  explicit DiagnosticMessage(Severity s);
   DiagnosticMessage(Severity s, std::error_code ec, SourceLocation loc, std::string text);
   DiagnosticMessage(Severity s, std::error_code ec, std::string text);
 
-  inline Severity severity() const { return mSeverity; }
-  std::string message() const;
-  inline std::string to_string() const { return message(); }
-  const std::string& content() const;
+  template<diagnostic::Severity S>
+  DiagnosticMessage(const Message<S>& mssg)
+    : mSeverity(mssg.severity()),
+      mLocation(mssg.location()),
+      mCode(mssg.errorCode()),
+      mContent(mssg.content())
+  {
 
-  inline const std::error_code& code() const { return mCode; }
+  }
+
+  Severity severity() const { return mSeverity; }
+  void setSeverity(Severity sev);
+
+  std::string message() const;
+  std::string to_string() const { return message(); }
+  const std::string& content() const;
+  void setContent(std::string str);
+
+  const std::error_code& code() const { return mCode; }
+  void setCode(std::error_code ec);
 
   const SourceLocation& location() const { return mLocation; }
-  inline int line() const { return static_cast<int>(location().m_pos.line); }
-  inline int column() const { return static_cast<int>(location().m_pos.col); }
+  int line() const { return static_cast<int>(location().m_pos.line); }
+  int column() const { return static_cast<int>(location().m_pos.col); }
+  void setLocation(const SourceLocation& loc);
 
   DiagnosticMessage& operator=(const DiagnosticMessage& ) = default;
   DiagnosticMessage& operator=(DiagnosticMessage&& ) = default;
@@ -132,74 +150,51 @@ private:
   std::string mContent;
 };
 
-struct line_t { int line; };
-line_t line(int l);
-
-struct pos_t { int line;  int column; };
-pos_t pos(int l, int column);
-inline pos_t nullpos() { return pos_t{ -1, -1 }; }
-
-bool isCompilerError(ErrorCode code);
-
 class MessageBuilder
 {
 public:
-  MessageBuilder(Severity s, Engine *e = nullptr);
-  MessageBuilder(const MessageBuilder &) = default;
+  explicit MessageBuilder(Engine *e);
+  MessageBuilder(const MessageBuilder &) = delete;
   virtual ~MessageBuilder();
   
-  inline Engine * engine() const { return mEngine; }
+  Engine* engine() const { return mEngine; }
 
-  inline static std::string repr(bool b) { return std::to_string(b); }
-  inline static std::string repr(char c) { return std::string{ c }; }
-  //inline static std::string repr(unsigned int n) { return std::to_string(int(n)); }
-  //inline static std::string repr(unsigned long n) { return std::to_string(int(n)); }
-  inline static std::string repr(int n) { return std::to_string(n); }
-  inline static const std::string & repr(const std::string & str) { return str; }
-  static std::string repr(script::AccessSpecifier as);
-  static std::string repr(script::OperatorName op);
-  std::string repr(const Type & t) const;
-  std::string repr(const parser::Token & tok) const;
-  const std::string & repr(const parser::Token::Type & tok) const;
+  Verbosity verbosity() const;
+  void setVerbosity(Verbosity ver);
 
-  template<typename...Args>
-  std::string format(const std::string & fmt, const Args &... args)
-  {
-    return diagnostic::format(fmt, repr(args)...);
-  }
-
-  MessageBuilder & operator<<(int n);
-  MessageBuilder & operator<<(size_t n);
-  MessageBuilder & operator<<(line_t l);
-  MessageBuilder & operator<<(pos_t p);
-  MessageBuilder & operator<<(const std::string & str);
-  MessageBuilder & operator<<(std::string && str);
-  MessageBuilder& operator<<(const parser::SyntaxError& ex);
-  MessageBuilder& operator<<(const compiler::CompilationFailure& ex);
-  inline MessageBuilder & operator<<(const char *str) { return (*this) << std::string{ str }; }
-
-  inline MessageBuilder & operator<<(Engine *e) { mEngine = e; return *(this); }
+  virtual void build(DiagnosticMessage& mssg, const parser::SyntaxError& ex);
+  virtual void build(DiagnosticMessage& mssg, const compiler::CompilationFailure& ex);
 
   template<typename T>
-  MessageBuilder & operator<<(const T & as)
+  DiagnosticMessage info(T&& ex)
   {
-    return (*this) << repr(as);
+    DiagnosticMessage mssg{ Severity::Info };
+    build(mssg, ex);
+    return mssg;
   }
 
-  DiagnosticMessage build() const;
-  operator DiagnosticMessage() const;
+  template<typename T>
+  DiagnosticMessage warning(T&& ex)
+  {
+    DiagnosticMessage mssg{ Severity::Warning };
+    build(mssg, ex);
+    return mssg;
+  }
 
+  template<typename T>
+  DiagnosticMessage error(T&& ex)
+  {
+    DiagnosticMessage mssg{ Severity::Error };
+    build(mssg, ex);
+    return mssg;
+  }
+
+  std::string produce(const OverloadResolution& resol) const;
+
+private:
   Engine *mEngine;
-  std::error_code mCode;
-  Severity mSeverity;
-  std::string mBuffer;
-  int mLine;
-  int mColumn;
+  Verbosity mVerbosity = Verbosity::Normal;
 };
-
-MessageBuilder info(Engine *e = nullptr);
-MessageBuilder warning(Engine *e = nullptr);
-MessageBuilder error(Engine *e = nullptr);
 
 } // namespace diagnostic
 

@@ -39,23 +39,23 @@ const Stack& VariableAccessor::stack() const
   return *stack_;
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessDataMember(ExpressionCompiler & ec, int offset)
 {
   if (ec.caller().memberOf().isClosure())
   {
     ClosureType ct = ec.caller().memberOf().toClosure();
     auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
     auto this_object = program::CaptureAccess::New(Type::ref(ct.captures().at(0).type), lambda, 0);
-    return generateMemberAccess(ec, this_object, offset, dpos);
+    return generateMemberAccess(ec, this_object, offset);
   }
   else
   {
     auto object = ec.implicit_object();
-    return generateMemberAccess(ec, object, offset, dpos);
+    return generateMemberAccess(ec, object, offset);
   }
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCompiler & ec, int offset)
 {
   Script s = ec.caller().script();
   auto simpl = s.impl();
@@ -64,13 +64,13 @@ std::shared_ptr<program::Expression> VariableAccessor::accessGlobal(ExpressionCo
   return program::FetchGlobal::New(s.id(), offset, gtype);
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::accessLocal(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessLocal(ExpressionCompiler & ec, int offset)
 {
   const Type t = stack()[offset].type;
   return program::StackValue::New(offset, t);
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionCompiler & ec, int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionCompiler & ec, int offset)
 {
   ClosureType ct = ec.caller().memberOf().toClosure();
   auto lambda = program::StackValue::New(1, Type::ref(ct.id()));
@@ -80,7 +80,7 @@ std::shared_ptr<program::Expression> VariableAccessor::accessCapture(ExpressionC
   return capaccess;
 }
 
-std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset, const diagnostic::pos_t dpos)
+std::shared_ptr<program::Expression> VariableAccessor::generateMemberAccess(ExpressionCompiler & ec, const std::shared_ptr<program::Expression> & object, const int offset)
 {
   Class cla = ec.engine()->typeSystem()->getClass(object->type());
   int relative_index = offset;

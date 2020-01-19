@@ -30,10 +30,10 @@ public:
 
   static std::shared_ptr<program::Expression> fundamental(Engine *e, const Type & t, bool copy);
 
-  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::nullptr_t, diagnostic::pos_t dp);
+  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & t, std::nullptr_t);
 
-  static std::shared_ptr<program::Expression> brace_construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp);
-  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args, diagnostic::pos_t dp);
+  static std::shared_ptr<program::Expression> brace_construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args);
+  static std::shared_ptr<program::Expression> construct(Engine *e, const Type & type, std::vector<std::shared_ptr<program::Expression>> && args);
 
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::ConstructorInitialization> & init);
   static std::shared_ptr<program::Expression> construct(ExpressionCompiler & ec, const Type & t, const std::shared_ptr<ast::BraceInitialization> & init);
