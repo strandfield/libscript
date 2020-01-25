@@ -32,7 +32,6 @@ public:
   bool atEnd() const;
   Token read();
   Token unsafe_read();
-  [[deprecated]] void unread();
   Token peek();
   inline Token unsafe_peek() const { assert(mIndex < (int) mBuffer.size()); return mBuffer[mIndex]; }
   std::string text(const Token & tok) const;

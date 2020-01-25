@@ -10,6 +10,7 @@
 #include "script/compiler/lambdacompiler.h"
 
 #include "script/parser/parser.h"
+#include "script/parser/parsererrors.h"
 
 #include "script/program/expression.h"
 
@@ -52,10 +53,20 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
 {
   auto source = SourceFile::fromString(expr);
   parser::Parser parser{ source };
-  auto ast = parser.parseExpression(source);
 
-  if (ast->hasErrors)
-    throw CompilationFailure{ CompilerError::SyntaxError, ast->messages.front() };
+  std::shared_ptr<ast::AST> ast = nullptr;
+
+  try
+  {
+    ast = parser.parseExpression(source);
+  }
+  catch (parser::SyntaxError& ex)
+  {
+    DiagnosticMessage mssg = session()->messageBuilder().error(ex);
+    CompilationFailure exception{ CompilerError::SyntaxError, mssg.content() };
+    exception.location = ex.location;
+    throw exception;
+  } 
 
   return compile(std::static_pointer_cast<ast::Expression>(ast->root), context);
 }

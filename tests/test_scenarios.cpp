@@ -89,8 +89,6 @@ TEST(Scenarios, accessing_ast) {
   ASSERT_EQ(s, ast.script());
 
   ASSERT_FALSE(ast.isExpression());
-  ASSERT_FALSE(ast.hasErrors());
-  ASSERT_EQ(ast.messages().size(), 0);
 
   ASSERT_EQ(ast.expression(), nullptr);
 

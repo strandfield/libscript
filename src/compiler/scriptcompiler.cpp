@@ -16,6 +16,7 @@
 #include "script/ast/node.h"
 
 #include "script/parser/parser.h"
+#include "script/parser/parsererrors.h"
 
 #include "script/program/expression.h"
 
@@ -90,18 +91,18 @@ ScriptCompiler::~ScriptCompiler()
 
 void ScriptCompiler::add(const Script & task)
 {
-  parser::Parser parser{ task.source() };
-  auto ast = parser.parse(task.source());
-
-  if (ast->hasErrors)
+  try
   {
-    for (const auto & m : ast->messages)
-      log(m);
-    return; /// TODO: should we throw instead ?
+    parser::Parser parser{ task.source() };
+    auto ast = parser.parse(task.source());
+    task.impl()->ast = ast;
+    ast->script = task.impl();
   }
-
-  task.impl()->ast = ast;
-  ast->script = task.impl();
+  catch (parser::SyntaxError & ex)
+  {
+    log(session()->messageBuilder().error(ex));
+    return;
+  }
 
   processOrCollectScriptDeclarations(task);
 }

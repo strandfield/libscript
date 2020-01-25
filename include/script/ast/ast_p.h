@@ -32,14 +32,10 @@ public:
 
   std::string text(const parser::Token & tok);
 
-  void log(const diagnostic::DiagnosticMessage & mssg);
-
 public:
   std::shared_ptr<ast::Node> root;
   std::weak_ptr<ScriptImpl> script;
   SourceFile source;
-  bool hasErrors;
-  std::vector<diagnostic::DiagnosticMessage> messages;
 };
 
 } // namespace ast

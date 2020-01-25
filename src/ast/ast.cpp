@@ -14,23 +14,21 @@ namespace ast
 {
 
 AST::AST()
-  : hasErrors(false)
 {
 
 }
 
 AST::AST(const Script & s)
-  : hasErrors(false)
-  , source(s.source())
+  : source(s.source())
   , script(s.impl())
 {
 
 }
 
-AST::AST(const SourceFile & src)
-  : hasErrors(false)
+AST::AST(const SourceFile& src)
+  : source(src)
 {
-  source = src;
+
 }
 
 void AST::add(const std::shared_ptr<Statement> & statement)
@@ -45,11 +43,6 @@ void AST::add(const std::shared_ptr<Statement> & statement)
 std::string AST::text(const parser::Token & tok)
 {
   return std::string(source.data() + tok.pos, tok.length);
-}
-
-void AST::log(const diagnostic::DiagnosticMessage & mssg)
-{
-  messages.push_back(mssg);
 }
 
 } // namespace ast
@@ -93,9 +86,6 @@ SourceFile Ast::source() const
 /*!
  * \fn const std::shared_ptr<ast::Node> & root() const
  * \brief Returns the ast root node.
- *
- * Note that if the ast contains errors, this may return a null pointer.
- * \sa hasErrors
  */
 const std::shared_ptr<ast::Node> & Ast::root() const
 {
@@ -103,32 +93,8 @@ const std::shared_ptr<ast::Node> & Ast::root() const
 }
 
 /*!
- * \fn bool hasErrors() const
- * \brief Returns whether the ast contains errors.
- *
- * Error messages can be retrieved using \m messages.
- */
-bool Ast::hasErrors() const
-{
-  return d->hasErrors;
-}
-
-/*!
- * \fn const std::vector<diagnostic::DiagnosticMessage> & messages() const
- * \brief Returns the messages produced during the construction of this ast.
- *
- * Note that this may be non-empty even if the ast contains no errors; e.g.,  
- * warning message may be produced.
- */
-const std::vector<diagnostic::DiagnosticMessage> & Ast::messages() const
-{
-  return d->messages;
-}
-
-/*!
  * \fn bool isScript() const
  * \brief Returns whether this is the ast of a Script
- *
  */
 bool Ast::isScript() const
 {

@@ -289,6 +289,7 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& e
 static std::unordered_map<CompilerError, std::string> build_compiler_error_fmt()
 {
   return std::unordered_map<CompilerError, std::string>{
+    { CompilerError::SyntaxError, "Syntax error: %1" },
     { CompilerError::IllegalUseOfThis, "Illegal use of this" },
     { CompilerError::ObjectHasNoDestructor, "Object has no destructor" },
     { CompilerError::InvalidUseOfDelegatedConstructor, "No other member initializer may be present when using delegating constructors" },
@@ -402,6 +403,13 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const compiler::CompilationF
 
     switch (static_cast<CompilerError>(ex.errorCode().value()))
     {
+    case CompilerError::SyntaxError:
+    {
+      auto& data = ex.data()->get<DiagnosticMessage>();
+      std::string text = format(fmt, data.message());
+      mssg.setContent(std::move(text));
+    }
+    break;
     case CompilerError::UnknownTypeInBraceInitialization:
     case CompilerError::UnknownModuleName:
     case CompilerError::UnknownSubModuleName:

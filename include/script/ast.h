@@ -37,8 +37,6 @@ public:
 
   const std::shared_ptr<ast::Node> & root() const;
 
-  bool hasErrors() const;
-  const std::vector<diagnostic::DiagnosticMessage> & messages() const;
 
   bool isScript() const;
   Script script() const;

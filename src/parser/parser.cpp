@@ -287,14 +287,6 @@ Token ParserData::unsafe_read()
   return mBuffer[mIndex++];
 }
 
-void ParserData::unread()
-{
-  if (mIndex == 0)
-    throw std::runtime_error{ "Cannot unread" };
-
-  mIndex--;
-}
-
 Token ParserData::peek()
 {
   if (atEnd())
@@ -2929,10 +2921,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   catch (SyntaxError& ex)
   {
     ex.location = location();
-    ret->hasErrors = true;
-    // TODO: allow customization point
-    DiagnosticMessage mssg{ diagnostic::Severity::Error, ex.errorCode(), ex.errorCode().message() };
-    ret->log(std::move(mssg));
+    throw;
   }
 
   return ret;
@@ -2955,10 +2944,7 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
   catch (SyntaxError & ex)
   {
     ex.location = location();
-    ret->hasErrors = true;
-    // TODO: allow customization point
-    DiagnosticMessage mssg{ diagnostic::Severity::Error, ex.errorCode(), ex.errorCode().message() };
-    ret->log(std::move(mssg));
+    throw;
   }
 
   return ret;
