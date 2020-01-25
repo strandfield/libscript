@@ -358,9 +358,10 @@ void ScriptCompiler::processPendingDeclarations()
     auto task = mProcessingQueue.front();
     mProcessingQueue.pop();
 
-
     ScopeGuard guard{ mCurrentScope };
     mCurrentScope = task.scope;
+
+    TranslationTarget target{ this, task.scope.script(), task.declaration };
 
     if (task.declaration->is<ast::FriendDeclaration>())
     {
@@ -370,8 +371,6 @@ void ScriptCompiler::processPendingDeclarations()
     {
       variable_.process(std::static_pointer_cast<ast::VariableDecl>(task.declaration), task.scope);
     }
-
-
   }
 }
 
@@ -897,6 +896,8 @@ void ScriptCompiler::reprocess(ScopedDeclaration & func)
 {
   ScopeGuard guard{ mCurrentScope };
   mCurrentScope = func.scope;
+
+  TranslationTarget target{ this, func.scope.script(), func.declaration };
 
   processOrCollectDeclaration(func.declaration);
 }

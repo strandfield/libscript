@@ -78,6 +78,7 @@ public:
   Script asScript() const;
 
   Symbol symbol() const;
+  Script script() const;
 
   const std::vector<Class> & classes() const;
   const std::vector<Enum> & enums() const;

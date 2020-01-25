@@ -42,15 +42,15 @@ TEST(CompilerErrors, no_destructor) {
   using namespace script;
 
   const char *source =
-    "  class A            "
-    "  {                  "
-    "    A() = default;   "
-    "  };                 "
-    "                     "
-    "  void foo()         "
-    "  {                  "
-    "    A a;             "
-    "  }                  ";
+    "  class A            \n"
+    "  {                  \n"
+    "    A() = default;   \n"
+    "  };                 \n"
+    "                     \n"
+    "  void foo()         \n"
+    "  {                  \n"
+    "    A a;             \n"
+    "  }                  \n";
 
   Engine engine;
   engine.setup();
@@ -70,13 +70,13 @@ TEST(CompilerErrors, invalid_use_delegated_ctor) {
   using namespace script;
 
   const char *source =
-    "  class A                   "
-    "  {                         "
-    "    int n;                  "
-    "                            "
-    "    A(int a) : n(a) { }     "
-    "    A() : A(2), n(0) { }    "
-    "  };                        ";
+    "  class A                   \n"
+    "  {                         \n"
+    "    int n;                  \n"
+    "                            \n"
+    "    A(int a) : n(a) { }     \n"
+    "    A() : A(2), n(0) { }    \n"
+    "  };                        \n";
 
   Engine engine;
   engine.setup();
@@ -96,10 +96,10 @@ TEST(CompilerErrors, not_data_member) {
   using namespace script;
 
   const char *source =
-    "  class A                   "
-    "  {                         "
-    "    A(int a) : n(a) { }     "
-    "  };                        ";
+    "  class A                   \n"
+    "  {                         \n"
+    "    A(int a) : n(a) { }     \n"
+    "  };                        \n";
 
   Engine engine;
   engine.setup();
@@ -118,16 +118,16 @@ TEST(CompilerErrors, initializing_inherited_data_member) {
   using namespace script;
 
   const char *source =
-    "  class A              "
-    "  {                    "
-    "    int n;             "
-    "    A() = default;     "
-    "  };                   "
-    "                       "
-    "  class B : A          "
-    "  {                    "
-    "    B() : n(0) { }     "
-    "  };                   ";
+    "  class A              \n"
+    "  {                    \n"
+    "    int n;             \n"
+    "    A() = default;     \n"
+    "  };                   \n"
+    "                       \n"
+    "  class B : A          \n"
+    "  {                    \n"
+    "    B() : n(0) { }     \n"
+    "  };                   \n";
 
   Engine engine;
   engine.setup();
@@ -146,11 +146,11 @@ TEST(CompilerErrors, multiple_initializers) {
   using namespace script;
 
   const char *source =
-    "  class A                   "
-    "  {                         "
-    "    int n;                  "
-    "    A() : n(0), n(1) { }    "
-    "  };                        ";
+    "  class A                   \n"
+    "  {                         \n"
+    "    int n;                  \n"
+    "    A() : n(0), n(1) { }    \n"
+    "  };                        \n";
 
   Engine engine;
   engine.setup();
@@ -169,13 +169,13 @@ TEST(CompilerErrors, could_not_find_delegate_ctor) {
   using namespace script;
 
   const char *source =
-    "  class A                   "
-    "  {                         "
-    "    int n;                  "
-    "                            "
-    "    A(int a) : n(a) { }     "
-    "    A() : A(2,3) { }        "
-    "  };                        ";
+    "  class A                   \n"
+    "  {                         \n"
+    "    int n;                  \n"
+    "                            \n"
+    "    A(int a) : n(a) { }     \n"
+    "    A() : A(2,3) { }        \n"
+    "  };                        \n";
 
   Engine engine;
   engine.setup();
@@ -194,16 +194,16 @@ TEST(CompilerErrors, no_valid_base_ctor) {
   using namespace script;
 
   const char *source =
-    "  class A              "
-    "  {                    "
-    "    int n;             "
-    "    A() = default;     "
-    "  };                   "
-    "                       "
-    "  class B : A          "
-    "  {                    "
-    "    B() : A(1) { }     "
-    "  };                   ";
+    "  class A              \n"
+    "  {                    \n"
+    "    int n;             \n"
+    "    A() = default;     \n"
+    "  };                   \n"
+    "                       \n"
+    "  class B : A          \n"
+    "  {                    \n"
+    "    B() : A(1) { }     \n"
+    "  };                   \n";
 
   Engine engine;
   engine.setup();

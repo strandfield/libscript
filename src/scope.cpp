@@ -1075,6 +1075,19 @@ Symbol Scope::symbol() const
   return parent().symbol();
 }
 
+/*!
+ * \fn Script script() const
+ * \brief Returns the script that contains this scope
+ */
+Script Scope::script() const
+{
+  if (isNull())
+    return Script{};
+  else if (isScript())
+    return asScript();
+  else
+    return parent().script();
+}
 
 const std::vector<Class> & Scope::classes() const
 {

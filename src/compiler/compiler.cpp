@@ -79,7 +79,7 @@ CompileSession::CompileSession(Compiler *c, const Script & s)
   , script(s)
   , error(false)
 {
-
+  current_script = s;
 }
 
 Engine* CompileSession::engine() const
@@ -148,23 +148,7 @@ const std::shared_ptr<CompileSession>& Component::session() const
 
 SourceLocation Component::location() const
 {
-  SourceLocation loc;
-
-  // TODO: get correct script
-  loc.m_source = session()->script.source();
-
-  loc.m_pos.pos = session()->current_node->pos().pos;
-  loc.m_pos.line = session()->current_node->pos().line;
-  loc.m_pos.col = session()->current_node->pos().col;
-
-  if (session()->current_token.isValid())
-  {
-    loc.m_pos.pos = session()->current_token.pos;
-    loc.m_pos.line = session()->current_token.line;
-    loc.m_pos.col = session()->current_token.column;
-  }
-
-  return loc;
+  return session()->location();
 }
 
 void Component::log(const diagnostic::DiagnosticMessage& mssg)
@@ -213,18 +197,15 @@ bool Compiler::compile(Script s)
 
     s.impl()->loaded = true;
   }
-  catch (const CompilationFailure& ex)
+  catch (CompilationFailure& ex)
   {
+    ex.location = session()->location();
     session()->log(ex);
   }
   catch (const NotImplemented & ex)
   {
     session()->log(DiagnosticMessage{diagnostic::Severity::Error, ex.errorCode(), "NotImplemented: "+ ex.message });
   }
-  //catch (...)
-  //{
-  //  log(NotImplementedError{ "Unknown error" });
-  //}
 
   if (session()->error)
   {
@@ -271,8 +252,9 @@ Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<Template
 
     return result;
   }
-  catch (const CompilationFailure& ex)
+  catch (CompilationFailure& ex)
   {
+    ex.location = session()->location();
     session()->clear();
 
     DiagnosticMessage mssg = messageBuilder()->error(ex);
@@ -312,8 +294,9 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
       }
     }
   }
-  catch (const CompilationFailure& ex)
+  catch (CompilationFailure& ex)
   {
+    ex.location = session()->location();
     session()->clear();
 
     DiagnosticMessage mssg = messageBuilder()->error(ex);
@@ -406,6 +389,29 @@ void Compiler::finalizeSession()
   session()->setState(CompileSession::State::Finished);
 }
 
+SourceLocation CompileSession::location() const
+{
+  SourceLocation loc;
+
+  loc.m_source = current_script.source();
+
+  if (current_node)
+  {
+    loc.m_pos.pos = current_node->pos().pos;
+    loc.m_pos.line = current_node->pos().line;
+    loc.m_pos.col = current_node->pos().col;
+
+    if (current_token.isValid())
+    {
+      loc.m_pos.pos = current_token.pos;
+      loc.m_pos.line = current_token.line;
+      loc.m_pos.col = current_token.column;
+    }
+  }
+
+  return loc;
+}
+
 diagnostic::MessageBuilder& CompileSession::messageBuilder()
 {
   return *compiler()->messageBuilder();
@@ -425,8 +431,19 @@ void CompileSession::log(const CompilationFailure& ex)
   this->error = true;
 }
 
+TranslationTarget::TranslationTarget(const Component* c, const Script& script, std::shared_ptr<ast::Node> node)
+  : m_component(c),
+    m_current_script(c->session()->current_script),
+    m_current_node(c->session()->current_node),
+    m_current_token(c->session()->current_token)
+{
+  c->session()->current_script = script;
+  c->session()->current_node = node;
+}
+
 TranslationTarget::TranslationTarget(const Component* c, std::shared_ptr<ast::Node> node)
   : m_component(c),
+    m_current_script(c->session()->current_script),
     m_current_node(c->session()->current_node),
     m_current_token(c->session()->current_token)
 {
@@ -435,6 +452,7 @@ TranslationTarget::TranslationTarget(const Component* c, std::shared_ptr<ast::No
 
 TranslationTarget::TranslationTarget(const Component* c, parser::Token tok)
   : m_component(c),
+    m_current_script(c->session()->current_script),
     m_current_node(c->session()->current_node),
     m_current_token(c->session()->current_token)
 {
@@ -445,6 +463,7 @@ TranslationTarget::~TranslationTarget()
 {
   if (!std::uncaught_exception())
   {
+    m_component->session()->current_script = m_current_script;
     m_component->session()->current_node = m_current_node;
     m_component->session()->current_token = m_current_token;
   }

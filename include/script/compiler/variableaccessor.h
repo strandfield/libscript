@@ -41,7 +41,6 @@ public:
 
   const std::vector<std::shared_ptr<program::CaptureAccess>>& generatedCaptures() const { return captures_; }
 
-  /// TODO: maybe pass ast::Expression instead of dpos
   std::shared_ptr<program::Expression> accessDataMember(ExpressionCompiler & ec, int offset);
   std::shared_ptr<program::Expression> accessGlobal(ExpressionCompiler & ec, int offset);
   std::shared_ptr<program::Expression> accessLocal(ExpressionCompiler & ec, int offset);

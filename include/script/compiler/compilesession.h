@@ -52,6 +52,8 @@ public:
   inline State state() const { return mState; }
   inline void setState(State t) { mState = t; }
 
+  SourceLocation location() const;
+
   struct {
     /// TODO : ideally we should store a list of generated lambdas and function types
     std::vector<Function> functions; /// generated function template instances
@@ -62,10 +64,11 @@ public:
 
   std::vector<diagnostic::DiagnosticMessage> messages;
   bool error;
-  Script script;
+  Script script; // the top-level script that is being compiled
 
-  std::shared_ptr<ast::Node> current_node;
-  parser::Token current_token;
+  Script current_script; // the script that is being processed
+  std::shared_ptr<ast::Node> current_node; // the node that is being processed
+  parser::Token current_token; // the token (within the 'current_node') that is being processed
 
   diagnostic::MessageBuilder& messageBuilder();
 
@@ -79,10 +82,12 @@ class TranslationTarget
 {
 private:
   const Component* m_component;
+  Script m_current_script;
   std::shared_ptr<ast::Node> m_current_node;
   parser::Token m_current_token;
 
 public:
+  TranslationTarget(const Component* c, const Script& script, std::shared_ptr<ast::Node> node);
   TranslationTarget(const Component* c, std::shared_ptr<ast::Node> node);
   TranslationTarget(const Component* c, parser::Token tok);
   ~TranslationTarget();
