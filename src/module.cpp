@@ -68,6 +68,12 @@ bool ScriptModule::is_module() const
 }
 
 
+ModuleLoadingError::ModuleLoadingError(std::string mssg)
+  : message(std::move(mssg))
+{
+
+}
+
 const char* ModuleLoadingError::what() const noexcept
 {
   return "module-loading-error";
@@ -223,6 +229,8 @@ bool Module::isLoaded() const
 /*!
  * \fn void load()
  * \brief Loads the module.
+ * Throws a ModuleLoadingError on failure.
+ * Warning: calling this function while a module is loading is undefined behavior
  */
 void Module::load()
 {
@@ -238,10 +246,20 @@ void Module::load()
   else
   {
     Script s = asScript();
+
     const bool success = s.compile();
-    if (success && !engine()->compiler()->hasActiveSession())
+
+    if(!success)
+      throw ModuleLoadingError{ "script compilation failed" };
+
+    try
+    {
       s.run();
-    /// TODO: throw on failure!!
+    }
+    catch (const RuntimeError & ex)
+    {
+      throw ModuleLoadingError{ "script execution failed" };
+    }
   }
 }
 

@@ -26,6 +26,8 @@ struct ModuleLoadingError : public std::exception // TODO: derive from script::E
 {
   std::string message;
 
+  ModuleLoadingError(std::string mssg);
+
   const char* what() const noexcept override;
 };
 

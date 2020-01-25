@@ -4,6 +4,7 @@
 
 #include "script/compiler/importprocessor.h"
 
+#include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/diagnostichelper.h"
 
@@ -11,6 +12,7 @@
 
 #include "script/engine.h"
 #include "script/module.h"
+#include "script/script.h"
 
 namespace script
 {
@@ -18,8 +20,8 @@ namespace script
 namespace compiler
 {
 
-ImportProcessor::ImportProcessor(Engine *e)
-  : engine_(e)
+ImportProcessor::ImportProcessor(Compiler *c)
+  : Component(c)
 {
 
 }
@@ -42,7 +44,7 @@ Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & dec
 
   try
   {
-    m.load();
+    load_module(m);
   }
   catch (ModuleLoadingError& ex)
   {
@@ -50,6 +52,21 @@ Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & dec
   }
 
   return m.scope();
+}
+
+void ImportProcessor::load_module(Module& m)
+{
+  if (m.isLoaded())
+    return;
+
+  if (m.isNative())
+  {
+    m.load();
+  }
+  else
+  {
+    compiler()->addToSession(m.asScript());
+  }
 }
 
 } // namespace compiler

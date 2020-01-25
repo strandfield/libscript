@@ -10,23 +10,23 @@
 
 #include "script/ast/forwards.h"
 
+#include "script/compiler/component.h"
+
 namespace script
 {
 
 namespace compiler
 {
 
-class ImportProcessor
+class ImportProcessor : public Component
 {
 public:
-  Engine *engine_;
-
-public:
-  ImportProcessor(Engine *e);
-
-  inline Engine* engine() const { return engine_; }
+  explicit ImportProcessor(Compiler *c);
 
   Scope process(const std::shared_ptr<ast::ImportDirective> & decl);
+
+protected:
+  void load_module(Module& m);
 };
 
 } // namespace compiler

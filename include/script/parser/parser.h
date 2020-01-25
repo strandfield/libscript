@@ -481,8 +481,6 @@ public:
   std::shared_ptr<ast::EnumDeclaration> parse();
 };
 
-bool compareName(const std::shared_ptr<ast::Identifier> & a, const std::shared_ptr<ast::Identifier> & b, const std::shared_ptr<ParserData> & data);
-
 class ClassParser : public ParserBase
 {
 public:

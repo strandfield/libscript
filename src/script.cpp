@@ -49,6 +49,13 @@ const std::string & Script::path() const
   return d->source.filepath();
 }
 
+/*!
+ * \fn bool compile()
+ * \brief Compiles the script
+ * Returns true on success, false otherwise. 
+ * If the compilation failed, use messages() to retrieve the error messages.
+ * Warning: Calling this function while a script is compiling is undefined behavior.
+ */
 bool Script::compile()
 {
   Engine *e = d->engine;

@@ -75,7 +75,7 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   : Component(c)
   , variable_(c)
   , function_processor_{ c }
-  , modules_(c->engine())
+  , modules_(c)
   , default_arguments_(c)
   , mReprocessingIncompleteFunctions(false)
 {

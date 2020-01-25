@@ -176,25 +176,14 @@ bool Compiler::hasActiveSession() const
 bool Compiler::compile(Script s)
 {
   SessionManager manager{ this, s };
+  assert(manager.started_session());
 
   ScriptCompiler *sc = getScriptCompiler();
 
   try
   {
     sc->add(s);
-
-    if (manager.started_session())
-    {
-      finalizeSession();
-    }
-    else
-    {
-      if (session()->state() == CompileSession::State::CompilingFunctions)
-      {
-        processAllDeclarations();
-      }
-    }
-
+    finalizeSession();
     s.impl()->loaded = true;
   }
   catch (CompilationFailure& ex)
@@ -209,21 +198,43 @@ bool Compiler::compile(Script s)
 
   if (session()->error)
   {
-    if (manager.started_session())
-    {
-      session()->clear();
-      s.impl()->messages = std::move(session()->messages);
-      engine()->implementation()->destroy(Namespace{ s.impl() });
-    }
-    else
-    {
-      /// TODO: should we throw ?
-    }
+    session()->clear();
+    s.impl()->messages = std::move(session()->messages);
+    engine()->implementation()->destroy(Namespace{ s.impl() });
 
     return false;
   }
 
   return true;
+}
+
+void Compiler::addToSession(Script s)
+{
+  SessionManager manager{ this, s };
+  assert(!manager.started_session());
+
+  ScriptCompiler* sc = getScriptCompiler();
+
+  try
+  {
+    sc->add(s);
+
+    if (session()->state() == CompileSession::State::CompilingFunctions)
+    {
+      processAllDeclarations();
+    }
+
+    s.impl()->loaded = true;
+  }
+  catch (CompilationFailure & ex)
+  {
+    ex.location = session()->location();
+    session()->log(ex);
+  }
+  catch (const NotImplemented & ex)
+  {
+    session()->log(DiagnosticMessage{ diagnostic::Severity::Error, ex.errorCode(), "NotImplemented: " + ex.message });
+  }
 }
 
 Class Compiler::instantiate(const ClassTemplate & ct, const std::vector<TemplateArgument> & targs)
@@ -305,6 +316,11 @@ void Compiler::instantiate(const std::shared_ptr<ast::FunctionDecl> & decl, Func
   }
 }
 
+/*!
+ * \fn std::shared_ptr<program::Expression> compile(const std::string & cmmd, const Context & con)
+ * \brief Compiles an expression within a context
+ * Throws CompilationFailure if the compilation fails
+ */
 std::shared_ptr<program::Expression> Compiler::compile(const std::string & cmmd, const Context & con)
 {
   SessionManager manager{ this };

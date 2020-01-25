@@ -330,7 +330,7 @@ NameLookup FunctionCompilerExtension::resolve(const std::shared_ptr<ast::Identif
 FunctionCompiler::FunctionCompiler(Compiler *c)
   : Component(c)
   , expr_{c}
-  , modules_(c->engine())
+  , modules_(c)
 {
   expr_.variableAccessor().setStack(&mStack);
 
