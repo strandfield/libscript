@@ -9,6 +9,7 @@
 
 #include "script/compiler/component.h"
 #include "script/compiler/compilererrors.h"
+#include "script/compiler/compilesession.h"
 #include "script/compiler/diagnostichelper.h"
 
 #include "script/functionbuilder.h"
