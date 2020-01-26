@@ -55,6 +55,11 @@ const std::error_category& template_instantiation_category() noexcept;
 
 } // namespace errors
 
+inline std::error_code make_error_code(script::TemplateInstantiationError::ErrorCode e) noexcept
+{
+  return std::error_code(static_cast<int>(e), script::errors::template_instantiation_category());
+}
+
 class LIBSCRIPT_API Template
 {
 public:
@@ -107,11 +112,6 @@ namespace std
 {
 
 template<> struct is_error_code_enum<script::TemplateInstantiationError::ErrorCode> : std::true_type { };
-
-inline std::error_code make_error_code(script::TemplateInstantiationError::ErrorCode e) noexcept
-{
-  return std::error_code(static_cast<int>(e), script::errors::template_instantiation_category());
-}
 
 } // namespace std
 

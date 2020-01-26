@@ -39,17 +39,17 @@ enum class ParserError {
   CouldNotReadType,
 };
 
+inline std::error_code make_error_code(script::ParserError e) noexcept
+{
+  return std::error_code(static_cast<int>(e), script::errors::parser_category());
+}
+
 } // namespace script
 
 namespace std
 {
 
 template<> struct is_error_code_enum<script::ParserError> : std::true_type { };
-
-inline std::error_code make_error_code(script::ParserError e) noexcept
-{
-  return std::error_code(static_cast<int>(e), script::errors::parser_category());
-}
 
 } // namespace std
 

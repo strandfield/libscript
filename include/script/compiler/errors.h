@@ -115,6 +115,11 @@ enum class CompilerError {
   LiteralOperatorNotInNamespace,
 };
 
+inline std::error_code make_error_code(script::CompilerError e) noexcept
+{
+  return std::error_code(static_cast<int>(e), script::errors::compiler_category());
+}
+
 } // namespace script
 
 namespace std
@@ -130,11 +135,6 @@ template<> struct hash<script::CompilerError>
 };
 
 template<> struct is_error_code_enum<script::CompilerError> : std::true_type { };
-
-inline std::error_code make_error_code(script::CompilerError e) noexcept
-{
-  return std::error_code(static_cast<int>(e), script::errors::compiler_category());
-}
 
 } // namespace std
 

@@ -118,6 +118,12 @@ public:
   RuntimeError() : EngineError(EngineError::RuntimeError) { }
 };
 
+inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcept
+{
+  return std::error_code(static_cast<int>(e), script::errors::engine_category());
+}
+
+
 class LIBSCRIPT_API Engine
 {
 public:
@@ -230,11 +236,6 @@ namespace std
 {
 
 template<> struct is_error_code_enum<script::EngineError::ErrorCode> : std::true_type { };
-
-inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcept
-{
-  return std::error_code(static_cast<int>(e), script::errors::engine_category());
-}
 
 } // namespace std
 
