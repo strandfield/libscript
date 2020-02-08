@@ -260,18 +260,10 @@ void ExecutionContext::push(const Function & f, const Value *obj, const Value *b
   fc->ec = this;
 }
 
-bool ExecutionContext::push(const Function & f, int sp)
+void ExecutionContext::push(const Function & f, int sp)
 {
-  try {
-    FunctionCall *fc = this->callstack.push(f, sp);
-    fc->ec = this;
-  }
-  catch (...)
-  {
-    return false;
-  }
-
-  return true;
+  FunctionCall* fc = this->callstack.push(f, sp);
+  fc->ec = this;
 }
 
 Value ExecutionContext::pop()

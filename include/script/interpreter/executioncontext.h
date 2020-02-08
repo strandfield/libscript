@@ -152,7 +152,7 @@ public:
   ~ExecutionContext();
 
   void push(const Function & f, const Value *obj, const Value *begin, const Value *end);
-  bool push(const Function & f, int sp);
+  void push(const Function & f, int sp);
   Value pop();
 
   int flags() const;
