@@ -26,6 +26,44 @@ namespace script
 namespace interpreter
 {
 
+struct Invoker
+{
+  ExecutionContext& context;
+  size_t sp;
+  bool preparing;
+
+public:
+  Invoker(ExecutionContext& ec, const Function& f, const Value* obj, const Value* begin, const Value* end)
+    : context(ec), sp(context.stack.size), preparing(false)
+  {
+    context.push(f, obj, begin, end);
+  }
+
+  Invoker(ExecutionContext& ec)
+    : context(ec), sp(context.stack.size), preparing(true)
+  {
+
+  }
+
+  void push(const Function& f)
+  {
+    context.push(f, sp);
+    preparing = false;
+  }
+
+  ~Invoker()
+  {
+    if (std::uncaught_exceptions())
+    {
+      while (context.stack.size > sp)
+        context.engine->manage(context.stack.pop());
+
+      if(!preparing)
+        context.callstack.pop();
+    }
+  }
+};
+
 Interpreter::Interpreter(std::shared_ptr<ExecutionContext> ec, Engine *e)
   : mEngine(e)
   , mExecutionContext(ec)
@@ -42,7 +80,7 @@ Interpreter::~Interpreter()
 
 Value Interpreter::invoke(const Function & f, const Value *obj, const Value *begin, const Value *end)
 {
-  mExecutionContext->push(f, obj, begin, end);
+  Invoker invoker{ *mExecutionContext, f, obj, begin, end };
   invoke(f);
   return mExecutionContext->pop();
 }
@@ -202,17 +240,18 @@ void Interpreter::visit(const program::IfStatement & is)
 
 void Interpreter::visit(const program::PlacementStatement & placement)
 {
-  const int sp = mExecutionContext->stack.size;
+  Invoker invoker{ *mExecutionContext };
+
   mExecutionContext->stack.push(Value::Void);
   mExecutionContext->stack.push(eval(placement.object));
   for (const auto & arg : placement.arguments)
     mExecutionContext->stack.push(eval(arg));
 
-  mExecutionContext->push(placement.constructor, sp);
+  invoker.push(placement.constructor);
 
   invoke(placement.constructor);
 
-  mExecutionContext->pop();
+  (void) mExecutionContext->pop();
 }
 
 void Interpreter::visit(const program::PushDataMember & ims)
@@ -318,7 +357,7 @@ Value Interpreter::visit(const program::ConditionalExpression & ce)
 
 Value Interpreter::visit(const program::ConstructorCall & call)
 {
-  const int sp = mExecutionContext->stack.size;
+  Invoker invoker{ *mExecutionContext };
 
   Value object = mEngine->allocate(call.allocate->object_type);
 
@@ -327,11 +366,11 @@ Value Interpreter::visit(const program::ConstructorCall & call)
   for (const auto & arg : call.arguments)
     mExecutionContext->stack.push(inner_eval(arg));
 
-  mExecutionContext->push(call.constructor, sp);
+  invoker.push(call.constructor);
 
   invoke(call.constructor);
 
-  mExecutionContext->pop();
+  (void) mExecutionContext->pop();
 
   return object;
 }
@@ -352,17 +391,17 @@ Value Interpreter::visit(const program::FetchGlobal & fetch)
 
 Value Interpreter::visit(const program::FunctionCall & fc)
 {
-  const int sp = mExecutionContext->stack.size;
+  Invoker invoker{ *mExecutionContext };
+
   mExecutionContext->stack.push(Value::Void);
   for (const auto & arg : fc.args)
     mExecutionContext->stack.push(inner_eval(arg));
-
-  mExecutionContext->push(fc.callee, sp);
   
+  invoker.push(fc.callee);
+
   invoke(fc.callee);
 
-  Value ret = mExecutionContext->pop();
-  return ret;
+  return mExecutionContext->pop();
 }
 
 Value Interpreter::visit(const program::FunctionVariableCall & fvc)
@@ -370,17 +409,17 @@ Value Interpreter::visit(const program::FunctionVariableCall & fvc)
   Value callee = inner_eval(fvc.callee);
   Function f = callee.toFunction();
 
-  const int sp = mExecutionContext->stack.size;
+  Invoker invoker{ *mExecutionContext };
+
   mExecutionContext->stack.push(Value::Void);
   for (const auto & arg : fvc.arguments)
     mExecutionContext->stack.push(inner_eval(arg));
 
-  mExecutionContext->push(f, sp);
+  invoker.push(f);
 
   invoke(f);
 
-  Value ret = mExecutionContext->pop();
-  return ret;
+  return mExecutionContext->pop();
 }
 
 Value Interpreter::visit(const program::FundamentalConversion & conv)
@@ -463,20 +502,20 @@ Value Interpreter::visit(const program::VariableAccess & va)
 Value Interpreter::visit(const program::VirtualCall & vc)
 {
   Value object = inner_eval(vc.object);
+  Function callee = mEngine->typeSystem()->getClass(object.type()).vtable().at(vc.vtableIndex);
 
-  const int sp = mExecutionContext->stack.size;
+  Invoker invoker{ *mExecutionContext };
+
   mExecutionContext->stack.push(Value{});
   mExecutionContext->stack.push(object);
   for (const auto & arg : vc.args)
     mExecutionContext->stack.push(inner_eval(arg));
 
-  Function callee = mEngine->typeSystem()->getClass(object.type()).vtable().at(vc.vtableIndex);
-  mExecutionContext->push(callee, sp);
+  invoker.push(callee);
 
   invoke(callee);
 
-  Value ret = mExecutionContext->pop();
-  return ret;
+  return mExecutionContext->pop();
 }
 
 } // namespace interpreter
