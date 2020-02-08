@@ -297,7 +297,7 @@ void Interpreter::visit(const program::PopValue & pop)
     mEngine->implementation()->destroy(mExecutionContext->stack.top(), pop.destructor);
   }
 
-  mExecutionContext->stack.pop();
+  (void) mExecutionContext->stack.pop();
 }
 
 void Interpreter::visit(const program::WhileLoop & wl) 
@@ -344,7 +344,7 @@ Value Interpreter::visit(const program::CaptureAccess & ca)
 
 Value Interpreter::visit(const program::CommaExpression & ce)
 {
-  inner_eval(ce.lhs);
+  (void) inner_eval(ce.lhs);
   return inner_eval(ce.rhs);
 }
 

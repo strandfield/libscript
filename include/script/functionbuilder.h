@@ -152,9 +152,11 @@ public:
   std::vector<std::shared_ptr<program::Expression>> defaultargs_;
 
 public:
-  FunctionBuilder(Class cla, std::string && name);
-  FunctionBuilder(Namespace ns, std::string && name);
-  FunctionBuilder(Symbol s, std::string && name);
+  FunctionBuilder(Class cla, std::string name);
+  FunctionBuilder(Namespace ns, std::string name);
+  FunctionBuilder(Symbol s, std::string name);
+
+  static  Value throwing_body(FunctionCall*);
 
   FunctionBuilder & setConst();
   FunctionBuilder & setVirtual();

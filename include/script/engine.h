@@ -114,8 +114,11 @@ struct LIBSCRIPT_API RuntimeError : public EngineError
 {
 public:
   /// TODO: add StackTrace
+  std::string message;
 
   RuntimeError() : EngineError(EngineError::RuntimeError) { }
+
+  RuntimeError(std::string mssg) : EngineError(EngineError::RuntimeError), message(std::move(mssg)) { }
 };
 
 inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcept

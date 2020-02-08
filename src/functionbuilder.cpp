@@ -297,7 +297,7 @@ inline static void set_default_args(Function & fun, std::vector<DefaultArgument>
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
-FunctionBuilder::FunctionBuilder(Class cla, std::string && name)
+FunctionBuilder::FunctionBuilder(Class cla, std::string name)
   : GenericFunctionBuilder<FunctionBuilder>(Symbol{cla})
   , name_(std::move(name))
 {
@@ -305,14 +305,14 @@ FunctionBuilder::FunctionBuilder(Class cla, std::string && name)
   this->proto_.push(Type::ref(cla.id()).withFlag(Type::ThisFlag));
 }
 
-FunctionBuilder::FunctionBuilder(Namespace ns, std::string && name)
+FunctionBuilder::FunctionBuilder(Namespace ns, std::string name)
   : GenericFunctionBuilder<FunctionBuilder>(Symbol{ ns })
   , name_(std::move(name))
 {
   this->proto_.setReturnType(Type::Void);
 }
 
-FunctionBuilder::FunctionBuilder(Symbol s, std::string && name)
+FunctionBuilder::FunctionBuilder(Symbol s, std::string name)
   : GenericFunctionBuilder<FunctionBuilder>(s)
   , name_(std::move(name))
 {
@@ -320,6 +320,11 @@ FunctionBuilder::FunctionBuilder(Symbol s, std::string && name)
 
   if(s.isClass())
     this->proto_.push(Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
+}
+
+Value FunctionBuilder::throwing_body(FunctionCall*)
+{
+  throw RuntimeError{ "Called undefined function" };
 }
 
 FunctionBuilder & FunctionBuilder::setConst()
