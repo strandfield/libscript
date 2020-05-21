@@ -27,8 +27,7 @@ mkdir build && cd build
 cmake ..
 ```
 
-The library requires a C\++14 compiler. Access to the file system is done through 
-platform-dependent code, but the `filesystem TS` or C\++17 can be used instead.
+The library requires a C\++14 compiler.
 
 The library is distributed under the MIT license and can therefore be used 
 freely. 
@@ -45,14 +44,14 @@ print("Hello World!");
 
 And the C++ code required to run it:
 ```cpp
-#include <iostream>
-
 #include "script/engine.h"
 #include "script/function.h"
 #include "script/functionbuilder.h"
 #include "script/namespace.h"
 #include "script/script.h"
 #include "script/interpreter/executioncontext.h"
+
+#include <iostream>
 
 script::Value print_callback(script::FunctionCall *c)
 {
@@ -77,8 +76,6 @@ int main()
     s.run();
 }
 ```
-
-Some more examples are provided in the `examples` folder.
 
 ## Features
 

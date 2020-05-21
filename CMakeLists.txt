@@ -47,9 +47,8 @@ target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
 #add_definitions(-DLIBSCRIPT_COMPILE_LIBRARY)
 
 ##################################################################
-###### tests, examples & benchmarks
+###### tests & benchmarks
 ##################################################################
 
 add_subdirectory(tests)
-add_subdirectory(examples)
 add_subdirectory(benchmarks)

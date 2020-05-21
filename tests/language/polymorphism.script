@@ -5,9 +5,9 @@ public:
   Base() = default;
   virtual ~Base() { }
   
-  virtual String text() const
+  virtual int value() const
   {
-	return "Base";
+	  return 0;
   }
 };
 
@@ -17,18 +17,19 @@ public:
   Derived() = default;
   ~Derived() = default;
   
-  String text() const
+  int value() const
   {
-    return "Derived";
+    return 1;
   }
 };
 
-void foo(Base & b)
+int call_value(Base & b)
 {
-  print(b.text());
+  return b.value();
 }
 
 Base b;
 Derived d;
-foo(b);
-foo(d);
+
+Assert(call_value(b) == 0);
+Assert(call_value(d) == 1);
