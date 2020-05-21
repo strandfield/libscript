@@ -23,7 +23,7 @@ matrix:
       - cmake -DCMAKE_C_COMPILER=clang-4.0 -DCMAKE_CXX_COMPILER=clang++-4.0 ..
       - make
       - cd tests
-      - ./tests --gtest_output="xml:gtest-report.xml"
+      - ctest
   - os: linux
     env:
       - TEST="Codecov"
@@ -38,7 +38,7 @@ matrix:
       - cmake -DENABLE_COVERAGE=ON -DCMAKE_CXX_COMPILER="g++-6" ..
       - make
       - cd tests
-      - ./tests
+      - ctest
       - cd ..
       - cd ..
       - bash <(curl -s https://codecov.io/bash)
