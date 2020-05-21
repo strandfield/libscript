@@ -183,6 +183,14 @@ public:
     free(val);
   }
 
+  template<typename T>
+  Value expose(T& val)
+  {
+    Value ret = allocate(Type::make<T&>());
+    ret.d->data_ptr = &val;
+    return ret;
+  }
+
   void manage(Value val);
   void garbageCollect();
 

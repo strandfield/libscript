@@ -525,6 +525,9 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
  */
 void Engine::destroy(Value val)
 {
+  if (val.isReference())
+    return;
+
   auto *impl = val.impl();
 
   if (impl->type.isObjectType())
@@ -533,10 +536,7 @@ void Engine::destroy(Value val)
     dtor.invoke({ val });
   }
 
-  impl->clear();
-
-  impl->type = 0;
-  impl->engine = nullptr;
+  free(val);
 }
 
 /*!
@@ -554,7 +554,7 @@ void Engine::destroy(Value val)
  */
 void Engine::manage(Value val)
 {
-  if (val.isManaged())
+  if (val.isManaged() || val.isReference())
     return;
 
   d->garbageCollector.push_back(val);

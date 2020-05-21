@@ -85,6 +85,29 @@ TEST(Eval, conditional_expression) {
   ASSERT_EQ(x.toInt(), 1);
 }
 
+TEST(Engine, references_1) {
+  using namespace script;
+
+  Engine engine;
+  engine.setup();
+
+  const char* source =
+    " void incr(int& n) { n += 1; } ";
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  ASSERT_TRUE(success);
+
+  Function incr = s.functions().front();
+  ASSERT_EQ(incr.name(), "incr");
+
+  int n = 65;
+  Value nn = engine.expose(n);
+  ASSERT_EQ(nn.type(), Type::Int);
+  ASSERT_TRUE(nn.isReference());
+  incr.invoke({ nn });
+  ASSERT_EQ(n, 66);
+}
 
 TEST(Scripts, basicoperations) {
   using namespace script;

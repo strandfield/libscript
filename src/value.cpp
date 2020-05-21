@@ -423,12 +423,17 @@ bool Value::isNull() const
 
 Type Value::type() const
 {
-  return d->type;
+  return d->type.withoutRef();
 }
 
 bool Value::isConst() const
 {
   return type().isConst();
+}
+
+bool Value::isReference() const
+{
+  return d->type.isReference();
 }
 
 bool Value::isBool() const

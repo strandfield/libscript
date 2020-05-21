@@ -302,7 +302,7 @@ Value int_assign(FunctionCall *c)
 // int & operator+=(int & a, const int & b)
 Value int_add_assign(FunctionCall *c)
 {
-  c->arg(0).impl()->set_int(c->arg(0).toInt() + c->arg(1).toInt());
+  script::get<int>(c->arg(0)) += script::get<int>(c->arg(1));
   return c->arg(0);
 }
 
