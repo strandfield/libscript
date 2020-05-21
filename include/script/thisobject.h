@@ -7,6 +7,8 @@
 
 #include "script/value.h"
 
+#include "script/private/value_p.h"
+
 namespace script
 {
 
@@ -27,6 +29,7 @@ public:
   {
     void* mem = get().acquireMemory();
     new (mem) T(std::forward<Args>(args)...);
+    get().d->data_ptr = mem;
   }
 
   template<typename T, typename...Args>
@@ -34,7 +37,9 @@ public:
     init(Args&& ... args)
   {
     void* mem = get().acquireMemory();
-    new (mem) details::PtrWrapper(new T(std::forward<Args>(args)...));
+    auto* result = new T(std::forward<Args>(args)...);
+    new (mem) details::PtrWrapper(result);
+    get().d->data_ptr = result;
   }
 
   template<typename T>
@@ -44,6 +49,7 @@ public:
     T* ptr = static_cast<T*>(get().memory());
     ptr->~T();
     get().releaseMemory();
+    get().d->data_ptr = nullptr;
   }
 
   template<typename T>
@@ -53,6 +59,7 @@ public:
     T* ptr = static_cast<T*>(static_cast<details::PtrWrapper*>(get().memory())->value);
     delete ptr;
     get().releaseMemory();
+    get().d->data_ptr = nullptr;
   }
 
   operator Value& () { return m_value; }

@@ -35,6 +35,7 @@ struct LIBSCRIPT_API ValueImpl
   reference_counter_type ref;
   Type type;
   Engine* engine;
+  void* data_ptr = nullptr;
 
   struct Fundamentals
   {
@@ -81,16 +82,16 @@ struct LIBSCRIPT_API ValueImpl
   };
   char which;
 
-  bool& get_bool() { return data.fundamentals.boolean; }
-  void set_bool(bool bval) { data.fundamentals.boolean = bval; }
-  char& get_char() { return data.fundamentals.character; }
-  void set_char(char cval) { data.fundamentals.character = cval; }
-  int& get_int() { return data.fundamentals.integer; }
-  void set_int(int ival) { data.fundamentals.integer = ival; }
-  float& get_float() { return data.fundamentals.realf; }
-  void set_float(float fval) { data.fundamentals.realf = fval; }
-  double& get_double() { return data.fundamentals.reald; }
-  void set_double(double dval) { data.fundamentals.reald = dval; }
+  bool& get_bool() { return *static_cast<bool*>(data_ptr); }
+  void set_bool(bool bval) { data.fundamentals.boolean = bval; data_ptr = &(data.fundamentals.boolean); }
+  char& get_char() { return *static_cast<char*>(data_ptr); }
+  void set_char(char cval) { data.fundamentals.character = cval; data_ptr = &(data.fundamentals.character); }
+  int& get_int() { return *static_cast<int*>(data_ptr); }
+  void set_int(int ival) { data.fundamentals.integer = ival; data_ptr = &(data.fundamentals.integer); }
+  float& get_float() { return *static_cast<float*>(data_ptr); }
+  void set_float(float fval) { data.fundamentals.realf = fval; data_ptr = &(data.fundamentals.realf); }
+  double& get_double() { return *static_cast<double*>(data_ptr); }
+  void set_double(double dval) { data.fundamentals.reald = dval; data_ptr = &(data.fundamentals.reald); }
 
   String& get_string();
   void set_string(const String& sval);
@@ -129,6 +130,8 @@ struct LIBSCRIPT_API ValueImpl
 
   void* acquire_memory();
   void release_memory();
+
+  void* get_data() const;
 };
 
 } // namespace script

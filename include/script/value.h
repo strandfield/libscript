@@ -73,6 +73,8 @@ public:
 
   void* memory() const;
 
+  void* data() const;
+
   static Value fromEnumerator(const Enumerator& ev);
   static Value fromFunction(const Function& f, const Type& ft);
   static Value fromLambda(const Lambda& obj);

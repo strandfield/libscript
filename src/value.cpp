@@ -66,6 +66,8 @@ void ValueImpl::set_string(const String& sval)
   {
     data.string = sval;
   }
+
+  data_ptr = &(data.string);
 }
 
 bool ValueImpl::is_object() const
@@ -99,6 +101,8 @@ void ValueImpl::init_object()
     auto impl = std::make_shared<ObjectImpl>(this->engine->typeSystem()->getClass(this->type));
     data.object = Object{ impl };
   }
+
+  data_ptr = &(data.object);
 }
 
 void ValueImpl::push_member(const Value & val)
@@ -169,7 +173,7 @@ CharRef& ValueImpl::get_charref()
 {
   assert(which == CharrefField);
 
-  return data.charref;
+  return *static_cast<CharRef*>(data_ptr);
 }
 
 void ValueImpl::set_charref(const CharRef & cr)
@@ -186,6 +190,8 @@ void ValueImpl::set_charref(const CharRef & cr)
   {
     data.charref = cr;
   }
+
+  data_ptr = &(data.charref);
 }
 
 #endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
@@ -199,7 +205,7 @@ const Function& ValueImpl::get_function() const
 {
   assert(which == FunctionField);
 
-  return data.function;
+  return *static_cast<Function*>(data_ptr);
 }
 
 void ValueImpl::set_function(const Function & fval)
@@ -216,6 +222,8 @@ void ValueImpl::set_function(const Function & fval)
   {
     data.function = fval;
   }
+
+  data_ptr = &(data.function);
 }
 
 bool ValueImpl::is_lambda() const
@@ -227,7 +235,7 @@ const Lambda& ValueImpl::get_lambda() const
 {
   assert(which == LambdaField);
 
-  return data.lambda;
+  return *static_cast<Lambda*>(data_ptr);
 }
 
 void ValueImpl::set_lambda(const Lambda & lval)
@@ -244,13 +252,15 @@ void ValueImpl::set_lambda(const Lambda & lval)
   {
     data.lambda = lval;
   }
+
+  data_ptr = &(data.lambda);
 }
 
 const Enumerator& ValueImpl::get_enumerator() const
 {
   assert(which == EnumeratorField);
 
-  return data.enumerator;
+  return *static_cast<Enumerator*>(data_ptr);
 }
 
 void ValueImpl::set_enumerator(const Enumerator & en)
@@ -267,6 +277,8 @@ void ValueImpl::set_enumerator(const Enumerator & en)
   {
     data.enumerator = en;
   }
+
+  data_ptr = &(data.enumerator);
 }
 
 bool ValueImpl::is_initializer_list() const
@@ -278,7 +290,7 @@ InitializerList ValueImpl::get_initializer_list() const
 {
   assert(which == InitListField);
 
-  return data.initializer_list;
+  return *static_cast<InitializerList*>(data_ptr);
 }
 
 void ValueImpl::set_initializer_list(const InitializerList & il)
@@ -295,6 +307,8 @@ void ValueImpl::set_initializer_list(const InitializerList & il)
   {
     data.initializer_list = il;
   }
+
+  data_ptr = &(data.initializer_list);
 }
 
 void ValueImpl::clear()
@@ -343,6 +357,7 @@ void* ValueImpl::acquire_memory()
     clear();
 
   which = ValueImpl::MemoryField;
+  data_ptr = &(data.memory);
   return &(data.memory);
 }
 
@@ -351,6 +366,11 @@ void ValueImpl::release_memory()
   assert(which == MemoryField);
   data.fundamentals.boolean = false;
   which = FundamentalsField;
+}
+
+void* ValueImpl::get_data() const
+{
+  return data_ptr;
 }
 
 static ValueImpl construct_void()
@@ -526,6 +546,11 @@ void* Value::memory() const
   assert(d->which == ValueImpl::MemoryField);
 
   return &(d->data.memory);
+}
+
+void* Value::data() const
+{
+  return d->get_data();
 }
 
 Value Value::fromEnumerator(const Enumerator & ev)
