@@ -23,8 +23,6 @@
 namespace script
 {
 
-static int charref_id = 0;
-
 namespace callbacks
 {
 
@@ -254,100 +252,19 @@ Value add(FunctionCall *c)
   return c->engine()->newString(self + other);
 }
 
-// charref String::operator[](int index);
+// char& String::operator[](int index);
 Value subscript(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
-
-  const int pos = c->arg(1).toInt();
-
-  Value ret = c->engine()->allocate(charref_id);
-  ret.impl()->set_charref(CharRef{ &self, (size_t)pos });
-  return ret;
+  std::string& str = script::get<std::string>(c->arg(0));
+  char& ch = str[script::get<int>(c->arg(1))];
+  return c->engine()->expose(ch);
 }
 
 } // namespace operators
 
 } // namespace string
 
-namespace charref
-{
-
-// charref(String & str, int pos);
-Value ctor(FunctionCall *c)
-{
-  Value that = c->thisObject();
-
-  auto & str = c->arg(0).impl()->get_string();
-  const int pos = c->arg(1).toInt();
-
-  that.impl()->set_charref(CharRef{ &str, (size_t)pos });
-
-  return that;
-}
-
-// charref(const charref & other);
-Value copy_ctor(FunctionCall *c)
-{
-  Value that = c->thisObject();
-  const CharRef & other = c->arg(0).impl()->get_charref();
-
-  that.impl()->set_charref(other);
-
-  return that;
-}
-
-// ~charref();
-Value dtor(FunctionCall *c)
-{
-  Value that = c->thisObject();
-
-  that.impl()->set_charref(CharRef{ nullptr, (size_t)0 });
-
-  return that;
-}
-
-// operator const char();
-Value operator_char(FunctionCall *c)
-{
-  Value that = c->thisObject();
-  CharRef value = that.impl()->get_charref();
-  return c->engine()->newChar(value.string->at(value.pos));
-}
-
-// charref & operator=(char c);
-Value assign(FunctionCall *c)
-{
-  Value that = c->thisObject();
-  CharRef value = that.impl()->get_charref();
-  (*value.string)[value.pos] = c->arg(1).toChar();
-
-  return that;
-}
-
-} // namespace charref
-
 } // namespace callbacks
-
-Type register_charref_type(Engine *e)
-{
-  Class charref = Symbol{ e->rootNamespace() }.newClass("charref").get();
-
-  charref_id = charref.id();
-
-  charref.newConstructor(callbacks::charref::ctor).params(Type::ref(Type::String), Type::Int).create();
-
-  charref.newConstructor(callbacks::charref::copy_ctor).params(Type::cref(charref.id())).create();
-
-  charref.newDestructor(callbacks::charref::dtor).create();
-
-  charref.newOperator(AssignmentOperator, callbacks::charref::assign).returns(Type::ref(charref.id())).params(Type::Char).create();
-
-  charref.newConversion(Type{ Type::Char, Type::ConstFlag }, callbacks::charref::operator_char).setConst().create();
-
-  return charref.id();
-}
 
 void StringBackend::register_string_type(Class& string)
 {
@@ -381,8 +298,7 @@ void StringBackend::register_string_type(Class& string)
 
   string.newOperator(SubscriptOperator, callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
 
-  const Type charref = register_charref_type(string.engine());
-  string.newOperator(SubscriptOperator, callbacks::string::operators::subscript).returns(charref).params(Type::Int).create();
+  string.newOperator(SubscriptOperator, callbacks::string::operators::subscript).returns(Type::ref(Type::Char)).params(Type::Int).create();
 }
 
 } // namespace script

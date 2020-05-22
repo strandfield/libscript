@@ -18,14 +18,6 @@ namespace script
 
 class Value;
 
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-struct CharRef
-{
-  String* string;
-  size_t pos;
-};
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-
 struct LIBSCRIPT_API ValueImpl
 {
   ValueImpl(Type t, Engine* e);
@@ -55,9 +47,6 @@ struct LIBSCRIPT_API ValueImpl
     Function function;
     Lambda lambda;
     Enumerator enumerator;
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-    CharRef charref;
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
     InitializerList initializer_list;
     char memory[LIBSCRIPT_BUILTIN_MEMBUF_SIZE];
 
@@ -74,9 +63,6 @@ struct LIBSCRIPT_API ValueImpl
     FunctionField,
     LambdaField,
     EnumeratorField,
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-    CharrefField,
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
     InitListField,
     MemoryField,
   };
@@ -107,12 +93,6 @@ struct LIBSCRIPT_API ValueImpl
   bool is_array() const;
   const Array& get_array() const;
   void set_array(const Array& aval);
-
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-  bool is_charref() const;
-  CharRef& get_charref();
-  void set_charref(const CharRef& cr);
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
 
   bool is_function() const;
   const Function& get_function() const;

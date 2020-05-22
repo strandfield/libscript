@@ -162,40 +162,6 @@ void ValueImpl::set_array(const Array & aval)
   }
 }
 
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-
-bool ValueImpl::is_charref() const
-{
-  return which == CharrefField;
-}
-
-CharRef& ValueImpl::get_charref()
-{
-  assert(which == CharrefField);
-
-  return *static_cast<CharRef*>(data_ptr);
-}
-
-void ValueImpl::set_charref(const CharRef & cr)
-{
-  if (which != CharrefField)
-  {
-    clear();
-
-    new (&data.charref) CharRef{ cr };
-
-    which = CharrefField;
-  }
-  else
-  {
-    data.charref = cr;
-  }
-
-  data_ptr = &(data.charref);
-}
-
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-
 bool ValueImpl::is_function() const
 {
   return which == FunctionField && !data.function.isNull();
@@ -337,11 +303,6 @@ void ValueImpl::clear()
   case EnumeratorField:
     data.enumerator.~Enumerator();
     break;
-#if defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
-  case CharrefField:
-    data.charref.~CharRef();
-    break;
-#endif // defined(LIBSCRIPT_USE_BUILTIN_STRING_BACKEND)
   case InitListField:
     data.initializer_list.~InitializerList();
     break;
