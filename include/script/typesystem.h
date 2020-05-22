@@ -59,6 +59,8 @@ public:
 
   bool isInitializerList(const Type & t) const;
 
+  size_t reserve(Type::TypeFlag flag, size_t count);
+
   void addListener(TypeSystemListener* listener);
   void removeListener(TypeSystemListener* listener);
 

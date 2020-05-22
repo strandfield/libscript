@@ -67,12 +67,6 @@ public:
   Derived & setId(int n) 
   {
     id = n;
-
-    if ((Type::FirstClassType & 0xFFFF) > (id & 0xFFFF) || (Type::LastClassType & 0xFFFF) < (id & 0xFFFF))
-    {
-      throw std::runtime_error{ "Bad id" };
-    }
-
     return *(static_cast<Derived*>(this));
   }
 

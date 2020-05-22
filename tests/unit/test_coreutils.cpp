@@ -160,11 +160,14 @@ TEST(CoreUtilsTests, ClassConstruction) {
   Engine e;
   e.setup();
 
-  auto builder = Symbol{ e.rootNamespace() }.newClass("MyClass");
+  size_t off = e.typeSystem()->reserve(Type::ObjectFlag, 1);
+
+  auto builder = Symbol{ e.rootNamespace() }.newClass("MyClass").setId(Type::ObjectFlag | off);
   builder.setFinal();
   builder.addMember(Class::DataMember{Type::Int, "n"});
 
   Class my_class = builder.get();
+  ASSERT_EQ(my_class.id(), (Type::ObjectFlag | off));
   ASSERT_EQ(my_class, e.rootNamespace().classes().back());
 
   ASSERT_EQ(my_class.name(), "MyClass");

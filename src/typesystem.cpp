@@ -598,6 +598,38 @@ bool TypeSystem::isInitializerList(const Type& t) const
 }
 
 /*!
+ * \fn size_t reserve(Type::TypeFlag flag, size_t count)
+ * \param flag indicating what kind of types are to be reserved
+ * \param number of type ids to reserve
+ * \brief reserves type ids
+ * \returns the offset of the first reserved id
+ *
+ * Note that for now, only class and enum type id can be reserved.
+ */
+size_t TypeSystem::reserve(Type::TypeFlag flag, size_t count)
+{
+  if (flag == Type::ObjectFlag)
+  {
+    size_t off = d->classes.size();
+    d->classes.resize(off + count);
+    reserve_range(d->classes, d->reservations.class_type, off, off + count);
+    return off;
+  }
+  else if (flag == Type::EnumFlag)
+  {
+    size_t off = d->enums.size();
+    d->enums.resize(off + count);
+    reserve_range(d->enums, d->reservations.enum_type, off, off + count);
+    return off;
+  }
+  else
+  {
+    // @TODO: throw ?
+    return std::numeric_limits<size_t>::max();
+  }
+}
+
+/*!
  * \fn void addListener(TypeSystemListener* listener)
  * \param listener
  * \brief Adds a listener to the typesystem.
