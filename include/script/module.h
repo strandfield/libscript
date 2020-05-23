@@ -22,7 +22,7 @@ class SourceFile;
 
 class NamespaceImpl;
 
-struct ModuleLoadingError : public std::exception // TODO: derive from script::Exception
+struct LIBSCRIPT_API ModuleLoadingError : public std::exception // TODO: derive from script::Exception
 {
   std::string message;
 
