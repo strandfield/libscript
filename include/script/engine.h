@@ -173,6 +173,17 @@ public:
     return ret;
   }
 
+  template<> Value construct<bool>(const bool& x) { return newBool(x); }
+  template<> Value construct<bool>(bool&& x) { return newBool(x); }
+  template<> Value construct<char>(const char& c) { return newChar(c); }
+  template<> Value construct<char>(char&& c) { return newChar(c); }
+  template<> Value construct<int>(const int& n) { return newInt(n); }
+  template<> Value construct<int>(int&& n) { return newInt(n); }
+  template<> Value construct<float>(const float& n) { return newFloat(n); }
+  template<> Value construct<float>(float&& n) { return newFloat(n); }
+  template<> Value construct<double>(const double& n) { return newDouble(n); }
+  template<> Value construct<double>(double&& n) { return newDouble(n); }
+
   void destroy(Value val);
 
   template<typename T>
