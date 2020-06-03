@@ -40,12 +40,6 @@ public:
   EnumBuilder & setId(int n) 
   {
     id = n;
-
-    if ((Type::FirstEnumType & 0xFFFF) > (id & 0xFFFF) || (Type::LastEnumType & 0xFFFF) < (id & 0xFFFF))
-    {
-      throw std::runtime_error{ "Bad id" };
-    }
-
     return (*this);
   }
 
