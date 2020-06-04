@@ -251,6 +251,8 @@ template<> inline Value Engine::construct<float>(const float& n) { return newFlo
 template<> inline Value Engine::construct<float>(float&& n) { return newFloat(n); }
 template<> inline Value Engine::construct<double>(const double& n) { return newDouble(n); }
 template<> inline Value Engine::construct<double>(double&& n) { return newDouble(n); }
+template<> inline Value Engine::construct<String>(const String& s) { return newString(s); }
+template<> inline Value Engine::construct<String>(String&& s) { return newString(s); }
 
 } // namespace script
 
