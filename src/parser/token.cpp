@@ -15,7 +15,6 @@ namespace parser
 Token::Token()
   : type(Token::Invalid)
   , pos(-1)
-  , src(-1)
   , length(0)
   , line(-1)
   , column(-1)
@@ -23,10 +22,9 @@ Token::Token()
 
 }
 
-Token::Token(Type t, int pos, int size, int line, int column, int source)
+Token::Token(Type t, int pos, int size, int line, int column)
   : type(t)
   , pos(pos)
-  , src(source)
   , length(size)
   , line(line)
   , column(column)
@@ -37,7 +35,7 @@ Token::Token(Type t, int pos, int size, int line, int column, int source)
 bool Token::operator==(const Token & other) const
 {
   return this->type == other.type && this->length == other.length
-    && this->pos == other.pos && this->src == other.src;
+    && this->pos == other.pos;
 }
 
 bool Token::operator==(Type tok) const

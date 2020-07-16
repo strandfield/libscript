@@ -154,11 +154,10 @@ public:
     Zero = OctalLiteral, // Zero is an octal literal of length 1
   };
 
-  Token(Type t, int pos, int size, int line, int column, int src = 0);
+  Token(Type t, int pos, int size, int line, int column);
 
   Type type;
-  int pos : 24;
-  int src : 8;
+  int pos;
   int length;
   uint16 line;
   uint16 column;

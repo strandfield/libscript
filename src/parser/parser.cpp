@@ -1320,7 +1320,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token rp = read(Token::RightPar);
     if (lp.column + 1 != rp.column)
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lp, Token::LeftRightPar} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, lp.pos, 2, lp.line, lp.column, lp.src });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, lp.pos, 2, lp.line, lp.column });
   }
   else if (op == Token::LeftBracket)
   {
@@ -1328,7 +1328,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token rb = read(Token::RightBracket);
     if (lb.column + 1 != rb.column)
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lb, Token::LeftRightBracket} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, lb.pos, 2, lb.line, lb.column, lb.src });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, lb.pos, 2, lb.line, lb.column });
   }
   else if (op.type == Token::StringLiteral)
   {
@@ -1348,8 +1348,8 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if(str.find("\"\"") != 0)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} }; /// TODO ? should this have a different error than the previous
 
-    Token quotes{ Token::StringLiteral, op.pos, 2, op.line, op.column, op.src };
-    Token suffixName{ Token::UserDefinedName, op.pos + 2, op.length - 2, op.line, op.column + 2, op.src };
+    Token quotes{ Token::StringLiteral, op.pos, 2, op.line, op.column };
+    Token suffixName{ Token::UserDefinedName, op.pos + 2, op.length - 2, op.line, op.column + 2 };
     return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
   }
 

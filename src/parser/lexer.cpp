@@ -15,8 +15,7 @@ namespace parser
 {
 
 Lexer::Lexer()
-  : mId(0)
-  , mSource(nullptr)
+  : mSource(nullptr)
   , mLength(0)
   , mPos(0)
   , mLine(0)
@@ -25,9 +24,8 @@ Lexer::Lexer()
 
 }
 
-Lexer::Lexer(const SourceFile & src, int id)
+Lexer::Lexer(const SourceFile & src)
   : mSourceFile(src)
-  , mId(id)
   , mSource(nullptr)
   , mLength(0)
   , mPos(0)
@@ -113,9 +111,7 @@ Token Lexer::read()
 
 std::string Lexer::text(const Token & t) const
 {
-  if (t.src != mId)
-    throw std::runtime_error{ "Lexer::text() : invalid source" };
-
+  // @TODO: find a way to ensure that 't' was generated from 'mSource' 
   return std::string{ mSource + t.pos, mSource + t.pos + t.length };
 }
 
@@ -163,10 +159,9 @@ void Lexer::reset()
   mPos = 0;
   mLine = 0;
   mColumn = 0;
-  mId = 0;
 }
 
-void Lexer::setSource(const SourceFile & src, int id)
+void Lexer::setSource(const SourceFile & src)
 {
   reset();
   mSourceFile = src;
@@ -174,7 +169,6 @@ void Lexer::setSource(const SourceFile & src, int id)
     mSourceFile.load();
   mSource = src.data();
   mLength = src.content().size();
-  mId = id;
   consumeDiscardable();
 }
 
@@ -214,12 +208,12 @@ void Lexer::consumeDiscardable()
 
 Token Lexer::create(const Position & pos, int length, Token::Type type)
 {
-  return Token{ type, pos.pos, length, pos.line, pos.col, mId };
+  return Token{ type, pos.pos, length, pos.line, pos.col };
 }
 
 Token Lexer::create(const Position & pos, Token::Type type)
 {
-  return Token{ type, pos.pos, this->pos() - pos.pos, pos.line, pos.col, mId };
+  return Token{ type, pos.pos, this->pos() - pos.pos, pos.line, pos.col };
 }
 
 Lexer::CharacterType Lexer::ctype(char c)

@@ -18,7 +18,7 @@ class LIBSCRIPT_API Lexer
 {
 public:
   Lexer();
-  Lexer(const SourceFile & src, int id = 0);
+  Lexer(const SourceFile & src);
 
   Token read();
   std::string text(const Token & t) const; // TODO : replace with string_view
@@ -39,7 +39,7 @@ public:
 
   void seek(const Position & pos);
   void reset();
-  void setSource(const SourceFile & src, int id = 0);
+  void setSource(const SourceFile & src);
 
   enum CharacterType {
     Invalid,
@@ -112,7 +112,6 @@ private:
   const char *mSource;
   SourceFile mSourceFile;
   int mLength;
-  int mId;
   int mPos;
   int mLine;
   int mColumn;
