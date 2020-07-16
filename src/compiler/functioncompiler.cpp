@@ -24,7 +24,7 @@
 
 #include "script/functiontype.h"
 #include "script/namelookup.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 
 #include "script/private/function_p.h"
 #include "script/private/namelookup_p.h"

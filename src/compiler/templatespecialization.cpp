@@ -8,7 +8,7 @@
 #include "script/functiontemplate.h"
 #include "script/namelookup.h"
 #include "script/templateargumentdeduction.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 #include "script/templatepatternmatching.h"
 
 #include "script/private/template_p.h"
@@ -120,8 +120,8 @@ TemplatePartialOrdering TemplateSpecialization::compare(const SType & a, const S
     if (lookup_a.classTemplateResult() != lookup_b.classTemplateResult())
       return TemplatePartialOrdering::NotComparable; // neither is more specialized
 
-    const auto & a_args = TemplateNameProcessor::getTemplateArguments(a.value.type);
-    const auto & b_args = TemplateNameProcessor::getTemplateArguments(b.value.type);
+    const auto & a_args = TemplateArgumentProcessor::getTemplateArguments(a.value.type);
+    const auto & b_args = TemplateArgumentProcessor::getTemplateArguments(b.value.type);
     auto ret = compare_from_args(a.scope, a_args, b.scope, b_args);
     if (ret.positive())
       return ret;

@@ -110,7 +110,7 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
 
         Scope scp = ft.argumentScope(targs_copy);
         try {
-          TemplateNameProcessor tnp;
+          TemplateArgumentProcessor tnp;
           TemplateArgument arg = tnp.argument(scp, ft.parameters().at(i).defaultValue());
           targs_copy.push_back(arg);
         }

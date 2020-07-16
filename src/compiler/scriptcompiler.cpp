@@ -41,7 +41,7 @@
 #include "script/private/template_p.h"
 #include "script/symbol.h"
 #include "script/templatebuilder.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 
 namespace script
 {
@@ -813,7 +813,7 @@ void ScriptCompiler::processClassTemplateFullSpecialization(const std::shared_pt
     throw CompilationFailure{ CompilerError::CouldNotFindPrimaryClassTemplate };
 
   auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(classdecl->name);
-  std::vector<TemplateArgument> args = TemplateNameProcessor::arguments(scp, template_full_name->arguments);
+  std::vector<TemplateArgument> args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
 
   ClassTemplateSpecializationBuilder builder = ct.Specialization(std::move(args));
   builder.name = readClassName(classdecl);
@@ -865,7 +865,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   if (fundecl->name->is<ast::TemplateIdentifier>())
   {
     auto template_full_name = std::static_pointer_cast<ast::TemplateIdentifier>(fundecl->name);
-    args = TemplateNameProcessor::arguments(scp, template_full_name->arguments);
+    args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
   }
 
   FunctionBuilder builder{ scp.symbol(), std::string{} };

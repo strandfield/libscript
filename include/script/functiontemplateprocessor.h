@@ -8,7 +8,7 @@
 #include "script/functiontemplate.h"
 
 #include "script/diagnosticmessage.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 
 namespace script
 {

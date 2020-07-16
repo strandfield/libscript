@@ -59,7 +59,7 @@ Class NameLookupImpl::getClassTemplateInstance(const Scope& scp, ClassTemplate& 
     return {};
   }
 
-  TemplateNameProcessor tnp;
+  TemplateArgumentProcessor tnp;
   return tnp.process(scp, ct, tmplt);
 }
 

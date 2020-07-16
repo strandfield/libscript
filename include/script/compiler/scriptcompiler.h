@@ -17,7 +17,7 @@
 
 #include "script/engine.h"
 #include "script/script.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 #include "script/types.h"
 
 #include "script/ast/forwards.h"

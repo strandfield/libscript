@@ -352,7 +352,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     const std::vector<Type> types = getTypes(args);
 
     const auto& ast_targs = getTemplateArgs(callee);
-    const std::vector<TemplateArgument> targs = TemplateNameProcessor::arguments(scope(), ast_targs);
+    const std::vector<TemplateArgument> targs = TemplateArgumentProcessor::arguments(scope(), ast_targs);
 
     templates_.complete(lookup.impl()->functions, lookup.impl()->functionTemplateResult, targs, types);
   }

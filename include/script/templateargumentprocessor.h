@@ -1,9 +1,9 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#ifndef LIBSCRIPT_TEMPLATE_NAME_PROCESSOR_H
-#define LIBSCRIPT_TEMPLATE_NAME_PROCESSOR_H
+#ifndef LIBSCRIPT_TEMPLATE_ARGUMENT_PROCESSOR_H
+#define LIBSCRIPT_TEMPLATE_ARGUMENT_PROCESSOR_H
 
 #include "libscriptdefs.h"
 
@@ -21,18 +21,18 @@ class Scope;
 class Template;
 class TemplateArgument;
 
-class LIBSCRIPT_API TemplateNameProcessor
+class LIBSCRIPT_API TemplateArgumentProcessor
 {
 public:
-  TemplateNameProcessor() = default;
-  TemplateNameProcessor(const TemplateNameProcessor &) = delete;
-  ~TemplateNameProcessor() = default;
+  TemplateArgumentProcessor() = default;
+  TemplateArgumentProcessor(const TemplateArgumentProcessor &) = delete;
+  ~TemplateArgumentProcessor() = default;
 
   Class process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt);
 
   static const std::vector<std::shared_ptr<ast::Node>> & getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname);
 
-  TemplateNameProcessor & operator=(const TemplateNameProcessor &) = delete;
+  TemplateArgumentProcessor & operator=(const TemplateArgumentProcessor &) = delete;
 
   /// TODO: make protected
   Class instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args);
@@ -45,4 +45,4 @@ protected:
 
 } // namespace script
 
-#endif // LIBSCRIPT_TEMPLATE_NAME_PROCESSOR_H
+#endif // LIBSCRIPT_TEMPLATE_ARGUMENT_PROCESSOR_H

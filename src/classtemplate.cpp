@@ -7,7 +7,7 @@
 
 #include "script/class.h"
 #include "script/classtemplatespecializationbuilder.h"
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 
 #include "script/private/templateargumentscope_p.h"
 
@@ -47,7 +47,7 @@ Class ClassTemplate::getInstance(const std::vector<TemplateArgument> & args)
 
   auto d = impl();
 
-  TemplateNameProcessor tnp;
+  TemplateArgumentProcessor tnp;
   ret = tnp.instantiate(*this, args);
 
   /// TODO : this might be unnecessary

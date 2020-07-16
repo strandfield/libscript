@@ -1,8 +1,8 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "script/templatenameprocessor.h"
+#include "script/templateargumentprocessor.h"
 
 #include "script/class.h"
 #include "script/classtemplate.h"
@@ -22,7 +22,7 @@
 namespace script
 {
 
-TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg)
+TemplateArgument TemplateArgumentProcessor::argument(const Scope & scp, const std::shared_ptr<ast::Node> & arg)
 {
   if (arg->is<ast::Identifier>())
   {
@@ -54,7 +54,7 @@ TemplateArgument TemplateNameProcessor::argument(const Scope & scp, const std::s
   throw compiler::CompilationFailure{ CompilerError::InvalidTemplateArgument };
 }
 
-std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args)
+std::vector<TemplateArgument> TemplateArgumentProcessor::arguments(const Scope & scp, const std::vector<std::shared_ptr<ast::Node>> & args)
 {
   std::vector<TemplateArgument> result;
   result.reserve(args.size());
@@ -63,7 +63,7 @@ std::vector<TemplateArgument> TemplateNameProcessor::arguments(const Scope & scp
   return result;
 }
 
-Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
+Class TemplateArgumentProcessor::instantiate(ClassTemplate & ct, const std::vector<TemplateArgument> & args)
 {
   ClassTemplateInstanceBuilder builder{ ct, std::vector<TemplateArgument>{ args} };
   Class ret = ct.backend()->instantiate(builder);
@@ -71,7 +71,7 @@ Class TemplateNameProcessor::instantiate(ClassTemplate & ct, const std::vector<T
   return ret;
 }
 
-Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
+Class TemplateArgumentProcessor::process(const Scope & scp, ClassTemplate & ct, const std::shared_ptr<ast::TemplateIdentifier> & tmplt)
 {
   try 
   {
@@ -97,7 +97,7 @@ Class TemplateNameProcessor::process(const Scope & scp, ClassTemplate & ct, cons
   return Class{};
 }
 
-void TemplateNameProcessor::complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
+void TemplateArgumentProcessor::complete(const Template & t, const Scope &scp, std::vector<TemplateArgument> & args)
 {
   if (t.parameters().size() == args.size())
     return;
@@ -112,7 +112,7 @@ void TemplateNameProcessor::complete(const Template & t, const Scope &scp, std::
   }
 }
 
-const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname)
+const std::vector<std::shared_ptr<ast::Node>> & TemplateArgumentProcessor::getTemplateArguments(const std::shared_ptr<ast::Identifier> & tname)
 {
   if (tname->is<ast::TemplateIdentifier>())
   {
@@ -124,7 +124,7 @@ const std::vector<std::shared_ptr<ast::Node>> & TemplateNameProcessor::getTempla
     return getTemplateArguments(tname->as<ast::ScopedIdentifier>().rhs);
   }
 
-  throw std::runtime_error{ "Bad call to TemplateNameProcessor::getTemplateArguments()" };
+  throw std::runtime_error{ "Bad call to TemplateArgumentProcessor::getTemplateArguments()" };
 }
 
 } // namespace script
