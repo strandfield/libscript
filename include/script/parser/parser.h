@@ -148,16 +148,6 @@ public:
   void consumeComma();
 };
 
-class SubFragment : public AbstractFragment
-{
-public:
-  SubFragment(AbstractFragment *parent);
-  ~SubFragment() = default;
-
-  bool atEnd() const override;
-};
-
-
 
 class ParserBase
 {

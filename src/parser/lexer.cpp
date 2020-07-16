@@ -174,6 +174,9 @@ void Lexer::setSource(const SourceFile & src)
 
 char Lexer::readChar()
 {
+  // @TODO: remove bounds checking
+  // All calls to this function seem to perform a check for atEnd().
+
   if (atEnd())
     throw std::runtime_error{ "Lexer::readChar() : end of input" };
 

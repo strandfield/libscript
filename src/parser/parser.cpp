@@ -221,17 +221,6 @@ void ListFragment::consumeComma()
     read();
 }
 
-SubFragment::SubFragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-{
-
-}
-
-bool SubFragment::atEnd() const
-{
-  return parent()->atEnd();
-}
-
 ParserData::ParserData(const SourceFile & src)
   : mSource(src)
   , mIndex(0)
