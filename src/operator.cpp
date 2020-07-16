@@ -108,6 +108,7 @@ OperatorName Operator::operatorId() const
 {
   if (d == nullptr)
     return Null;
+  // @TODO: try to avoid repetitive call to static_pointer_cast in impl()
   return impl()->operatorId;
 }
 

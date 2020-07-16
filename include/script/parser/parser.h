@@ -18,9 +18,10 @@ struct ParserData
 {
 private:
   SourceFile mSource;
-  Lexer mLexer;
-  std::vector<Token> mBuffer;
+  Lexer mLexer; // @TODO: read all tokens at once and remove this member
+  std::vector<Token> mBuffer; // @TODO: rename to "m_tokens"
   size_t mIndex;
+  // @TODO: maybe store root fragment and current fragment
 public:
   std::shared_ptr<ast::AST> mAst;
 public:
@@ -38,7 +39,6 @@ public:
 
   struct Position {
     size_t index;
-    Token token;
   };
 
   Position pos() const;
@@ -46,6 +46,7 @@ public:
 
   SourceFile::Position sourcepos() const;
 
+  // @TODO: read all token at once, do not clear to "save memory"
   void clearBuffer();
 
 protected:
@@ -54,6 +55,7 @@ protected:
 };
 
 
+// @TODO: try to make the fragments non-virtual
 class AbstractFragment
 {
 public:

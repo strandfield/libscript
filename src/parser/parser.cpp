@@ -66,6 +66,7 @@ AbstractFragment * AbstractFragment::parent() const
 
 std::shared_ptr<ParserData> AbstractFragment::data() const
 {
+  // @TODO: try to avoid repetitive copy of shared_ptr mData
   return mData;
 }
 
@@ -292,13 +293,13 @@ std::string ParserData::text(const Token & tok) const
 ParserData::Position ParserData::pos() const
 {
   if (mIndex < mBuffer.size())
-    return Position{ mIndex, mBuffer[mIndex] };
-  return Position{ mIndex, Token{} };
+    return Position{ mIndex };
+  return Position{ mIndex };
 }
 
 void ParserData::seek(const Position & p)
 {
-  // TODO : use p.token to ensure pos is correct
+  // @TODO : unsure that the position wasn't invalidated
   mIndex = p.index;
 }
 
