@@ -17,17 +17,6 @@ TEST(LexerTests, characters) {
 }
 
 
-TEST(LexerTests, tokens) {
-  using namespace script;
-  using namespace parser;
-
-  auto tok = [](const Token::Type & t) -> Token { return Token{ t, 0, 0, 0, 0 }; };
-
-  ASSERT_TRUE(tok(Token::Mul).isOperator());
-  ASSERT_TRUE(tok(Token::Int).isKeyword());
-}
-
-
 TEST(LexerTests, keywords) {
   using namespace script;
   using namespace parser;
@@ -71,21 +60,21 @@ TEST(LexerTests, literals) {
     "0 5 3.14 0x1 0xFF 0xF3e 0b1010 5f 3. 3.14 5.f 5e210 5e10f 5 010";
 
   Lexer lex{ SourceFile::fromString(source) };
-  ASSERT_EQ(lex.read().type, Token::OctalLiteral);
-  ASSERT_EQ(lex.read().type, Token::IntegerLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::HexadecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::HexadecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::HexadecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::BinaryLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::DecimalLiteral);
-  ASSERT_EQ(lex.read().type, Token::IntegerLiteral);
-  ASSERT_EQ(lex.read().type, Token::OctalLiteral);
+  ASSERT_EQ(lex.read(), Token::OctalLiteral);
+  ASSERT_EQ(lex.read(), Token::IntegerLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::HexadecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::HexadecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::HexadecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::BinaryLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::DecimalLiteral);
+  ASSERT_EQ(lex.read(), Token::IntegerLiteral);
+  ASSERT_EQ(lex.read(), Token::OctalLiteral);
 
   ASSERT_TRUE(lex.atEnd());
 }
@@ -98,8 +87,8 @@ TEST(LexerTests, stringliterals) {
     "\"Hello, there\"    \"H\\\"a\" ";
 
   Lexer lex{ SourceFile::fromString(source) };
-  ASSERT_EQ(lex.read().type, Token::StringLiteral);
-  ASSERT_EQ(lex.read().type, Token::StringLiteral);
+  ASSERT_EQ(lex.read(), Token::StringLiteral);
+  ASSERT_EQ(lex.read(), Token::StringLiteral);
 
   ASSERT_TRUE(lex.atEnd());
 }
@@ -112,11 +101,11 @@ TEST(LexerTests, userdefined_literals) {
     " 125km 10m 60s 26ms 3.14i";
 
   Lexer lex{ SourceFile::fromString(source) };
-  ASSERT_EQ(lex.read().type, Token::UserDefinedLiteral);
-  ASSERT_EQ(lex.read().type, Token::UserDefinedLiteral);
-  ASSERT_EQ(lex.read().type, Token::UserDefinedLiteral);
-  ASSERT_EQ(lex.read().type, Token::UserDefinedLiteral);
-  ASSERT_EQ(lex.read().type, Token::UserDefinedLiteral);
+  ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
+  ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
+  ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
+  ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
+  ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
 
   ASSERT_TRUE(lex.atEnd());
 }

@@ -58,7 +58,7 @@ struct KeywordToken
 struct UnexpectedToken
 {
   Token actual;
-  Token::Type expected;
+  Token::Id expected;
 };
 
 } // namespace errors

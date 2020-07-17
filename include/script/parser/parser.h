@@ -92,7 +92,7 @@ public:
 class SentinelFragment : public AbstractFragment
 {
 public:
-  SentinelFragment(const Token::Type & s, AbstractFragment *parent);
+  SentinelFragment(const Token::Id & s, AbstractFragment *parent);
   ~SentinelFragment();
 
   bool atEnd() const override;
@@ -100,7 +100,7 @@ public:
   Token consumeSentinel();
 
 protected:
-  Token::Type mSentinel;
+  Token::Id mSentinel;
 };
 
 class StatementFragment : public SentinelFragment
@@ -169,7 +169,7 @@ protected:
   bool eof() const;
   Token read();
   Token unsafe_read();
-  Token read(const Token::Type & t);
+  Token read(const Token::Id & t);
   Token peek() const;
   Token unsafe_peek() const;
   AbstractFragment * fragment() const;

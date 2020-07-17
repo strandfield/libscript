@@ -12,43 +12,12 @@ namespace script
 namespace parser
 {
 
-Token::Token()
-  : type(Token::Invalid)
-  , pos(-1)
-  , length(0)
-  , line(-1)
-  , column(-1)
-{
-
-}
-
-Token::Token(Type t, int pos, int size, int line, int column)
-  : type(t)
-  , pos(pos)
-  , length(size)
-  , line(line)
-  , column(column)
-{
-
-}
-
-bool Token::operator==(const Token & other) const
-{
-  return this->type == other.type && this->length == other.length
-    && this->pos == other.pos;
-}
-
-bool Token::operator==(Type tok) const
-{
-  return this->type == tok;
-}
-
 static std::vector<std::string> build_token_type_strings()
 {
   std::vector<std::string> result;
   result.resize(static_cast<int>(parser::Token::MultiLineComment) + 1);
 
-  auto set_tokens = [&result](std::initializer_list<std::pair<parser::Token::Type, std::string>>&& list)
+  auto set_tokens = [&result](std::initializer_list<std::pair<parser::Token::Id, std::string>>&& list)
   {
     for (auto& p : list)
       result[static_cast<int>(p.first) & 0xFFFF] = std::move(p.second);
@@ -147,13 +116,12 @@ static std::vector<std::string> build_token_type_strings()
     { parser::Token::Comma, "," },
     { parser::Token::LeftRightPar, "()" },
     { parser::Token::LeftRightBracket, "[]" },
-    { parser::Token::Zero, "0" },
     });
 
   return result;
 }
 
-const std::string& to_string(Token::Type toktype)
+const std::string& to_string(Token::Id toktype)
 {
   static const std::vector<std::string> static_map = build_token_type_strings();
   return static_map.at(static_cast<int>(toktype) & 0xFFFF);

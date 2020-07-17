@@ -586,7 +586,7 @@ bool NameLookup::checkBuiltinName()
   if (d->identifier->type() != ast::NodeType::SimpleIdentifier)
     return false;
 
-  switch (d->identifier->as<ast::SimpleIdentifier>().name.type)
+  switch (d->identifier->as<ast::SimpleIdentifier>().name.id)
   {
   case parser::Token::Void:
     d->typeResult = Type::Void;

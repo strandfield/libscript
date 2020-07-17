@@ -81,7 +81,7 @@ bool ScriptFragment::atEnd() const
   return data()->atEnd();
 }
 
-SentinelFragment::SentinelFragment(const Token::Type & s, AbstractFragment *parent)
+SentinelFragment::SentinelFragment(const Token::Id & s, AbstractFragment *parent)
   : AbstractFragment(parent)
   , mSentinel(s)
 {
@@ -114,7 +114,7 @@ CompoundStatementFragment::~CompoundStatementFragment()
 
 bool SentinelFragment::atEnd() const
 {
-  return data()->atEnd() || data()->unsafe_peek().type == mSentinel;
+  return data()->atEnd() || data()->unsafe_peek() == mSentinel;
 }
 
 Token SentinelFragment::consumeSentinel()
@@ -141,7 +141,7 @@ bool TemplateArgumentListFragment::atEnd() const
     throw std::runtime_error{ "Not a template argument list" };
 
   const Token tok = data()->peek();
-  return tok.type == Token::RightAngle || tok.type == Token::RightRightAngle;
+  return tok == Token::RightAngle || tok == Token::RightRightAngle;
 }
 
 void TemplateArgumentListFragment::consumeEnd()
@@ -149,12 +149,12 @@ void TemplateArgumentListFragment::consumeEnd()
   assert(atEnd());
 
   const Token tok = data()->peek();
-  if (tok.type == Token::RightRightAngle)
+  if (tok == Token::RightRightAngle)
   {
     if (this->right_shift_flag)
     {
       this->right_angle = data()->unsafe_read();
-      this->right_angle.type = Token::RightAngle;
+      this->right_angle.id = Token::RightAngle;
       this->right_angle.length = 1;
       this->right_angle.pos += 1;
     }
@@ -165,7 +165,7 @@ void TemplateArgumentListFragment::consumeEnd()
         throw std::runtime_error{ "Not implemented" };
       p->right_shift_flag = true;
       this->right_angle = tok;
-      this->right_angle.type = Token::RightAngle;
+      this->right_angle.id = Token::RightAngle;
       this->right_angle.length = 1;
     }
   }
@@ -176,7 +176,7 @@ void TemplateArgumentListFragment::consumeEnd()
 TemplateArgumentFragment::TemplateArgumentFragment(AbstractFragment *parent)
   : AbstractFragment(parent)
 {
-  if (data()->peek().type == Token::Comma)
+  if (data()->peek() == Token::Comma)
     throw std::runtime_error{ "TemplateArgumentFragment constructor : Implementation error" };
 }
 
@@ -188,7 +188,7 @@ TemplateArgumentFragment::~TemplateArgumentFragment()
 
 bool TemplateArgumentFragment::atEnd() const
 {
-  return parent()->atEnd() || data()->peek().type == Token::Comma;
+  return parent()->atEnd() || data()->peek() == Token::Comma;
 }
 
 void TemplateArgumentFragment::consumeComma()
@@ -407,11 +407,11 @@ Token ParserBase::unsafe_read()
   return mFragment->data()->unsafe_read();
 }
 
-Token ParserBase::read(const Token::Type & type)
+Token ParserBase::read(const Token::Id & type)
 {
   Token ret = read();
 
-  if (ret.type != type)
+  if (ret != type)
     throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ret, type} };
 
   return ret;
@@ -461,8 +461,8 @@ LiteralParser::LiteralParser(AbstractFragment *fragment)
 std::shared_ptr<ast::Literal> LiteralParser::parse()
 {
   Token lit = read();
-  assert(lit.type & Token::Literal);
-  switch (lit.type)
+  assert(lit.isLiteral());
+  switch (lit.id)
   {
   case Token::True:
   case Token::False:
@@ -548,11 +548,11 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     operand = readOperand();
     operand = ast::Operation::New(t, operand);
   }
-  else if (t.type == Token::LeftPar) 
+  else if (t == Token::LeftPar) 
   {
     unsafe_read();
 
-    if (peek().type == Token::RightPar) // we just read '()'
+    if (peek() == Token::RightPar) // we just read '()'
       throw SyntaxError{ ParserError::InvalidEmptyOperand };
 
     SentinelFragment sentinel{ Token::RightPar, fragment() };
@@ -560,12 +560,12 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     operand = exprParser.parse();
     sentinel.consumeSentinel();
   }
-  else if (t.type == Token::LeftBracket) // array
+  else if (t == Token::LeftBracket) // array
   {
     LambdaParser lambda_parser{ fragment() };
     operand = lambda_parser.parse();
   }
-  else if (t.type == Token::LeftBrace)
+  else if (t == Token::LeftBrace)
   {
     const Token left_brace = unsafe_read();
     auto list = ast::ListExpression::New(left_brace);
@@ -598,19 +598,19 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   while (!atEnd())
   {
     t = peek();
-    if (t.type == Token::PlusPlus || t.type == Token::MinusMinus)
+    if (t == Token::PlusPlus || t == Token::MinusMinus)
     {
       operand = ast::Operation::New(t, operand, nullptr);
       read();
     }
-    else if (t.type == Token::Dot)
+    else if (t == Token::Dot)
     {
       unsafe_read();
       IdentifierParser idParser{ fragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
       auto memberName = idParser.parse();
       operand = ast::Operation::New(t, operand, memberName);
     }
-    else if (t.type == Token::LeftPar)
+    else if (t == Token::LeftPar)
     {
       const Token leftpar = unsafe_read();
       SentinelFragment sentinel{ Token::RightPar, fragment() };
@@ -619,7 +619,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
       const Token rightpar = sentinel.consumeSentinel();
       operand = ast::FunctionCall::New(operand, leftpar, std::move(args), rightpar);
     }
-    else if (t.type == Token::LeftBracket) // subscript operator
+    else if (t == Token::LeftBracket) // subscript operator
     {
       auto leftBracket = read();
 
@@ -636,7 +636,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
       auto arg = exprParser.parse();
       operand = ast::ArraySubscript::New(operand, leftBracket, arg, read());
     }
-    else if (t.type == Token::LeftBrace && operand->is<ast::Identifier>())
+    else if (t == Token::LeftBrace && operand->is<ast::Identifier>())
     {
       auto type_name = std::dynamic_pointer_cast<ast::Identifier>(operand);
       const Token & left_brace = unsafe_read();
@@ -711,9 +711,9 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
   }
 
   auto getPrecedence = [opBegin](const Token & tok) -> int {
-    if (tok.type == Token::Colon)
+    if (tok == Token::Colon)
       return -66;
-    else if (tok.type == Token::QuestionMark)
+    else if (tok == Token::QuestionMark)
       return Operator::precedence(ConditionalOperator);
     else
       return Operator::precedence(ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp));
@@ -931,7 +931,7 @@ bool LambdaCaptureParser::detect() const
 {
   if (peek() == Token::Eq || unsafe_peek() == Token::Ref)
     return true;
-  return unsafe_peek().type == Token::UserDefinedName;
+  return unsafe_peek() == Token::UserDefinedName;
 }
 
 ast::LambdaCapture LambdaCaptureParser::parse()
@@ -1001,7 +1001,7 @@ std::vector<std::shared_ptr<ast::Statement>> ProgramParser::parseProgram()
 std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
 {
   Token t = peek();
-  switch (t.type)
+  switch (t.id)
   {
   case Token::Semicolon:
     return ast::NullStatement::New(read());
@@ -1268,7 +1268,7 @@ IdentifierParser::IdentifierParser(AbstractFragment *fragment, int opts)
 std::shared_ptr<ast::Identifier> IdentifierParser::parse()
 {
   Token t = peek();
-  switch (t.type)
+  switch (t.id)
   {
   case Token::Void:
   case Token::Bool:
@@ -1300,7 +1300,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   Token op = peek();
-  if(op.type & Token::OperatorToken)
+  if(op.isOperator())
     return ast::OperatorName::New(opkw, read());
   else if (op == Token::LeftPar)
   {
@@ -1310,7 +1310,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token rp = read(Token::RightPar);
     if (lp.column + 1 != rp.column)
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lp, Token::LeftRightPar} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, lp.pos, 2, lp.line, lp.column });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, 0, lp.pos, 2, lp.line, lp.column });
   }
   else if (op == Token::LeftBracket)
   {
@@ -1318,9 +1318,9 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     const Token rb = read(Token::RightBracket);
     if (lb.column + 1 != rb.column)
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lb, Token::LeftRightBracket} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, lb.pos, 2, lb.line, lb.column });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, 0, lb.pos, 2, lb.line, lb.column });
   }
-  else if (op.type == Token::StringLiteral)
+  else if (op == Token::StringLiteral)
   {
     if (op.length != 2)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} };
@@ -1330,7 +1330,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(idp.parse());
     return ast::LiteralOperatorName::New(opkw, op, suffixName->name, ast());
   }
-  else if (op.type == Token::UserDefinedLiteral)
+  else if (op == Token::UserDefinedLiteral)
   {
     op = unsafe_read();
     const auto & str = text(op);
@@ -1338,8 +1338,8 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if(str.find("\"\"") != 0)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} }; /// TODO ? should this have a different error than the previous
 
-    Token quotes{ Token::StringLiteral, op.pos, 2, op.line, op.column };
-    Token suffixName{ Token::UserDefinedName, op.pos + 2, op.length - 2, op.line, op.column + 2 };
+    Token quotes{ Token::StringLiteral, Token::Literal, op.pos, 2, op.line, op.column };
+    Token suffixName{ Token::UserDefinedName, Token::Identifier, op.pos + 2, op.length - 2, op.line, op.column + 2 };
     return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
   }
 
@@ -1523,7 +1523,7 @@ bool TypeParser::detect()
 {
   if (peek() == Token::Const)
     return true;
-  return peek().type & Token::Identifier;
+  return peek().isIdentifier();
 }
 
 ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType & rt)
@@ -2279,7 +2279,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
   auto p = pos();
   const Token eqSign = unsafe_read();
 
-  if (peek().type != Token::OctalLiteral)
+  if (peek() != Token::OctalLiteral)
   {
     seek(p);
     return false;
@@ -2288,7 +2288,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
   mFuncDecl->virtualPure = read();
 
   if (text(mFuncDecl->virtualPure) != "0")
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::Zero} };
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral} };
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -2599,7 +2599,7 @@ void ClassParser::readDecl()
 
 void ClassParser::readNode()
 {
-  switch (peek().type)
+  switch (peek().id)
   {
   case Token::Public:
   case Token::Protected:
@@ -2624,7 +2624,7 @@ void ClassParser::readNode()
 
 bool ClassParser::readClassEnd()
 {
-  if (peek().type != Token::RightBrace)
+  if (peek() != Token::RightBrace)
     return false;
 
   mClass->closingBrace = unsafe_read();

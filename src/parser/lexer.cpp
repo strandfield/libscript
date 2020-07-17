@@ -66,37 +66,37 @@ Token Lexer::read()
     result = readIdentifier(p);
     break;
   case LeftPar:
-    result = create(p, 1, Token::LeftPar);
+    result = create(p, 1, Token::LeftPar, Token::Punctuator);
     break;
   case RightPar:
-    result = create(p, 1, Token::RightPar);
+    result = create(p, 1, Token::RightPar, Token::Punctuator);
     break;
   case LeftBrace:
-    result = create(p, 1, Token::LeftBrace);
+    result = create(p, 1, Token::LeftBrace, Token::Punctuator);
     break;
   case RightBrace:
-    result = create(p, 1, Token::RightBrace);
+    result = create(p, 1, Token::RightBrace, Token::Punctuator);
     break;
   case LeftBracket:
-    result = create(p, 1, Token::LeftBracket);
+    result = create(p, 1, Token::LeftBracket, Token::Punctuator);
     break;
   case RightBracket:
-    result = create(p, 1, Token::RightBracket);
+    result = create(p, 1, Token::RightBracket, Token::Punctuator);
     break;
   case Semicolon:
-    result = create(p, 1, Token::Semicolon);
+    result = create(p, 1, Token::Semicolon, Token::Punctuator);
     break;
   case Colon:
     result = readColonOrColonColon(p);
     break;
   case QuestionMark:
-    result = create(p, 1, Token::QuestionMark);
+    result = create(p, 1, Token::QuestionMark, Token::OperatorToken);
     break;
   case Comma:
-    result = create(p, 1, Token::Comma);
+    result = create(p, 1, Token::Comma, Token::OperatorToken);
     break;
   case Dot:
-    result = create(p, 1, Token::Dot);
+    result = create(p, 1, Token::Dot, Token::OperatorToken);
     break;
   case Punctuator:
     result = readFromPunctuator(p);
@@ -209,14 +209,14 @@ void Lexer::consumeDiscardable()
     readChar();
 }
 
-Token Lexer::create(const Position & pos, int length, Token::Type type)
+Token Lexer::create(const Position & pos, int length, Token::Id type, int flags)
 {
-  return Token{ type, pos.pos, length, pos.line, pos.col };
+  return Token{ type, flags, pos.pos, length, pos.line, pos.col };
 }
 
-Token Lexer::create(const Position & pos, Token::Type type)
+Token Lexer::create(const Position & pos, Token::Id type, int flags)
 {
-  return Token{ type, pos.pos, this->pos() - pos.pos, pos.line, pos.col };
+  return Token{ type, flags, pos.pos, this->pos() - pos.pos, pos.line, pos.col };
 }
 
 Lexer::CharacterType Lexer::ctype(char c)
@@ -374,9 +374,9 @@ Token Lexer::readNumericLiteral(const Position & start)
 {
   if (atEnd()) {
     if (charAt(start) == '0')
-      return create(start, 1, Token::OctalLiteral);
+      return create(start, 1, Token::OctalLiteral, Token::Literal);
     else
-      return create(start, 1, Token::IntegerLiteral);
+      return create(start, 1, Token::IntegerLiteral, Token::Literal);
   }
 
   char c = peekChar();
@@ -397,7 +397,7 @@ Token Lexer::readNumericLiteral(const Position & start)
     {
       if (!checkAfter<Token::DecimalLiteral>())
         throw std::runtime_error{ "Lexer::readNumericLiteral() : error" };
-      return create(start, Token::OctalLiteral);
+      return create(start, Token::OctalLiteral, Token::Literal);
     }
   }
 
@@ -426,7 +426,7 @@ Token Lexer::readHexa(const Position & start)
   if(pos() - start.pos == 2 || !checkAfter<Token::HexadecimalLiteral>()) // e.g. 0x+
     throw std::runtime_error{ "Lexer::readHexa() : unexpected end of input" };
   
-  return create(start, Token::HexadecimalLiteral);
+  return create(start, Token::HexadecimalLiteral, Token::Literal);
 }
 
 template<>
@@ -443,7 +443,7 @@ Token Lexer::readOctal(const Position & start)
   if (!checkAfter<Token::OctalLiteral>())
     throw std::runtime_error{ "Lexer::readOCtal() : unexpected end of input" };
 
-  return create(start, Token::OctalLiteral);
+  return create(start, Token::OctalLiteral, Token::Literal);
 }
 
 
@@ -467,7 +467,7 @@ Token Lexer::readBinary(const Position & start)
   if (!checkAfter<Token::BinaryLiteral>())
     throw std::runtime_error{ "Lexer::readBinary() : unexpected end of input" };
 
-  return create(start, Token::BinaryLiteral);
+  return create(start, Token::BinaryLiteral, Token::Literal);
 }
 
 Token Lexer::readDecimal(const Position & start)
@@ -484,7 +484,7 @@ Token Lexer::readDecimal(const Position & start)
     readChar();
 
   if (atEnd())
-    create(start, Token::IntegerLiteral);
+    create(start, Token::IntegerLiteral, Token::Literal);
 
   bool is_decimal = false;
 
@@ -497,7 +497,7 @@ Token Lexer::readDecimal(const Position & start)
       readChar();
 
     if (atEnd())
-      return create(start, Token::DecimalLiteral);
+      return create(start, Token::DecimalLiteral, Token::Literal);
   }
 
   if (peekChar() == 'e')
@@ -519,7 +519,7 @@ Token Lexer::readDecimal(const Position & start)
       readChar();
 
     if (atEnd())
-      return create(start, Token::DecimalLiteral);
+      return create(start, Token::DecimalLiteral, Token::Literal);
   }
 
 
@@ -531,13 +531,13 @@ Token Lexer::readDecimal(const Position & start)
   else
   {
     if (tryReadLiteralSuffix())
-      return create(start, Token::UserDefinedLiteral);
+      return create(start, Token::UserDefinedLiteral, Token::Literal);
   }
 
   if(!checkAfter<Token::DecimalLiteral>())
     throw std::runtime_error{ "Lexer::readDecimal() : unexpected input char after floating point literal" };
 
-  return create(start, is_decimal ? Token::DecimalLiteral : Token::IntegerLiteral);
+  return create(start, is_decimal ? Token::DecimalLiteral : Token::IntegerLiteral, Token::Literal);
 }
 
 bool Lexer::tryReadLiteralSuffix()
@@ -560,13 +560,28 @@ Token Lexer::readIdentifier(const Position & start)
 {
   while (!this->atEnd() && (Lexer::isLetter(peekChar()) || Lexer::isDigit(peekChar()) || peekChar() == '_'))
     readChar();
-  return create(start, pos() - start.pos, identifierType(start.pos, pos()));
+
+  Token::Id id = identifierType(start.pos, pos());
+
+  // @TODO: remove these if statements, make identifier type returns all the flags
+
+  if (id == Token::UserDefinedName)
+  {
+    return create(start, pos() - start.pos, id, Token::Identifier);
+  }
+  else
+  {
+    if(id == Token::False || id == Token::True)
+      return create(start, pos() - start.pos, id, Token::Keyword | Token::Literal);
+    else
+      return create(start, pos() - start.pos, id, Token::Keyword);
+  }
 }
 
 
 struct Keyword {
   const char *name;
-  Token::Type toktype;
+  Token::Id toktype;
 };
 
 const Keyword l2k[] = {
@@ -633,7 +648,7 @@ const Keyword l9k[] = {
   { "protected", Token::Protected },
 };
 
-static Token::Type findKeyword(const Keyword * keywords, int arraySize, const char *str, int length)
+static Token::Id findKeyword(const Keyword * keywords, int arraySize, const char *str, int length)
 {
   for (int i(0); i < arraySize; ++i) {
     if (std::memcmp(keywords[i].name, str, length) == 0)
@@ -642,7 +657,7 @@ static Token::Type findKeyword(const Keyword * keywords, int arraySize, const ch
   return Token::UserDefinedName;
 }
 
-Token::Type Lexer::identifierType(int begin, int end) const
+Token::Id Lexer::identifierType(int begin, int end) const
 {
   const char *str = mSource + begin;
   const int l = end - begin;
@@ -703,12 +718,12 @@ Token Lexer::readStringLiteral(const Position & start)
   readChar();
 
   if (tryReadLiteralSuffix())
-    return create(start, Token::UserDefinedLiteral);
+    return create(start, Token::UserDefinedLiteral, Token::Literal);
   
   if (!checkAfter<Token::StringLiteral>())
     throw std::runtime_error{ "Lexer::readStringLiteral() : unexpected character after string literal" };
 
-  return create(start, Token::StringLiteral);
+  return create(start, Token::StringLiteral, Token::Literal);
 }
 
 Token Lexer::readCharLiteral(const Position & start)
@@ -724,7 +739,7 @@ Token Lexer::readCharLiteral(const Position & start)
   if(ctype(readChar()) != SingleQuote)
     throw std::runtime_error{ "Lexer::readCharLiteral() : malformed char-literal " };
 
-  return create(start, Token::StringLiteral);
+  return create(start, Token::StringLiteral, Token::Literal);
 }
 
 Token Lexer::readFromPunctuator(const Position & start)
@@ -733,7 +748,7 @@ Token Lexer::readFromPunctuator(const Position & start)
   if (p == '/')
   {
     if (atEnd())
-      return create(start, Token::Div);
+      return create(start, Token::Div, Token::OperatorToken);
     if (peekChar() == '/')
       return readSingleLineComment(start);
     else if (peekChar() == '*')
@@ -749,21 +764,21 @@ Token Lexer::readFromPunctuator(const Position & start)
 Token Lexer::readColonOrColonColon(const Position & start)
 {
   if (atEnd())
-    return create(start, Token::Colon);
+    return create(start, Token::Colon, Token::OperatorToken);
 
   if (peekChar() == ':')
   {
     readChar();
-    return create(start, Token::ScopeResolution);
+    return create(start, Token::ScopeResolution, Token::OperatorToken);
   }
 
-  return create(start, Token::Colon);
+  return create(start, Token::Colon, Token::OperatorToken);
 }
 
 
 struct OperatorLexeme {
   const char *name;
-  Token::Type toktype;
+  Token::Id toktype;
 };
 
 
@@ -811,7 +826,7 @@ const OperatorLexeme l3op[] = {
 };
 
 
-static Token::Type findOperator(const OperatorLexeme * ops, int arraySize, const char *str, int length)
+static Token::Id findOperator(const OperatorLexeme * ops, int arraySize, const char *str, int length)
 {
   for (int i(0); i < arraySize; ++i) {
     if (std::memcmp(ops[i].name, str, length) == 0)
@@ -821,7 +836,7 @@ static Token::Type findOperator(const OperatorLexeme * ops, int arraySize, const
 }
 
 
-Token::Type Lexer::getOperator(int begin, int end) const
+Token::Id Lexer::getOperator(int begin, int end) const
 {
   const char *str = mSource + begin;
   const int l = end - begin;
@@ -842,7 +857,7 @@ Token::Type Lexer::getOperator(int begin, int end) const
 
 Token Lexer::readOperator(const Position & start)
 {
-  Token::Type op = getOperator(start.pos, pos());
+  Token::Id op = getOperator(start.pos, pos());
   if (op == Token::Invalid)
     throw std::runtime_error{ "Lexer::readOperator() : no operator found starting with given chars" };
   
@@ -850,7 +865,7 @@ Token Lexer::readOperator(const Position & start)
   {
     Position p = position();
     readChar();
-    Token::Type candidate = getOperator(start.pos, pos());
+    Token::Id candidate = getOperator(start.pos, pos());
     if (candidate == Token::Invalid)
     {
       seek(p);
@@ -860,7 +875,7 @@ Token Lexer::readOperator(const Position & start)
       op = candidate;
   }
 
-  return create(start, op);
+  return create(start, op, Token::OperatorToken);
 }
 
 Token Lexer::readSingleLineComment(const Position & start)
@@ -870,7 +885,7 @@ Token Lexer::readSingleLineComment(const Position & start)
   while (!atEnd() && peekChar() != '\n')
     readChar();
 
-  return create(start, Token::SingleLineComment);
+  return create(start, Token::SingleLineComment, 0);
 }
 
 Token Lexer::readMultiLineComment(const Position & start)
@@ -893,7 +908,7 @@ Token Lexer::readMultiLineComment(const Position & start)
   } while (peekChar() != '/');
 
   readChar(); // reads the closing '/'
-  return create(start, Token::MultiLineComment);
+  return create(start, Token::MultiLineComment, 0);
 }
 
 

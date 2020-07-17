@@ -91,7 +91,7 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
 {
   using parser::Token;
 
-  static std::map<Token::Type, script::OperatorName> prefixOps = {
+  static std::map<Token::Id, script::OperatorName> prefixOps = {
     { Token::PlusPlus, PreIncrementOperator },
     { Token::MinusMinus, PreDecrementOperator },
     { Token::LogicalNot, LogicalNotOperator },
@@ -100,12 +100,12 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
     { Token::Minus, UnaryMinusOperator },
   };
 
-  static std::map<Token::Type, script::OperatorName> postFixOps = {
+  static std::map<Token::Id, script::OperatorName> postFixOps = {
     { Token::PlusPlus, PostIncrementOperator },
     { Token::MinusMinus, PostDecrementOperator },
   };
 
-  static std::map<Token::Type, script::OperatorName> infixOps = {
+  static std::map<Token::Id, script::OperatorName> infixOps = {
     { Token::ScopeResolution, ScopeResolutionOperator },
     { Token::Plus, AdditionOperator },
     { Token::Minus, SubstractionOperator },
@@ -140,19 +140,19 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
   };
 
   if (options & BuiltInOpResol::PrefixOp) {
-    auto it = prefixOps.find(tok.type);
+    auto it = prefixOps.find(tok.id);
     if (it != prefixOps.end())
       return it->second;
   }
 
   if (options & BuiltInOpResol::PostFixOp) {
-    auto it = postFixOps.find(tok.type);
+    auto it = postFixOps.find(tok.id);
     if (it != postFixOps.end())
       return it->second;
   }
 
   if (options & BuiltInOpResol::InfixOp) {
-    auto it = infixOps.find(tok.type);
+    auto it = infixOps.find(tok.id);
     if (it != infixOps.end())
       return it->second;
   }
@@ -559,7 +559,7 @@ bool QualifiedType::isAmbiguous() const
 
   if (type->is<SimpleIdentifier>())
   {
-    switch (type->as<SimpleIdentifier>().name.type)
+    switch (type->as<SimpleIdentifier>().name.id)
     {
     case Token::Bool:
     case Token::Char:

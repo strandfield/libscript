@@ -817,8 +817,8 @@ public:
   std::shared_ptr<FunctionType> functionType;
 
   inline bool isConst() const { return constQualifier.isValid(); }
-  inline bool isRef() const { return reference.type == parser::Token::Ref; }
-  inline bool isRefRef() const { return reference.type == parser::Token::RefRef; }
+  inline bool isRef() const { return reference == parser::Token::Ref; }
+  inline bool isRefRef() const { return reference == parser::Token::RefRef; }
   inline bool isSimple() const { return !constQualifier.isValid() && !reference.isValid(); }
 
   // returns true if this type object might be interpreted as a variable name

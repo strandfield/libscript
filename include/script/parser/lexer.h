@@ -83,18 +83,18 @@ protected:
   char currentChar() const;
   inline char peekChar() const { return currentChar(); }
   void consumeDiscardable();
-  Token create(const Position & pos, int length, Token::Type type);
-  Token create(const Position & pos, Token::Type type);
+  Token create(const Position & pos, int length, Token::Id type, int flags);
+  Token create(const Position & pos, Token::Id type, int flags);
   Token readNumericLiteral(const Position & pos);
   Token readHexa(const Position & pos);
   Token readOctal(const Position & pos);
   Token readBinary(const Position & pos);
   Token readDecimal(const Position & pos);
   Token readIdentifier(const Position & pos);
-  Token::Type identifierType(int begin, int end) const;
+  Token::Id identifierType(int begin, int end) const;
   Token readStringLiteral(const Position & pos);
   Token readCharLiteral(const Position & pos);
-  Token::Type getOperator(int begin, int end) const;
+  Token::Id getOperator(int begin, int end) const;
   Token readOperator(const Position & pos);
   Token readColonOrColonColon(const Position & pos);
   Token readFromPunctuator(const Position & pos);
@@ -102,7 +102,7 @@ protected:
   Token readMultiLineComment(const Position & pos);
   bool tryReadLiteralSuffix();
 
-  template<Token::Type TT>
+  template<Token::Id TT>
   bool checkAfter() const; // says if next char is legal
 
 protected:
