@@ -563,19 +563,10 @@ Token Lexer::readIdentifier(const Position & start)
 
   Token::Id id = identifierType(start.pos, pos());
 
-  // @TODO: remove these if statements, make identifier type returns all the flags
+  int keyword_flag = id != Token::UserDefinedName ? Token::Keyword : 0;
+  int literal_flag = (id == Token::False || id == Token::True) ? Token::Literal : 0;
 
-  if (id == Token::UserDefinedName)
-  {
-    return create(start, pos() - start.pos, id, Token::Identifier);
-  }
-  else
-  {
-    if(id == Token::False || id == Token::True)
-      return create(start, pos() - start.pos, id, Token::Keyword | Token::Literal);
-    else
-      return create(start, pos() - start.pos, id, Token::Keyword);
-  }
+  return create(start, pos() - start.pos, id, Token::Identifier | keyword_flag | literal_flag);
 }
 
 
