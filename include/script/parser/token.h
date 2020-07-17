@@ -162,6 +162,7 @@ public:
     Star = Asterisk,
   };
 
+  // @TODO: add a constructor that computes the 'flags' automatically using a built-in table
   Token(Id t, int flags_, int pos_, int size_, int line_, int column_)
     : id(t)
     , flags(flags_)
@@ -190,19 +191,20 @@ public:
 
   bool isZero() const { return id == OctalLiteral && length == 1; }
 
-  bool Token::operator==(const Token& other) const
-  {
-    return this->id == other.id && this->length == other.length
-      && this->pos == other.pos;
-  }
-
-  bool operator!=(const Token & other) const { return !(*this == other); }
-  bool operator==(Id tok) const { return this->id == tok; }
-  bool operator!=(Id tok) const { return !(*this == tok); }
-
-  Token & operator=(const Token & other) = default;
+  Token & operator=(const Token &) = default;
 
 };
+
+inline bool operator==(const Token& lhs, const Token& rhs)
+{
+  return lhs.id == rhs.id && lhs.length == rhs.length
+    && lhs.pos == rhs.pos;
+}
+
+inline bool operator!=(const Token& lhs, const Token& rhs) { return !(lhs == rhs); }
+
+inline bool operator==(const Token& lhs, Token::Id rhs) { return lhs.id == rhs; }
+inline bool operator!=(const Token& lhs, Token::Id rhs) { return !(lhs == rhs); }
 
 LIBSCRIPT_API const std::string& to_string(Token::Id toktype);
 

@@ -2287,7 +2287,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
 
   mFuncDecl->virtualPure = read();
 
-  if (text(mFuncDecl->virtualPure) != "0")
+  if (!mFuncDecl->virtualPure.isZero())
     throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral} };
 
   mDecision = ParsingFunction;
