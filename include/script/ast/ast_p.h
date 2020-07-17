@@ -32,6 +32,8 @@ public:
 
   std::string text(const parser::Token & tok);
 
+  SourceFile::Position position(const parser::Token& tok) const;
+
 public:
   std::shared_ptr<ast::Node> root;
   std::weak_ptr<ScriptImpl> script;

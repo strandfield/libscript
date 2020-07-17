@@ -99,6 +99,49 @@ const std::string & SourceFile::filepath() const
 }
 
 /*!
+ * \fn SourceFile::Position SourceFile::map(Offset off) const
+ * \param an offset in the file
+ * \brief maps an offset to a (line, column)
+ */
+SourceFile::Position SourceFile::map(Offset off) const
+{
+  Position result;
+  result.pos = off;
+
+  if (off == 0)
+  {
+    result.line = 0;
+    result.col = 0;
+    return result;
+  }
+
+  size_t p = off;
+
+  while (p-- > 0 && d->content[p] != '\n');
+
+  if (p == std::numeric_limits<size_t>::max())
+  {
+    result.line = 0;
+    result.col = off;
+    return result;
+  }
+  else
+  {
+    result.col = off - 1 - p;
+  }
+
+  result.line = 0;
+
+  for (size_t i(0); i <= p; ++i)
+  {
+    if (d->content[i] == '\n')
+      result.line += 1;
+  }
+
+  return result;
+}
+
+/*!
  * \fn void load()
  * \brief Loads the source file.
  *

@@ -32,6 +32,8 @@ public:
 
   const std::string & filepath() const;
 
+  Position map(Offset off) const;
+
   void load();
   bool isLoaded() const;
   bool isLocked() const;

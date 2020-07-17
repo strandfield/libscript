@@ -45,6 +45,15 @@ std::string AST::text(const parser::Token & tok)
   return std::string(source.data() + tok.pos, tok.length);
 }
 
+SourceFile::Position AST::position(const parser::Token& tok) const
+{
+  SourceFile::Position pos;
+  pos.pos = tok.pos;
+  pos.line = tok.line;
+  pos.col = tok.column;
+  return pos;
+}
+
 } // namespace ast
 
 

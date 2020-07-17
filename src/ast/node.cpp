@@ -14,53 +14,53 @@ namespace script
 namespace ast
 {
 
-parser::Lexer::Position Operation::pos() const
+size_t Operation::pos() const
 {
-  return parser::Lexer::position(this->operatorToken);
+  return this->operatorToken.pos;
 }
 
-parser::Lexer::Position ConditionalExpression::pos() const
+size_t ConditionalExpression::pos() const
 {
-  return parser::Lexer::position(this->questionMark);
+  return this->questionMark.pos;
 }
 
-parser::Lexer::Position NullStatement::pos() const
+size_t NullStatement::pos() const
 {
-  return parser::Lexer::position(this->semicolon);
+  return this->semicolon.pos;
 }
 
-parser::Lexer::Position ExpressionStatement::pos() const
+size_t ExpressionStatement::pos() const
 {
   return this->expression->pos();
 }
 
-parser::Lexer::Position CompoundStatement::pos() const
+size_t CompoundStatement::pos() const
 {
-  return parser::Lexer::position(this->openingBrace);
+  return this->openingBrace.pos;
 }
 
-parser::Lexer::Position IfStatement::pos() const
+size_t IfStatement::pos() const
 {
-  return parser::Lexer::position(this->keyword);
+  return this->keyword.pos;
 }
 
-parser::Lexer::Position IterationStatement::pos() const
+size_t IterationStatement::pos() const
 {
-  return parser::Lexer::position(this->keyword);
+  return this->keyword.pos;
 }
 
-parser::Lexer::Position JumpStatement::pos() const
+size_t JumpStatement::pos() const
 {
-  return parser::Lexer::position(this->keyword);
+  return this->keyword.pos;
 }
 
 
-parser::Lexer::Position TypeNode::pos() const
+size_t TypeNode::pos() const
 {
   return value.type->pos();
 }
 
-parser::Lexer::Position FunctionDecl::pos() const
+size_t FunctionDecl::pos() const
 {
   return name->pos();
 }

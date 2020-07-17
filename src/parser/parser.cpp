@@ -303,13 +303,6 @@ void ParserData::seek(const Position & p)
   mIndex = p.index;
 }
 
-SourceFile::Position ParserData::sourcepos() const
-{
-  if (mIndex < mBuffer.size())
-    return SourceFile::Position{ mBuffer[mIndex].pos, mBuffer[mIndex].line, mBuffer[mIndex].column };
-  return SourceFile::Position{ (SourceFile::Offset)-1, (uint16) -1, (uint16) -1 };
-}
-
 void ParserData::clearBuffer()
 {
   if (mIndex == mBuffer.size())
@@ -447,10 +440,6 @@ const std::string ParserBase::text(const Token & tok)
   return mFragment->data()->text(tok);
 }
 
-SourceFile::Position ParserBase::sourcepos() const
-{
-  return mFragment->data()->sourcepos();
-}
 
 LiteralParser::LiteralParser(AbstractFragment *fragment)
   : ParserBase(fragment)

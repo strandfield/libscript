@@ -44,8 +44,6 @@ public:
   Position pos() const;
   void seek(const Position & p);
 
-  SourceFile::Position sourcepos() const;
-
   // @TODO: read all token at once, do not clear to "save memory"
   void clearBuffer();
 
@@ -176,8 +174,6 @@ protected:
   ParserData::Position pos() const;
   void seek(const ParserData::Position & p);
   const std::string text(const Token & tok);
-
-  SourceFile::Position sourcepos() const;
 
 protected:
   AbstractFragment *mFragment;

@@ -29,13 +29,9 @@ public:
   int line() const;
   int col() const;
 
-  struct Position {
-    int pos;
-    int line;
-    int col;
-  };
+  typedef SourceFile::Position Position;
+
   Position position() const;
-  static Position position(const Token & tok);
 
   void seek(const Position & pos);
   void reset();

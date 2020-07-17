@@ -6,6 +6,7 @@
 #include "script/compiler/compilesession.h"
 #include "script/compiler/component.h"
 
+#include "script/ast.h"
 #include "script/engine.h"
 #include "script/private/engine_p.h"
 
@@ -413,15 +414,11 @@ SourceLocation CompileSession::location() const
 
   if (current_node)
   {
-    loc.m_pos.pos = current_node->pos().pos;
-    loc.m_pos.line = current_node->pos().line;
-    loc.m_pos.col = current_node->pos().col;
+    loc.m_pos = loc.m_source.map(current_node->pos());
 
     if (current_token.isValid())
     {
-      loc.m_pos.pos = current_token.pos;
-      loc.m_pos.line = current_token.line;
-      loc.m_pos.col = current_token.column;
+      loc.m_pos = this->current_script.ast().impl()->position(current_token);
     }
   }
 

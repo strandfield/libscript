@@ -44,7 +44,7 @@ Token Lexer::read()
   if (this->atEnd())
     throw std::runtime_error{ "Lexer::read() : reached end of input" };
 
-  Position p = position();
+  SourceFile::Position p = position();
 
   char c = readChar();
   auto ct = ctype(c);
@@ -137,12 +137,7 @@ int Lexer::col() const
 
 Lexer::Position Lexer::position() const
 {
-  return Position{ pos(), line(), col() };
-}
-
-Lexer::Position Lexer::position(const Token & tok)
-{
-  return Position{ tok.pos, tok.line, tok.column };
+  return Position{ pos(), static_cast<uint16_t>(line()), static_cast<uint16_t>(col()) };
 }
 
 void Lexer::seek(const Position & pos)

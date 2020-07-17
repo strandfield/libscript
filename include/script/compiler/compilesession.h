@@ -27,7 +27,6 @@ namespace compiler
 
 class Component;
 class Compiler;
-class CompileSession;
 
 class CompileSession
 {
