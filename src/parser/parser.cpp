@@ -17,7 +17,290 @@ namespace script
 namespace parser
 {
 
+void DelimitersCounter::reset()
+{
+  par_depth = 0;
+  brace_depth = 0;
+  bracket_depth = 0;
+}
 
+void DelimitersCounter::relaxed_feed(const Token& tok) noexcept
+{
+  switch (tok.id)
+  {
+  case Token::LeftPar:
+    ++par_depth;
+    break;
+  case Token::RightPar:
+    --par_depth;
+    break;
+  case Token::LeftBrace:
+    ++brace_depth;
+    break;
+  case Token::RightBrace:
+    --brace_depth;
+    break;
+  case Token::LeftBracket:
+    ++bracket_depth;
+    break;
+  case Token::RightBracket:
+    --bracket_depth;
+    break;
+  default:
+    break;
+  }
+}
+
+void DelimitersCounter::feed(const Token& tok)
+{
+  relaxed_feed(tok);
+
+  if(invalid())
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
+}
+
+bool DelimitersCounter::balanced() const
+{
+  return par_depth == 0 && brace_depth == 0 && bracket_depth == 0;
+}
+
+bool DelimitersCounter::invalid() const
+{
+  return par_depth < 0 || brace_depth < 0 || bracket_depth < 0;
+}
+
+Fragment::Fragment(std::shared_ptr<ParserContext> context)
+  : m_context(context),
+    m_parent(nullptr),
+    m_begin(context->tokens().begin()),
+    m_end(context->tokens().end())
+{
+
+}
+
+Fragment::Fragment(Fragment* parent, iterator begin, iterator end)
+  : m_context(parent->context()),
+    m_parent(parent),
+    m_begin(begin),
+    m_end(end)
+{
+
+}
+
+Fragment::Fragment(Fragment* parent, Type<DelimiterPair>)
+  : m_context(parent->context()),
+    m_parent(parent),
+    m_begin(parent->begin()),
+    m_end(parent->end())
+{
+  m_begin = m_context->iter();
+
+  DelimitersCounter counter;
+  counter.feed(*m_begin);
+
+  if (counter.balanced())
+    throw std::runtime_error{ "bad call to Fragment ctor" };
+
+  ++m_begin;
+
+  auto it = m_begin;
+
+  while (it != m_end)
+  {
+    counter.feed(*it);
+
+    if (counter.balanced())
+    {
+      m_end = it;
+      return;
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
+}
+
+Fragment::Fragment(Fragment* parent, Type<Statement>)
+  : m_context(parent->context()),
+    m_parent(parent),
+    m_begin(m_context->iter()),
+    m_end(parent->end())
+{
+  DelimitersCounter counter;
+
+  auto it = m_begin;
+
+  while (it != m_end)
+  {
+    counter.feed(*it);
+
+    if (it->id == Token::Semicolon)
+    {
+      if (counter.balanced())
+      {
+        m_end = it;
+        return;
+      }
+      else
+      {
+        // @TODO: we could check that we are inside brackets
+        ++it;
+      }
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
+}
+
+Fragment::Fragment(Fragment* parent, Type<ListElement>)
+  : m_context(parent->context()),
+    m_parent(parent),
+    m_begin(m_context->iter()),
+    m_end(parent->end())
+{
+  DelimitersCounter counter;
+
+  auto it = m_begin;
+
+  while (it != m_end)
+  {
+    counter.feed(*it);
+
+    if (it->id == Token::Colon)
+    {
+      if (counter.balanced())
+      {
+        m_end = it;
+        return;
+      }
+      else
+      {
+        // @TODO: we could check that we are inside brackets
+        ++it;
+      }
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  if(!counter.balanced())
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
+}
+
+const std::shared_ptr<ParserContext>& Fragment::context() const
+{
+  return m_context;
+}
+
+std::vector<Token>::const_iterator Fragment::begin() const
+{
+  return m_begin;
+}
+
+std::vector<Token>::const_iterator Fragment::end() const
+{
+  return m_end;
+}
+
+bool Fragment::atEnd() const
+{
+  return m_context->iter() == m_end;
+}
+
+Token Fragment::read()
+{
+  return m_context->read();
+}
+
+Token Fragment::peek() const
+{
+  return m_context->peek();
+}
+
+void Fragment::seekBegin()
+{
+  return m_context->seek(m_begin);
+}
+
+bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, bool half_consumed_right_right, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right)
+{
+  if (begin->id != Token::LeftAngle)
+    return false;
+
+  DelimitersCounter counter;
+  int angle_counter = 1;
+
+  for (auto it = begin; it != end; ++it)
+  {
+    counter.relaxed_feed(*it);
+
+    if (counter.invalid())
+      return false;
+
+    if (it->id == Token::RightAngle)
+    {
+      if (counter.balanced())
+      {
+        --angle_counter;
+
+        if (angle_counter == 0)
+        {
+          o_begin = begin + 1;
+          o_end = it;
+          o_half_consumed_right_right = false;
+          return true;
+        }
+      }
+    }
+    else if (it->id == Token::RightRightAngle)
+    {
+      if (counter.balanced())
+      {
+        if (angle_counter == 1)
+        {
+          --angle_counter;
+          o_half_consumed_right_right = true;
+        }
+        else
+        {
+          angle_counter -= 2;
+          o_half_consumed_right_right = false;
+        }
+
+        if (angle_counter == 0)
+        {
+          o_begin = begin + 1;
+          o_end = it;
+          return true;
+        }
+      }
+    }
+    else if (it->id == Token::LeftAngle)
+    {
+      if (counter.balanced())
+        ++angle_counter;
+    }
+  }
+
+  if (counter.balanced() && angle_counter == 1 && half_consumed_right_right)
+  {
+    o_begin = begin + 1;
+    o_end = end;
+    o_half_consumed_right_right = false;
+    return true;
+  }
+
+  return false;
+}
 
 AbstractFragment::AbstractFragment(const std::shared_ptr<ParserContext> & pdata)
   : mData(pdata)
@@ -288,6 +571,11 @@ Token ParserContext::peek()
   return m_tokens[mIndex];
 }
 
+std::vector<Token>::const_iterator ParserContext::iter() const
+{
+  return m_tokens.begin() + mIndex;
+}
+
 ParserContext::Position ParserContext::pos() const
 {
   if (mIndex < m_tokens.size())
@@ -297,8 +585,12 @@ ParserContext::Position ParserContext::pos() const
 
 void ParserContext::seek(const Position & p)
 {
-  // @TODO : unsure that the position wasn't invalidated
   mIndex = p.index;
+}
+
+void ParserContext::seek(std::vector<Token>::const_iterator it)
+{
+  mIndex = std::distance(m_tokens.cbegin(), it);
 }
 
 bool ParserContext::isDiscardable(const Token & t) const

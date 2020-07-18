@@ -23,11 +23,14 @@ private:
   // @TODO: maybe store root fragment and current fragment
 public:
   std::shared_ptr<ast::AST> mAst;
+  bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
   ParserContext(const SourceFile & src);
   ParserContext(const std::vector<Token> & tokens);
   ParserContext(std::vector<Token> && tokens);
   ~ParserContext();
+
+  const std::vector<Token>& tokens() const { return m_tokens; }
 
   bool atEnd() const;
   Token read();
@@ -35,17 +38,78 @@ public:
   Token peek();
   inline Token unsafe_peek() const { assert(mIndex < (int) m_tokens.size()); return m_tokens[mIndex]; }
 
+  std::vector<Token>::const_iterator iter() const;
+  
   struct Position {
     size_t index;
   };
 
   Position pos() const;
   void seek(const Position & p);
+  void seek(std::vector<Token>::const_iterator it);
 
 protected:
   bool isDiscardable(const Token & t) const;
 };
 
+class DelimitersCounter
+{
+public:
+  int par_depth = 0;
+  int brace_depth = 0;
+  int bracket_depth = 0;
+
+  void reset();
+
+  void relaxed_feed(const Token& tok) noexcept;
+  void feed(const Token& tok);
+
+  bool balanced() const;
+  bool invalid() const;
+};
+
+class Fragment
+{
+public:
+  explicit Fragment(std::shared_ptr<ParserContext> context);
+
+  enum FragmentKind
+  {
+    DelimiterPair,
+    Statement,
+    ListElement,
+    Other,
+  };
+
+  template<FragmentKind FK>
+  struct Type {};
+
+  typedef std::vector<Token>::const_iterator iterator;
+
+  Fragment(Fragment* parent, iterator begin, iterator end);
+
+  Fragment(Fragment* parent, Type<DelimiterPair>);
+  Fragment(Fragment* parent, Type<Statement>);
+  Fragment(Fragment* parent, Type<ListElement>);
+
+  const std::shared_ptr<ParserContext>& context() const;
+
+  std::vector<Token>::const_iterator begin() const;
+  std::vector<Token>::const_iterator end() const;
+
+  bool atEnd() const;
+  Token read();
+  Token peek() const;
+  void seekBegin();
+
+  static bool tryBuildTemplateFragment(iterator begin, iterator end, bool half_consumed_right_right, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right);
+
+private:
+  std::shared_ptr<ParserContext> m_context;
+  Fragment* m_parent;
+  std::vector<Token>::const_iterator m_begin;
+  std::vector<Token>::const_iterator m_end;
+};
 
 // @TODO: try to make the fragments non-virtual
 class AbstractFragment
