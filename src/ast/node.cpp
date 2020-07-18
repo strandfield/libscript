@@ -71,19 +71,17 @@ parser::Token FunctionDecl::base_token() const
 
 std::string Literal::toString() const
 {
-  return this->ast.lock()->text(this->token);
+  return this->token.toString();
 }
 
 std::string SimpleIdentifier::getName() const
 {
-  auto ast = this->ast.lock();
-  return ast->text(this->name);
+  return this->name.toString();
 }
 
 std::string TemplateIdentifier::getName() const
 {
-  auto ast = this->ast.lock();
-  return ast->text(this->name);
+  return this->name.toString();
 }
 
 
@@ -167,7 +165,7 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
 
 std::string LiteralOperatorName::suffix_string() const
 {
-  return ast.lock()->text(this->suffix);
+  return this->suffix.toString();
 }
 
 std::shared_ptr<ScopedIdentifier> ScopedIdentifier::New(const std::vector<std::shared_ptr<Identifier>>::const_iterator & begin, const std::vector<std::shared_ptr<Identifier>>::const_iterator & end)
@@ -588,38 +586,25 @@ FunctionDecl::FunctionDecl()
 }
 
 
-FunctionDecl::FunctionDecl(const std::shared_ptr<AST> & a, const std::shared_ptr<Identifier> & name)
+FunctionDecl::FunctionDecl(const std::shared_ptr<Identifier> & name)
   : name(name)
 {
-  if (name != nullptr)
-  {
-    if (name->is<SimpleIdentifier>())
-      ast = name->as<SimpleIdentifier>().ast;
-    else if(name->is<TemplateIdentifier>())
-      ast = name->as<TemplateIdentifier>().ast;
-    else
-    {
-      assert(a != nullptr);
-    }
-  }
 
-  if (a != nullptr)
-    ast = a;
 }
 
 std::string FunctionDecl::parameterName(int index) const
 {
-  return ast.lock()->text(this->params.at(index).name);
+  return this->params.at(index).name.toString();
 }
 
 std::shared_ptr<FunctionDecl> FunctionDecl::New(const std::shared_ptr<Identifier> & name)
 {
-  return std::make_shared<FunctionDecl>(nullptr, name);
+  return std::make_shared<FunctionDecl>(name);
 }
 
-std::shared_ptr<FunctionDecl> FunctionDecl::New(const std::shared_ptr<AST> a)
+std::shared_ptr<FunctionDecl> FunctionDecl::New()
 {
-  return std::make_shared<FunctionDecl>(a, nullptr);
+  return std::make_shared<FunctionDecl>();
 }
 
 
@@ -631,7 +616,7 @@ MemberInitialization::MemberInitialization(const std::shared_ptr<ast::Identifier
 }
 
 ConstructorDecl::ConstructorDecl(const std::shared_ptr<Identifier> & name)
-  : FunctionDecl(nullptr, name)
+  : FunctionDecl(name)
 { }
 
 std::shared_ptr<ConstructorDecl> ConstructorDecl::New(const std::shared_ptr<Identifier> & name)
@@ -640,7 +625,7 @@ std::shared_ptr<ConstructorDecl> ConstructorDecl::New(const std::shared_ptr<Iden
 }
 
 DestructorDecl::DestructorDecl(const std::shared_ptr<Identifier> & name)
-  : FunctionDecl(nullptr, name)
+  : FunctionDecl(name)
 { }
 
 std::shared_ptr<DestructorDecl> DestructorDecl::New(const std::shared_ptr<Identifier> & name)
@@ -648,17 +633,17 @@ std::shared_ptr<DestructorDecl> DestructorDecl::New(const std::shared_ptr<Identi
   return std::make_shared<DestructorDecl>(name);
 }
 
-OperatorOverloadDecl::OperatorOverloadDecl(std::shared_ptr<AST> a, const std::shared_ptr<Identifier> & name)
-  : FunctionDecl(a, name)
+OperatorOverloadDecl::OperatorOverloadDecl(const std::shared_ptr<Identifier> & name)
+  : FunctionDecl(name)
 { }
 
-std::shared_ptr<OperatorOverloadDecl> OperatorOverloadDecl::New(std::shared_ptr<AST> a, const std::shared_ptr<Identifier> & name)
+std::shared_ptr<OperatorOverloadDecl> OperatorOverloadDecl::New(const std::shared_ptr<Identifier> & name)
 {
-  return std::make_shared<OperatorOverloadDecl>(a, name);
+  return std::make_shared<OperatorOverloadDecl>(name);
 }
 
 CastDecl::CastDecl(const QualifiedType & rt)
-  : FunctionDecl(nullptr, nullptr)
+  : FunctionDecl(nullptr)
 {
   this->returnType = rt;
 }
@@ -670,32 +655,25 @@ std::shared_ptr<CastDecl> CastDecl::New(const QualifiedType & rt)
 
 
 
-LambdaExpression::LambdaExpression(std::shared_ptr<AST> a, const parser::Token & lb)
+LambdaExpression::LambdaExpression(const parser::Token & lb)
   : leftBracket(lb)
-  , ast(a)
 {
 
 }
 
 std::string LambdaExpression::parameterName(int index) const
 {
-  return ast.lock()->text(this->params.at(index).name);
+  return this->params.at(index).name.toString();
 }
 
 std::string LambdaExpression::captureName(int index) const
 {
-  return ast.lock()->text(this->captures.at(index).name);
+  return this->captures.at(index).name.toString();
 }
 
-std::string LambdaExpression::captureName(const LambdaCapture & cap) const
+std::shared_ptr<LambdaExpression> LambdaExpression::New(const parser::Token & lb)
 {
-  return ast.lock()->text(cap.name);
-}
-
-
-std::shared_ptr<LambdaExpression> LambdaExpression::New(std::shared_ptr<AST> a, const parser::Token & lb)
-{
-  return std::make_shared<LambdaExpression>(a, lb);
+  return std::make_shared<LambdaExpression>(lb);
 }
 
 
@@ -814,23 +792,22 @@ std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::To
 
 
 
-ImportDirective::ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree)
+ImportDirective::ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms)
   : export_keyword(exprt)
   , import_keyword(imprt)
   , names(std::move(nms))
-  , ast(syntaxtree)
 {
 
 }
 
-std::shared_ptr<ImportDirective> ImportDirective::New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree)
+std::shared_ptr<ImportDirective> ImportDirective::New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms)
 {
-  return std::make_shared<ImportDirective>(exprt, imprt, std::move(nms), syntaxtree);
+  return std::make_shared<ImportDirective>(exprt, imprt, std::move(nms));
 }
 
 std::string ImportDirective::at(size_t i) const 
 { 
-  return ast.lock()->text(names.at(i)); 
+  return names.at(i).toString();
 }
 
 std::string ImportDirective::full_name() const
@@ -846,21 +823,19 @@ std::string ImportDirective::full_name() const
 
 
 
-TemplateDeclaration::TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree)
+TemplateDeclaration::TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl)
   : template_keyword(tmplt_k)
   , left_angle_bracket(left_angle_b)
   , parameters(std::move(params))
   , right_angle_bracket(right_angle_b)
   , declaration(decl)
-  , ast(syntaxtree)
 {
 
 }
 
 std::string TemplateDeclaration::parameter_name(size_t i) const
 {
-  auto ast_ = ast.lock();
-  return ast_->text(parameters.at(i).name);
+  return parameters.at(i).name.toString();
 }
 
 const TemplateParameter & TemplateDeclaration::at(size_t i) const
@@ -887,9 +862,9 @@ bool TemplateDeclaration::is_partial_specialization() const
   return class_decl.name->is<ast::TemplateIdentifier>() && !is_full_specialization();
 }
 
-std::shared_ptr<TemplateDeclaration> TemplateDeclaration::New(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree)
+std::shared_ptr<TemplateDeclaration> TemplateDeclaration::New(const parser::Token& tmplt_k, const parser::Token& left_angle_b, std::vector<TemplateParameter>&& params, const parser::Token& right_angle_b, const std::shared_ptr<Declaration>& decl)
 {
-  return std::make_shared<TemplateDeclaration>(tmplt_k, left_angle_b, std::move(params), right_angle_b, decl, syntaxtree);
+  return std::make_shared<TemplateDeclaration>(tmplt_k, left_angle_b, std::move(params), right_angle_b, decl);
 }
 
 ScriptRootNode::ScriptRootNode(const std::shared_ptr<AST> & st)

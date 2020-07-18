@@ -21,7 +21,6 @@ public:
   Lexer(const SourceFile & src);
 
   Token read();
-  std::string text(const Token & t) const; // TODO : replace with string_view
 
   bool atEnd() const;
 

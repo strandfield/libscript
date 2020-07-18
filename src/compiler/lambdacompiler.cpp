@@ -93,7 +93,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
 
     TranslationTarget target{ c, cap.name };
 
-    const auto & name = task.lexpr->captureName(cap);
+    const std::string name = cap.name.toString();
     std::shared_ptr<program::Expression> value;
     if (cap.value != nullptr)
     {

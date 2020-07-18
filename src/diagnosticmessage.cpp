@@ -219,11 +219,6 @@ void MessageBuilder::setVerbosity(Verbosity ver)
 
 void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& ex)
 {
-  auto tok_to_string = [&ex](parser::Token tok) -> std::string
-  {
-    return std::string(ex.location.m_source.data() + tok.pos, ex.location.m_source.data() + tok.pos + tok.length);
-  };
-
   mssg.setCode(ex.errorCode());
   mssg.setLocation(ex.location);
 
@@ -241,12 +236,12 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& e
 
       if (data.expected == parser::Token::Invalid)
       {
-        std::string text = format("expected '%1' got '%2'", to_string(data.expected), tok_to_string(data.actual));
+        std::string text = format("expected '%1' got '%2'", to_string(data.expected), data.actual.toString());
         mssg.setContent(std::move(text));
       }
       else
       {
-        std::string text = format("unexpected token '%1'", tok_to_string(data.actual));
+        std::string text = format("unexpected token '%1'", data.actual.toString());
         mssg.setContent(std::move(text));
       }
     }
@@ -254,28 +249,28 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& e
     case ParserError::ExpectedIdentifier:
     {
       auto& data = ex.data()->get<parser::errors::ActualToken>();
-      std::string text = format("expected identifier got '%1'", tok_to_string(data.token));
+      std::string text = format("expected identifier got '%1'", data.token.toString());
       mssg.setContent(std::move(text));
     }
     break;
     case ParserError::ExpectedUserDefinedName:
     {
       auto& data = ex.data()->get<parser::errors::ActualToken>();
-      std::string text = format("expected user-defined name got '%1'", tok_to_string(data.token));
+      std::string text = format("expected user-defined name got '%1'", data.token.toString());
       mssg.setContent(std::move(text));
     }
     break;
     case ParserError::ExpectedLiteral:
     {
       auto& data = ex.data()->get<parser::errors::ActualToken>();
-      std::string text = format("expected literal name got '%1'", tok_to_string(data.token));
+      std::string text = format("expected literal name got '%1'", data.token.toString());
       mssg.setContent(std::move(text));
     }
     break;
     case ParserError::ExpectedOperatorSymbol:
     {
       auto& data = ex.data()->get<parser::errors::ActualToken>();
-      std::string text = format("expected 'operator' to be followed by operator symbol, got '%1'", tok_to_string(data.token));
+      std::string text = format("expected 'operator' to be followed by operator symbol, got '%1'", data.token.toString());
       mssg.setContent(std::move(text));
     }
     break;

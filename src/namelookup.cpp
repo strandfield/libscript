@@ -688,7 +688,7 @@ void NameLookup::qualified_lookup(const std::shared_ptr<ast::Identifier> & name,
   else if (name->is<ast::TemplateIdentifier>())
   {
     auto tempid = std::static_pointer_cast<ast::TemplateIdentifier>(name);
-    auto fake_template_name = ast::SimpleIdentifier::New(tempid->name, tempid->ast.lock());
+    auto fake_template_name = ast::SimpleIdentifier::New(tempid->name);
     qualified_lookup(fake_template_name, s);
     d->functions.clear(); // we only keep templates
 

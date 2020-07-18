@@ -35,7 +35,6 @@ public:
   Token unsafe_read();
   Token peek();
   inline Token unsafe_peek() const { assert(mIndex < (int) mBuffer.size()); return mBuffer[mIndex]; }
-  std::string text(const Token & tok) const;
 
   struct Position {
     size_t index;
@@ -173,7 +172,6 @@ protected:
   AbstractFragment * fragment() const;
   ParserData::Position pos() const;
   void seek(const ParserData::Position & p);
-  const std::string text(const Token & tok);
 
 protected:
   AbstractFragment *mFragment;

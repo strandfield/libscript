@@ -39,12 +39,15 @@ public:
   size_t size() const { return m_size; }
   const char* data() const { return m_data; }
 
+  std::string toString() const { return std::string(data(), data() + size()); }
+
   StringView& operator=(const StringView&) = default;
 };
 
 inline bool operator==(const StringView& lhs, const StringView& rhs)
 {
-  return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+  return lhs.size() == rhs.size() &&
+    (lhs.data() == rhs.data() || std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0);
 }
 
 inline bool operator!=(const StringView& lhs, const StringView& rhs)
@@ -76,10 +79,6 @@ public:
   Token()
     : id(Token::Invalid)
     , flags(0)
-    , pos(-1)
-    , length(0)
-    , line(-1)
-    , column(-1)
   {
 
   }
@@ -218,13 +217,10 @@ public:
   };
 
   // @TODO: add a constructor that computes the 'flags' automatically using a built-in table
-  Token(Id t, int flags_, int pos_, int size_, int line_, int column_)
+  Token(Id t, int flags_, StringView str)
     : id(t)
     , flags(flags_)
-    , pos(pos_)
-    , length(size_)
-    , line(line_)
-    , column(column_)
+    , m_text(str)
   {
 
   }
@@ -232,10 +228,7 @@ public:
 
   Id id;
   int flags;
-  int pos;
-  int length;
-  uint16 line;
-  uint16 column;
+  StringView m_text;
 
   bool isValid() const { return id != Invalid; }
 
@@ -244,7 +237,10 @@ public:
   bool isKeyword() const { return flags & Keyword; }
   bool isLiteral() const { return flags & Literal; }
 
-  bool isZero() const { return id == OctalLiteral && length == 1; }
+  bool isZero() const { return id == OctalLiteral && m_text.size() == 1; }
+
+  StringView text() const { return m_text; }
+  std::string toString() const { return text().toString(); }
 
   Token & operator=(const Token &) = default;
 
@@ -252,8 +248,7 @@ public:
 
 inline bool operator==(const Token& lhs, const Token& rhs)
 {
-  return lhs.id == rhs.id && lhs.length == rhs.length
-    && lhs.pos == rhs.pos;
+  return lhs.id == rhs.id && lhs.text() == rhs.text();
 }
 
 inline bool operator!=(const Token& lhs, const Token& rhs) { return !(lhs == rhs); }

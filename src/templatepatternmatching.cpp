@@ -280,7 +280,7 @@ bool TemplatePatternMatching::match_(const std::shared_ptr<ast::ScopedIdentifier
     ClassTemplate arg_template = object_type.instanceOf();
 
 
-    auto template_name = ast::SimpleIdentifier::New(pattern->rhs->as<ast::TemplateIdentifier>().name, pattern->rhs->as<ast::TemplateIdentifier>().ast.lock());
+    auto template_name = ast::SimpleIdentifier::New(pattern->rhs->as<ast::TemplateIdentifier>().name);
     auto qualid = ast::ScopedIdentifier::New(pattern->lhs, pattern->scopeResolution, template_name);
     NameLookup lookup = NameLookup::resolve(qualid, scope_);
     if (lookup.classTemplateResult().isNull())

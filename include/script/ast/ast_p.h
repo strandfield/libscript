@@ -30,8 +30,6 @@ public:
 
   void add(const std::shared_ptr<Statement> & statement);
 
-  std::string text(const parser::Token & tok);
-
   SourceFile::Position position(const parser::Token& tok) const;
 
 public:

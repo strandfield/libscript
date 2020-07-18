@@ -208,10 +208,10 @@ Function ScriptCompiler::registerRootFunction()
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
   scriptfunc->enclosing_symbol = mCurrentScript.impl();
 
-  auto fakedecl = ast::FunctionDecl::New(std::shared_ptr<ast::AST>());
+  auto fakedecl = ast::FunctionDecl::New();
   fakedecl->body = ast::CompoundStatement::New(
-    parser::Token{ parser::Token::LeftBrace, parser::Token::Punctuator, 0, 0, 0, 0 },
-    parser::Token{ parser::Token::RightBrace, parser::Token::Punctuator, 0, 0, 0, 0 });
+    parser::Token{ parser::Token::LeftBrace, parser::Token::Punctuator, parser::StringView("{", 1) },
+    parser::Token{ parser::Token::RightBrace, parser::Token::Punctuator, parser::StringView("}", 1) });
   const auto & stmts = currentAst()->root->as<ast::ScriptRootNode>().statements;
   for (const auto & s : stmts)
   {

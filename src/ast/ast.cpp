@@ -40,17 +40,11 @@ void AST::add(const std::shared_ptr<Statement> & statement)
     scriptnode->declarations.push_back(std::static_pointer_cast<Declaration>(statement));
 }
 
-std::string AST::text(const parser::Token & tok)
-{
-  return std::string(source.data() + tok.pos, tok.length);
-}
-
 SourceFile::Position AST::position(const parser::Token& tok) const
 {
   SourceFile::Position pos;
-  pos.pos = tok.pos;
-  pos.line = tok.line;
-  pos.col = tok.column;
+  pos.pos = tok.text().data() - source.content().data();
+  pos = source.map(pos.pos);
   return pos;
 }
 

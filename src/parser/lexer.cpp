@@ -109,12 +109,6 @@ Token Lexer::read()
   return result;
 }
 
-std::string Lexer::text(const Token & t) const
-{
-  // @TODO: find a way to ensure that 't' was generated from 'mSource' 
-  return std::string{ mSource + t.pos, mSource + t.pos + t.length };
-}
-
 bool Lexer::atEnd() const
 {
   return mPos == mLength;
@@ -206,12 +200,12 @@ void Lexer::consumeDiscardable()
 
 Token Lexer::create(const Position & pos, int length, Token::Id type, int flags)
 {
-  return Token{ type, flags, pos.pos, length, pos.line, pos.col };
+  return Token{ type, flags, StringView(mSource + pos.pos, length) };
 }
 
 Token Lexer::create(const Position & pos, Token::Id type, int flags)
 {
-  return Token{ type, flags, pos.pos, this->pos() - pos.pos, pos.line, pos.col };
+  return Token{ type, flags, StringView(mSource + pos.pos, this->pos() - pos.pos) };
 }
 
 Lexer::CharacterType Lexer::ctype(char c)

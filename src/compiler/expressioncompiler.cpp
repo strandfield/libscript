@@ -643,7 +643,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
 
   auto operand = generateExpression(operation->arg1);
 
-  const bool postfix = operation->arg1->base_token().pos < operation->operatorToken.pos;
+  // @Tricky: We compare the position of two tokens by comparing the pointer to the beginning of the text repr.
+  const bool postfix = operation->arg1->base_token().text().data() < operation->operatorToken.text().data();
   const auto opts = postfix ? ast::OperatorName::BuiltInOpResol::PostFixOp : ast::OperatorName::BuiltInOpResol::PrefixOp;
   OperatorName op = ast::OperatorName::getOperatorId(operation->operatorToken, opts);
 

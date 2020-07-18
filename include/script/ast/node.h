@@ -214,14 +214,13 @@ class LIBSCRIPT_API SimpleIdentifier : public Identifier
 {
 public:
   parser::Token name;
-  std::weak_ptr<ast::AST> ast;
 
 public:
-  SimpleIdentifier(const parser::Token & n, const std::shared_ptr<ast::AST> & tree) : name(n), ast(tree) {}
+  SimpleIdentifier(const parser::Token & n) : name(n) {}
 
-  inline static std::shared_ptr<SimpleIdentifier> New(const parser::Token & name, const std::shared_ptr<ast::AST> & tree)
+  inline static std::shared_ptr<SimpleIdentifier> New(const parser::Token & name)
   {
-    return std::make_shared<SimpleIdentifier>(name, tree);
+    return std::make_shared<SimpleIdentifier>(name);
   }
 
   std::string getName() const;
@@ -238,21 +237,19 @@ public:
   parser::Token leftAngle;
   std::vector<NodeRef> arguments;
   parser::Token rightAngle;
-  std::weak_ptr<ast::AST> ast;
 
 public:
-  TemplateIdentifier(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra, const std::shared_ptr<ast::AST> & tree)
+  TemplateIdentifier(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra)
     : name(name)
     , arguments(args)
     , leftAngle(la)
     , rightAngle(ra)
-    , ast(tree)
   {
   }
 
-  inline static std::shared_ptr<TemplateIdentifier> New(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra, const std::shared_ptr<ast::AST> & tree)
+  inline static std::shared_ptr<TemplateIdentifier> New(const parser::Token & name, const std::vector<NodeRef> & args, const parser::Token & la, const parser::Token & ra)
   {
-    return std::make_shared<TemplateIdentifier>(name, args, la, ra, tree);
+    return std::make_shared<TemplateIdentifier>(name, args, la, ra);
   }
 
   std::string getName() const;
@@ -963,7 +960,6 @@ public:
   parser::Token deleteKeyword;
   parser::Token defaultKeyword;
   parser::Token virtualPure;
-  std::weak_ptr<AST> ast;
 
   inline bool isExplicit() const { return explicitKeyword.isValid(); }
   inline bool isStatic() const { return staticKeyword.isValid(); }
@@ -973,13 +969,13 @@ public:
 
 public:
   FunctionDecl();
-  FunctionDecl(const std::shared_ptr<AST> & a, const std::shared_ptr<Identifier> & name);
+  FunctionDecl(const std::shared_ptr<Identifier> & name);
   ~FunctionDecl() = default;
 
   std::string parameterName(int index) const;
 
   static std::shared_ptr<FunctionDecl> New(const std::shared_ptr<Identifier> & name);
-  static std::shared_ptr<FunctionDecl> New(const std::shared_ptr<AST> a);
+  static std::shared_ptr<FunctionDecl> New();
 
   parser::Token base_token() const override;
   
@@ -1028,10 +1024,10 @@ public:
 class LIBSCRIPT_API OperatorOverloadDecl : public FunctionDecl
 {
 public:
-  OperatorOverloadDecl(std::shared_ptr<AST> a, const std::shared_ptr<Identifier> & name);
+  OperatorOverloadDecl(const std::shared_ptr<Identifier> & name);
   ~OperatorOverloadDecl() = default;
 
-  static std::shared_ptr<OperatorOverloadDecl> New(std::shared_ptr<AST> a, const std::shared_ptr<Identifier> & name);
+  static std::shared_ptr<OperatorOverloadDecl> New(const std::shared_ptr<Identifier> & name);
 
   static const NodeType type_code = NodeType::OperatorOverloadDeclaration;
   inline NodeType type() const override { return type_code; }
@@ -1071,18 +1067,16 @@ public:
   std::vector<FunctionParameter> params;
   parser::Token rightPar;
   std::shared_ptr<CompoundStatement> body;
-  std::weak_ptr<AST> ast;
 
 public:
-  LambdaExpression(std::shared_ptr<AST> a, const parser::Token & lb);
+  LambdaExpression(const parser::Token & lb);
   ~LambdaExpression() = default;
 
   std::string parameterName(int index) const;
   std::string captureName(int index) const;
-  std::string captureName(const LambdaCapture & cap) const;
 
 
-  static std::shared_ptr<LambdaExpression> New(std::shared_ptr<AST> a, const parser::Token & lb);
+  static std::shared_ptr<LambdaExpression> New(const parser::Token & lb);
 
   static const NodeType type_code = NodeType::LambdaExpression;
   inline NodeType type() const override { return type_code; }
@@ -1242,17 +1236,16 @@ public:
   parser::Token export_keyword;
   parser::Token import_keyword;
   std::vector<parser::Token> names;
-  std::weak_ptr<AST> ast;
 
 public:
-  ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree);
+  ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms);
   ~ImportDirective() = default;
 
   inline size_t size() const { return names.size(); }
   std::string at(size_t i) const;
   std::string full_name() const;
 
-  static std::shared_ptr<ImportDirective> New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms, const std::shared_ptr<AST> & syntaxtree);
+  static std::shared_ptr<ImportDirective> New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms);
 
   static const NodeType type_code = NodeType::ImportDirective;
   inline NodeType type() const override { return type_code; }
@@ -1277,10 +1270,9 @@ public:
   std::vector<TemplateParameter> parameters;
   parser::Token right_angle_bracket;
   std::shared_ptr<Declaration> declaration;
-  std::weak_ptr<AST> ast;
 
 public:
-  TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree);
+  TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl);
   ~TemplateDeclaration() = default;
 
   inline size_t size() const { return parameters.size(); }
@@ -1292,7 +1284,7 @@ public:
   bool is_full_specialization() const;
   bool is_partial_specialization() const;
 
-  static std::shared_ptr<TemplateDeclaration> New(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl, const std::shared_ptr<AST> & syntaxtree);
+  static std::shared_ptr<TemplateDeclaration> New(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl);
 
   static const NodeType type_code = NodeType::TemplateDecl;
   inline NodeType type() const override { return type_code; }

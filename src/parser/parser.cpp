@@ -155,8 +155,7 @@ void TemplateArgumentListFragment::consumeEnd()
     {
       this->right_angle = data()->unsafe_read();
       this->right_angle.id = Token::RightAngle;
-      this->right_angle.length = 1;
-      this->right_angle.pos += 1;
+      this->right_angle.m_text = StringView(this->right_angle.text().data() + 1, 1);
     }
     else
     {
@@ -166,7 +165,7 @@ void TemplateArgumentListFragment::consumeEnd()
       p->right_shift_flag = true;
       this->right_angle = tok;
       this->right_angle.id = Token::RightAngle;
-      this->right_angle.length = 1;
+      this->right_angle.m_text = StringView(this->right_angle.text().data(), 1);
     }
   }
   else
@@ -285,11 +284,6 @@ Token ParserData::peek()
   return mBuffer[mIndex];
 }
 
-std::string ParserData::text(const Token & tok) const
-{
-  return mLexer.text(tok);
-}
-
 ParserData::Position ParserData::pos() const
 {
   if (mIndex < mBuffer.size())
@@ -367,9 +361,7 @@ SourceLocation ParserBase::location() const
   if (!atEnd())
   {
     const Token tok = unsafe_peek();
-    loc.m_pos.pos = tok.pos;
-    loc.m_pos.col = tok.column;
-    loc.m_pos.line = tok.line;
+    loc.m_pos = ast()->position(tok);
   }
   else
   {
@@ -433,11 +425,6 @@ ParserData::Position ParserBase::pos() const
 void ParserBase::seek(const ParserData::Position & p)
 {
   return mFragment->data()->seek(p);
-}
-
-const std::string ParserBase::text(const Token & tok)
-{
-  return mFragment->data()->text(tok);
 }
 
 
@@ -767,7 +754,7 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
 {
   const Token lb = read();
   mArray = ast::ArrayExpression::New(lb);
-  mLambda = ast::LambdaExpression::New(ast(), lb);
+  mLambda = ast::LambdaExpression::New(lb);
 
   readBracketContent();
 
@@ -1267,7 +1254,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::parse()
   case Token::Double:
   case Token::Auto:
   case Token::This:
-    return ast::SimpleIdentifier::New(unsafe_read(), ast());
+    return ast::SimpleIdentifier::New(unsafe_read());
   case Token::Operator:
     return readOperatorName();
   case Token::UserDefinedName:
@@ -1297,21 +1284,21 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if (atEnd())
       throw SyntaxError{ ParserError::UnexpectedEndOfInput };
     const Token rp = read(Token::RightPar);
-    if (lp.column + 1 != rp.column)
+    if (lp.text().data() + 1 != rp.text().data())
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lp, Token::LeftRightPar} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, 0, lp.pos, 2, lp.line, lp.column });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightPar, 0, StringView(lp.text().data(), 2) });
   }
   else if (op == Token::LeftBracket)
   {
     const Token lb = read();
     const Token rb = read(Token::RightBracket);
-    if (lb.column + 1 != rb.column)
+    if (lb.text().data() + 1 != rb.text().data())
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{lb, Token::LeftRightBracket} };
-    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, 0, lb.pos, 2, lb.line, lb.column });
+    return ast::OperatorName::New(opkw, Token{ Token::LeftRightBracket, 0, StringView(lb.text().data(), 2) });
   }
   else if (op == Token::StringLiteral)
   {
-    if (op.length != 2)
+    if (op.text().size() != 2)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} };
 
     IdentifierParser idp{ fragment(), IdentifierParser::ParseOnlySimpleId };
@@ -1322,13 +1309,13 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
   else if (op == Token::UserDefinedLiteral)
   {
     op = unsafe_read();
-    const auto & str = text(op);
+    const auto& str = op.toString();
 
     if(str.find("\"\"") != 0)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} }; /// TODO ? should this have a different error than the previous
 
-    Token quotes{ Token::StringLiteral, Token::Literal, op.pos, 2, op.line, op.column };
-    Token suffixName{ Token::UserDefinedName, Token::Identifier, op.pos + 2, op.length - 2, op.line, op.column + 2 };
+    Token quotes{ Token::StringLiteral, Token::Literal, StringView(op.text().data(), 2) };
+    Token suffixName{ Token::UserDefinedName, Token::Identifier, StringView(op.text().data() + 2, op.text().size() - 2) };
     return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
   }
 
@@ -1343,9 +1330,9 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
     throw SyntaxError{ ParserError::ExpectedUserDefinedName, errors::ActualToken{base} };
 
   if(atEnd())
-    return ast::SimpleIdentifier::New(base, ast());
+    return ast::SimpleIdentifier::New(base);
 
-  std::shared_ptr<ast::Identifier> ret = ast::SimpleIdentifier::New(base, ast());
+  std::shared_ptr<ast::Identifier> ret = ast::SimpleIdentifier::New(base);
 
   Token t = peek();
   if ((options() & ParseTemplateId) && t == Token::LeftAngle)
@@ -1412,7 +1399,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readTemplateArguments(const T
 
   talistfragment.consumeEnd();
 
-  return ast::TemplateIdentifier::New(base, std::move(args), leftangle, talistfragment.right_angle, ast());
+  return ast::TemplateIdentifier::New(base, std::move(args), leftangle, talistfragment.right_angle);
 }
 
 TemplateArgParser::TemplateArgParser(AbstractFragment *fragment)
@@ -1758,7 +1745,7 @@ bool DeclParser::detectFromDeclarator()
   if (mName->is<ast::OperatorName>())
   {
     mDecision = ParsingFunction;
-    auto overload = ast::OperatorOverloadDecl::New(ast(), mName);
+    auto overload = ast::OperatorOverloadDecl::New(mName);
     overload->returnType = mType;
     mFuncDecl = overload;
     return true;
@@ -1766,7 +1753,7 @@ bool DeclParser::detectFromDeclarator()
   else if (mName->is<ast::LiteralOperatorName>())
   {
     mDecision = ParsingFunction;
-    auto lon = ast::OperatorOverloadDecl::New(ast(), mName);
+    auto lon = ast::OperatorOverloadDecl::New(mName);
     lon->returnType = mType;
     mFuncDecl = lon;
     return true;
@@ -2770,7 +2757,7 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 
   read(Token::Semicolon);
 
-  return ast::ImportDirective::New(exprt, imprt, std::move(names), ast());
+  return ast::ImportDirective::New(exprt, imprt, std::move(names));
 }
 
 
@@ -2805,7 +2792,7 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
 
   const auto decl = parse_decl();
 
-  return ast::TemplateDeclaration::New(tmplt_k, left_angle, std::move(params), right_angle, decl, ast());
+  return ast::TemplateDeclaration::New(tmplt_k, left_angle, std::move(params), right_angle, decl);
 }
 
 std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
