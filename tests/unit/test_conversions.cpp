@@ -370,13 +370,13 @@ TEST(Initializations, cref_init) {
   ASSERT_TRUE(init.createsTemporary());
 }
 
-std::shared_ptr<script::parser::ParserData> parser_data(const char *source);
+std::shared_ptr<script::parser::ParserContext> parser_context(const char *source);
 
 static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engine *e, const std::string & str)
 {
   using namespace script;
 
-  parser::ScriptFragment fragment{ parser_data(str.data()) };
+  parser::ScriptFragment fragment{ parser_context(str.data()) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();

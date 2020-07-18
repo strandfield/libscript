@@ -19,7 +19,7 @@ namespace parser
 
 
 
-AbstractFragment::AbstractFragment(const std::shared_ptr<ParserData> & pdata)
+AbstractFragment::AbstractFragment(const std::shared_ptr<ParserContext> & pdata)
   : mData(pdata)
   , mBegin(mData->pos())
   , mParent(nullptr)
@@ -64,13 +64,13 @@ AbstractFragment * AbstractFragment::parent() const
   return mParent;
 }
 
-std::shared_ptr<ParserData> AbstractFragment::data() const
+std::shared_ptr<ParserContext> AbstractFragment::data() const
 {
   // @TODO: try to avoid repetitive copy of shared_ptr mData
   return mData;
 }
 
-ScriptFragment::ScriptFragment(const std::shared_ptr<ParserData> & pdata)
+ScriptFragment::ScriptFragment(const std::shared_ptr<ParserContext> & pdata)
   : AbstractFragment(pdata)
 {
 
@@ -221,7 +221,7 @@ void ListFragment::consumeComma()
     read();
 }
 
-ParserData::ParserData(const SourceFile & src)
+ParserContext::ParserContext(const SourceFile & src)
   : mSource(src)
   , mIndex(0)
 {
@@ -229,21 +229,21 @@ ParserData::ParserData(const SourceFile & src)
   fetchNext();
 }
 
-ParserData::ParserData(const std::vector<Token> & tokens)
+ParserContext::ParserContext(const std::vector<Token> & tokens)
   : mBuffer(tokens)
   , mIndex(0)
 {
 
 }
 
-ParserData::ParserData(std::vector<Token> && tokens)
+ParserContext::ParserContext(std::vector<Token> && tokens)
   : mBuffer(std::move(tokens))
   , mIndex(0)
 {
 
 }
 
-ParserData::~ParserData()
+ParserContext::~ParserContext()
 {
   mSource = SourceFile{};
   mLexer.reset();
@@ -251,7 +251,7 @@ ParserData::~ParserData()
   mIndex = 0;
 }
 
-bool ParserData::atEnd() const
+bool ParserContext::atEnd() const
 {
   if (mIndex < mBuffer.size())
     return false;
@@ -259,7 +259,7 @@ bool ParserData::atEnd() const
   return true;
 }
 
-Token ParserData::read()
+Token ParserContext::read()
 {
   if (mIndex == mBuffer.size())
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
@@ -269,14 +269,14 @@ Token ParserData::read()
   return ret;
 }
 
-Token ParserData::unsafe_read()
+Token ParserContext::unsafe_read()
 {
   assert(mIndex < mBuffer.size());
   fetchNext();
   return mBuffer[mIndex++];
 }
 
-Token ParserData::peek()
+Token ParserContext::peek()
 {
   if (atEnd())
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
@@ -284,20 +284,20 @@ Token ParserData::peek()
   return mBuffer[mIndex];
 }
 
-ParserData::Position ParserData::pos() const
+ParserContext::Position ParserContext::pos() const
 {
   if (mIndex < mBuffer.size())
     return Position{ mIndex };
   return Position{ mIndex };
 }
 
-void ParserData::seek(const Position & p)
+void ParserContext::seek(const Position & p)
 {
   // @TODO : unsure that the position wasn't invalidated
   mIndex = p.index;
 }
 
-void ParserData::clearBuffer()
+void ParserContext::clearBuffer()
 {
   if (mIndex == mBuffer.size())
   {
@@ -314,7 +314,7 @@ void ParserData::clearBuffer()
 }
 
 
-void ParserData::fetchNext()
+void ParserContext::fetchNext()
 {
   while (!mLexer.atEnd())
   {
@@ -326,7 +326,7 @@ void ParserData::fetchNext()
   }
 }
 
-bool ParserData::isDiscardable(const Token & t) const
+bool ParserContext::isDiscardable(const Token & t) const
 {
   return t == Token::MultiLineComment || t == Token::SingleLineComment;
 }
@@ -417,12 +417,12 @@ AbstractFragment * ParserBase::fragment() const
   return mFragment;
 }
 
-ParserData::Position ParserBase::pos() const
+ParserContext::Position ParserBase::pos() const
 {
   return mFragment->data()->pos();
 }
 
-void ParserBase::seek(const ParserData::Position & p)
+void ParserBase::seek(const ParserContext::Position & p)
 {
   return mFragment->data()->seek(p);
 }
@@ -2862,14 +2862,14 @@ Parser::Parser()
 Parser::Parser(const SourceFile & source)
   : ProgramParser(nullptr)
 {
-  m_fragment = std::make_unique<ScriptFragment>(std::make_shared<ParserData>(source));
+  m_fragment = std::make_unique<ScriptFragment>(std::make_shared<ParserContext>(source));
   m_fragment->data()->mAst = std::make_shared<ast::AST>(source);
   reset(m_fragment.get());
 }
 
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 {
-  ScriptFragment frag{ std::make_shared<ParserData>(source) };
+  ScriptFragment frag{ std::make_shared<ParserContext>(source) };
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
@@ -2895,7 +2895,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 
 std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
 {
-  ScriptFragment frag{ std::make_shared<ParserData>(source) };
+  ScriptFragment frag{ std::make_shared<ParserContext>(source) };
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);

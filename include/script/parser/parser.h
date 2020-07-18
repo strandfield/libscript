@@ -14,7 +14,7 @@ namespace script
 namespace parser
 {
 
-struct ParserData
+struct ParserContext
 {
 private:
   SourceFile mSource;
@@ -25,10 +25,10 @@ private:
 public:
   std::shared_ptr<ast::AST> mAst;
 public:
-  ParserData(const SourceFile & src);
-  ParserData(const std::vector<Token> & tokens);
-  ParserData(std::vector<Token> && tokens);
-  ~ParserData();
+  ParserContext(const SourceFile & src);
+  ParserContext(const std::vector<Token> & tokens);
+  ParserContext(std::vector<Token> && tokens);
+  ~ParserContext();
 
   bool atEnd() const;
   Token read();
@@ -56,7 +56,7 @@ protected:
 class AbstractFragment
 {
 public:
-  AbstractFragment(const std::shared_ptr<ParserData> & pdata);
+  AbstractFragment(const std::shared_ptr<ParserContext> & pdata);
   AbstractFragment(AbstractFragment *parent);
   ~AbstractFragment();
 
@@ -68,17 +68,17 @@ public:
   AbstractFragment * parent() const;
 
 public:
-  std::shared_ptr<ParserData> data() const;
+  std::shared_ptr<ParserContext> data() const;
 private:
-  std::shared_ptr<ParserData> mData;
-  ParserData::Position mBegin;
+  std::shared_ptr<ParserContext> mData;
+  ParserContext::Position mBegin;
   AbstractFragment *mParent;
 };
 
 class ScriptFragment : public AbstractFragment
 {
 public:
-  ScriptFragment(const std::shared_ptr<ParserData> & pdata);
+  ScriptFragment(const std::shared_ptr<ParserContext> & pdata);
 
   bool atEnd() const override;
 };
@@ -170,8 +170,8 @@ protected:
   Token peek() const;
   Token unsafe_peek() const;
   AbstractFragment * fragment() const;
-  ParserData::Position pos() const;
-  void seek(const ParserData::Position & p);
+  ParserContext::Position pos() const;
+  void seek(const ParserContext::Position & p);
 
 protected:
   AbstractFragment *mFragment;

@@ -64,7 +64,7 @@ TEST(InitializerLists, class_template) {
 #include "script/compiler/expressioncompiler.h"
 #include "script/program/expression.h"
 
-std::shared_ptr<script::parser::ParserData> parser_data(const char *source);
+std::shared_ptr<script::parser::ParserContext> parser_context(const char *source);
 
 TEST(InitializerLists, initializer_list_creation) {
   using namespace script;
@@ -75,7 +75,7 @@ TEST(InitializerLists, initializer_list_creation) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::ScriptFragment fragment{ parser_data(source) };
+  parser::ScriptFragment fragment{ parser_context(source) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();
@@ -111,7 +111,7 @@ TEST(InitializerLists, initializer_list_conversion) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::ScriptFragment fragment{ parser_data(source) };
+  parser::ScriptFragment fragment{ parser_context(source) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();
