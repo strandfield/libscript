@@ -90,11 +90,9 @@ Fragment::Fragment(Fragment* parent, iterator begin, iterator end)
 Fragment::Fragment(Fragment* parent, Type<DelimiterPair>)
   : m_context(parent->context()),
     m_parent(parent),
-    m_begin(parent->begin()),
+    m_begin(m_context->iter()),
     m_end(parent->end())
 {
-  m_begin = m_context->iter();
-
   DelimitersCounter counter;
   counter.feed(*m_begin);
 
@@ -173,7 +171,7 @@ Fragment::Fragment(Fragment* parent, Type<ListElement>)
   {
     counter.feed(*it);
 
-    if (it->id == Token::Colon)
+    if (it->id == Token::Comma)
     {
       if (counter.balanced())
       {
@@ -211,6 +209,11 @@ std::vector<Token>::const_iterator Fragment::end() const
   return m_end;
 }
 
+size_t Fragment::size() const
+{
+  return std::distance(begin(), end());
+}
+
 bool Fragment::atEnd() const
 {
   return m_context->iter() == m_end;
@@ -231,13 +234,13 @@ void Fragment::seekBegin()
   return m_context->seek(m_begin);
 }
 
-bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, bool half_consumed_right_right, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right)
+bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right)
 {
   if (begin->id != Token::LeftAngle)
     return false;
 
   DelimitersCounter counter;
-  int angle_counter = 1;
+  int angle_counter = 0;
 
   for (auto it = begin; it != end; ++it)
   {
@@ -265,22 +268,17 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, bool half_
     {
       if (counter.balanced())
       {
-        if (angle_counter == 1)
+        if (angle_counter == 1 || angle_counter == 2)
         {
-          --angle_counter;
+          angle_counter = 0;
           o_half_consumed_right_right = true;
+          o_begin = begin + 1;
+          o_end = it;
+          return true;
         }
         else
         {
           angle_counter -= 2;
-          o_half_consumed_right_right = false;
-        }
-
-        if (angle_counter == 0)
-        {
-          o_begin = begin + 1;
-          o_end = it;
-          return true;
         }
       }
     }
@@ -291,217 +289,7 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, bool half_
     }
   }
 
-  if (counter.balanced() && angle_counter == 1 && half_consumed_right_right)
-  {
-    o_begin = begin + 1;
-    o_end = end;
-    o_half_consumed_right_right = false;
-    return true;
-  }
-
   return false;
-}
-
-AbstractFragment::AbstractFragment(const std::shared_ptr<ParserContext> & pdata)
-  : mData(pdata)
-  , mBegin(mData->pos())
-  , mParent(nullptr)
-{
-
-}
-
-AbstractFragment::AbstractFragment(AbstractFragment *parent)
-  : mData(parent->data())
-  , mBegin(mData->pos())
-  , mParent(parent)
-{
-
-}
-
-AbstractFragment::~AbstractFragment()
-{
-  mParent = nullptr;
-  mData = nullptr;
-}
-
-Token AbstractFragment::read()
-{
-  return data()->read();
-}
-
-Token AbstractFragment::peek() const
-{
-  if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
-
-  return mData->unsafe_peek();
-}
-
-void AbstractFragment::seekBegin()
-{
-  return data()->seek(mBegin);
-}
-
-AbstractFragment * AbstractFragment::parent() const
-{
-  return mParent;
-}
-
-std::shared_ptr<ParserContext> AbstractFragment::data() const
-{
-  // @TODO: try to avoid repetitive copy of shared_ptr mData
-  return mData;
-}
-
-ScriptFragment::ScriptFragment(const std::shared_ptr<ParserContext> & pdata)
-  : AbstractFragment(pdata)
-{
-
-}
-
-bool ScriptFragment::atEnd() const
-{
-  return data()->atEnd();
-}
-
-SentinelFragment::SentinelFragment(const Token::Id & s, AbstractFragment *parent)
-  : AbstractFragment(parent)
-  , mSentinel(s)
-{
-
-}
-
-SentinelFragment::~SentinelFragment()
-{
-
-}
-
-StatementFragment::StatementFragment(AbstractFragment *parent)
-  : SentinelFragment(Token::Semicolon, parent)
-{
-
-}
-
-StatementFragment::~StatementFragment()
-{
-
-}
-
-CompoundStatementFragment::CompoundStatementFragment(AbstractFragment *parent)
-  : SentinelFragment(Token::RightBrace, parent)
-{
-
-}
-CompoundStatementFragment::~CompoundStatementFragment()
-{}
-
-bool SentinelFragment::atEnd() const
-{
-  return data()->atEnd() || data()->unsafe_peek() == mSentinel;
-}
-
-Token SentinelFragment::consumeSentinel()
-{
-  return data()->read();
-}
-
-TemplateArgumentListFragment::TemplateArgumentListFragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-  , right_shift_flag(false)
-{
-
-}
-
-TemplateArgumentListFragment::~TemplateArgumentListFragment()
-{
-
-}
-
-
-bool TemplateArgumentListFragment::atEnd() const
-{
-  if (parent()->atEnd() && dynamic_cast<TemplateArgumentFragment*>(parent()) == nullptr)
-    throw std::runtime_error{ "Not a template argument list" };
-
-  const Token tok = data()->peek();
-  return tok == Token::RightAngle || tok == Token::RightRightAngle;
-}
-
-void TemplateArgumentListFragment::consumeEnd()
-{
-  assert(atEnd());
-
-  const Token tok = data()->peek();
-  if (tok == Token::RightRightAngle)
-  {
-    if (this->right_shift_flag)
-    {
-      this->right_angle = data()->unsafe_read();
-      this->right_angle.id = Token::RightAngle;
-      this->right_angle.m_text = StringView(this->right_angle.text().data() + 1, 1);
-    }
-    else
-    {
-      TemplateArgumentListFragment *p = dynamic_cast<TemplateArgumentListFragment*>(parent()->parent());
-      if(p == nullptr)
-        throw std::runtime_error{ "Not implemented" };
-      p->right_shift_flag = true;
-      this->right_angle = tok;
-      this->right_angle.id = Token::RightAngle;
-      this->right_angle.m_text = StringView(this->right_angle.text().data(), 1);
-    }
-  }
-  else
-    this->right_angle = data()->unsafe_read();
-}
-
-TemplateArgumentFragment::TemplateArgumentFragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-{
-  if (data()->peek() == Token::Comma)
-    throw std::runtime_error{ "TemplateArgumentFragment constructor : Implementation error" };
-}
-
-TemplateArgumentFragment::~TemplateArgumentFragment()
-{
-
-}
-
-
-bool TemplateArgumentFragment::atEnd() const
-{
-  return parent()->atEnd() || data()->peek() == Token::Comma;
-}
-
-void TemplateArgumentFragment::consumeComma()
-{
-  assert(atEnd());
-  if (!parent()->atEnd())
-    read();
-}
-
-
-ListFragment::ListFragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-{
-
-}
-
-ListFragment::~ListFragment()
-{
-
-}
-
-bool ListFragment::atEnd() const
-{
-  return parent()->atEnd() || data()->unsafe_peek() == Token::Comma;
-}
-
-void ListFragment::consumeComma()
-{
-  assert(atEnd());
-  if (!parent()->atEnd())
-    read();
 }
 
 ParserContext::ParserContext(const SourceFile & src)
@@ -571,6 +359,11 @@ Token ParserContext::peek()
   return m_tokens[mIndex];
 }
 
+Token ParserContext::peek(size_t n) const
+{
+  return m_tokens.at(mIndex + n);
+}
+
 std::vector<Token>::const_iterator ParserContext::iter() const
 {
   return m_tokens.begin() + mIndex;
@@ -599,25 +392,25 @@ bool ParserContext::isDiscardable(const Token & t) const
 }
 
 
-ParserBase::ParserBase(AbstractFragment *frag)
-  : mFragment(frag)
+ParserBase::ParserBase(Fragment* frag)
+  : m_fragment(frag)
 {
 
 }
 
 ParserBase::~ParserBase()
 {
-  mFragment = nullptr;
+  m_fragment = nullptr;
 }
 
-void ParserBase::reset(AbstractFragment *fragment)
+void ParserBase::reset(Fragment* fragment)
 {
-  mFragment = fragment;
+  m_fragment = fragment;
 }
 
 std::shared_ptr<ast::AST> ParserBase::ast() const
 {
-  return mFragment->data()->mAst;
+  return m_fragment->context()->mAst;
 }
 
 SourceLocation ParserBase::location() const
@@ -640,23 +433,22 @@ SourceLocation ParserBase::location() const
 
 bool ParserBase::atEnd() const
 {
-  return mFragment->atEnd();
+  return m_fragment->atEnd();
 }
 
 bool ParserBase::eof() const
 {
-  auto p = mFragment->data();
-  return p->atEnd();
+  return m_fragment->context()->atEnd();
 }
 
 Token ParserBase::read()
 {
-  return mFragment->read();
+  return m_fragment->read();
 }
 
 Token ParserBase::unsafe_read()
 {
-  return mFragment->data()->unsafe_read();
+  return m_fragment->context()->unsafe_read();
 }
 
 Token ParserBase::read(const Token::Id & type)
@@ -671,31 +463,41 @@ Token ParserBase::read(const Token::Id & type)
 
 Token ParserBase::peek() const
 {
-  return mFragment->peek();
+  return m_fragment->peek();
+}
+
+Token ParserBase::peek(size_t n) const
+{
+  return m_fragment->context()->peek(n);
 }
 
 Token ParserBase::unsafe_peek() const
 {
-  return mFragment->data()->unsafe_peek();
+  return m_fragment->context()->unsafe_peek();
 }
 
-AbstractFragment * ParserBase::fragment() const
+Fragment* ParserBase::fragment() const
 {
-  return mFragment;
+  return m_fragment;
+}
+
+const std::shared_ptr<ParserContext>& ParserBase::context() const
+{
+  return m_fragment->context();
 }
 
 ParserContext::Position ParserBase::pos() const
 {
-  return mFragment->data()->pos();
+  return m_fragment->context()->pos();
 }
 
 void ParserBase::seek(const ParserContext::Position & p)
 {
-  return mFragment->data()->seek(p);
+  return m_fragment->context()->seek(p);
 }
 
 
-LiteralParser::LiteralParser(AbstractFragment *fragment)
+LiteralParser::LiteralParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -728,7 +530,7 @@ std::shared_ptr<ast::Literal> LiteralParser::parse()
   throw SyntaxError{ ParserError::ExpectedLiteral, errors::ActualToken{lit} };
 }
 
-ExpressionParser::ExpressionParser(AbstractFragment *fragment)
+ExpressionParser::ExpressionParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -793,15 +595,15 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   }
   else if (t == Token::LeftPar) 
   {
-    unsafe_read();
-
-    if (peek() == Token::RightPar) // we just read '()'
+    if (peek(1) == Token::RightPar) // we just read '()'
       throw SyntaxError{ ParserError::InvalidEmptyOperand };
 
-    SentinelFragment sentinel{ Token::RightPar, fragment() };
-    ExpressionParser exprParser{ &sentinel };
+    Fragment subexpr_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+    read(Token::LeftPar); // @TODO: is it necessary ?
+
+    ExpressionParser exprParser{ &subexpr_fragment };
     operand = exprParser.parse();
-    sentinel.consumeSentinel();
+    read(Token::RightPar);
   }
   else if (t == Token::LeftBracket) // array
   {
@@ -810,18 +612,21 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   }
   else if (t == Token::LeftBrace)
   {
-    const Token left_brace = unsafe_read();
-    auto list = ast::ListExpression::New(left_brace);
-    SentinelFragment sentinel{ Token::RightBrace, fragment() };
-    ListFragment listfrag{ &sentinel };
-    while (!sentinel.atEnd())
+    auto list = ast::ListExpression::New(unsafe_peek());
+    Fragment list_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+    read(Token::LeftBrace); // @TODO: is it necessary ?
+
+    while (!list_fragment.atEnd()) // @TODO: remove Fragment::atEnd()
     {
-      ExpressionParser exprparser{ &listfrag };
+      Fragment list_element_fragment{ &list_fragment, Fragment::Type<Fragment::ListElement>() };
+      ExpressionParser exprparser{ &list_element_fragment };
       list->elements.push_back(exprparser.parse());
-      listfrag.consumeComma();
+
+      if (!list_fragment.atEnd())
+        read(Token::Comma);
     }
 
-    list->right_brace = sentinel.consumeSentinel();
+    list->right_brace = read(Token::RightBrace);
 
     operand = list;
   }
@@ -855,39 +660,40 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     }
     else if (t == Token::LeftPar)
     {
+      Fragment argument_list_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
       const Token leftpar = unsafe_read();
-      SentinelFragment sentinel{ Token::RightPar, fragment() };
-      ExpressionListParser argsParser{ &sentinel };
+
+      ExpressionListParser argsParser{ &argument_list_fragment };
       std::vector<std::shared_ptr<ast::Expression>> args = argsParser.parse();
-      const Token rightpar = sentinel.consumeSentinel();
+      const Token rightpar = read(Token::RightPar);
       operand = ast::FunctionCall::New(operand, leftpar, std::move(args), rightpar);
     }
     else if (t == Token::LeftBracket) // subscript operator
     {
-      auto leftBracket = read();
+      Fragment subscript_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
 
-      if (atEnd())
-        throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+      auto leftBracket = read();
 
       Token next = peek();
 
-      if (next == Token::RightBracket)
+      if (subscript_fragment.size() == 0)
         throw SyntaxError{ ParserError::InvalidEmptyBrackets };
 
-      SentinelFragment sentinel{ Token::RightBracket, fragment() };
-      ExpressionParser exprParser{ &sentinel };
+      ExpressionParser exprParser{ &subscript_fragment };
       auto arg = exprParser.parse();
       operand = ast::ArraySubscript::New(operand, leftBracket, arg, read());
     }
     else if (t == Token::LeftBrace && operand->is<ast::Identifier>())
     {
+      Fragment bracelist_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
       auto type_name = std::dynamic_pointer_cast<ast::Identifier>(operand);
       const Token & left_brace = unsafe_read();
       
-      SentinelFragment sentinel{ Token::RightBrace, fragment() };
-      ExpressionListParser argsParser{ &sentinel };
+      ExpressionListParser argsParser{ &bracelist_fragment };
       auto args = argsParser.parse();
-      const Token & right_brace = sentinel.consumeSentinel();
+      const Token right_brace = read(Token::RightBrace);
       operand = ast::BraceConstruction::New(type_name, left_brace, std::move(args), right_brace);
     }
     else if (t.isOperator() || t == Token::QuestionMark || t == Token::Colon)
@@ -1010,7 +816,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
 }
 
 
-LambdaParser::LambdaParser(AbstractFragment *fragment)
+LambdaParser::LambdaParser(Fragment* fragment)
   : ParserBase(fragment)
   , mDecision(Undecided)
 {
@@ -1019,9 +825,8 @@ LambdaParser::LambdaParser(AbstractFragment *fragment)
 
 std::shared_ptr<ast::Expression> LambdaParser::parse()
 {
-  const Token lb = read();
-  mArray = ast::ArrayExpression::New(lb);
-  mLambda = ast::LambdaExpression::New(lb);
+  mArray = ast::ArrayExpression::New(peek());
+  mLambda = ast::LambdaExpression::New(unsafe_peek());
 
   readBracketContent();
 
@@ -1061,14 +866,17 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
 
 void LambdaParser::readBracketContent()
 {
-  SentinelFragment sentinel{ Token::RightBracket, fragment() };
-  while (!sentinel.atEnd())
+  Fragment capture_list_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
+  read(Token::LeftBracket);
+
+  while (!capture_list_fragment.atEnd())
   {
-    ListFragment listfrag{ &sentinel };
+    Fragment listelem_fragment{ &capture_list_fragment, Fragment::Type<Fragment::ListElement>() };
 
     if(mDecision == Undecided || mDecision == ParsingArray)
     {
-      ExpressionParser ep{ &listfrag };
+      ExpressionParser ep{ &listelem_fragment };
       try
       {
         auto elem = ep.parse();
@@ -1087,9 +895,9 @@ void LambdaParser::readBracketContent()
     if (mDecision == Undecided || mDecision == ParsingLambda)
     {
       auto savedPos = pos();
-      listfrag.seekBegin();
+      listelem_fragment.seekBegin();
 
-      LambdaCaptureParser capp{ &listfrag };
+      LambdaCaptureParser capp{ &listelem_fragment };
 
       if (!capp.detect())
       {
@@ -1098,7 +906,10 @@ void LambdaParser::readBracketContent()
 
         setDecision(ParsingArray);
         seek(savedPos);
-        listfrag.consumeComma();
+
+        if (peek() == Token::Comma)
+          unsafe_read();
+
         continue;
       }
 
@@ -1114,14 +925,15 @@ void LambdaParser::readBracketContent()
         setDecision(ParsingArray);
       }
 
-      if (!listfrag.atEnd())
+      if (!listelem_fragment.atEnd())
         seek(savedPos);
     }
 
-    listfrag.consumeComma();
+    if (peek() == Token::Comma)
+      unsafe_read();
   }
 
-  const Token rb = sentinel.consumeSentinel();
+  const Token rb = read(Token::RightBracket);
 
   if (mArray)
     mArray->rightBracket = rb;
@@ -1133,21 +945,23 @@ void LambdaParser::readParams()
 {
   assert(mDecision == ParsingLambda);
 
+  Fragment params_fragment{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   mLambda->leftPar = read(Token::LeftPar);
 
-  SentinelFragment sentinel{ Token::RightPar, fragment() };
-  while (!sentinel.atEnd())
+  while (!params_fragment.atEnd())
   {
-    ListFragment listfrag{ &sentinel };
+    Fragment listfrag{ &params_fragment, Fragment::Type<Fragment::ListElement>() };
 
     FunctionParamParser pp{ &listfrag };
     auto param = pp.parse();
     mLambda->params.push_back(param);
 
-    listfrag.consumeComma();
+    if (peek() == Token::Comma)
+      unsafe_read();
   }
 
-  mLambda->rightPar = sentinel.consumeSentinel();
+  mLambda->rightPar = read(Token::RightPar);
 }
 
 
@@ -1164,7 +978,7 @@ std::shared_ptr<ast::CompoundStatement> LambdaParser::readBody()
 }
 
 
-LambdaCaptureParser::LambdaCaptureParser(AbstractFragment *fragment)
+LambdaCaptureParser::LambdaCaptureParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -1222,7 +1036,7 @@ void LambdaParser::setDecision(Decision d)
 }
 
 
-ProgramParser::ProgramParser(AbstractFragment *frag)
+ProgramParser::ProgramParser(Fragment* frag)
   : ParserBase(frag)
 {
 
@@ -1296,10 +1110,10 @@ std::shared_ptr<ast::Statement> ProgramParser::parseAmbiguous()
   
   seek(savePoint);
 
-  SentinelFragment sentinel{ Token::Semicolon, fragment() };
+  Fragment sentinel{ fragment(), Fragment::Type<Fragment::Statement>() };
   ExpressionParser ep{ &sentinel };
   auto expr = ep.parse();
-  auto semicolon = sentinel.consumeSentinel();
+  auto semicolon = read(Token::Semicolon);
   return ast::ExpressionStatement::New(expr, semicolon);
 }
 
@@ -1342,8 +1156,9 @@ std::shared_ptr<ast::ReturnStatement> ProgramParser::parseReturnStatement()
     return ast::ReturnStatement::New(kw);
   }
 
-  StatementFragment exprStatement{ fragment() };
-  ExpressionParser exprParser{ &exprStatement };
+  Fragment exprstatement_fragment{ fragment(), Fragment::Type<Fragment::Statement>() };
+
+  ExpressionParser exprParser{ &exprstatement_fragment };
   auto returnValue = exprParser.parse();
 
   Token semicolon = read();
@@ -1354,14 +1169,15 @@ std::shared_ptr<ast::ReturnStatement> ProgramParser::parseReturnStatement()
 
 std::shared_ptr<ast::CompoundStatement> ProgramParser::parseCompoundStatement()
 {
+  Fragment frag{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   Token leftBrace = read();
   assert(leftBrace == Token::LeftBrace);
 
-  CompoundStatementFragment frag{ fragment() };
   ProgramParser progParser{ &frag };
 
   std::vector<std::shared_ptr<ast::Statement>> statements = progParser.parseProgram();
-  Token rightBrace = frag.consumeSentinel();
+  Token rightBrace = read(Token::RightBrace);
   assert(rightBrace == Token::RightBrace);
 
   auto ret = ast::CompoundStatement::New(leftBrace, rightBrace);
@@ -1373,15 +1189,16 @@ std::shared_ptr<ast::IfStatement> ProgramParser::parseIfStatement()
 {
   Token ifkw = read();
   assert(ifkw == Token::If);
-  const Token leftpar = read(Token::LeftPar);
 
   auto ifStatement = ast::IfStatement::New(ifkw);
 
   {
-    SentinelFragment condition{ Token::RightPar, fragment() };
+    Fragment condition{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+    const Token leftpar = read(Token::LeftPar);
+
     ExpressionParser exprParser{ &condition };
     ifStatement->condition = exprParser.parse();
-    condition.consumeSentinel();
+    read(Token::RightPar);
   }
 
   ifStatement->body = parseStatement();
@@ -1399,15 +1216,15 @@ std::shared_ptr<ast::WhileLoop> ProgramParser::parseWhileLoop()
 {
   Token whilekw = read();
   assert(whilekw == Token::While);
-  const Token leftpar = read(Token::LeftPar);
 
   auto whileLoop = ast::WhileLoop::New(whilekw);
 
   {
-    SentinelFragment condition{ Token::RightPar, fragment() };
+    Fragment condition{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+    const Token leftpar = read(Token::LeftPar);
     ExpressionParser exprParser{ &condition };
     whileLoop->condition = exprParser.parse();
-    condition.consumeSentinel();
+    read(Token::RightPar);
   }
 
   whileLoop->body = parseStatement();
@@ -1419,18 +1236,21 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
 {
   Token forkw = read();
   assert(forkw == Token::For);
+
+  Fragment init_loop_incr{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   const Token leftpar = read(Token::LeftPar);
 
   auto forLoop = ast::ForLoop::New(forkw);
 
   {
-    DeclParser initParser{ fragment() };
+    DeclParser initParser{ &init_loop_incr };
     if (!initParser.detectDecl())
     {
-      SentinelFragment init{ Token::Semicolon, fragment() };
+      Fragment init{ &init_loop_incr, Fragment::Type<Fragment::Statement>() };
       ExpressionParser exprParser{ &init };
       auto initExpr = exprParser.parse();
-      auto semicolon = init.consumeSentinel();
+      auto semicolon = read(Token::Semicolon);
       forLoop->initStatement = ast::ExpressionStatement::New(initExpr, semicolon);
     }
     else
@@ -1441,17 +1261,18 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
   }
 
   {
-    SentinelFragment condition{ Token::Semicolon, fragment() };
+    Fragment condition{ &init_loop_incr, Fragment::Type<Fragment::Statement>() };
     ExpressionParser exprParser{ &condition };
     forLoop->condition = exprParser.parse();
-    condition.consumeSentinel();
+    read(Token::Semicolon);
   }
 
   {
-    SentinelFragment loopIncr{ Token::RightPar, fragment() };
+
+    Fragment loopIncr{ &init_loop_incr, init_loop_incr.context()->iter(), init_loop_incr.end() };
     ExpressionParser exprParser{ &loopIncr };
     forLoop->loopIncrement = exprParser.parse();
-    loopIncr.consumeSentinel();
+    read(Token::RightPar);
   }
 
   forLoop->body = parseStatement();
@@ -1501,7 +1322,7 @@ std::shared_ptr<ast::TemplateDeclaration> ProgramParser::parseTemplate()
 
 
 
-IdentifierParser::IdentifierParser(AbstractFragment *fragment, int opts)
+IdentifierParser::IdentifierParser(Fragment* fragment, int opts)
   : ParserBase(fragment)
   , mOptions(opts)
 {
@@ -1605,9 +1426,36 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
   if ((options() & ParseTemplateId) && t == Token::LeftAngle)
   {
     const auto savepoint = pos();
+
     try 
     {
-      ret = readTemplateArguments(base);
+      Fragment::iterator frag_begin;
+      Fragment::iterator frag_end;
+      Fragment::iterator current_frag_end = context()->half_consumed_right_right_angle && fragment()->end()->id == Token::RightRightAngle ?
+        fragment()->end() + 1 : fragment()->end();
+      bool half_consumed_right_right = false;
+
+      bool ok = Fragment::tryBuildTemplateFragment(fragment()->context()->iter(), current_frag_end,
+        frag_begin, frag_end, half_consumed_right_right);
+
+      if (ok)
+      {
+        RaiiRightRightAngleGuard guard{ context().get() };
+        if(guard.value && half_consumed_right_right)
+          context()->half_consumed_right_right_angle = false;
+        else if(half_consumed_right_right)
+          context()->half_consumed_right_right_angle = true;
+
+        Fragment targlist_frag{ fragment(), frag_begin, frag_end };
+        ret = readTemplateArguments(base, targlist_frag);
+
+        if (!guard.value)
+          unsafe_read();
+      }
+      else
+      {
+        seek(savepoint);
+      }
     }
     catch (const SyntaxError& )
     {
@@ -1649,27 +1497,28 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
   return ret;
 }
 
-std::shared_ptr<ast::Identifier> IdentifierParser::readTemplateArguments(const Token & base)
+std::shared_ptr<ast::Identifier> IdentifierParser::readTemplateArguments(const Token& base, Fragment targlist_frag)
 {
   const Token leftangle = read();
 
   std::vector<ast::NodeRef> args;
 
-  TemplateArgumentListFragment talistfragment{ fragment() };
-  while (!talistfragment.atEnd())
+  while (!targlist_frag.atEnd())
   {
-    TemplateArgumentFragment frag{ &talistfragment };
+    Fragment frag{ &targlist_frag, Fragment::Type<Fragment::ListElement>() };
     TemplateArgParser argparser{ &frag };
     args.push_back(argparser.parse());
-    frag.consumeComma();
+    
+    if (!targlist_frag.atEnd())
+      read(Token::Comma);
   }
 
-  talistfragment.consumeEnd();
+  Token right_angle = unsafe_peek();
 
-  return ast::TemplateIdentifier::New(base, std::move(args), leftangle, talistfragment.right_angle);
+  return ast::TemplateIdentifier::New(base, std::move(args), leftangle, right_angle);
 }
 
-TemplateArgParser::TemplateArgParser(AbstractFragment *fragment)
+TemplateArgParser::TemplateArgParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -1679,18 +1528,22 @@ std::shared_ptr<ast::Node> TemplateArgParser::parse()
 {
   auto p = pos();
 
-  TypeParser tp{ fragment() };
-  if (tp.detect())
   {
-    try
-    {
-      auto type = tp.parse();
-      if (atEnd())
-        return ast::TypeNode::New(type);
-    }
-    catch (const SyntaxError&)
-    {
+    RaiiRightRightAngleGuard guard{ context().get() };
 
+    TypeParser tp{ fragment() };
+    if (tp.detect())
+    {
+      try
+      {
+        auto type = tp.parse();
+        if (atEnd())
+          return ast::TypeNode::New(type);
+      }
+      catch (const SyntaxError&)
+      {
+
+      }
     }
   }
 
@@ -1702,7 +1555,7 @@ std::shared_ptr<ast::Node> TemplateArgParser::parse()
 
 
 
-TypeParser::TypeParser(AbstractFragment *fragment)
+TypeParser::TypeParser(Fragment* fragment)
   : ParserBase(fragment)
   , mReadFunctionSignature(true)
 {
@@ -1775,11 +1628,11 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
   ret.functionType = std::make_shared<ast::FunctionType>();
   ret.functionType->returnType = rt;
 
+  Fragment params_frag{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
   const Token leftPar = unsafe_read();
-  SentinelFragment sentinel{ Token::RightPar, fragment() };
-  while (!sentinel.atEnd())
+  while (!params_frag.atEnd())
   {
-    ListFragment listfrag{ &sentinel };
+    Fragment listfrag{ &params_frag, Fragment::Type<Fragment::ListElement>() };
     TypeParser tp{ &listfrag };
     auto param = tp.parse();
     ret.functionType->params.push_back(param);
@@ -1787,10 +1640,11 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
     if (!listfrag.atEnd())
       throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{listfrag.peek(), Token::Invalid} };
 
-    listfrag.consumeComma();
+    if (peek() == Token::Comma)
+      unsafe_read();
   }
 
-  sentinel.consumeSentinel();
+  read(Token::RightPar);
 
   if (atEnd())
     return ret;
@@ -1809,7 +1663,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
 
 
 
-FunctionParamParser::FunctionParamParser(AbstractFragment *fragment)
+FunctionParamParser::FunctionParamParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -1841,7 +1695,7 @@ ast::FunctionParameter FunctionParamParser::parse()
   return fp;
 }
 
-ExpressionListParser::ExpressionListParser(AbstractFragment *fragment)
+ExpressionListParser::ExpressionListParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -1857,7 +1711,8 @@ std::vector<std::shared_ptr<ast::Expression>> ExpressionListParser::parse()
   std::vector<std::shared_ptr<ast::Expression>> result;
   while (!atEnd())
   {
-    Fragment f{ fragment() };
+    Fragment f{ fragment(), Fragment::Type<Fragment::ListElement>()  };
+
     ExpressionParser expr{ &f };
     auto e = expr.parse();
     result.push_back(e);
@@ -1868,27 +1723,8 @@ std::vector<std::shared_ptr<ast::Expression>> ExpressionListParser::parse()
   return result;
 }
 
-ExpressionListParser::Fragment::Fragment(AbstractFragment *parent)
-  : AbstractFragment(parent)
-{
 
-}
-
-ExpressionListParser::Fragment::~Fragment()
-{
-
-}
-
-
-bool ExpressionListParser::Fragment::atEnd() const
-{
-  return parent()->atEnd() || data()->peek() == Token::Comma;
-}
-
-
-
-
-DeclParser::DeclParser(AbstractFragment *fragment, std::shared_ptr<ast::Identifier> cn)
+DeclParser::DeclParser(Fragment* fragment, std::shared_ptr<ast::Identifier> cn)
   : ParserBase(fragment)
   , mDecision(Undecided)
   , mClassName(cn)
@@ -2151,27 +1987,27 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
   if (peek() == Token::Eq)
   {
     const Token eqsign = read();
-    StatementFragment exprFrag{ fragment() };
+    Fragment exprFrag{ fragment(), Fragment::Type<Fragment::Statement>() };
     ExpressionParser ep{ &exprFrag };
     auto expr = ep.parse();
     mVarDecl->init = ast::AssignmentInitialization::New(eqsign, expr);
   }
   else if (peek() == Token::LeftBrace)
   {
+    Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
     const Token leftBrace = read();
-    SentinelFragment sentinel{ Token::RightBrace, fragment() };
     ExpressionListParser argsParser{ &sentinel };
     auto args = argsParser.parse();
-    const Token rightbrace = sentinel.consumeSentinel();
+    const Token rightbrace = read(Token::RightBrace);
     mVarDecl->init = ast::BraceInitialization::New(leftBrace, std::move(args), rightbrace);
   }
   else if (peek() == Token::LeftPar)
   {
+    Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
     const Token leftpar = read();
-    SentinelFragment sentinel{ Token::RightPar, fragment() };
     ExpressionListParser argsParser{ &sentinel };
     auto args = argsParser.parse();
-    const Token rightpar = sentinel.consumeSentinel();
+    const Token rightpar = read(Token::RightPar);
     mVarDecl->init = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
   }
   else
@@ -2235,21 +2071,21 @@ void DeclParser::readOptionalMemberInitializers()
     auto id = idp.parse();
     if (peek() == Token::LeftBrace)
     {
+      Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
       const Token leftBrace = unsafe_read();
-      SentinelFragment sentinel{ Token::RightBrace, fragment() };
       ExpressionListParser argsParser{ &sentinel };
       auto args = argsParser.parse();
-      const Token rightBrace = sentinel.consumeSentinel();
+      const Token rightBrace = read(Token::RightBrace);
       auto braceinit = ast::BraceInitialization::New(leftBrace, std::move(args), rightBrace);
       ctor->memberInitializationList.push_back(ast::MemberInitialization{ id, braceinit });
     }
     else if (peek() == Token::LeftPar)
     {
+      Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
       const Token leftpar = unsafe_read();
-      SentinelFragment sentinel{ Token::RightPar, fragment() };
       ExpressionListParser argsParser{ &sentinel };
       auto args = argsParser.parse();
-      const Token rightpar = sentinel.consumeSentinel();
+      const Token rightpar = read(Token::RightPar);
       auto ctorinit = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
       ctor->memberInitializationList.push_back(ast::MemberInitialization{ id, ctorinit });
     }
@@ -2346,35 +2182,39 @@ bool DeclParser::readOptionalExplicit()
 
 void DeclParser::readParams()
 {
+  Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   const Token leftpar = read(Token::LeftPar);
 
-  SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
   {
-    ListFragment listfrag{ &sentinel };
+    Fragment listfrag{ &sentinel, Fragment::Type<Fragment::ListElement>() };
+
     FunctionParamParser pp{ &listfrag };
     auto param = pp.parse();
     mFuncDecl->params.push_back(param);
 
-    listfrag.consumeComma();
+    if (peek() == Token::Comma)
+      read(Token::Comma);
   }
 
-  sentinel.consumeSentinel();
+  read(Token::RightPar);
 }
 
 
 void DeclParser::readArgsOrParams()
 {
+  Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   const Token leftPar = read();
   assert(leftPar == Token::LeftPar);
 
   if (mDecision == Undecided || mDecision == ParsingVariable)
     mVarDecl->init = ast::ConstructorInitialization::New(leftPar, {}, parser::Token{});
 
-  SentinelFragment sentinel{ Token::RightPar, fragment() };
   while (!sentinel.atEnd())
   {
-    ListFragment listfrag{ &sentinel };
+    Fragment listfrag{ &sentinel, Fragment::Type<Fragment::ListElement>() };
 
     if (mDecision == Undecided || mDecision == ParsingVariable)
     {
@@ -2419,13 +2259,14 @@ void DeclParser::readArgsOrParams()
     }
 
     if (!listfrag.atEnd())
-      listfrag.data()->seek(position);
+      listfrag.context()->seek(position);
     assert(listfrag.atEnd());
 
-    listfrag.consumeComma();
+    if (peek() == Token::Comma)
+      unsafe_read();
   }
 
-  const Token rightpar = sentinel.consumeSentinel();
+  const Token rightpar = read(Token::RightPar);
 
   if (mVarDecl != nullptr)
     mVarDecl->init->as<ast::ConstructorInitialization>().right_par = rightpar;
@@ -2662,7 +2503,7 @@ bool DeclParser::isClassName(const std::shared_ptr<ast::Identifier> & name) cons
 
 
 
-EnumValueParser::EnumValueParser(AbstractFragment *fragment)
+EnumValueParser::EnumValueParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -2672,10 +2513,12 @@ void EnumValueParser::parse()
 {
   while (!atEnd())
   {
-    ListFragment frag{ fragment() };
+    Fragment frag{ fragment(), Fragment::Type<Fragment::ListElement>() };
+
     if (frag.atEnd())
     {
-      frag.consumeComma();
+      if (!fragment()->atEnd())
+        read(Token::Comma);
       continue;
     }
 
@@ -2685,7 +2528,8 @@ void EnumValueParser::parse()
     if (frag.atEnd())
     {
       values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), nullptr });
-      frag.consumeComma();
+      if (!fragment()->atEnd())
+        read(Token::Comma);
       continue;
     }
 
@@ -2695,12 +2539,13 @@ void EnumValueParser::parse()
     auto expr = valparser.parse();
 
     values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), expr });
-    frag.consumeComma();
+    if (!fragment()->atEnd())
+      read(Token::Comma);
   }
 }
 
 
-EnumParser::EnumParser(AbstractFragment *fragment)
+EnumParser::EnumParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -2721,9 +2566,10 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
     enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(idparser.parse());
   }
 
+  Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   read(Token::LeftBrace);
 
-  SentinelFragment sentinel{ Token::RightBrace, fragment() };
   EnumValueParser value_parser{ &sentinel };
   value_parser.parse();
 
@@ -2735,7 +2581,7 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
 
 
 
-ClassParser::ClassParser(AbstractFragment *fragment)
+ClassParser::ClassParser(Fragment* fragment)
   : ParserBase(fragment)
   , mTemplateSpecialization(false)
 {
@@ -2876,7 +2722,7 @@ bool ClassParser::readClassEnd()
   return true;
 }
 
-NamespaceParser::NamespaceParser(AbstractFragment *fragment)
+NamespaceParser::NamespaceParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -2900,15 +2746,16 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
     return ast::NamespaceAliasDefinition::New(ns_tok, name, eq_sign, aliased_name);
   }
 
+  Fragment sentinel{ fragment(), Fragment::Type<Fragment::DelimiterPair>() };
+
   const Token lb = read(Token::LeftBrace);
 
-  SentinelFragment sentinel{ Token::RightBrace, fragment() };
   Parser parser;
   parser.reset(&sentinel);
 
   auto statements = parser.parseProgram();
 
-  const Token rb = sentinel.consumeSentinel();
+  const Token rb = read(Token::RightBrace);
 
   return ast::NamespaceDeclaration::New(ns_tok, name, lb, std::move(statements), rb);
 }
@@ -2921,7 +2768,7 @@ std::shared_ptr<ast::SimpleIdentifier> NamespaceParser::readNamespaceName()
 
 
 
-FriendParser::FriendParser(AbstractFragment *fragment)
+FriendParser::FriendParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -2946,7 +2793,7 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
 
 
 
-UsingParser::UsingParser(AbstractFragment *fragment)
+UsingParser::UsingParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -2992,7 +2839,7 @@ std::shared_ptr<ast::Identifier> UsingParser::read_name()
 
 
 
-ImportParser::ImportParser(AbstractFragment *fragment)
+ImportParser::ImportParser(Fragment* fragment)
   : ParserBase(fragment) { }
 
 std::shared_ptr<ast::ImportDirective> ImportParser::parse()
@@ -3029,7 +2876,7 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 
 
 
-TemplateParser::TemplateParser(AbstractFragment *fragment)
+TemplateParser::TemplateParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -3039,23 +2886,43 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
 {
   const Token tmplt_k = unsafe_read();
 
+  Fragment::iterator current_frag_end = context()->half_consumed_right_right_angle && fragment()->end()->id == Token::RightRightAngle ?
+    fragment()->end() + 1 : fragment()->end();
+  Fragment::iterator frag_begin;
+  Fragment::iterator frag_end;
+  bool half_consumed_right_right = false;
+
+  bool ok = Fragment::tryBuildTemplateFragment(fragment()->context()->iter(), current_frag_end,
+    frag_begin, frag_end, half_consumed_right_right);
+
+  if (!ok)
+    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
+
+  RaiiRightRightAngleGuard guard{ context().get() };
+  if (guard.value && half_consumed_right_right)
+    context()->half_consumed_right_right_angle = false;
+  else if (half_consumed_right_right)
+    context()->half_consumed_right_right_angle = true;
+
+  Fragment sentinel{ fragment(), frag_begin, frag_end };
+
   const Token left_angle = read(Token::LeftAngle);
 
   std::vector<ast::TemplateParameter> params;
-  //SentinelFragment sentinel{ Token::RightAngle, fragment() };
-  TemplateArgumentListFragment sentinel{ fragment() };
+
   while(!sentinel.atEnd())
   {
-    TemplateArgumentFragment frag{ &sentinel }; /// TODO :maybe rename to ListFragment
+    Fragment frag{ &sentinel, Fragment::Type<Fragment::ListElement>() };
     TemplateParameterParser param_parser{ &frag };
     params.push_back(param_parser.parse());
 
-    frag.consumeComma();
+    if (!sentinel.atEnd())
+      read(Token::Comma);
   }
 
   //const Token right_angle = sentinel.consumeSentinel();
-  sentinel.consumeEnd();
-  const Token right_angle = sentinel.right_angle;
+  const Token right_angle = read();
+  assert(right_angle == Token::RightAngle || right_angle == Token::RightRightAngle);
 
   const auto decl = parse_decl();
 
@@ -3083,7 +2950,7 @@ std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
 
 
 
-TemplateParameterParser::TemplateParameterParser(AbstractFragment *fragment)
+TemplateParameterParser::TemplateParameterParser(Fragment* fragment)
   : ParserBase(fragment)
 {
 
@@ -3129,19 +2996,19 @@ Parser::Parser()
 Parser::Parser(const SourceFile & source)
   : ProgramParser(nullptr)
 {
-  m_fragment = std::make_unique<ScriptFragment>(std::make_shared<ParserContext>(source));
-  m_fragment->data()->mAst = std::make_shared<ast::AST>(source);
+  m_fragment = std::make_unique<Fragment>(std::make_shared<ParserContext>(source));
+  m_fragment->context()->mAst = std::make_shared<ast::AST>(source);
   reset(m_fragment.get());
 }
 
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 {
-  ScriptFragment frag{ std::make_shared<ParserContext>(source) };
+  Fragment frag{ std::make_shared<ParserContext>(source) };
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   ret->root = ast::ScriptRootNode::New(ret);
-  frag.data()->mAst = ret;
+  frag.context()->mAst = ret;
 
   try
   {
@@ -3161,11 +3028,11 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 
 std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
 {
-  ScriptFragment frag{ std::make_shared<ParserContext>(source) };
+  Fragment frag{ std::make_shared<ParserContext>(source) };
   reset(&frag);
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
-  frag.data()->mAst = ret;
+  frag.context()->mAst = ret;
 
   try
   {

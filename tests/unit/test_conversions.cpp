@@ -376,7 +376,7 @@ static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engi
 {
   using namespace script;
 
-  parser::ScriptFragment fragment{ parser_context(str.data()) };
+  parser::Fragment fragment{ parser_context(str.data()) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();

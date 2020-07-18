@@ -75,7 +75,7 @@ TEST(InitializerLists, initializer_list_creation) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::ScriptFragment fragment{ parser_context(source) };
+  parser::Fragment fragment{ parser_context(source) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();
@@ -111,7 +111,7 @@ TEST(InitializerLists, initializer_list_conversion) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::ScriptFragment fragment{ parser_context(source) };
+  parser::Fragment fragment{ parser_context(source) };
   parser::ExpressionParser parser{ &fragment };
 
   auto astlistexpr = parser.parse();

@@ -237,7 +237,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     auto source = SourceFile::fromString(name);
     auto pdata = std::make_shared<parser::ParserContext>(source);
     pdata->mAst = std::make_shared<ast::AST>(source);
-    parser::ScriptFragment fragment{ pdata };
+    parser::Fragment fragment{ pdata };
     parser::IdentifierParser idp{ &fragment };
     std::shared_ptr<ast::Identifier> id;
     try
