@@ -414,7 +414,7 @@ SourceLocation CompileSession::location() const
 
   if (current_node)
   {
-    loc.m_pos = loc.m_source.map(current_node->pos());
+    loc.m_pos = this->current_script.ast().impl()->position(current_node->base_token());
 
     if (current_token.isValid())
     {

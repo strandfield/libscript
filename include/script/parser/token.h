@@ -15,6 +15,61 @@ namespace script
 namespace parser
 {
 
+class StringView
+{
+private:
+  const char* m_data;
+  size_t m_size;
+
+public:
+  StringView()
+    : m_data(""), m_size(0)
+  {
+
+  }
+
+  StringView(const StringView&) = default;
+
+  StringView(const char* str, size_t s)
+    : m_data(str), m_size(s)
+  {
+
+  }
+
+  size_t size() const { return m_size; }
+  const char* data() const { return m_data; }
+
+  StringView& operator=(const StringView&) = default;
+};
+
+inline bool operator==(const StringView& lhs, const StringView& rhs)
+{
+  return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
+}
+
+inline bool operator!=(const StringView& lhs, const StringView& rhs)
+{
+  return !(lhs == rhs);
+}
+
+inline bool operator==(const StringView& lhs, const char* rhs)
+{
+  size_t offset = 0;
+
+  for (; offset < lhs.size() && *rhs != '\0'; ++offset, ++rhs)
+  {
+    if (*rhs != lhs.data()[offset])
+      return false;
+  }
+
+  return offset == lhs.size() && *rhs == '\0';
+}
+
+inline bool operator!=(const StringView& lhs, const char* rhs)
+{
+  return !(lhs == rhs);
+}
+
 class Token
 {
 public:

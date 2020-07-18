@@ -14,55 +14,55 @@ namespace script
 namespace ast
 {
 
-size_t Operation::pos() const
+parser::Token Operation::base_token() const
 {
-  return this->operatorToken.pos;
+  return this->operatorToken;
 }
 
-size_t ConditionalExpression::pos() const
+parser::Token ConditionalExpression::base_token() const
 {
-  return this->questionMark.pos;
+  return this->questionMark;
 }
 
-size_t NullStatement::pos() const
+parser::Token NullStatement::base_token() const
 {
-  return this->semicolon.pos;
+  return this->semicolon;
 }
 
-size_t ExpressionStatement::pos() const
+parser::Token ExpressionStatement::base_token() const
 {
-  return this->expression->pos();
+  return this->expression->base_token();
 }
 
-size_t CompoundStatement::pos() const
+parser::Token CompoundStatement::base_token() const
 {
-  return this->openingBrace.pos;
+  return this->openingBrace;
 }
 
-size_t IfStatement::pos() const
+parser::Token IfStatement::base_token() const
 {
-  return this->keyword.pos;
+  return this->keyword;
 }
 
-size_t IterationStatement::pos() const
+parser::Token IterationStatement::base_token() const
 {
-  return this->keyword.pos;
+  return this->keyword;
 }
 
-size_t JumpStatement::pos() const
+parser::Token JumpStatement::base_token() const
 {
-  return this->keyword.pos;
+  return this->keyword;
 }
 
 
-size_t TypeNode::pos() const
+parser::Token TypeNode::base_token() const
 {
-  return value.type->pos();
+  return value.type->base_token();
 }
 
-size_t FunctionDecl::pos() const
+parser::Token FunctionDecl::base_token() const
 {
-  return name->pos();
+  return name->base_token();
 }
 
 

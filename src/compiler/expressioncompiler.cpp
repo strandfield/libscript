@@ -66,8 +66,6 @@ std::shared_ptr<program::LambdaExpression> LambdaProcessor::generate(ExpressionC
   }
   else
   {
-    const auto& p = le->pos();
-
     if (le->captures.size() > 0)
       throw CompilationFailure{ CompilerError::LambdaMustBeCaptureless };
 
@@ -645,7 +643,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUnaryOperation(
 
   auto operand = generateExpression(operation->arg1);
 
-  const bool postfix = operation->arg1->pos() < operation->operatorToken.pos;
+  const bool postfix = operation->arg1->base_token().pos < operation->operatorToken.pos;
   const auto opts = postfix ? ast::OperatorName::BuiltInOpResol::PostFixOp : ast::OperatorName::BuiltInOpResol::PrefixOp;
   OperatorName op = ast::OperatorName::getOperatorId(operation->operatorToken, opts);
 
