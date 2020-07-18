@@ -225,19 +225,27 @@ ParserContext::ParserContext(const SourceFile & src)
   : mSource(src)
   , mIndex(0)
 {
-  mLexer.setSource(mSource);
-  fetchNext();
+  Lexer lexer;
+  lexer.setSource(mSource);
+
+  while (!lexer.atEnd())
+  {
+    const Token t = lexer.read();
+    if (isDiscardable(t))
+      continue;
+    m_tokens.push_back(t);
+  }
 }
 
 ParserContext::ParserContext(const std::vector<Token> & tokens)
-  : mBuffer(tokens)
+  : m_tokens(tokens)
   , mIndex(0)
 {
 
 }
 
 ParserContext::ParserContext(std::vector<Token> && tokens)
-  : mBuffer(std::move(tokens))
+  : m_tokens(std::move(tokens))
   , mIndex(0)
 {
 
@@ -246,14 +254,13 @@ ParserContext::ParserContext(std::vector<Token> && tokens)
 ParserContext::~ParserContext()
 {
   mSource = SourceFile{};
-  mLexer.reset();
-  mBuffer.clear();
+  m_tokens.clear();
   mIndex = 0;
 }
 
 bool ParserContext::atEnd() const
 {
-  if (mIndex < mBuffer.size())
+  if (mIndex < m_tokens.size())
     return false;
 
   return true;
@@ -261,19 +268,16 @@ bool ParserContext::atEnd() const
 
 Token ParserContext::read()
 {
-  if (mIndex == mBuffer.size())
+  if (mIndex == m_tokens.size())
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
-  const Token ret = mBuffer[mIndex++];
-  fetchNext();
-  return ret;
+  return m_tokens[mIndex++];
 }
 
 Token ParserContext::unsafe_read()
 {
-  assert(mIndex < mBuffer.size());
-  fetchNext();
-  return mBuffer[mIndex++];
+  assert(mIndex < m_tokens.size());
+  return m_tokens[mIndex++];
 }
 
 Token ParserContext::peek()
@@ -281,12 +285,12 @@ Token ParserContext::peek()
   if (atEnd())
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
-  return mBuffer[mIndex];
+  return m_tokens[mIndex];
 }
 
 ParserContext::Position ParserContext::pos() const
 {
-  if (mIndex < mBuffer.size())
+  if (mIndex < m_tokens.size())
     return Position{ mIndex };
   return Position{ mIndex };
 }
@@ -295,35 +299,6 @@ void ParserContext::seek(const Position & p)
 {
   // @TODO : unsure that the position wasn't invalidated
   mIndex = p.index;
-}
-
-void ParserContext::clearBuffer()
-{
-  if (mIndex == mBuffer.size())
-  {
-    mBuffer.clear();
-    mIndex = 0;
-  }
-  else
-  {
-    for (size_t i(mIndex); i < mBuffer.size(); ++i)
-      mBuffer[i - mIndex] = mBuffer[i];
-    mBuffer.resize(mBuffer.size() - mIndex);
-    mIndex = 0;
-  }
-}
-
-
-void ParserContext::fetchNext()
-{
-  while (!mLexer.atEnd())
-  {
-    const Token t = mLexer.read();
-    if (isDiscardable(t))
-      continue;
-    mBuffer.push_back(t);
-    return;
-  }
 }
 
 bool ParserContext::isDiscardable(const Token & t) const
@@ -2881,7 +2856,6 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
     while (!atEnd())
     {
       ret->add(parseStatement());
-      fragment()->data()->clearBuffer();
     }
   }
   catch (SyntaxError& ex)

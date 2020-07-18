@@ -18,8 +18,7 @@ struct ParserContext
 {
 private:
   SourceFile mSource;
-  Lexer mLexer; // @TODO: read all tokens at once and remove this member
-  std::vector<Token> mBuffer; // @TODO: rename to "m_tokens"
+  std::vector<Token> m_tokens;
   size_t mIndex;
   // @TODO: maybe store root fragment and current fragment
 public:
@@ -34,7 +33,7 @@ public:
   Token read();
   Token unsafe_read();
   Token peek();
-  inline Token unsafe_peek() const { assert(mIndex < (int) mBuffer.size()); return mBuffer[mIndex]; }
+  inline Token unsafe_peek() const { assert(mIndex < (int) m_tokens.size()); return m_tokens[mIndex]; }
 
   struct Position {
     size_t index;
@@ -43,11 +42,7 @@ public:
   Position pos() const;
   void seek(const Position & p);
 
-  // @TODO: read all token at once, do not clear to "save memory"
-  void clearBuffer();
-
 protected:
-  void fetchNext();
   bool isDiscardable(const Token & t) const;
 };
 
