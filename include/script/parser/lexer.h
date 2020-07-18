@@ -24,15 +24,9 @@ public:
 
   bool atEnd() const;
 
-  int pos() const;
-  int line() const;
-  int col() const;
+  size_t pos() const;
 
-  typedef SourceFile::Position Position;
-
-  Position position() const;
-
-  void seek(const Position & pos);
+  void seek(size_t off);
   void reset();
   void setSource(const SourceFile & src);
 
@@ -74,27 +68,27 @@ public:
 
 protected:
   char readChar();
-  char charAt(const Position & pos);
+  char charAt(size_t pos);
   char currentChar() const;
   inline char peekChar() const { return currentChar(); }
   void consumeDiscardable();
-  Token create(const Position & pos, int length, Token::Id type, int flags);
-  Token create(const Position & pos, Token::Id type, int flags);
-  Token readNumericLiteral(const Position & pos);
-  Token readHexa(const Position & pos);
-  Token readOctal(const Position & pos);
-  Token readBinary(const Position & pos);
-  Token readDecimal(const Position & pos);
-  Token readIdentifier(const Position & pos);
+  Token create(size_t pos, int length, Token::Id type, int flags);
+  Token create(size_t pos, Token::Id type, int flags);
+  Token readNumericLiteral(size_t pos);
+  Token readHexa(size_t pos);
+  Token readOctal(size_t pos);
+  Token readBinary(size_t pos);
+  Token readDecimal(size_t pos);
+  Token readIdentifier(size_t pos);
   Token::Id identifierType(int begin, int end) const;
-  Token readStringLiteral(const Position & pos);
-  Token readCharLiteral(const Position & pos);
+  Token readStringLiteral(size_t pos);
+  Token readCharLiteral(size_t pos);
   Token::Id getOperator(int begin, int end) const;
-  Token readOperator(const Position & pos);
-  Token readColonOrColonColon(const Position & pos);
-  Token readFromPunctuator(const Position & pos);
-  Token readSingleLineComment(const Position & pos);
-  Token readMultiLineComment(const Position & pos);
+  Token readOperator(size_t pos);
+  Token readColonOrColonColon(size_t pos);
+  Token readFromPunctuator(size_t pos);
+  Token readSingleLineComment(size_t pos);
+  Token readMultiLineComment(size_t pos);
   bool tryReadLiteralSuffix();
 
   template<Token::Id TT>
@@ -106,10 +100,8 @@ protected:
 private:
   const char *mSource;
   SourceFile mSourceFile;
-  int mLength;
-  int mPos;
-  int mLine;
-  int mColumn;
+  size_t m_size;
+  size_t m_pos;
 };
 
 } // parser

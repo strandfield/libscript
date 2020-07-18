@@ -16,10 +16,8 @@ namespace parser
 
 Lexer::Lexer()
   : mSource(nullptr)
-  , mLength(0)
-  , mPos(0)
-  , mLine(0)
-  , mColumn(0)
+  , m_size(0)
+  , m_pos(0)
 {
 
 }
@@ -27,13 +25,10 @@ Lexer::Lexer()
 Lexer::Lexer(const SourceFile & src)
   : mSourceFile(src)
   , mSource(nullptr)
-  , mLength(0)
-  , mPos(0)
-  , mLine(0)
-  , mColumn(0)
+  , m_pos(0)
 {
   mSource = mSourceFile.data();
-  mLength = mSourceFile.content().size();
+  m_size = mSourceFile.content().size();
   consumeDiscardable(); /// TODO : should it be moved to another method like 'start()'
   // in such case, we should also add a 'isReady()' method
 }
@@ -44,7 +39,7 @@ Token Lexer::read()
   if (this->atEnd())
     throw std::runtime_error{ "Lexer::read() : reached end of input" };
 
-  SourceFile::Position p = position();
+  size_t p = pos();
 
   char c = readChar();
   auto ct = ctype(c);
@@ -111,43 +106,25 @@ Token Lexer::read()
 
 bool Lexer::atEnd() const
 {
-  return mPos == mLength;
+  return m_pos == m_size;
 }
 
-int Lexer::pos() const
+size_t Lexer::pos() const
 {
-  return mPos;
+  return m_pos;
 }
 
-int Lexer::line() const
+void Lexer::seek(size_t pos)
 {
-  return mLine;
-}
-
-int Lexer::col() const
-{
-  return mColumn;
-}
-
-Lexer::Position Lexer::position() const
-{
-  return Position{ pos(), static_cast<uint16_t>(line()), static_cast<uint16_t>(col()) };
-}
-
-void Lexer::seek(const Position & pos)
-{
-  mPos = pos.pos;
-  mColumn = pos.col;
-  mLine = pos.line;
+  m_pos = pos;
 }
 
 void Lexer::reset()
 {
   mSourceFile = SourceFile{};
   mSource = nullptr;
-  mPos = 0;
-  mLine = 0;
-  mColumn = 0;
+  m_pos = 0;
+  m_size = 0;
 }
 
 void Lexer::setSource(const SourceFile & src)
@@ -157,7 +134,7 @@ void Lexer::setSource(const SourceFile & src)
   if (!mSourceFile.isLoaded())
     mSourceFile.load();
   mSource = src.data();
-  mLength = src.content().size();
+  m_size = src.content().size();
   consumeDiscardable();
 }
 
@@ -169,27 +146,19 @@ char Lexer::readChar()
   if (atEnd())
     throw std::runtime_error{ "Lexer::readChar() : end of input" };
 
-  auto it = mSource + mPos;
-  if (*it == '\n') {
-    mLine++;
-    mColumn = 0;
-  }
-  else {
-    mColumn++;
-  }
-
-  mPos++;
+  auto it = mSource + m_pos;
+  m_pos++;
   return *it;
 }
 
-char Lexer::charAt(const Position & pos)
+char Lexer::charAt(size_t pos)
 {
-  return mSource[pos.pos];
+  return mSource[pos];
 }
 
 char Lexer::currentChar() const
 {
-  return mSource[mPos];
+  return mSource[m_pos];
 }
 
 void Lexer::consumeDiscardable()
@@ -198,14 +167,14 @@ void Lexer::consumeDiscardable()
     readChar();
 }
 
-Token Lexer::create(const Position & pos, int length, Token::Id type, int flags)
+Token Lexer::create(size_t pos, int length, Token::Id type, int flags)
 {
-  return Token{ type, flags, StringView(mSource + pos.pos, length) };
+  return Token{ type, flags, StringView(mSource + pos, length) };
 }
 
-Token Lexer::create(const Position & pos, Token::Id type, int flags)
+Token Lexer::create(size_t pos, Token::Id type, int flags)
 {
-  return Token{ type, flags, StringView(mSource + pos.pos, this->pos() - pos.pos) };
+  return Token{ type, flags, StringView(mSource + pos, this->pos() - pos) };
 }
 
 Lexer::CharacterType Lexer::ctype(char c)
@@ -359,7 +328,7 @@ bool Lexer::checkAfter<Token::DecimalLiteral>() const
 }
 
 
-Token Lexer::readNumericLiteral(const Position & start)
+Token Lexer::readNumericLiteral(size_t start)
 {
   if (atEnd()) {
     if (charAt(start) == '0')
@@ -401,7 +370,7 @@ bool Lexer::checkAfter<Token::HexadecimalLiteral>() const
   return atEnd() || ctype(peekChar()) != Letter;
 }
 
-Token Lexer::readHexa(const Position & start)
+Token Lexer::readHexa(size_t start)
 {
   const char x = readChar();
   assert(x == 'x');
@@ -412,7 +381,7 @@ Token Lexer::readHexa(const Position & start)
   while (!atEnd() && Lexer::isHexa(peekChar()))
     readChar();
 
-  if(pos() - start.pos == 2 || !checkAfter<Token::HexadecimalLiteral>()) // e.g. 0x+
+  if(pos() - start == 2 || !checkAfter<Token::HexadecimalLiteral>()) // e.g. 0x+
     throw std::runtime_error{ "Lexer::readHexa() : unexpected end of input" };
   
   return create(start, Token::HexadecimalLiteral, Token::Literal);
@@ -424,7 +393,7 @@ bool Lexer::checkAfter<Token::OctalLiteral>() const
   return checkAfter<Token::HexadecimalLiteral>();
 }
 
-Token Lexer::readOctal(const Position & start)
+Token Lexer::readOctal(size_t start)
 {
   while (!atEnd() && Lexer::isOctal(peekChar()))
     readChar();
@@ -442,7 +411,7 @@ bool Lexer::checkAfter<Token::BinaryLiteral>() const
   return checkAfter<Token::HexadecimalLiteral>();
 }
 
-Token Lexer::readBinary(const Position & start)
+Token Lexer::readBinary(size_t start)
 {
   const char b = readChar();
   assert(b == 'b');
@@ -459,7 +428,7 @@ Token Lexer::readBinary(const Position & start)
   return create(start, Token::BinaryLiteral, Token::Literal);
 }
 
-Token Lexer::readDecimal(const Position & start)
+Token Lexer::readDecimal(size_t start)
 {
   // Reading decimal numbers
   // eg. : 25
@@ -545,17 +514,17 @@ bool Lexer::tryReadLiteralSuffix()
   return read;
 }
 
-Token Lexer::readIdentifier(const Position & start)
+Token Lexer::readIdentifier(size_t start)
 {
   while (!this->atEnd() && (Lexer::isLetter(peekChar()) || Lexer::isDigit(peekChar()) || peekChar() == '_'))
     readChar();
 
-  Token::Id id = identifierType(start.pos, pos());
+  Token::Id id = identifierType(start, pos());
 
   int keyword_flag = id != Token::UserDefinedName ? Token::Keyword : 0;
   int literal_flag = (id == Token::False || id == Token::True) ? Token::Literal : 0;
 
-  return create(start, pos() - start.pos, id, Token::Identifier | keyword_flag | literal_flag);
+  return create(start, pos() - start, id, Token::Identifier | keyword_flag | literal_flag);
 }
 
 
@@ -675,7 +644,7 @@ bool Lexer::checkAfter<Token::StringLiteral>() const
   return atEnd() || ctype(peekChar()) != Digit;
 }
 
-Token Lexer::readStringLiteral(const Position & start)
+Token Lexer::readStringLiteral(size_t start)
 {
   while (!atEnd() && peekChar() != '"')
   {
@@ -706,7 +675,7 @@ Token Lexer::readStringLiteral(const Position & start)
   return create(start, Token::StringLiteral, Token::Literal);
 }
 
-Token Lexer::readCharLiteral(const Position & start)
+Token Lexer::readCharLiteral(size_t start)
 {
   if(atEnd())
     throw std::runtime_error{ "Lexer::readCharLiteral() : unexpected end of input before end of char-literal " };
@@ -722,9 +691,9 @@ Token Lexer::readCharLiteral(const Position & start)
   return create(start, Token::StringLiteral, Token::Literal);
 }
 
-Token Lexer::readFromPunctuator(const Position & start)
+Token Lexer::readFromPunctuator(size_t start)
 {
-  char p = mSource[mPos - 1]; /// bad, TODO : clean up
+  char p = mSource[m_pos - 1]; /// bad, TODO : clean up
   if (p == '/')
   {
     if (atEnd())
@@ -741,7 +710,7 @@ Token Lexer::readFromPunctuator(const Position & start)
 }
 
 
-Token Lexer::readColonOrColonColon(const Position & start)
+Token Lexer::readColonOrColonColon(size_t start)
 {
   if (atEnd())
     return create(start, Token::Colon, Token::OperatorToken);
@@ -835,17 +804,17 @@ Token::Id Lexer::getOperator(int begin, int end) const
   return Token::Invalid;
 }
 
-Token Lexer::readOperator(const Position & start)
+Token Lexer::readOperator(size_t start)
 {
-  Token::Id op = getOperator(start.pos, pos());
+  Token::Id op = getOperator(start, pos());
   if (op == Token::Invalid)
     throw std::runtime_error{ "Lexer::readOperator() : no operator found starting with given chars" };
   
   while (!atEnd())
   {
-    Position p = position();
+    size_t p = pos();
     readChar();
-    Token::Id candidate = getOperator(start.pos, pos());
+    Token::Id candidate = getOperator(start, pos());
     if (candidate == Token::Invalid)
     {
       seek(p);
@@ -858,7 +827,7 @@ Token Lexer::readOperator(const Position & start)
   return create(start, op, Token::OperatorToken);
 }
 
-Token Lexer::readSingleLineComment(const Position & start)
+Token Lexer::readSingleLineComment(size_t start)
 {
   readChar(); // reads the second '/'
 
@@ -868,7 +837,7 @@ Token Lexer::readSingleLineComment(const Position & start)
   return create(start, Token::SingleLineComment, 0);
 }
 
-Token Lexer::readMultiLineComment(const Position & start)
+Token Lexer::readMultiLineComment(size_t start)
 {
   readChar(); // reads the '*' after opening '/'
 
