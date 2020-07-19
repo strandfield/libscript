@@ -109,11 +109,10 @@ class LIBSCRIPT_API Literal : public Expression
 {
 public:
   parser::Token token;
-  std::weak_ptr<AST> ast;
 
 public:
-  Literal(const parser::Token& tok, std::shared_ptr<AST> tree)
-    : token(tok), ast(tree) { }
+  explicit Literal(const parser::Token& tok)
+    : token(tok) { }
 
   inline parser::Token base_token() const override { return this->token; }
 
@@ -123,20 +122,20 @@ public:
 class LIBSCRIPT_API IntegralLiteral : public Literal
 {
 public:
-  IntegralLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : Literal(tok, ast) { }
+  explicit IntegralLiteral(const parser::Token& tok)
+    : Literal(tok) { }
 
 };
 
 class LIBSCRIPT_API BoolLiteral : public IntegralLiteral
 {
 public:
-  BoolLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : IntegralLiteral(tok, ast) { }
+  explicit BoolLiteral(const parser::Token& tok)
+    : IntegralLiteral(tok) { }
 
-  inline static std::shared_ptr<BoolLiteral> New(const parser::Token & tok, const std::shared_ptr<AST> & ast)
+  inline static std::shared_ptr<BoolLiteral> New(const parser::Token & tok)
   {
-    return std::make_shared<BoolLiteral>(tok, ast);
+    return std::make_shared<BoolLiteral>(tok);
   }
 
   static const NodeType type_code = NodeType::BoolLiteral;
@@ -146,12 +145,12 @@ public:
 class LIBSCRIPT_API IntegerLiteral : public IntegralLiteral
 {
 public:
-  IntegerLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : IntegralLiteral(tok, ast) { }
+  explicit IntegerLiteral(const parser::Token& tok)
+    : IntegralLiteral(tok) { }
 
-  inline static std::shared_ptr<IntegerLiteral> New(const parser::Token & tok, const std::shared_ptr<AST> & ast)
+  inline static std::shared_ptr<IntegerLiteral> New(const parser::Token & tok)
   {
-    return std::make_shared<IntegerLiteral>(tok, ast);
+    return std::make_shared<IntegerLiteral>(tok);
   }
 
   static const NodeType type_code = NodeType::IntegerLiteral;
@@ -161,12 +160,12 @@ public:
 class LIBSCRIPT_API FloatingPointLiteral : public Literal
 {
 public:
-  FloatingPointLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : Literal(tok, ast) { }
+  explicit FloatingPointLiteral(const parser::Token& tok)
+    : Literal(tok) { }
 
-  inline static std::shared_ptr<FloatingPointLiteral> New(const parser::Token & tok, const std::shared_ptr<AST> & ast)
+  inline static std::shared_ptr<FloatingPointLiteral> New(const parser::Token & tok)
   {
-    return std::make_shared<FloatingPointLiteral>(tok, ast);
+    return std::make_shared<FloatingPointLiteral>(tok);
   }
 
   static const NodeType type_code = NodeType::FloatingPointLiteral;
@@ -176,12 +175,12 @@ public:
 class LIBSCRIPT_API StringLiteral : public Literal
 {
 public:
-  StringLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : Literal(tok, ast) { }
+  explicit StringLiteral(const parser::Token& tok)
+    : Literal(tok) { }
 
-  inline static std::shared_ptr<StringLiteral> New(const parser::Token & tok, const std::shared_ptr<AST> & ast)
+  inline static std::shared_ptr<StringLiteral> New(const parser::Token & tok)
   {
-    return std::make_shared<StringLiteral>(tok, ast);
+    return std::make_shared<StringLiteral>(tok);
   }
 
   static const NodeType type_code = NodeType::StringLiteral;
@@ -191,12 +190,12 @@ public:
 class LIBSCRIPT_API UserDefinedLiteral : public Literal
 {
 public:
-  UserDefinedLiteral(const parser::Token& tok, const std::shared_ptr<AST> & ast)
-    : Literal(tok, ast) { }
+  explicit UserDefinedLiteral(const parser::Token& tok)
+    : Literal(tok) { }
 
-  inline static std::shared_ptr<UserDefinedLiteral> New(const parser::Token & tok, const std::shared_ptr<AST> & ast)
+  inline static std::shared_ptr<UserDefinedLiteral> New(const parser::Token & tok)
   {
-    return std::make_shared<UserDefinedLiteral>(tok, ast);
+    return std::make_shared<UserDefinedLiteral>(tok);
   }
 
   static const NodeType type_code = NodeType::UserDefinedLiteral;
@@ -299,19 +298,17 @@ public:
   parser::Token keyword;
   parser::Token doubleQuotes;
   parser::Token suffix;
-  std::weak_ptr<ast::AST> ast;
 
 public:
-  LiteralOperatorName(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName, const std::shared_ptr<ast::AST> & tree)
+  LiteralOperatorName(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName)
     : keyword(opkeyword)
     , doubleQuotes(dquotes)
     , suffix(suffixName)
-    , ast(tree)
   {}
 
-  inline static std::shared_ptr<LiteralOperatorName> New(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName, const std::shared_ptr<ast::AST> & tree)
+  inline static std::shared_ptr<LiteralOperatorName> New(const parser::Token & opkeyword, const parser::Token & dquotes, const parser::Token & suffixName)
   {
-    return std::make_shared<LiteralOperatorName>(opkeyword, dquotes, suffixName, tree);
+    return std::make_shared<LiteralOperatorName>(opkeyword, dquotes, suffixName);
   }
 
   inline const parser::Token & suffixName() const { return this->suffix; }

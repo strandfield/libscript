@@ -421,18 +421,18 @@ std::shared_ptr<ast::Literal> LiteralParser::parse()
   {
   case Token::True:
   case Token::False:
-    return ast::BoolLiteral::New(lit, ast());
+    return ast::BoolLiteral::New(lit);
   case Token::IntegerLiteral:
   case Token::BinaryLiteral:
   case Token::OctalLiteral:
   case Token::HexadecimalLiteral:
-    return ast::IntegerLiteral::New(lit, ast());
+    return ast::IntegerLiteral::New(lit);
   case Token::DecimalLiteral:
-    return ast::FloatingPointLiteral::New(lit, ast());
+    return ast::FloatingPointLiteral::New(lit);
   case Token::StringLiteral:
-    return ast::StringLiteral::New(lit, ast());
+    return ast::StringLiteral::New(lit);
   case Token::UserDefinedLiteral:
-    return ast::UserDefinedLiteral::New(lit, ast());
+    return ast::UserDefinedLiteral::New(lit);
   default:
     break;
   }
@@ -1317,7 +1317,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     IdentifierParser idp{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to remove this cast
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
-    return ast::LiteralOperatorName::New(opkw, op, suffixName->name, ast());
+    return ast::LiteralOperatorName::New(opkw, op, suffixName->name);
   }
   else if (op == Token::UserDefinedLiteral)
   {
@@ -1328,7 +1328,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
 
     Token quotes{ Token::StringLiteral, Token::Literal, StringView(op.text().data(), 2) };
     Token suffixName{ Token::UserDefinedName, Token::Identifier, StringView(op.text().data() + 2, op.text().size() - 2) };
-    return ast::LiteralOperatorName::New(opkw, quotes, suffixName, ast());
+    return ast::LiteralOperatorName::New(opkw, quotes, suffixName);
   }
 
   throw SyntaxError{ ParserError::ExpectedOperatorSymbol, errors::ActualToken{op} };
