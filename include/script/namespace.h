@@ -82,8 +82,8 @@ public:
   EnumBuilder newEnum(const std::string & name) const;
   FunctionBuilder newFunction(const std::string & name, NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder newUserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder newUserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder newUserDefinedLiteral(std::string suffix, NativeFunctionSignature func = nullptr) const;
+  LiteralOperatorBuilder newUserDefinedLiteral(std::string suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   Engine * engine() const;
   inline const std::shared_ptr<NamespaceImpl> & impl() const { return d; }

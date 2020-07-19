@@ -95,9 +95,9 @@ bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
   return ExtensibleScope::lookup(name, nl);
 }
 
-int FunctionScope::add_var(const std::string & name, const Type & t)
+int FunctionScope::add_var(std::string name, const Type & t)
 {
-  int stack_index = mCompiler->mStack.addVar(t, name);
+  int stack_index = mCompiler->mStack.addVar(t, std::move(name));
   mSize++;
   return stack_index;
 }
@@ -132,9 +132,9 @@ Variable::Variable()
 
 }
 
-Variable::Variable(const Type & t, const std::string & n, int i, bool g)
+Variable::Variable(const Type & t, std::string n, int i, bool g)
   : type(t)
-  , name(n)
+  , name(std::move(n))
   , index(i)
   , global(g)
 {

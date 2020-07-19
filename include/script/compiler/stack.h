@@ -21,7 +21,7 @@ struct Variable
   bool global;
 
   Variable();
-  Variable(const Type & t, const std::string & n, int i, bool g = false);
+  Variable(const Type & t, std::string n, int i, bool g = false);
 };
 
 class Stack

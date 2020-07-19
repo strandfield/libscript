@@ -216,14 +216,14 @@ OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature 
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-LiteralOperatorBuilder Namespace::newUserDefinedLiteral(const std::string & suffix, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::newUserDefinedLiteral(std::string suffix, NativeFunctionSignature func) const
 {
-  return LiteralOperatorBuilder{ Symbol{*this}, std::string{suffix} }.setCallback(func);
+  return LiteralOperatorBuilder{ Symbol{*this}, std::move(suffix) }.setCallback(func);
 }
 
-LiteralOperatorBuilder Namespace::newUserDefinedLiteral(const std::string & suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
+LiteralOperatorBuilder Namespace::newUserDefinedLiteral(std::string suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
 {
-  return newUserDefinedLiteral(suffix, func).returns(output).params(input);
+  return newUserDefinedLiteral(std::move(suffix), func).returns(output).params(input);
 }
 
 Engine * Namespace::engine() const

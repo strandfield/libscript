@@ -1073,7 +1073,6 @@ public:
   ~LambdaExpression() = default;
 
   std::string parameterName(int index) const;
-  std::string captureName(int index) const;
 
 
   static std::shared_ptr<LambdaExpression> New(const parser::Token & lb);
@@ -1243,7 +1242,6 @@ public:
 
   inline size_t size() const { return names.size(); }
   std::string at(size_t i) const;
-  std::string full_name() const;
 
   static std::shared_ptr<ImportDirective> New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms);
 

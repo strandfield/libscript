@@ -666,11 +666,6 @@ std::string LambdaExpression::parameterName(int index) const
   return this->params.at(index).name.toString();
 }
 
-std::string LambdaExpression::captureName(int index) const
-{
-  return this->captures.at(index).name.toString();
-}
-
 std::shared_ptr<LambdaExpression> LambdaExpression::New(const parser::Token & lb)
 {
   return std::make_shared<LambdaExpression>(lb);
@@ -809,19 +804,6 @@ std::string ImportDirective::at(size_t i) const
 { 
   return names.at(i).toString();
 }
-
-std::string ImportDirective::full_name() const
-{
-  std::string ret = at(0);
-  for (size_t i(1); i < names.size(); ++i)
-  {
-    ret += ".";
-    ret += at(i);
-  }
-  return ret;
-}
-
-
 
 TemplateDeclaration::TemplateDeclaration(const parser::Token & tmplt_k, const parser::Token & left_angle_b, std::vector<TemplateParameter> && params, const parser::Token & right_angle_b, const std::shared_ptr<Declaration> & decl)
   : template_keyword(tmplt_k)
