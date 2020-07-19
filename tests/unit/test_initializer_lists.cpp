@@ -75,8 +75,9 @@ TEST(InitializerLists, initializer_list_creation) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::Fragment fragment{ parser_context(source) };
-  parser::ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  parser::Fragment fragment{ *c };
+  parser::ExpressionParser parser{ c, fragment };
 
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
@@ -111,8 +112,9 @@ TEST(InitializerLists, initializer_list_conversion) {
   const char *source =
     "{1, 2.0, true}";
 
-  parser::Fragment fragment{ parser_context(source) };
-  parser::ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  parser::Fragment fragment{ *c };
+  parser::ExpressionParser parser{ c, fragment };
 
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());

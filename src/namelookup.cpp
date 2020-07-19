@@ -237,8 +237,8 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     auto source = SourceFile::fromString(name);
     auto pdata = std::make_shared<parser::ParserContext>(source);
     pdata->mAst = std::make_shared<ast::AST>(source);
-    parser::Fragment fragment{ pdata };
-    parser::IdentifierParser idp{ &fragment };
+    parser::Fragment fragment{ *pdata };
+    parser::IdentifierParser idp{ pdata, fragment };
     std::shared_ptr<ast::Identifier> id;
     try
     {
@@ -249,7 +249,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
 
     }
 
-    if (!pdata->atEnd() || id == nullptr)
+    if (!idp.atEnd() || id == nullptr)
       throw std::runtime_error{ "Could not fully parse identifier" };
 
     auto result = NameLookup::resolve(id, scope);

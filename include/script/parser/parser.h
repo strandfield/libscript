@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -19,35 +19,15 @@ struct ParserContext
 private:
   SourceFile mSource;
   std::vector<Token> m_tokens;
-  size_t mIndex;
-  // @TODO: maybe store root fragment and current fragment
 public:
   std::shared_ptr<ast::AST> mAst;
   bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
   ParserContext(const SourceFile & src);
-  ParserContext(const std::vector<Token> & tokens);
-  ParserContext(std::vector<Token> && tokens);
+  ParserContext(std::vector<Token> tokens);
   ~ParserContext();
 
   const std::vector<Token>& tokens() const { return m_tokens; }
-
-  bool atEnd() const;
-  Token read();
-  Token unsafe_read();
-  Token peek();
-  Token peek(size_t n) const;
-  inline Token unsafe_peek() const { assert(mIndex < (int) m_tokens.size()); return m_tokens[mIndex]; }
-
-  std::vector<Token>::const_iterator iter() const;
-  
-  struct Position {
-    size_t index;
-  };
-
-  Position pos() const;
-  void seek(const Position & p);
-  void seek(std::vector<Token>::const_iterator it);
 
 protected:
   bool isDiscardable(const Token & t) const;
@@ -89,7 +69,7 @@ public:
 class Fragment
 {
 public:
-  explicit Fragment(std::shared_ptr<ParserContext> context);
+  explicit Fragment(const ParserContext& context);
 
   enum FragmentKind
   {
@@ -104,48 +84,50 @@ public:
 
   typedef std::vector<Token>::const_iterator iterator;
 
-  Fragment(Fragment* parent, iterator begin, iterator end);
+  Fragment(iterator begin, iterator end);
 
-  Fragment(Fragment* parent, Type<DelimiterPair>);
-  Fragment(Fragment* parent, Type<Statement>);
-  Fragment(Fragment* parent, Type<ListElement>);
+  Fragment(iterator begin, iterator end, Type<DelimiterPair>);
+  Fragment(iterator begin, iterator end, Type<Statement>);
+  Fragment(iterator begin, iterator end, Type<ListElement>);
 
-  const std::shared_ptr<ParserContext>& context() const;
+  template<FragmentKind FK>
+  Fragment(const Fragment& frag, Type<FK> tag)
+    : Fragment(frag.begin(), frag.end(), tag)
+  {
+    
+  }
 
   std::vector<Token>::const_iterator begin() const;
   std::vector<Token>::const_iterator end() const;
 
   size_t size() const;
 
-  bool atEnd() const;
-  Token read();
-  Token peek() const;
-  void seekBegin();
+  Fragment mid(iterator pos) const;
 
   static bool tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right);
 
 private:
-  std::shared_ptr<ParserContext> m_context;
-  Fragment* m_parent;
   std::vector<Token>::const_iterator m_begin;
   std::vector<Token>::const_iterator m_end;
 };
 
 class ParserBase
 {
-
 public:
-  explicit ParserBase(Fragment *frag);
+  ParserBase(std::shared_ptr<ParserContext> shared_context, const Fragment& frag);
   virtual ~ParserBase();
 
-  void reset(Fragment* fragment);
+  void reset(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   std::shared_ptr<ast::AST> ast() const;
+
+  const Fragment& fragment() const;
+  Fragment::iterator iterator() const;
+  bool atEnd() const;
 
   SourceLocation location() const;
 
 protected:
-  bool atEnd() const;
   bool eof() const;
   Token read();
   Token unsafe_read();
@@ -153,19 +135,28 @@ protected:
   Token peek() const;
   Token peek(size_t n) const;
   Token unsafe_peek() const;
-  Fragment* fragment() const;
   const std::shared_ptr<ParserContext>& context() const;
-  ParserContext::Position pos() const;
-  void seek(const ParserContext::Position & p);
+  Fragment midfragment() const;
+  void seek(Fragment::iterator it);
+
+  template<typename T>
+  auto parse_and_seek(T& parser) -> decltype(parser.parse())
+  {
+    auto ret = parser.parse();
+    seek(parser.iterator());
+    return ret;
+  }
 
 protected:
-  Fragment* m_fragment;
+  std::shared_ptr<ParserContext> m_context;
+  Fragment m_fragment;
+  Fragment::iterator m_iterator;
 };
 
 class LiteralParser : public ParserBase
 {
 public:
-  explicit LiteralParser(Fragment* fragment);
+  LiteralParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   std::shared_ptr<ast::Literal> parse();
 };
@@ -173,7 +164,7 @@ public:
 class ExpressionParser : public ParserBase
 {
 public:
-  explicit ExpressionParser(Fragment* fragment);
+  ExpressionParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   std::shared_ptr<ast::Expression> parse();
 protected:
@@ -194,7 +185,7 @@ protected:
 class LambdaParser : public ParserBase
 {
 public:
-  explicit LambdaParser(Fragment* fragment);
+  LambdaParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   std::shared_ptr<ast::Expression> parse();
 
@@ -221,7 +212,7 @@ protected:
 class LambdaCaptureParser : public ParserBase
 {
 public:
-  explicit LambdaCaptureParser(Fragment* fragment);
+  LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   bool detect() const;
   ast::LambdaCapture parse();
@@ -231,7 +222,8 @@ public:
 class ProgramParser : public ParserBase
 {
 public:
-  explicit ProgramParser(Fragment* frag);
+  explicit ProgramParser(std::shared_ptr<ParserContext> shared_context);
+  ProgramParser(std::shared_ptr<ParserContext> shared_context, const Fragment& frag);
 
   std::vector<std::shared_ptr<ast::Statement>> parseProgram();
   virtual std::shared_ptr<ast::Statement> parseStatement();
@@ -266,7 +258,7 @@ public:
     ParseOnlySimpleId = 0,
   };
 
-  explicit IdentifierParser(Fragment* fragment, int options = ParseAll);
+  IdentifierParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, int options = ParseAll);
 
   int options() const { return mOptions; }
   void setOptions(int opts) { mOptions = opts; }
@@ -287,7 +279,7 @@ protected:
 class TemplateArgParser : public ParserBase
 {
 public:
-  explicit TemplateArgParser(Fragment* fragment);
+  TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   std::shared_ptr<ast::Node> parse();
 };
@@ -295,7 +287,7 @@ public:
 class TypeParser : public ParserBase
 {
 public:
-  explicit TypeParser(Fragment* fragment);
+  TypeParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   ast::QualifiedType parse();
 
@@ -312,7 +304,7 @@ protected:
 class FunctionParamParser : public ParserBase
 {
 public:
-  explicit FunctionParamParser(Fragment* fragment);
+  FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
 
   ast::FunctionParameter parse();
 };
@@ -320,7 +312,7 @@ public:
 class ExpressionListParser : public ParserBase
 {
 public:
-  explicit ExpressionListParser(Fragment* fragment);
+  ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~ExpressionListParser();
 
   std::vector<std::shared_ptr<ast::Expression>> parse();
@@ -330,7 +322,7 @@ public:
 class DeclParser : public ParserBase
 {
 public:
-  explicit DeclParser(Fragment* fragment, std::shared_ptr<ast::Identifier> className = nullptr);
+  DeclParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, std::shared_ptr<ast::Identifier> className = nullptr);
   ~DeclParser();
 
   int declaratorOptions() const { return mDeclaratorOptions; }
@@ -424,7 +416,7 @@ protected:
 class EnumValueParser : public ParserBase
 {
 public:
-  explicit EnumValueParser(Fragment* fragment);
+  EnumValueParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~EnumValueParser() = default;
 
   void parse();
@@ -435,7 +427,7 @@ public:
 class EnumParser : public ParserBase
 {
 public:
-  explicit EnumParser(Fragment* fragment);
+  EnumParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~EnumParser() = default;
 
   std::shared_ptr<ast::EnumDeclaration> parse();
@@ -444,7 +436,7 @@ public:
 class ClassParser : public ParserBase
 {
 public:
-  explicit ClassParser(Fragment* fragment);
+  ClassParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~ClassParser();
 
   void setTemplateSpecialization(bool on);
@@ -470,7 +462,7 @@ protected:
 class NamespaceParser : public ParserBase
 {
 public:
-  explicit NamespaceParser(Fragment* fragment);
+  NamespaceParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~NamespaceParser() = default;
 
   std::shared_ptr<ast::Declaration> parse();
@@ -485,7 +477,7 @@ protected:
 class FriendParser : public ParserBase
 {
 public:
-  explicit FriendParser(Fragment* fragment);
+  FriendParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~FriendParser() = default;
 
   std::shared_ptr<ast::FriendDeclaration> parse();
@@ -494,7 +486,7 @@ public:
 class UsingParser : public ParserBase
 {
 public:
-  explicit UsingParser(Fragment* fragment);
+  UsingParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~UsingParser() = default;
 
   std::shared_ptr<ast::Declaration> parse();
@@ -506,7 +498,7 @@ protected:
 class ImportParser : public ParserBase
 {
 public:
-  explicit ImportParser(Fragment* fragment);
+  ImportParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~ImportParser() = default;
 
   std::shared_ptr<ast::ImportDirective> parse();
@@ -515,7 +507,7 @@ public:
 class TemplateParser : public ParserBase
 {
 public:
-  explicit TemplateParser(Fragment* fragment);
+  TemplateParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~TemplateParser() = default;
 
   std::shared_ptr<ast::TemplateDeclaration> parse();
@@ -527,7 +519,7 @@ protected:
 class TemplateParameterParser : public ParserBase
 {
 public:
-  explicit TemplateParameterParser(Fragment* fragment);
+  TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
   ~TemplateParameterParser() = default;
 
   ast::TemplateParameter parse();

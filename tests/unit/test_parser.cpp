@@ -29,8 +29,8 @@ TEST(ParserTests, identifier1) {
   const char *source =
     "foo qux::bar foo<4> qux::foo<4+4> foo<4,5> qux::bar::foo foo<bar,qux<foo>> foo<int>::n";
 
-  Fragment fragment{ parser_context(source) };
-  IdentifierParser parser{ &fragment };
+  auto c = parser_context(source);
+  IdentifierParser parser{ c, Fragment(*c) };
 
   auto id = parser.parse();
   ASSERT_TRUE(id->is<ast::Identifier>());
@@ -89,7 +89,7 @@ TEST(ParserTests, identifier1) {
     }
   }
 
-  ASSERT_TRUE(fragment.atEnd());
+  ASSERT_TRUE(parser.atEnd());
 }
 
 TEST(ParserTests, identifier2) {
@@ -100,8 +100,8 @@ TEST(ParserTests, identifier2) {
   const char *source =
     "int<bool>";
 
-  Fragment fragment{ parser_context(source) };
-  IdentifierParser parser{ &fragment };
+  auto c = parser_context(source);
+  IdentifierParser parser{ c, Fragment(*c) };
 
   auto id = parser.parse();
   ASSERT_TRUE(id->is<ast::Identifier>());
@@ -119,15 +119,15 @@ TEST(ParserTests, function_types) {
     " int(int) const  |"
     " int(int) const & | ";
 
-  Fragment fragment{ parser_context(source) };
-  TypeParser tp{ &fragment };
+  auto c = parser_context(source);
+  TypeParser tp{ c, Fragment(*c) };
 
   auto t = tp.parse();
   ASSERT_TRUE(t.functionType != nullptr);
   ASSERT_EQ(t.functionType->params.size(), 1);
   ASSERT_TRUE(t.functionType->params.at(0).constQualifier.isValid());
 
-  fragment.read();
+  tp.reset(c, tp.fragment().mid(tp.iterator() + 1));
 
   t = tp.parse();
   ASSERT_TRUE(t.functionType != nullptr);
@@ -135,7 +135,7 @@ TEST(ParserTests, function_types) {
   ASSERT_EQ(t.functionType->params.size(), 1);
   ASSERT_TRUE(t.functionType->params.at(0).reference.isValid());
 
-  fragment.read();
+  tp.reset(c, tp.fragment().mid(tp.iterator() + 1));
 
   t = tp.parse();
   ASSERT_TRUE(t.functionType != nullptr);
@@ -144,7 +144,7 @@ TEST(ParserTests, function_types) {
   ASSERT_FALSE(t.reference.isValid());
   ASSERT_EQ(t.functionType->params.size(), 1);
 
-  fragment.read();
+  tp.reset(c, tp.fragment().mid(tp.iterator() + 1));
 
   t = tp.parse();
   ASSERT_TRUE(t.functionType != nullptr);
@@ -162,8 +162,8 @@ TEST(ParserTests, expr1) {
   const char *source =
     " 3 * 4 + 5 ";
 
-  Fragment fragment{ parser_context(source) };
-  ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  ExpressionParser parser{ c, Fragment(*c) };
 
   auto expr = parser.parse();
   ASSERT_TRUE(expr->is<Operation>());
@@ -188,13 +188,12 @@ TEST(ParserTests, operations) {
 
   {
     const char* source =
-      "a < b + 3;"
-      "a < b && d > c;";
+      "a < b + 3;";
 
-    Fragment fragment{ parser_context(source) };
-
-    Fragment sentinel{ &fragment, Fragment::Type<Fragment::Statement>() };
-    ExpressionParser parser{ &sentinel };
+    auto c = parser_context(source);
+    Fragment fragment{ *c };
+    Fragment sentinel{ fragment, Fragment::Type<Fragment::Statement>() };
+    ExpressionParser parser{ c, sentinel };
 
     // input will first produce a hard failure to read identifier...
     auto expr = parser.parse();
@@ -211,10 +210,10 @@ TEST(ParserTests, operations) {
     const char* source =
       "a < b && d > c;";
 
-    Fragment fragment{ parser_context(source) };
-
-    Fragment sentinel{ &fragment, Fragment::Type<Fragment::Statement>() };
-    ExpressionParser parser{ &sentinel };
+    auto c = parser_context(source);
+    Fragment fragment{ *c };
+    Fragment sentinel{ fragment, Fragment::Type<Fragment::Statement>() };
+    ExpressionParser parser{ c, sentinel };
 
     // input will be first parsed as template identifier than identifier
     auto expr = parser.parse();
@@ -238,9 +237,10 @@ TEST(ParserTests, expr2) {
     const char* source =
       " f(a, b, c); ";
 
-    Fragment fragment{ parser_context(source) };
-    Fragment sentinel{ &fragment, Fragment::Type<Fragment::Statement>() };
-    ExpressionParser parser{ &sentinel };
+    auto c = parser_context(source);
+    Fragment fragment{ *c };
+    Fragment sentinel{ fragment, Fragment::Type<Fragment::Statement>() };
+    ExpressionParser parser{ c, sentinel };
 
     auto expr = parser.parse();
     ASSERT_TRUE(expr->is<ast::FunctionCall>());
@@ -254,9 +254,10 @@ TEST(ParserTests, expr2) {
     const char* source =
       " a.b(); ";
 
-    Fragment fragment{ parser_context(source) };
-    Fragment sentinel{ &fragment, Fragment::Type<Fragment::Statement>() };
-    ExpressionParser parser{ &sentinel };
+    auto c = parser_context(source);
+    Fragment fragment{ *c };
+    Fragment sentinel{ fragment, Fragment::Type<Fragment::Statement>() };
+    ExpressionParser parser{ c, sentinel };
 
     auto expr = parser.parse();
     ASSERT_TRUE(expr->is<ast::FunctionCall>());
@@ -271,9 +272,10 @@ TEST(ParserTests, expr2) {
     const char* source =
       " (a+b)(c); ";
 
-    Fragment fragment{ parser_context(source) };
-    Fragment sentinel{ &fragment, Fragment::Type<Fragment::Statement>() };
-    ExpressionParser parser{ &sentinel };
+    auto c = parser_context(source);
+    Fragment fragment{ *c };
+    Fragment sentinel{ fragment, Fragment::Type<Fragment::Statement>() };
+    ExpressionParser parser{ c, sentinel };
 
     auto expr = parser.parse();
     ASSERT_TRUE(expr->is<ast::FunctionCall>());
@@ -320,8 +322,9 @@ TEST(ParserTests, arraysubscript) {
   const char *source =
     " array[index] ";
 
-  Fragment fragment{ parser_context(source) };
-  ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ExpressionParser parser{ c, fragment };
 
   auto expr = parser.parse();
 
@@ -340,8 +343,9 @@ TEST(ParserTests, arrays) {
 
   const char *source = "[1, 2, 3, 4]";
 
-  script::parser::Fragment fragment{ parser_context(source) };
-  ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  script::parser::Fragment fragment{ *c };
+  ExpressionParser parser{ c, fragment };
 
   auto actual = parser.parse();
   ASSERT_TRUE(actual->type() == NodeType::ArrayExpression);
@@ -359,8 +363,9 @@ TEST(ParserTests, lambdas) {
 
   const char *source = "[x] () { }";
 
-  script::parser::Fragment fragment{ parser_context(source) };
-  ExpressionParser parser{ &fragment };
+  auto c = parser_context(source);
+  script::parser::Fragment fragment{ *c };
+  ExpressionParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -381,8 +386,9 @@ TEST(ParserTests, vardecl1) {
   const char *source =
     " int a = 5; ";
 
-  Fragment fragment{ parser_context(source) };
-  DeclParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  DeclParser parser{ c, fragment };
 
   ASSERT_TRUE(parser.detectDecl());
   auto vardecl = parser.parse();
@@ -405,8 +411,9 @@ TEST(ParserTests, fundecl1) {
   const char *source =
     " int foo(int a, int b) { return a + b; } ";
 
-  Fragment fragment{ parser_context(source) };
-  DeclParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  DeclParser parser{ c, fragment };
 
   ASSERT_TRUE(parser.detectDecl());
   auto decl = parser.parse();
@@ -428,8 +435,9 @@ TEST(ParserTests, fundecl2) {
   const char *source =
     " bar foo(qux, qux) { } ";
 
-  Fragment fragment{ parser_context(source) };
-  DeclParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  DeclParser parser{ c, fragment };
 
   ASSERT_TRUE(parser.detectDecl());
   auto decl = parser.parse();
@@ -446,8 +454,9 @@ TEST(ParserTests, vardecl2) {
   const char *source =
     " bar foo(qux, qux);";
 
-  Fragment fragment{ parser_context(source) };
-  DeclParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  DeclParser parser{ c, fragment };
 
   ASSERT_TRUE(parser.detectDecl());
   auto decl = parser.parse();
@@ -462,8 +471,9 @@ TEST(ParserTests, empty_enum) {
 
   const char *source = "enum Foo{};";
 
-  Fragment fragment{ parser_context(source) };
-  EnumParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  EnumParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -477,8 +487,9 @@ TEST(ParserTests, empty_enum_class) {
 
   const char *source = "enum class Foo{};";
 
-  Fragment fragment{ parser_context(source) };
-  EnumParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  EnumParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -494,8 +505,9 @@ TEST(ParserTests, enum_with_values) {
 
   const char *source = "enum Foo{Field1, Field2};";
 
-  Fragment fragment{ parser_context(source) };
-  EnumParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  EnumParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -512,8 +524,9 @@ TEST(ParserTests, enum_with_assigned_value) {
 
   const char *source = "enum Foo{Field1 = 1, Field2};";
 
-  Fragment fragment{ parser_context(source) };
-  EnumParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  EnumParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -532,8 +545,9 @@ TEST(ParserTests, enum_empty_field) {
 
   const char *source = "enum Foo{Field1, Field2, , Field3, };";
 
-  Fragment fragment{ parser_context(source) };
-  EnumParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  EnumParser parser{ c, fragment };
 
   auto actual = parser.parse();
 
@@ -549,8 +563,9 @@ TEST(ParserTests, continue_break_return) {
 
   const char *source = "continue; break; return;";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<ContinueStatement>());
@@ -567,8 +582,9 @@ TEST(ParserTests, if_statement) {
 
   const char *source = "if(i == 0) return;";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<IfStatement>());
@@ -585,8 +601,9 @@ TEST(ParserTests, while_loop) {
 
   const char *source = "while(true) { }";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<WhileLoop>());
@@ -602,8 +619,9 @@ TEST(ParserTests, for_loop) {
 
   const char *source = "for(int i = 0; i < 10; ++i) { }";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<ForLoop>());
@@ -621,8 +639,9 @@ TEST(ParserTests, compound_statement) {
 
   const char *source = "{ continue; break; }";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<CompoundStatement>());
@@ -637,8 +656,9 @@ TEST(ParserTests, var_decl_initializations) {
 
   const char *source = "int a = 5; int a(5); int a{5};";
 
-  Fragment fragment{ parser_context(source) };
-  ProgramParser parser{ &fragment };
+  auto c = parser_context(source);
+  Fragment fragment{ *c };
+  ProgramParser parser{ c, fragment };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<VariableDecl>());
