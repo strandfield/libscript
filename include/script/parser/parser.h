@@ -17,10 +17,10 @@ namespace parser
 struct ParserContext
 {
 private:
-  SourceFile mSource;
+  SourceFile mSource; // @TODO: almost useless
   std::vector<Token> m_tokens;
 public:
-  std::shared_ptr<ast::AST> mAst;
+  std::shared_ptr<ast::AST> mAst; // @TODO: not so usefull apparently
   bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
   ParserContext(const SourceFile & src);
@@ -94,8 +94,8 @@ public:
     
   }
 
-  std::vector<Token>::const_iterator begin() const;
-  std::vector<Token>::const_iterator end() const;
+  iterator begin() const;
+  iterator end() const;
 
   size_t size() const;
 
@@ -104,8 +104,8 @@ public:
   static bool tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right);
 
 private:
-  std::vector<Token>::const_iterator m_begin;
-  std::vector<Token>::const_iterator m_end;
+  iterator m_begin;
+  iterator m_end;
 };
 
 class ParserBase
@@ -526,10 +526,16 @@ class Parser : public ProgramParser
 {
 public:
   Parser();
+  // @TODO: requiring a SourceFile here may be too much, we only need a std::string
+  // @TODO: is this constructor useless ?
   Parser(const SourceFile & source);
   ~Parser() = default;
 
   std::shared_ptr<ast::AST> parse(const SourceFile & source);
+
+  // @TODO: maybe should take a const std::string& as input.
+  // @TODO: maybe should return an shared_ptr<ast::Expression>
+  // then the user could create the script::Ast from the SourceFile & the ast::Expression
   std::shared_ptr<ast::AST> parseExpression(const SourceFile & source);
 
 protected:

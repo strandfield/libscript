@@ -18,7 +18,7 @@ class LIBSCRIPT_API Lexer
 {
 public:
   Lexer();
-  Lexer(const SourceFile & src);
+  Lexer(const SourceFile & src); // @TODO: we could just work on a const std::string&
 
   Token read();
 

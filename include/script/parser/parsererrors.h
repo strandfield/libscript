@@ -22,7 +22,7 @@ namespace parser
 class SyntaxError : public Exceptional
 {
 public:
-  SourceLocation location;
+  SourceLocation location; // @TODO: maybe store just the offset as a size_t
 
 public:
 

@@ -64,10 +64,12 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
   {
     DiagnosticMessage mssg = session()->messageBuilder().error(ex);
     CompilationFailure exception{ CompilerError::SyntaxError, mssg.content() };
+    // @TODO: do not bind location to the source file which is not supposed to exist outside this function
     exception.location = ex.location;
     throw exception;
   } 
 
+  // @TODO: write source location if 'compile' throws CompilationFailure
   return compile(std::static_pointer_cast<ast::Expression>(ast->root), context);
 }
 
