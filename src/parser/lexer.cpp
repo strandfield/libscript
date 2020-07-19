@@ -138,17 +138,9 @@ void Lexer::setSource(const SourceFile & src)
   consumeDiscardable();
 }
 
-char Lexer::readChar()
+char Lexer::readChar() noexcept
 {
-  // @TODO: remove bounds checking
-  // All calls to this function seem to perform a check for atEnd().
-
-  if (atEnd())
-    throw std::runtime_error{ "Lexer::readChar() : end of input" };
-
-  auto it = mSource + m_pos;
-  m_pos++;
-  return *it;
+  return mSource[m_pos++];
 }
 
 char Lexer::charAt(size_t pos)
@@ -156,7 +148,7 @@ char Lexer::charAt(size_t pos)
   return mSource[pos];
 }
 
-char Lexer::currentChar() const
+char Lexer::currentChar() const noexcept
 {
   return mSource[m_pos];
 }

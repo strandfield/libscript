@@ -5,12 +5,12 @@
 #ifndef LIBSCRIPT_AST_P_H
 #define LIBSCRIPT_AST_P_H
 
-#include <vector>
-
 #include "script/sourcefile.h"
 #include "script/ast/node.h"
 
 #include "script/diagnosticmessage.h"
+
+#include <vector>
 
 namespace script
 {

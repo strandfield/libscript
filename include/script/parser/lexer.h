@@ -69,9 +69,9 @@ public:
   static bool isDiscardable(const Token& t) { return t == Token::MultiLineComment || t == Token::SingleLineComment; }
 
 protected:
-  char readChar();
+  char readChar() noexcept;
   char charAt(size_t pos);
-  char currentChar() const;
+  char currentChar() const noexcept;
   inline char peekChar() const { return currentChar(); }
   void consumeDiscardable();
   Token create(size_t pos, int length, Token::Id type, int flags);
