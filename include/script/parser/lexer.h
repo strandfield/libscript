@@ -66,6 +66,8 @@ public:
   static bool isDiscardable(char c);
   inline static bool isSpace(char c) { return ctype(c) == Space; }
 
+  static bool isDiscardable(const Token& t) { return t == Token::MultiLineComment || t == Token::SingleLineComment; }
+
 protected:
   char readChar();
   char charAt(size_t pos);

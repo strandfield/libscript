@@ -4,12 +4,12 @@
 
 #include "script/parser/parser.h"
 
-#include <map>
-#include <stdexcept>
-
 #include "script/operator.h"
 
 #include "script/parser/parsererrors.h"
+
+#include <map>
+#include <stdexcept>
 
 namespace script
 {
@@ -271,7 +271,7 @@ ParserContext::ParserContext(const SourceFile & src)
   while (!lexer.atEnd())
   {
     const Token t = lexer.read();
-    if (isDiscardable(t))
+    if (Lexer::isDiscardable(t))
       continue;
     m_tokens.push_back(t);
   }
@@ -287,11 +287,6 @@ ParserContext::~ParserContext()
 {
   mSource = SourceFile{};
   m_tokens.clear();
-}
-
-bool ParserContext::isDiscardable(const Token & t) const
-{
-  return t == Token::MultiLineComment || t == Token::SingleLineComment;
 }
 
 
@@ -1327,9 +1322,8 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
   else if (op == Token::UserDefinedLiteral)
   {
     op = unsafe_read();
-    const auto& str = op.toString();
 
-    if(str.find("\"\"") != 0)
+    if(!op.text().starts_with("\"\""))
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} }; /// TODO ? should this have a different error than the previous
 
     Token quotes{ Token::StringLiteral, Token::Literal, StringView(op.text().data(), 2) };

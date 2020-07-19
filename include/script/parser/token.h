@@ -39,6 +39,21 @@ public:
   size_t size() const { return m_size; }
   const char* data() const { return m_data; }
 
+  char at(size_t index) const { return m_data[index]; }
+
+  bool starts_with(const char* str) const
+  {
+    size_t offset = 0;
+
+    for (; offset < size() && *str != '\0'; ++offset, ++str)
+    {
+      if (*str != at(offset))
+        return false;
+    }
+
+    return *str == '\0';
+  }
+
   std::string toString() const { return std::string(data(), data() + size()); }
 
   StringView& operator=(const StringView&) = default;

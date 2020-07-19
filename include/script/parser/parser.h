@@ -28,9 +28,6 @@ public:
   ~ParserContext();
 
   const std::vector<Token>& tokens() const { return m_tokens; }
-
-protected:
-  bool isDiscardable(const Token & t) const;
 };
 
 struct RaiiRightRightAngleGuard
@@ -443,7 +440,7 @@ public:
   std::shared_ptr<ast::ClassDecl> parse();
 
 protected:
-  void parseAccessSpecifier(); // public, private, protected
+  void parseAccessSpecifier();
   void parseFriend();
   void parseTemplate();
   void parseUsing();
@@ -537,16 +534,10 @@ public:
 
 protected:
   std::shared_ptr<ast::ClassDecl> parseClassDeclaration() override;
-
-private:
-  std::unique_ptr<Fragment> m_fragment;
 };
 
 } // namespace parser
 
 } // namespace script
-
-
-
 
 #endif // LIBSCRIPT_PARSER_H
