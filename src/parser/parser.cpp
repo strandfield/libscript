@@ -2916,8 +2916,14 @@ Parser::Parser()
 
 }
 
-Parser::Parser(const SourceFile & source)
-  : ProgramParser(std::make_shared<ParserContext>(loaded_source_file(source).content()))
+Parser::Parser(const std::string& str)
+  : ProgramParser(std::make_shared<ParserContext>(str))
+{
+
+}
+
+Parser::Parser(const char* str)
+  : ProgramParser(std::make_shared<ParserContext>(str))
 {
 
 }
@@ -2938,17 +2944,13 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   return ret;
 }
 
-std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
+std::shared_ptr<ast::Expression> Parser::parseExpression(const std::string& source)
 {
-  auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
+  auto c = std::make_shared<ParserContext>(source);
   reset(c, Fragment{ *c });
 
-  std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
-
   ExpressionParser ep{ context(), fragment() };
-  ret->root = parse_and_seek(ep);
-
-  return ret;
+  return parse_and_seek(ep);
 }
 
 

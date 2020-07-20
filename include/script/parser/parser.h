@@ -546,17 +546,13 @@ class Parser : public ProgramParser
 {
 public:
   Parser();
-  // @TODO: requiring a SourceFile here may be too much, we only need a std::string
-  // @TODO: is this constructor useless ?
-  Parser(const SourceFile & source);
+  explicit Parser(const std::string& str);
+  explicit Parser(const char* str);
   ~Parser() = default;
 
   std::shared_ptr<ast::AST> parse(const SourceFile & source);
 
-  // @TODO: maybe should take a const std::string& as input.
-  // @TODO: maybe should return an shared_ptr<ast::Expression>
-  // then the user could create the script::Ast from the SourceFile & the ast::Expression
-  std::shared_ptr<ast::AST> parseExpression(const SourceFile & source);
+  std::shared_ptr<ast::Expression> parseExpression(const std::string& src);
 
 protected:
   std::shared_ptr<ast::ClassDecl> parseClassDeclaration() override;

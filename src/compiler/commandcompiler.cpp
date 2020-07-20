@@ -51,27 +51,26 @@ CommandCompiler::CommandCompiler(Compiler *c)
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string & expr, Context context)
 {
-  auto source = SourceFile::fromString(expr);
-  parser::Parser parser{ source };
-
-  std::shared_ptr<ast::AST> ast = nullptr;
+  std::shared_ptr<ast::Expression> ast_expr = nullptr;
 
   try
   {
-    ast = parser.parseExpression(source);
+    parser::Parser parser;
+    ast_expr = parser.parseExpression(expr);
   }
   catch (parser::SyntaxError& ex)
   {
     DiagnosticMessage mssg = session()->messageBuilder().error(ex);
     CompilationFailure exception{ CompilerError::SyntaxError, mssg.content() };
-    // @TODO: do not bind location to the source file which is not supposed to exist outside this function
-    exception.location.m_source = source;
-    exception.location.m_pos = source.map(ex.offset);
+    exception.location.m_pos.pos = ex.offset;
+    // @TODO: compute exact location
+    exception.location.m_pos.line = 0;
+    exception.location.m_pos.col = 0;
     throw exception;
   } 
 
   // @TODO: write source location if 'compile' throws CompilationFailure
-  return compile(std::static_pointer_cast<ast::Expression>(ast->root), context);
+  return compile(ast_expr, context);
 }
 
 std::shared_ptr<program::Expression> CommandCompiler::compile(const std::shared_ptr<ast::Expression> & expr, const Context & context)
