@@ -6,7 +6,7 @@
 
 #include "script/operator.h"
 
-#include "script/parser/parsererrors.h"
+#include "script/parser/lexer.h"
 
 #include <map>
 #include <stdexcept>
@@ -90,8 +90,7 @@ Fragment::Fragment(iterator begin, iterator end, Type<DelimiterPair>)
   DelimitersCounter counter;
   counter.feed(*m_begin);
 
-  if (counter.balanced())
-    throw std::runtime_error{ "bad call to Fragment ctor" };
+  assert(!counter.balanced());
 
   ++m_begin;
 
@@ -262,6 +261,7 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& 
   return false;
 }
 
+
 ParserContext::ParserContext(const SourceFile & src)
   : mSource(src)
 {
@@ -288,6 +288,7 @@ ParserContext::~ParserContext()
   mSource = SourceFile{};
   m_tokens.clear();
 }
+
 
 
 ParserBase::ParserBase(std::shared_ptr<ParserContext> shared_context, const Fragment& frag)
@@ -1381,12 +1382,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
         seek(savepoint);
       }
     }
-    catch (const SyntaxError& )
-    {
-      seek(savepoint);
-      return ret;
-    }
-    catch (const std::runtime_error &)
+    catch (const std::exception &)
     {
       seek(savepoint);
       return ret;
@@ -1562,7 +1558,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
     ret.functionType->params.push_back(param);
 
     if (iterator() != listfrag.end())
-      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ peek(), Token::Invalid} };
+      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ peek(), Token::Invalid});
 
     if (peek() == Token::Comma)
       unsafe_read();
@@ -1669,7 +1665,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalVirtual())
   {
     if (!isParsingMember())
-      throw SyntaxError{ ParserError::IllegalUseOfKeyword, errors::KeywordToken{mVirtualKw} };
+      throw SyntaxErr(ParserError::IllegalUseOfKeyword, errors::KeywordToken{mVirtualKw});
   }
 
   readOptionalStatic();
@@ -1677,7 +1673,7 @@ void DeclParser::readOptionalDeclSpecifiers()
   if (readOptionalExplicit())
   {
     if (!isParsingMember())
-      throw SyntaxError{ ParserError::IllegalUseOfKeyword, errors::KeywordToken{mExplicitKw} };
+      throw SyntaxErr(ParserError::IllegalUseOfKeyword, errors::KeywordToken{mExplicitKw});
   }
 }
 
@@ -1871,7 +1867,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   }
   else
   {
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid});
   }
 
   readArgsOrParams();
@@ -1887,7 +1883,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   if (peek() == Token::LeftBrace)
   {
     if (mDecision == ParsingVariable)
-      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid});
 
     mDecision = ParsingFunction;
     mVarDecl = nullptr;
@@ -1897,13 +1893,13 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   else if (peek() == Token::Semicolon)
   {
     if (mDecision == ParsingFunction)
-      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
+      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace});
 
     mVarDecl->semicolon = read();
     return mVarDecl;
   }
 
-  throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+  throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid});
 }
 
 std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
@@ -2202,7 +2198,7 @@ bool DeclParser::readOptionalConst()
     return false;
   
   if (mDecision == ParsingVariable)
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid});
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -2223,7 +2219,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   const Token eqSign = read();
 
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   if (peek() != Token::Delete)
   {
@@ -2238,7 +2234,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   mVarDecl = nullptr;
 
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   read(Token::Semicolon);
 
@@ -2257,7 +2253,7 @@ bool DeclParser::readOptionalDefaultSpecifier()
   const Token eqSign = read();
 
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   if (peek() != Token::Default)
   {
@@ -2296,7 +2292,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
   mFuncDecl->virtualPure = read();
 
   if (!mFuncDecl->virtualPure.isZero())
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral} };
+    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral});
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -2310,7 +2306,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
 std::shared_ptr<ast::CompoundStatement> DeclParser::readFunctionBody()
 {
   if (peek() != Token::LeftBrace)
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
+    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace});
 
   ProgramParser pParser{ context(), midfragment() };
   auto ret = std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
@@ -2361,13 +2357,13 @@ bool DeclParser::detectDtorDecl()
 
   const Token tilde = unsafe_read();
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   IdentifierParser ip{ context(), midfragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
   auto iden = parse_and_seek(ip);
 
   if (!isClassName(iden))
-    throw SyntaxError{ ParserError::ExpectedCurrentClassName };
+    throw SyntaxErr(ParserError::ExpectedCurrentClassName);
 
   mDecision = ParsingDestructor;
   auto dtor = ast::DestructorDecl::New(iden);
@@ -2396,7 +2392,7 @@ bool DeclParser::detectCastDecl()
   {
     if (mExplicitKw.isValid())
     {
-      throw SyntaxError{ ParserError::CouldNotReadType };
+      throw SyntaxErr(ParserError::CouldNotReadType);
     }
     else 
     {
@@ -2582,7 +2578,7 @@ std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 void ClassParser::readOptionalParent()
 {
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   if (peek() != Token::Colon)
     return;
@@ -2590,7 +2586,7 @@ void ClassParser::readOptionalParent()
   mClass->colon = unsafe_read();
 
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   IdentifierParser nameParser{ context(), midfragment(), IdentifierParser::ParseTemplateId | IdentifierParser::ParseQualifiedId}; // TODO : forbid read operator name directly here
   auto parent = parse_and_seek(nameParser);
@@ -2603,12 +2599,12 @@ void ClassParser::readOptionalParent()
 void ClassParser::readDecl()
 {
   if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
   DeclParser dp{ context(), midfragment(), mClass->name };
   
   if (!dp.detectDecl())
-    throw SyntaxError{ ParserError::ExpectedDeclaration };
+    throw SyntaxErr(ParserError::ExpectedDeclaration);
 
   mClass->content.push_back(parse_and_seek(dp));
 }
@@ -2781,7 +2777,7 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
   Token tok = read();
 
   if (!tok.isIdentifier())
-    throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{tok} };
+    throw SyntaxErr(ParserError::ExpectedIdentifier, errors::ActualToken{tok});
 
   names.push_back(tok);
 
@@ -2792,7 +2788,7 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
     tok = read();
 
     if (!tok.isIdentifier())
-      throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{tok} };
+      throw SyntaxErr(ParserError::ExpectedIdentifier, errors::ActualToken{tok});
 
     names.push_back(tok);
   }
@@ -2824,7 +2820,7 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
     frag_begin, frag_end, half_consumed_right_right);
 
   if (!ok)
-    throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
+    throw SyntaxErr(ParserError::UnexpectedFragmentEnd);
 
   RaiiRightRightAngleGuard guard{ context().get() };
   if (guard.value && half_consumed_right_right)
@@ -2870,7 +2866,7 @@ std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
   funcparser.setDeclaratorOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName | IdentifierParser::ParseTemplateId);
 
   if (!funcparser.detectDecl())
-    throw SyntaxError{ ParserError::ExpectedDeclaration };
+    throw SyntaxErr(ParserError::ExpectedDeclaration);
 
   funcparser.setDecision(DeclParser::ParsingFunction);
   return parse_and_seek(funcparser);
@@ -2895,10 +2891,10 @@ ast::TemplateParameter TemplateParameterParser::parse()
   else if (unsafe_peek() == Token::Bool)
     result.kind = unsafe_read();
   else
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::Invalid} };
+    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ unsafe_peek(), Token::Invalid });
 
   if (!peek().isIdentifier())
-    throw SyntaxError{ ParserError::ExpectedIdentifier, errors::ActualToken{unsafe_peek()} };
+    throw SyntaxErr(ParserError::ExpectedIdentifier, errors::ActualToken{unsafe_peek()});
 
   result.name = unsafe_read();
 
@@ -2936,17 +2932,9 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
   ret->root = ast::ScriptRootNode::New(ret);
   c->mAst = ret;
 
-  try
+  while (!atEnd())
   {
-    while (!atEnd())
-    {
-      ret->add(parseStatement());
-    }
-  }
-  catch (SyntaxError& ex)
-  {
-    ex.location = location();
-    throw;
+    ret->add(parseStatement());
   }
 
   return ret;
@@ -2960,17 +2948,8 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   c->mAst = ret;
 
-  try
-  {
-    ExpressionParser ep{ context(), fragment() };
-    auto expr = parse_and_seek(ep);
-    ret->root = expr;
-  }
-  catch (SyntaxError & ex)
-  {
-    ex.location = location();
-    throw;
-  }
+  ExpressionParser ep{ context(), fragment() };
+  ret->root = parse_and_seek(ep);
 
   return ret;
 }

@@ -5,8 +5,9 @@
 #ifndef LIBSCRIPT_PARSER_H
 #define LIBSCRIPT_PARSER_H
 
-#include "script/parser/lexer.h"
 #include "script/ast/ast_p.h"
+
+#include "script/parser/parsererrors.h"
 
 namespace script
 {
@@ -108,6 +109,7 @@ private:
   iterator m_end;
 };
 
+
 class ParserBase
 {
 public:
@@ -142,6 +144,21 @@ protected:
     auto ret = parser.parse();
     seek(parser.iterator());
     return ret;
+  }
+
+  SyntaxError SyntaxErr(ParserError e)
+  {
+    SyntaxError err{ e };
+    err.location = location();
+    return err;
+  }
+
+  template<typename T>
+  SyntaxError SyntaxErr(ParserError e, T&& d)
+  {
+    SyntaxError err{ e, std::forward<T>(d) };
+    err.location = location();
+    return err;
   }
 
 protected:
