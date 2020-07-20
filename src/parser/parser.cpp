@@ -261,15 +261,23 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& 
   return false;
 }
 
-
-ParserContext::ParserContext(SourceFile src)
-  : mSource(src)
+ParserContext::ParserContext(const char* src)
+  : ParserContext(src, std::strlen(src))
 {
-  if (!src.isLoaded())
-    src.load();
 
-  Lexer lexer{ mSource.content() };
-  
+}
+
+ParserContext::ParserContext(const std::string& str)
+  : ParserContext(str.data(), str.size())
+{
+
+}
+
+ParserContext::ParserContext(const char* src, size_t s)
+  : m_source(src)
+{
+  Lexer lexer{ src, s };
+
   while (!lexer.atEnd())
   {
     const Token t = lexer.read();
@@ -279,16 +287,16 @@ ParserContext::ParserContext(SourceFile src)
   }
 }
 
-ParserContext::ParserContext(std::vector<Token> tokens)
-  : m_tokens(std::move(tokens))
+ParserContext::ParserContext(const char* src, std::vector<Token> tokens)
+  : m_source(src),
+    m_tokens(std::move(tokens))
 {
 
 }
 
 ParserContext::~ParserContext()
 {
-  mSource = SourceFile{};
-  m_tokens.clear();
+
 }
 
 
@@ -316,24 +324,6 @@ void ParserBase::reset(std::shared_ptr<ParserContext> shared_context, const Frag
 std::shared_ptr<ast::AST> ParserBase::ast() const
 {
   return context()->mAst;
-}
-
-SourceLocation ParserBase::location() const
-{
-  SourceLocation loc;
-  loc.m_source = ast()->source;
-  
-  if (!atEnd())
-  {
-    const Token tok = unsafe_peek();
-    loc.m_pos = ast()->position(tok);
-  }
-  else
-  {
-    loc.m_pos.pos = ast()->source.content().length();
-  }
-
-  return loc;
 }
 
 size_t ParserBase::offset() const
@@ -2916,23 +2906,28 @@ ast::TemplateParameter TemplateParameterParser::parse()
   return result;
 }
 
-
+static SourceFile loaded_source_file(SourceFile src)
+{
+  if (!src.isLoaded())
+    src.load();
+  return src;
+}
 
 Parser::Parser()
-  : ProgramParser(std::make_shared<ParserContext>(std::vector<Token>()))
+  : ProgramParser(std::make_shared<ParserContext>(nullptr, std::vector<Token>()))
 {
 
 }
 
 Parser::Parser(const SourceFile & source)
-  : ProgramParser(std::make_shared<ParserContext>(source))
+  : ProgramParser(std::make_shared<ParserContext>(loaded_source_file(source).content()))
 {
   m_context->mAst = std::make_shared<ast::AST>(source);
 }
 
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 {
-  auto c = std::make_shared<ParserContext>(source);
+  auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
   reset(c, Fragment{ *c });
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
@@ -2949,7 +2944,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 
 std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
 {
-  auto c = std::make_shared<ParserContext>(source);
+  auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
   reset(c, Fragment{ *c });
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);

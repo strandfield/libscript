@@ -23,16 +23,20 @@ Lexer::Lexer()
 }
 
 Lexer::Lexer(const char* str)
-  : m_source(str),
-    m_size(std::strlen(str)),
-    m_pos(0)
+  : Lexer(str, std::strlen(str))
 {
-  consumeDiscardable();
+
 }
 
 Lexer::Lexer(const std::string& str)
-  : m_source(str.data()),
-    m_size(str.size()),
+  : Lexer(str.data(), str.size())
+{
+
+}
+
+Lexer::Lexer(const char* str, size_t s)
+  : m_source(str),
+    m_size(s),
     m_pos(0)
 {
   consumeDiscardable();

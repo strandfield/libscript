@@ -18,14 +18,16 @@ namespace parser
 struct ParserContext
 {
 private:
-  SourceFile mSource; // @TODO: almost useless
+  const char* m_source;
   std::vector<Token> m_tokens;
 public:
   std::shared_ptr<ast::AST> mAst; // @TODO: not so usefull apparently
   bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
-  ParserContext(SourceFile src);
-  ParserContext(std::vector<Token> tokens);
+  explicit ParserContext(const char* src);
+  explicit ParserContext(const std::string& str);
+  ParserContext(const char* src, size_t s);
+  ParserContext(const char* src, std::vector<Token> tokens);
   ~ParserContext();
 
   const std::vector<Token>& tokens() const { return m_tokens; }
@@ -124,7 +126,6 @@ public:
   Fragment::iterator iterator() const;
   bool atEnd() const;
 
-  SourceLocation location() const;
   size_t offset() const;
 
 protected:

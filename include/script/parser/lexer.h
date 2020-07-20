@@ -19,6 +19,7 @@ public:
   Lexer();
   explicit Lexer(const char* str);
   explicit Lexer(const std::string& str);
+  Lexer(const char* str, size_t s);
 
   Token read();
 

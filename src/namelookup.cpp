@@ -235,7 +235,7 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     /// TODO : make this whole block less ugly !!
 
     auto source = SourceFile::fromString(name);
-    auto pdata = std::make_shared<parser::ParserContext>(source);
+    auto pdata = std::make_shared<parser::ParserContext>(source.content());
     pdata->mAst = std::make_shared<ast::AST>(source);
     parser::Fragment fragment{ *pdata };
     parser::IdentifierParser idp{ pdata, fragment };

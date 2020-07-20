@@ -16,7 +16,7 @@
 std::shared_ptr<script::parser::ParserContext> parser_context(const char *source)
 {
   auto src = script::SourceFile::fromString(std::string(source));
-  auto ret = std::make_shared<script::parser::ParserContext>(src);
+  auto ret = std::make_shared<script::parser::ParserContext>(src.content());
   ret->mAst = std::make_shared<script::ast::AST>(src);
   return ret;
 }
