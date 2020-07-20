@@ -15,24 +15,28 @@ namespace parser
 {
 
 Lexer::Lexer()
-  : mSource(nullptr)
+  : m_source(nullptr)
   , m_size(0)
   , m_pos(0)
 {
 
 }
 
-Lexer::Lexer(const SourceFile & src)
-  : mSourceFile(src)
-  , mSource(nullptr)
-  , m_pos(0)
+Lexer::Lexer(const char* str)
+  : m_source(str),
+    m_size(std::strlen(str)),
+    m_pos(0)
 {
-  mSource = mSourceFile.data();
-  m_size = mSourceFile.content().size();
-  consumeDiscardable(); /// TODO : should it be moved to another method like 'start()'
-  // in such case, we should also add a 'isReady()' method
+  consumeDiscardable();
 }
 
+Lexer::Lexer(const std::string& str)
+  : m_source(str.data()),
+    m_size(str.size()),
+    m_pos(0)
+{
+  consumeDiscardable();
+}
 
 Token Lexer::read()
 {
@@ -121,36 +125,32 @@ void Lexer::seek(size_t pos)
 
 void Lexer::reset()
 {
-  mSourceFile = SourceFile{};
-  mSource = nullptr;
+  m_source = nullptr;
   m_pos = 0;
   m_size = 0;
 }
 
-void Lexer::setSource(const SourceFile & src)
+void Lexer::reset(const std::string& str)
 {
-  reset();
-  mSourceFile = src;
-  if (!mSourceFile.isLoaded())
-    mSourceFile.load();
-  mSource = src.data();
-  m_size = src.content().size();
+  m_source = str.data();
+  m_pos = 0;
+  m_size = str.size();
   consumeDiscardable();
 }
 
 char Lexer::readChar() noexcept
 {
-  return mSource[m_pos++];
+  return m_source[m_pos++];
 }
 
 char Lexer::charAt(size_t pos)
 {
-  return mSource[pos];
+  return m_source[pos];
 }
 
 char Lexer::currentChar() const noexcept
 {
-  return mSource[m_pos];
+  return m_source[m_pos];
 }
 
 void Lexer::consumeDiscardable()
@@ -161,12 +161,12 @@ void Lexer::consumeDiscardable()
 
 Token Lexer::create(size_t pos, int length, Token::Id type, int flags)
 {
-  return Token{ type, flags, StringView(mSource + pos, length) };
+  return Token{ type, flags, StringView(m_source + pos, length) };
 }
 
 Token Lexer::create(size_t pos, Token::Id type, int flags)
 {
-  return Token{ type, flags, StringView(mSource + pos, this->pos() - pos) };
+  return Token{ type, flags, StringView(m_source + pos, this->pos() - pos) };
 }
 
 Lexer::CharacterType Lexer::ctype(char c)
@@ -600,7 +600,7 @@ static Token::Id findKeyword(const Keyword * keywords, int arraySize, const char
 
 Token::Id Lexer::identifierType(int begin, int end) const
 {
-  const char *str = mSource + begin;
+  const char *str = m_source + begin;
   const int l = end - begin;
 
   switch (l) {
@@ -685,7 +685,7 @@ Token Lexer::readCharLiteral(size_t start)
 
 Token Lexer::readFromPunctuator(size_t start)
 {
-  char p = mSource[m_pos - 1]; /// bad, TODO : clean up
+  char p = m_source[m_pos - 1]; /// bad, TODO : clean up
   if (p == '/')
   {
     if (atEnd())
@@ -779,7 +779,7 @@ static Token::Id findOperator(const OperatorLexeme * ops, int arraySize, const c
 
 Token::Id Lexer::getOperator(int begin, int end) const
 {
-  const char *str = mSource + begin;
+  const char *str = m_source + begin;
   const int l = end - begin;
 
   switch (l) {

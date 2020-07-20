@@ -24,7 +24,7 @@ public:
   std::shared_ptr<ast::AST> mAst; // @TODO: not so usefull apparently
   bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
-  ParserContext(const SourceFile & src);
+  ParserContext(SourceFile src);
   ParserContext(std::vector<Token> tokens);
   ~ParserContext();
 

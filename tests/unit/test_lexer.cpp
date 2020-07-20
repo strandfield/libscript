@@ -25,7 +25,7 @@ TEST(LexerTests, keywords) {
     "bool char int float double for while if else class struct auto using typedef "
     " namespace public protected private friend import export";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::Bool);
   ASSERT_EQ(lex.read(), Token::Char);
   ASSERT_EQ(lex.read(), Token::Int);
@@ -59,7 +59,7 @@ TEST(LexerTests, literals) {
   const char *source =
     "0 5 3.14 0x1 0xFF 0xF3e 0b1010 5f 3. 3.14 5.f 5e210 5e10f 5 010";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::OctalLiteral);
   ASSERT_EQ(lex.read(), Token::IntegerLiteral);
   ASSERT_EQ(lex.read(), Token::DecimalLiteral);
@@ -86,7 +86,7 @@ TEST(LexerTests, stringliterals) {
   const char *source =
     "\"Hello, there\"    \"H\\\"a\" ";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::StringLiteral);
   ASSERT_EQ(lex.read(), Token::StringLiteral);
 
@@ -100,7 +100,7 @@ TEST(LexerTests, userdefined_literals) {
   const char *source =
     " 125km 10m 60s 26ms 3.14i";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
   ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
   ASSERT_EQ(lex.read(), Token::UserDefinedLiteral);
@@ -117,7 +117,7 @@ TEST(LexerTests, punctuators) {
   const char *source =
     " ( ) [ ] {} ? : :: ,; ";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::LeftPar);
   ASSERT_EQ(lex.read(), Token::RightPar);
   ASSERT_EQ(lex.read(), Token::LeftBracket);
@@ -144,7 +144,7 @@ TEST(LexerTests, operators) {
     " == != < > <= >= "
     " && || ! | & ^ |= &= ^= ~";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::PlusPlus);
   ASSERT_EQ(lex.read(), Token::MinusMinus);
   ASSERT_EQ(lex.read(), Token::Plus);
@@ -190,7 +190,7 @@ TEST(LexerTests, identifiers) {
   const char *source =
     " n id order66 _member _1 _ ";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::UserDefinedName);
   ASSERT_EQ(lex.read(), Token::UserDefinedName);
   ASSERT_EQ(lex.read(), Token::UserDefinedName);
@@ -210,7 +210,7 @@ TEST(LexerTests, mix1) {
   const char *source =
     " int a = 5; ";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::Int);
   ASSERT_EQ(lex.read(), Token::UserDefinedName);
   ASSERT_EQ(lex.read(), Token::Eq);
@@ -228,7 +228,7 @@ TEST(LexerTests, mix2) {
   const char *source =
     " for(int i(0); i < size(); ++i) { } ";
 
-  Lexer lex{ SourceFile::fromString(source) };
+  Lexer lex{ source };
   ASSERT_EQ(lex.read(), Token::For);
   ASSERT_EQ(lex.read(), Token::LeftPar);
   ASSERT_EQ(lex.read(), Token::Int);

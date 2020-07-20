@@ -5,7 +5,6 @@
 #ifndef LIBSCRIPT_LEXER_H
 #define LIBSCRIPT_LEXER_H
 
-#include "script/sourcefile.h"
 #include "script/parser/token.h"
 
 namespace script
@@ -18,7 +17,8 @@ class LIBSCRIPT_API Lexer
 {
 public:
   Lexer();
-  Lexer(const SourceFile & src); // @TODO: we could just work on a const std::string&
+  explicit Lexer(const char* str);
+  explicit Lexer(const std::string& str);
 
   Token read();
 
@@ -28,7 +28,7 @@ public:
 
   void seek(size_t off);
   void reset();
-  void setSource(const SourceFile & src);
+  void reset(const std::string& str);
 
   enum CharacterType {
     Invalid,
@@ -100,8 +100,7 @@ protected:
 
 
 private:
-  const char *mSource;
-  SourceFile mSourceFile;
+  const char *m_source;
   size_t m_size;
   size_t m_pos;
 };

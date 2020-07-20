@@ -262,12 +262,14 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& 
 }
 
 
-ParserContext::ParserContext(const SourceFile & src)
+ParserContext::ParserContext(SourceFile src)
   : mSource(src)
 {
-  Lexer lexer;
-  lexer.setSource(mSource);
+  if (!src.isLoaded())
+    src.load();
 
+  Lexer lexer{ mSource.content() };
+  
   while (!lexer.atEnd())
   {
     const Token t = lexer.read();
