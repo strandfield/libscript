@@ -334,6 +334,11 @@ SourceLocation ParserBase::location() const
   return loc;
 }
 
+size_t ParserBase::offset() const
+{
+  return atEnd() ? ast()->source.content().length() : (unsafe_peek().text().data() - ast()->source.content().data());
+}
+
 bool ParserBase::atEnd() const
 {
   return m_iterator == m_fragment.end();

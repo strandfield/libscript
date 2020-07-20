@@ -100,7 +100,12 @@ void ScriptCompiler::add(const Script & task)
   }
   catch (parser::SyntaxError & ex)
   {
-    log(session()->messageBuilder().error(ex));
+    DiagnosticMessage mssg = session()->messageBuilder().error(ex);
+    SourceLocation loc;
+    loc.m_source = task.source();
+    loc.m_pos = loc.m_source.map(ex.offset);
+    mssg.setLocation(loc);
+    log(mssg);
     return;
   }
 

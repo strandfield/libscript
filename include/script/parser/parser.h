@@ -125,6 +125,7 @@ public:
   bool atEnd() const;
 
   SourceLocation location() const;
+  size_t offset() const;
 
 protected:
   bool eof() const;
@@ -149,7 +150,7 @@ protected:
   SyntaxError SyntaxErr(ParserError e)
   {
     SyntaxError err{ e };
-    err.location = location();
+    err.offset = offset();
     return err;
   }
 
@@ -157,7 +158,7 @@ protected:
   SyntaxError SyntaxErr(ParserError e, T&& d)
   {
     SyntaxError err{ e, std::forward<T>(d) };
-    err.location = location();
+    err.offset = offset();
     return err;
   }
 

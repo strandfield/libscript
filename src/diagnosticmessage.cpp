@@ -220,7 +220,6 @@ void MessageBuilder::setVerbosity(Verbosity ver)
 void MessageBuilder::build(DiagnosticMessage& mssg, const parser::SyntaxError& ex)
 {
   mssg.setCode(ex.errorCode());
-  mssg.setLocation(ex.location);
 
   if (verbosity() == Verbosity::Terse || !ex.data())
   {

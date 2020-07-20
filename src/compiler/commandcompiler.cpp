@@ -65,7 +65,8 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
     DiagnosticMessage mssg = session()->messageBuilder().error(ex);
     CompilationFailure exception{ CompilerError::SyntaxError, mssg.content() };
     // @TODO: do not bind location to the source file which is not supposed to exist outside this function
-    exception.location = ex.location;
+    exception.location.m_source = source;
+    exception.location.m_pos = source.map(ex.offset);
     throw exception;
   } 
 

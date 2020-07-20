@@ -22,7 +22,7 @@ namespace parser
 class SyntaxError : public Exceptional
 {
 public:
-  SourceLocation location; // @TODO: maybe store just the offset as a size_t
+  size_t offset = std::numeric_limits<size_t>::max();
 
 public:
 
