@@ -22,8 +22,6 @@ private:
   size_t m_size;
   std::vector<Token> m_tokens;
 public:
-  bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
-public:
   explicit ParserContext(const char* src);
   explicit ParserContext(const std::string& str);
   ParserContext(const char* src, size_t s);
@@ -34,23 +32,6 @@ public:
   size_t source_length() const { return m_size; }
 
   const std::vector<Token>& tokens() const { return m_tokens; }
-};
-
-struct RaiiRightRightAngleGuard
-{
-  ParserContext* context;
-  bool value;
-
-  RaiiRightRightAngleGuard(ParserContext* c)
-    : context(c), value(c->half_consumed_right_right_angle)
-  {
-
-  }
-
-  ~RaiiRightRightAngleGuard()
-  {
-    context->half_consumed_right_right_angle = value;
-  }
 };
 
 class DelimitersCounter
@@ -72,6 +53,8 @@ public:
 class Fragment
 {
 public:
+  Fragment(const Fragment&) = default;
+
   explicit Fragment(const ParserContext& context);
 
   enum FragmentKind
@@ -79,6 +62,7 @@ public:
     DelimiterPair,
     Statement,
     ListElement,
+    Template,
     Other,
   };
 
@@ -89,39 +73,106 @@ public:
 
   Fragment(iterator begin, iterator end);
 
-  Fragment(iterator begin, iterator end, Type<DelimiterPair>);
-  Fragment(iterator begin, iterator end, Type<Statement>);
-  Fragment(iterator begin, iterator end, Type<ListElement>);
-
-  template<FragmentKind FK>
-  Fragment(const Fragment& frag, Type<FK> tag)
-    : Fragment(frag.begin(), frag.end(), tag)
-  {
-    
-  }
-
   iterator begin() const;
   iterator end() const;
 
   size_t size() const;
 
-  Fragment mid(iterator pos) const;
-
   static bool tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right);
+
+  Fragment& operator=(const Fragment&) = default;
 
 private:
   iterator m_begin;
   iterator m_end;
 };
 
+bool operator==(const Fragment& lhs, const Fragment& rhs);
+inline bool operator!=(const Fragment& lhs, const Fragment& rhs) { return !(lhs == rhs); }
 
-class ParserBase
+class TokenReader
 {
 public:
-  ParserBase(std::shared_ptr<ParserContext> shared_context, const Fragment& frag);
+  const char* m_source; // used only for computing location when throwing
+  Fragment m_fragment;
+  Fragment::iterator m_iterator;
+  bool m_right_right_angle_flag;
+
+public:
+  TokenReader(const TokenReader&) = default;
+  ~TokenReader() = default;
+
+  explicit TokenReader(const ParserContext& c);
+  TokenReader(const char* src, const Fragment& frag, bool right_right_angle = false);
+
+  bool valid() const { return m_source != nullptr; }
+
+  Fragment::iterator iterator() const { return m_iterator; }
+  const Fragment& fragment() const { return m_fragment; }
+
+  Fragment::iterator begin() const { return fragment().begin(); }
+  Fragment::iterator end() const { return fragment().end(); }
+
+  bool atEnd() const;
+  Token read();
+  Token unsafe_read();
+  Token read(const Token::Id& t);
+  Token peek() const;
+  Token peek(size_t n) const;
+  Token unsafe_peek() const;
+  void seek(Fragment::iterator it);
+  TokenReader subfragment() const;
+
+  template<Fragment::FragmentKind FK>
+  TokenReader subfragment() const
+  {
+    return subfragment_helper(Fragment::Type<FK>());
+  }
+
+  template<Fragment::FragmentKind FK>
+  TokenReader next()
+  {
+    TokenReader r = subfragment<FK>();
+    seek(r.end());
+    return r;
+  }
+
+  operator const Fragment& () const { return m_fragment; }
+
+  SyntaxError SyntaxErr(ParserError e) const
+  {
+    SyntaxError err{ e };
+    err.offset = std::distance(m_source, m_iterator->text().data());
+    return err;
+  }
+
+  template<typename T>
+  SyntaxError SyntaxErr(ParserError e, T&& d) const
+  {
+    SyntaxError err{ e, std::forward<T>(d) };
+    err.offset = std::distance(m_source, m_iterator->text().data());
+    return err;
+  }
+
+  TokenReader& operator=(const TokenReader&) = default;
+
+private:
+  TokenReader subfragment_helper(Fragment::Type<Fragment::DelimiterPair>) const;
+  TokenReader subfragment_helper(Fragment::Type<Fragment::Statement>) const;
+  TokenReader subfragment_helper(Fragment::Type<Fragment::ListElement>) const;
+  TokenReader subfragment_helper(Fragment::Type<Fragment::Template>) const;
+};
+
+bool operator==(const TokenReader& lhs, const TokenReader& rhs);
+inline bool operator!=(const TokenReader& lhs, const TokenReader& rhs) { return !(lhs == rhs); }
+
+class ParserBase : protected TokenReader
+{
+public:
+  ParserBase(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   virtual ~ParserBase();
 
-  void reset(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  void reset(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   const Fragment& fragment() const;
   Fragment::iterator iterator() const;
@@ -130,16 +181,8 @@ public:
   size_t offset() const;
 
 protected:
-  bool eof() const;
-  Token read();
-  Token unsafe_read();
-  Token read(const Token::Id & t);
-  Token peek() const;
-  Token peek(size_t n) const;
-  Token unsafe_peek() const;
+ 
   const std::shared_ptr<ParserContext>& context() const;
-  Fragment midfragment() const;
-  void seek(Fragment::iterator it);
 
   template<typename T>
   auto parse_and_seek(T& parser) -> decltype(parser.parse())
@@ -166,14 +209,12 @@ protected:
 
 protected:
   std::shared_ptr<ParserContext> m_context;
-  Fragment m_fragment;
-  Fragment::iterator m_iterator;
 };
 
 class LiteralParser : public ParserBase
 {
 public:
-  LiteralParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  LiteralParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   std::shared_ptr<ast::Literal> parse();
 };
@@ -181,7 +222,7 @@ public:
 class ExpressionParser : public ParserBase
 {
 public:
-  ExpressionParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  ExpressionParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   std::shared_ptr<ast::Expression> parse();
 protected:
@@ -202,7 +243,7 @@ protected:
 class LambdaParser : public ParserBase
 {
 public:
-  LambdaParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  LambdaParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   std::shared_ptr<ast::Expression> parse();
 
@@ -229,7 +270,7 @@ protected:
 class LambdaCaptureParser : public ParserBase
 {
 public:
-  LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   bool detect() const;
   ast::LambdaCapture parse();
@@ -240,7 +281,7 @@ class ProgramParser : public ParserBase
 {
 public:
   explicit ProgramParser(std::shared_ptr<ParserContext> shared_context);
-  ProgramParser(std::shared_ptr<ParserContext> shared_context, const Fragment& frag);
+  ProgramParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   std::vector<std::shared_ptr<ast::Statement>> parseProgram();
   virtual std::shared_ptr<ast::Statement> parseStatement();
@@ -275,7 +316,7 @@ public:
     ParseOnlySimpleId = 0,
   };
 
-  IdentifierParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, int options = ParseAll);
+  IdentifierParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader, int options = ParseAll);
 
   int options() const { return mOptions; }
   void setOptions(int opts) { mOptions = opts; }
@@ -287,7 +328,7 @@ public:
 protected:
   std::shared_ptr<ast::Identifier> readOperatorName();
   std::shared_ptr<ast::Identifier> readUserDefinedName();
-  std::shared_ptr<ast::Identifier> readTemplateArguments(const Token & base, Fragment targlist_frag);
+  std::shared_ptr<ast::Identifier> readTemplateArguments(const Token & base, TokenReader& reader);
 
 protected:
   int mOptions;
@@ -296,7 +337,7 @@ protected:
 class TemplateArgParser : public ParserBase
 {
 public:
-  TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   std::shared_ptr<ast::Node> parse();
 };
@@ -304,7 +345,7 @@ public:
 class TypeParser : public ParserBase
 {
 public:
-  TypeParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  TypeParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   ast::QualifiedType parse();
 
@@ -321,7 +362,7 @@ protected:
 class FunctionParamParser : public ParserBase
 {
 public:
-  FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
   ast::FunctionParameter parse();
 };
@@ -329,7 +370,7 @@ public:
 class ExpressionListParser : public ParserBase
 {
 public:
-  ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~ExpressionListParser();
 
   std::vector<std::shared_ptr<ast::Expression>> parse();
@@ -339,7 +380,7 @@ public:
 class DeclParser : public ParserBase
 {
 public:
-  DeclParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, std::shared_ptr<ast::Identifier> className = nullptr);
+  DeclParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader, std::shared_ptr<ast::Identifier> className = nullptr);
   ~DeclParser();
 
   int declaratorOptions() const { return mDeclaratorOptions; }
@@ -433,7 +474,7 @@ protected:
 class EnumValueParser : public ParserBase
 {
 public:
-  EnumValueParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  EnumValueParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~EnumValueParser() = default;
 
   void parse();
@@ -444,7 +485,7 @@ public:
 class EnumParser : public ParserBase
 {
 public:
-  EnumParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  EnumParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~EnumParser() = default;
 
   std::shared_ptr<ast::EnumDeclaration> parse();
@@ -453,7 +494,7 @@ public:
 class ClassParser : public ParserBase
 {
 public:
-  ClassParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  ClassParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~ClassParser();
 
   void setTemplateSpecialization(bool on);
@@ -479,7 +520,7 @@ protected:
 class NamespaceParser : public ParserBase
 {
 public:
-  NamespaceParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  NamespaceParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~NamespaceParser() = default;
 
   std::shared_ptr<ast::Declaration> parse();
@@ -494,7 +535,7 @@ protected:
 class FriendParser : public ParserBase
 {
 public:
-  FriendParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  FriendParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~FriendParser() = default;
 
   std::shared_ptr<ast::FriendDeclaration> parse();
@@ -503,7 +544,7 @@ public:
 class UsingParser : public ParserBase
 {
 public:
-  UsingParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  UsingParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~UsingParser() = default;
 
   std::shared_ptr<ast::Declaration> parse();
@@ -515,7 +556,7 @@ protected:
 class ImportParser : public ParserBase
 {
 public:
-  ImportParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  ImportParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~ImportParser() = default;
 
   std::shared_ptr<ast::ImportDirective> parse();
@@ -524,7 +565,7 @@ public:
 class TemplateParser : public ParserBase
 {
 public:
-  TemplateParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  TemplateParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~TemplateParser() = default;
 
   std::shared_ptr<ast::TemplateDeclaration> parse();
@@ -536,7 +577,7 @@ protected:
 class TemplateParameterParser : public ParserBase
 {
 public:
-  TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
+  TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
   ~TemplateParameterParser() = default;
 
   ast::TemplateParameter parse();

@@ -108,7 +108,7 @@ SourceFile::Position SourceFile::map(Offset off) const
   Position result;
   result.pos = off;
 
-  if (off == 0)
+  if (off <= 0)
   {
     result.line = 0;
     result.col = 0;

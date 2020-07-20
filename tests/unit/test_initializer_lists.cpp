@@ -76,8 +76,7 @@ TEST(InitializerLists, initializer_list_creation) {
     "{1, 2.0, true}";
 
   auto c = parser_context(source);
-  parser::Fragment fragment{ *c };
-  parser::ExpressionParser parser{ c, fragment };
+  parser::ExpressionParser parser{ c, parser::TokenReader(*c) };
 
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
@@ -113,8 +112,7 @@ TEST(InitializerLists, initializer_list_conversion) {
     "{1, 2.0, true}";
 
   auto c = parser_context(source);
-  parser::Fragment fragment{ *c };
-  parser::ExpressionParser parser{ c, fragment };
+  parser::ExpressionParser parser{ c, parser::TokenReader(*c) };
 
   auto astlistexpr = parser.parse();
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());

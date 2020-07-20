@@ -378,7 +378,7 @@ static std::shared_ptr<script::program::Expression> parse_list_expr(script::Engi
 
   auto c = parser_context(str.data());
   parser::Fragment fragment{ *c };
-  parser::ExpressionParser parser{ c, fragment };
+  parser::ExpressionParser parser{ c, parser::TokenReader(*c) };
 
   auto astlistexpr = parser.parse();
 

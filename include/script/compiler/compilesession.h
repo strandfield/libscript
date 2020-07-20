@@ -65,6 +65,7 @@ public:
   bool error;
   Script script; // the top-level script that is being compiled
 
+  // @TODO: it seems we could do with a current_source (const char*)
   Script current_script; // the script that is being processed
   std::shared_ptr<ast::Node> current_node; // the node that is being processed
   parser::Token current_token; // the token (within the 'current_node') that is being processed

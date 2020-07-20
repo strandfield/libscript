@@ -83,106 +83,6 @@ Fragment::Fragment(iterator begin, iterator end)
 
 }
 
-Fragment::Fragment(iterator begin, iterator end, Type<DelimiterPair>)
-  : m_begin(begin),
-    m_end(end)
-{
-  DelimitersCounter counter;
-  counter.feed(*m_begin);
-
-  assert(!counter.balanced());
-
-  ++m_begin;
-
-  auto it = m_begin;
-
-  while (it != m_end)
-  {
-    counter.feed(*it);
-
-    if (counter.balanced())
-    {
-      m_end = it;
-      return;
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
-}
-
-Fragment::Fragment(iterator begin, iterator end, Type<Statement>)
-  : m_begin(begin),
-    m_end(end)
-{
-  DelimitersCounter counter;
-
-  auto it = m_begin;
-
-  while (it != m_end)
-  {
-    counter.feed(*it);
-
-    if (it->id == Token::Semicolon)
-    {
-      if (counter.balanced())
-      {
-        m_end = it;
-        return;
-      }
-      else
-      {
-        // @TODO: we could check that we are inside brackets
-        ++it;
-      }
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
-}
-
-Fragment::Fragment(iterator begin, iterator end, Type<ListElement>)
-  : m_begin(begin),
-    m_end(end)
-{
-  DelimitersCounter counter;
-
-  auto it = m_begin;
-
-  while (it != m_end)
-  {
-    counter.feed(*it);
-
-    if (it->id == Token::Comma)
-    {
-      if (counter.balanced())
-      {
-        m_end = it;
-        return;
-      }
-      else
-      {
-        // @TODO: we could check that we are inside brackets
-        ++it;
-      }
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  if(!counter.balanced())
-    throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
-}
-
 std::vector<Token>::const_iterator Fragment::begin() const
 {
   return m_begin;
@@ -196,11 +96,6 @@ std::vector<Token>::const_iterator Fragment::end() const
 size_t Fragment::size() const
 {
   return std::distance(begin(), end());
-}
-
-Fragment Fragment::mid(iterator pos) const
-{
-  return Fragment(pos, end());
 }
 
 bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right)
@@ -261,6 +156,11 @@ bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& 
   return false;
 }
 
+bool operator==(const Fragment& lhs, const Fragment& rhs)
+{
+  return lhs.begin() == rhs.begin() && lhs.end() == rhs.end();
+}
+
 ParserContext::ParserContext(const char* src)
   : ParserContext(src, std::strlen(src))
 {
@@ -301,12 +201,196 @@ ParserContext::~ParserContext()
 
 }
 
+TokenReader::TokenReader(const ParserContext& c)
+  : TokenReader(c.source(), Fragment(c))
+{
 
+}
 
-ParserBase::ParserBase(std::shared_ptr<ParserContext> shared_context, const Fragment& frag)
-  : m_context(shared_context),
+TokenReader::TokenReader(const char* src, const Fragment& frag, bool right_right_angle)
+  : m_source(src),
     m_fragment(frag),
-    m_iterator(m_fragment.begin())
+    m_iterator(frag.begin()),
+    m_right_right_angle_flag(right_right_angle)
+{
+
+}
+
+bool TokenReader::atEnd() const
+{
+  return m_iterator == fragment().end();
+}
+
+Token TokenReader::read()
+{
+  if (atEnd())
+    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
+
+  return *(m_iterator++);
+}
+
+Token TokenReader::unsafe_read()
+{
+  return *(m_iterator++);
+}
+
+Token TokenReader::read(const Token::Id& type)
+{
+  Token ret = read();
+
+  if (ret != type)
+    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ret, type} };
+
+  return ret;
+}
+
+Token TokenReader::peek() const
+{
+  return *m_iterator;
+}
+
+Token TokenReader::peek(size_t n) const
+{
+  return *(std::next(m_iterator, n));
+}
+
+Token TokenReader::unsafe_peek() const
+{
+  return *(m_iterator);
+}
+
+void TokenReader::seek(Fragment::iterator it)
+{
+  m_iterator = it;
+}
+
+TokenReader TokenReader::subfragment() const
+{
+  return TokenReader(m_source, Fragment(iterator(), fragment().end()), m_right_right_angle_flag);
+}
+
+TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::Template>) const
+{
+  Fragment::iterator frag_begin;
+  Fragment::iterator frag_end;
+  Fragment::iterator current_frag_end = m_right_right_angle_flag && fragment().end()->id == Token::RightRightAngle ?
+    fragment().end() + 1 : fragment().end();
+  bool half_consumed_right_right = false;
+
+  bool ok = Fragment::tryBuildTemplateFragment(iterator(), current_frag_end,
+    frag_begin, frag_end, half_consumed_right_right);
+
+  if (ok)
+    return TokenReader(m_source, Fragment(frag_begin, frag_end), half_consumed_right_right && !m_right_right_angle_flag);
+  else
+    return TokenReader(nullptr, Fragment(begin(), begin()));
+}
+
+TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::DelimiterPair>) const
+{
+  DelimitersCounter counter;
+  counter.feed(*m_iterator);
+
+  if (counter.balanced())
+    throw std::runtime_error{ "bad call to Fragment ctor" };
+
+  auto begin = std::next(m_iterator);
+
+  auto it = begin;
+
+  while (it != fragment().end())
+  {
+    counter.feed(*it);
+
+    if (counter.balanced())
+    {
+      return TokenReader(m_source, Fragment(begin, it));
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
+}
+
+TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::Statement>) const
+{
+  DelimitersCounter counter;
+
+  auto it = m_iterator;
+
+  while (it != fragment().end())
+  {
+    counter.feed(*it);
+
+    if (it->id == Token::Semicolon)
+    {
+      if (counter.balanced())
+      {
+        return TokenReader(m_source, Fragment(m_iterator, it));;
+      }
+      else
+      {
+        // @TODO: we could check that we are inside brackets
+        ++it;
+      }
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
+}
+
+TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::ListElement>) const
+{
+  DelimitersCounter counter;
+
+  auto it = m_iterator;
+
+  while (it != fragment().end())
+  {
+    counter.relaxed_feed(*it);
+
+    if(counter.invalid()) // @TODO: write offset
+      throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
+
+    if (it->id == Token::Comma)
+    {
+      if (counter.balanced())
+      {
+        return TokenReader(m_source, Fragment(m_iterator, it));
+      }
+      else
+      {
+        // @TODO: we could check that we are inside brackets
+        ++it;
+      }
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  if (!counter.balanced())
+    throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
+
+  return TokenReader(m_source, Fragment(m_iterator, fragment().end()), m_right_right_angle_flag);
+}
+
+bool operator==(const TokenReader& lhs, const TokenReader& rhs)
+{
+  return lhs.fragment() == rhs.fragment() && lhs.iterator() == rhs.iterator();
+}
+
+ParserBase::ParserBase(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : TokenReader(reader),
+    m_context(shared_context)
 {
 
 }
@@ -316,11 +400,10 @@ ParserBase::~ParserBase()
 
 }
 
-void ParserBase::reset(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
+void ParserBase::reset(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
 {
   m_context = shared_context;
-  m_fragment = fragment;
-  m_iterator = m_fragment.begin();
+  static_cast<TokenReader&>(*this) = reader;
 }
 
 size_t ParserBase::offset() const
@@ -331,49 +414,6 @@ size_t ParserBase::offset() const
 bool ParserBase::atEnd() const
 {
   return m_iterator == m_fragment.end();
-}
-
-bool ParserBase::eof() const
-{
-  return m_iterator == context()->tokens().end();
-}
-
-Token ParserBase::read()
-{
-  if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
-
-  return *(m_iterator++);
-}
-
-Token ParserBase::unsafe_read()
-{
-  return *(m_iterator++);
-}
-
-Token ParserBase::read(const Token::Id & type)
-{
-  Token ret = read();
-
-  if (ret != type)
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ret, type} };
-
-  return ret;
-}
-
-Token ParserBase::peek() const
-{
-  return *m_iterator;
-}
-
-Token ParserBase::peek(size_t n) const
-{
-  return *(std::next(m_iterator, n));
-}
-
-Token ParserBase::unsafe_peek() const
-{
-  return *(m_iterator);
 }
 
 const Fragment& ParserBase::fragment() const
@@ -391,19 +431,8 @@ Fragment::iterator ParserBase::iterator() const
   return m_iterator;
 }
 
-Fragment ParserBase::midfragment() const
-{
-  return fragment().mid(iterator());
-}
-
-void ParserBase::seek(Fragment::iterator it)
-{
-  m_iterator = it;
-}
-
-
-LiteralParser::LiteralParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+LiteralParser::LiteralParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -435,8 +464,8 @@ std::shared_ptr<ast::Literal> LiteralParser::parse()
   throw SyntaxError{ ParserError::ExpectedLiteral, errors::ActualToken{lit} };
 }
 
-ExpressionParser::ExpressionParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+ExpressionParser::ExpressionParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -503,36 +532,27 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     if (peek(1) == Token::RightPar) // we just read '()'
       throw SyntaxError{ ParserError::InvalidEmptyOperand };
 
-    Fragment subexpr_fragment{ iterator(), fragment().end(), Fragment::Type<Fragment::DelimiterPair>() };
-    read(Token::LeftPar); // @TODO: is it necessary ?
-
-    ExpressionParser exprParser{ context(), subexpr_fragment };
+    ExpressionParser exprParser{ context(), next<Fragment::DelimiterPair>() };
     operand = exprParser.parse();
-    seek(subexpr_fragment.end());
     read(Token::RightPar);
   }
   else if (t == Token::LeftBracket) // array
   {
-    LambdaParser lambda_parser{ context(), midfragment() };
-    operand = lambda_parser.parse();
-    seek(lambda_parser.iterator());
+    LambdaParser lambda_parser{ context(), subfragment() };
+    operand = parse_and_seek(lambda_parser);
   }
   else if (t == Token::LeftBrace)
   {
     auto list = ast::ListExpression::New(unsafe_peek());
-    Fragment list_fragment{ iterator(), fragment().end(), Fragment::Type<Fragment::DelimiterPair>() };
-    read(Token::LeftBrace); // @TODO: is it necessary ?
+    TokenReader list_reader = next<Fragment::DelimiterPair>();
 
-    while (iterator() != list_fragment.end()) // @TODO: remove Fragment::atEnd()
+    while (!list_reader.atEnd())
     {
-      Fragment list_element_fragment{ list_fragment.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-      ExpressionParser exprparser{ context(), list_element_fragment };
+      ExpressionParser exprparser{ context(), list_reader.next<Fragment::ListElement>() };
       list->elements.push_back(exprparser.parse());
 
-      seek(list_element_fragment.end());
-
-      if (iterator() != list_fragment.end())
-        read(Token::Comma);
+      if (!list_reader.atEnd())
+        list_reader.read(Token::Comma);
     }
 
     list->right_brace = read(Token::RightBrace);
@@ -541,15 +561,13 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
   }
   else if (t.isLiteral())
   {
-    LiteralParser p{ context(), midfragment() };
-    operand = p.parse();
-    seek(p.iterator());
+    LiteralParser p{ context(), subfragment() };
+    operand = parse_and_seek(p);
   }
   else
   {
-    IdentifierParser idParser{ context(), midfragment() };
-    operand = idParser.parse();
-    seek(idParser.iterator());
+    IdentifierParser idParser{ context(), subfragment() };
+    operand = parse_and_seek(idParser);
 
     /// TODO : handle static_cast and other built-int constructions here..
   }
@@ -565,45 +583,38 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
     else if (t == Token::Dot)
     {
       unsafe_read();
-      IdentifierParser idParser{ context(), midfragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
-      auto memberName = idParser.parse();
+      IdentifierParser idParser{ context(), subfragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
+      auto memberName = parse_and_seek(idParser);
       operand = ast::Operation::New(t, operand, memberName);
-      seek(idParser.iterator());
     }
     else if (t == Token::LeftPar)
     {
-      Fragment argument_list_fragment{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
-      const Token leftpar = unsafe_read();
-
-      ExpressionListParser argsParser{ context(), argument_list_fragment };
-      std::vector<std::shared_ptr<ast::Expression>> args = parse_and_seek(argsParser);
+      const Token leftpar = unsafe_peek();
+      ExpressionListParser argsParser{ context(), next<Fragment::DelimiterPair>() };
+      std::vector<std::shared_ptr<ast::Expression>> args = argsParser.parse();
       const Token rightpar = read(Token::RightPar);
       operand = ast::FunctionCall::New(operand, leftpar, std::move(args), rightpar);
     }
     else if (t == Token::LeftBracket) // subscript operator
     {
-      Fragment subscript_fragment{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
+      TokenReader subscript_reader = subfragment<Fragment::DelimiterPair>();
       auto leftBracket = read();
 
-      Token next = peek();
-
-      if (subscript_fragment.size() == 0)
+      if (subscript_reader.begin() == subscript_reader.end())
         throw SyntaxError{ ParserError::InvalidEmptyBrackets };
 
-      ExpressionParser exprParser{ context(), subscript_fragment };
+      ExpressionParser exprParser{ context(), subscript_reader };
       std::shared_ptr<ast::Expression> arg = parse_and_seek(exprParser);
-      operand = ast::ArraySubscript::New(operand, leftBracket, arg, read());
+      operand = ast::ArraySubscript::New(operand, leftBracket, arg, unsafe_read());
     }
     else if (t == Token::LeftBrace && operand->is<ast::Identifier>())
     {
-      Fragment bracelist_fragment{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
+      TokenReader bracelist_reader = subfragment<Fragment::DelimiterPair>();
 
       auto type_name = std::dynamic_pointer_cast<ast::Identifier>(operand);
-      const Token & left_brace = unsafe_read();
+      const Token left_brace = unsafe_read();
       
-      ExpressionListParser argsParser{ context(), bracelist_fragment };
+      ExpressionListParser argsParser{ context(), bracelist_reader };
       std::vector<std::shared_ptr<ast::Expression>> args = parse_and_seek(argsParser);
       const Token right_brace = read(Token::RightBrace);
       operand = ast::BraceConstruction::New(type_name, left_brace, std::move(args), right_brace);
@@ -618,7 +629,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
       {
         // template identifiers cannot be used as operand
         seek(pos_backup);
-        IdentifierParser idParser{ context(), midfragment() };
+        IdentifierParser idParser{ context(), subfragment() };
         idParser.setOptions(IdentifierParser::ParseOperatorName | IdentifierParser::ParseQualifiedId);
         operand = parse_and_seek(idParser);
         continue;
@@ -728,8 +739,8 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
 }
 
 
-LambdaParser::LambdaParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+LambdaParser::LambdaParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
   , mDecision(Undecided)
 {
 
@@ -778,17 +789,17 @@ std::shared_ptr<ast::Expression> LambdaParser::parse()
 
 void LambdaParser::readBracketContent()
 {
-  Fragment capture_list_fragment{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
+  TokenReader capture_list_reader = subfragment<Fragment::DelimiterPair>();
 
   read(Token::LeftBracket);
 
-  while (iterator() != capture_list_fragment.end())
+  while (!capture_list_reader.atEnd())
   {
-    Fragment listelem_fragment{ iterator(), capture_list_fragment.end(), Fragment::Type<Fragment::ListElement>() };
+    TokenReader listelem_reader = capture_list_reader.next<Fragment::ListElement>();
 
     if(mDecision == Undecided || mDecision == ParsingArray)
     {
-      ExpressionParser ep{ context(), listelem_fragment };
+      ExpressionParser ep{ context(), listelem_reader };
       try
       {
         auto elem = ep.parse();
@@ -806,7 +817,7 @@ void LambdaParser::readBracketContent()
 
     if (mDecision == Undecided || mDecision == ParsingLambda)
     {
-      LambdaCaptureParser capp{ context(), listelem_fragment };
+      LambdaCaptureParser capp{ context(), listelem_reader };
 
       if (!capp.detect())
       {
@@ -814,35 +825,29 @@ void LambdaParser::readBracketContent()
           throw SyntaxError{ ParserError::CouldNotParseLambdaCapture };
 
         setDecision(ParsingArray);
-
-        seek(listelem_fragment.end());
-
-        if (peek() == Token::Comma)
-          unsafe_read();
-
-        continue;
       }
-
-      try
+      else
       {
-        auto capture = capp.parse();
-        mLambda->captures.push_back(capture);
-      }
-      catch (const SyntaxError&)
-      {
-        if (mDecision == ParsingLambda)
-          throw;
-        setDecision(ParsingArray);
+        try
+        {
+          auto capture = capp.parse();
+          mLambda->captures.push_back(capture);
+        }
+        catch (const SyntaxError&)
+        {
+          if (mDecision == ParsingLambda)
+            throw;
+          setDecision(ParsingArray);
+        }
       }
     }
 
-    seek(listelem_fragment.end());
-
-    if (peek() == Token::Comma)
-      unsafe_read();
+    if (!capture_list_reader.atEnd())
+      capture_list_reader.read(Token::Comma);
   }
 
-  const Token rb = read(Token::RightBracket);
+  seek(capture_list_reader.end());
+  const Token rb = unsafe_read();
 
   if (mArray)
     mArray->rightBracket = rb;
@@ -854,25 +859,22 @@ void LambdaParser::readParams()
 {
   assert(mDecision == ParsingLambda);
 
-  Fragment params_fragment{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
+  TokenReader params_reader = next<Fragment::DelimiterPair>();
 
-  mLambda->leftPar = read(Token::LeftPar);
+  mLambda->leftPar = *(params_reader.begin() - 1);
 
-  while (iterator() != params_fragment.end())
+  while (!params_reader.atEnd())
   {
-    Fragment listfrag{ params_fragment.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-
-    FunctionParamParser pp{ context(), listfrag };
+    FunctionParamParser pp{ context(), params_reader.next<Fragment::ListElement>() };
     auto param = pp.parse();
     mLambda->params.push_back(param);
 
-    seek(listfrag.end());
-
-    if (peek() == Token::Comma)
-      unsafe_read();
+    if (!params_reader.atEnd())
+      params_reader.read(Token::Comma);
   }
 
-  mLambda->rightPar = read(Token::RightPar);
+  seek(params_reader.end());
+  mLambda->rightPar = unsafe_read();
 }
 
 
@@ -884,15 +886,15 @@ std::shared_ptr<ast::CompoundStatement> LambdaParser::readBody()
   if (peek() != Token::LeftBrace)
     throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace} };
 
-  ProgramParser pParser{ context(), midfragment() };
+  ProgramParser pParser{ context(), subfragment() };
   auto ret = std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
   seek(pParser.iterator());
   return ret;
 }
 
 
-LambdaCaptureParser::LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+LambdaCaptureParser::LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -923,12 +925,12 @@ ast::LambdaCapture LambdaCaptureParser::parse()
       return cap;
   }
 
-  IdentifierParser idpar{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+  IdentifierParser idpar{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
   cap.name = parse_and_seek(idpar)->as<ast::SimpleIdentifier>().name;
   if (atEnd())
     return cap;
   cap.assignmentSign = read(Token::Eq);
-  ExpressionParser ep{ context(), midfragment() };
+  ExpressionParser ep{ context(), subfragment() };
   cap.value = parse_and_seek(ep);
   return cap;
 }
@@ -950,13 +952,13 @@ void LambdaParser::setDecision(Decision d)
 
 
 ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context)
-  : ProgramParser(shared_context, Fragment{*shared_context})
+  : ProgramParser(shared_context, TokenReader{shared_context->source(), Fragment(*shared_context)})
 {
 
 }
 
-ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context, const Fragment& frag)
-  : ParserBase(shared_context, frag)
+ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -1023,14 +1025,13 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
 std::shared_ptr<ast::Statement> ProgramParser::parseAmbiguous()
 {
   auto savePoint = iterator();
-  DeclParser dp{ context(), midfragment() };
+  DeclParser dp{ context(), subfragment() };
   if (dp.detectDecl())
     return parse_and_seek(dp);
   
   seek(savePoint);
 
-  Fragment sentinel{ midfragment(), Fragment::Type<Fragment::Statement>() };
-  ExpressionParser ep{ context(), sentinel };
+  ExpressionParser ep{ context(), subfragment<Fragment::Statement>() };
   auto expr = parse_and_seek(ep);
   auto semicolon = read(Token::Semicolon);
   return ast::ExpressionStatement::New(expr, semicolon);
@@ -1044,7 +1045,7 @@ std::shared_ptr<ast::ClassDecl> ProgramParser::parseClassDeclaration()
 std::shared_ptr<ast::EnumDeclaration> ProgramParser::parseEnumDeclaration()
 {
   /// TODO : shouldn't we also throw here but not in Parser (as in parseClassDeclaration()) 
-  EnumParser ep{ context(), midfragment() };
+  EnumParser ep{ context(), subfragment() };
   return parse_and_seek(ep);
 }
 
@@ -1075,9 +1076,7 @@ std::shared_ptr<ast::ReturnStatement> ProgramParser::parseReturnStatement()
     return ast::ReturnStatement::New(kw);
   }
 
-  Fragment exprstatement_fragment{ midfragment(), Fragment::Type<Fragment::Statement>() };
-
-  ExpressionParser exprParser{ context(), exprstatement_fragment };
+  ExpressionParser exprParser{ context(), subfragment<Fragment::Statement>() };
   auto returnValue = parse_and_seek(exprParser);
 
   Token semicolon = read();
@@ -1088,15 +1087,15 @@ std::shared_ptr<ast::ReturnStatement> ProgramParser::parseReturnStatement()
 
 std::shared_ptr<ast::CompoundStatement> ProgramParser::parseCompoundStatement()
 {
-  Fragment frag{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
+  TokenReader compound_reader = next<Fragment::DelimiterPair>();
 
-  Token leftBrace = read();
+  Token leftBrace = *(compound_reader.begin() - 1);
   assert(leftBrace == Token::LeftBrace);
 
-  ProgramParser progParser{ context(), frag };
+  ProgramParser progParser{ context(), compound_reader };
 
   std::vector<std::shared_ptr<ast::Statement>> statements = progParser.parseProgram();
-  seek(progParser.iterator());
+  seek(compound_reader.end());
   Token rightBrace = read(Token::RightBrace);
   assert(rightBrace == Token::RightBrace);
 
@@ -1113,10 +1112,7 @@ std::shared_ptr<ast::IfStatement> ProgramParser::parseIfStatement()
   auto ifStatement = ast::IfStatement::New(ifkw);
 
   {
-    Fragment condition{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-    const Token leftpar = read(Token::LeftPar);
-
-    ExpressionParser exprParser{ context(), condition };
+    ExpressionParser exprParser{ context(), subfragment<Fragment::DelimiterPair>() };
     ifStatement->condition = parse_and_seek(exprParser);
     read(Token::RightPar);
   }
@@ -1140,9 +1136,7 @@ std::shared_ptr<ast::WhileLoop> ProgramParser::parseWhileLoop()
   auto whileLoop = ast::WhileLoop::New(whilekw);
 
   {
-    Fragment condition{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-    const Token leftpar = read(Token::LeftPar);
-    ExpressionParser exprParser{ context(), condition };
+    ExpressionParser exprParser{ context(), subfragment<Fragment::DelimiterPair>() };
     whileLoop->condition = parse_and_seek(exprParser);
     read(Token::RightPar);
   }
@@ -1157,43 +1151,40 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
   Token forkw = read();
   assert(forkw == Token::For);
 
-  Fragment init_loop_incr{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
-  const Token leftpar = read(Token::LeftPar);
+  TokenReader init_loop_incr_reader = subfragment<Fragment::DelimiterPair>();
 
   auto forLoop = ast::ForLoop::New(forkw);
 
   {
-    DeclParser initParser{ context(), init_loop_incr };
+    DeclParser initParser{ context(), init_loop_incr_reader };
     if (!initParser.detectDecl())
     {
-      Fragment init{ init_loop_incr, Fragment::Type<Fragment::Statement>() };
-      ExpressionParser exprParser{ context(), init };
-      auto initExpr = parse_and_seek(exprParser);
-      auto semicolon = read(Token::Semicolon);
+      ExpressionParser exprParser{ context(), init_loop_incr_reader.next<Fragment::Statement>() };
+      auto initExpr = exprParser.parse();
+      const Token semicolon = init_loop_incr_reader.read(Token::Semicolon);
       forLoop->initStatement = ast::ExpressionStatement::New(initExpr, semicolon);
     }
     else
     {
       initParser.setDecision(DeclParser::ParsingVariable);
-      forLoop->initStatement = parse_and_seek(initParser);
+      forLoop->initStatement = initParser.parse();
+      init_loop_incr_reader.seek(initParser.iterator());
     }
   }
 
   {
-    Fragment condition{ init_loop_incr.mid(iterator()), Fragment::Type<Fragment::Statement>() };
-    ExpressionParser exprParser{ context(), condition };
-    forLoop->condition = parse_and_seek(exprParser);
-    read(Token::Semicolon);
+    ExpressionParser exprParser{ context(), init_loop_incr_reader.next<Fragment::Statement>() };
+    forLoop->condition = exprParser.parse();
+    init_loop_incr_reader.read(Token::Semicolon);
   }
 
   {
 
-    Fragment loopIncr{ init_loop_incr.mid(iterator()) };
-    ExpressionParser exprParser{ context(), loopIncr };
+    ExpressionParser exprParser{ context(), init_loop_incr_reader.subfragment() };
     forLoop->loopIncrement = parse_and_seek(exprParser);
-    read(Token::RightPar);
   }
+
+  seek(init_loop_incr_reader.end() + 1);
 
   forLoop->body = parseStatement();
 
@@ -1204,10 +1195,10 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
 {
   const parser::Token typedef_tok = unsafe_read();
 
-  TypeParser tp{ context(), midfragment() };
+  TypeParser tp{ context(), subfragment() };
   const ast::QualifiedType qtype = parse_and_seek(tp);
 
-  IdentifierParser idp{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+  IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
   /// TODO: add overload to IdentifierParser that only parses symple identifier.
   const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
 
@@ -1218,32 +1209,32 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
 
 std::shared_ptr<ast::Declaration> ProgramParser::parseNamespace()
 {
-  NamespaceParser np{ context(), midfragment() };
+  NamespaceParser np{ context(), subfragment() };
   return parse_and_seek(np);
 }
 
 std::shared_ptr<ast::Declaration> ProgramParser::parseUsing()
 {
-  UsingParser np{ context(), midfragment() };
+  UsingParser np{ context(), subfragment() };
   return parse_and_seek(np);
 }
 
 std::shared_ptr<ast::ImportDirective> ProgramParser::parseImport()
 {
-  ImportParser ip{ context(), midfragment() };
+  ImportParser ip{ context(), subfragment() };
   return parse_and_seek(ip);
 }
 
 std::shared_ptr<ast::TemplateDeclaration> ProgramParser::parseTemplate()
 {
-  TemplateParser tp{ context(), midfragment() };
+  TemplateParser tp{ context(), subfragment() };
   return parse_and_seek(tp);
 }
 
 
 
-IdentifierParser::IdentifierParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, int opts)
-  : ParserBase(shared_context, fragment)
+IdentifierParser::IdentifierParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader, int opts)
+  : ParserBase(shared_context, reader)
   , mOptions(opts)
 {
 
@@ -1309,7 +1300,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if (op.text().size() != 2)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} };
 
-    IdentifierParser idp{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+    IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to remove this cast
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
     return ast::LiteralOperatorName::New(opkw, op, suffixName->name);
@@ -1344,41 +1335,22 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
   Token t = peek();
   if ((options() & ParseTemplateId) && t == Token::LeftAngle)
   {
-    const auto savepoint = iterator();
-
     try 
     {
-      Fragment::iterator frag_begin;
-      Fragment::iterator frag_end;
-      Fragment::iterator current_frag_end = context()->half_consumed_right_right_angle && fragment().end()->id == Token::RightRightAngle ?
-        fragment().end() + 1 : fragment().end();
-      bool half_consumed_right_right = false;
+      TokenReader template_arg_reader = subfragment<Fragment::Template>();
 
-      bool ok = Fragment::tryBuildTemplateFragment(iterator(), current_frag_end,
-        frag_begin, frag_end, half_consumed_right_right);
-
-      if (ok)
+      if (template_arg_reader.valid())
       {
-        RaiiRightRightAngleGuard guard{ context().get() };
-        if(guard.value && half_consumed_right_right)
-          context()->half_consumed_right_right_angle = false;
-        else if(half_consumed_right_right)
-          context()->half_consumed_right_right_angle = true;
+        ret = readTemplateArguments(base, template_arg_reader);
 
-        Fragment targlist_frag{ frag_begin, frag_end };
-        ret = readTemplateArguments(base, targlist_frag);
-
-        if (!guard.value)
-          unsafe_read();
-      }
-      else
-      {
-        seek(savepoint);
+        if (template_arg_reader.end() != fragment().end())
+          seek(template_arg_reader.end() + 1);
+        else
+          seek(template_arg_reader.end());
       }
     }
     catch (const std::exception &)
     {
-      seek(savepoint);
       return ret;
     }
   }
@@ -1396,7 +1368,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
     {
       read();
 
-      IdentifierParser idparser{ context(), midfragment(), IdentifierParser::ParseTemplateId };
+      IdentifierParser idparser{ context(), subfragment(), IdentifierParser::ParseTemplateId };
       identifiers.push_back(parse_and_seek(idparser));
 
       if (atEnd())
@@ -1411,29 +1383,24 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readUserDefinedName()
   return ret;
 }
 
-std::shared_ptr<ast::Identifier> IdentifierParser::readTemplateArguments(const Token& base, Fragment targlist_frag)
+std::shared_ptr<ast::Identifier> IdentifierParser::readTemplateArguments(const Token& base, TokenReader& reader)
 {
-  const Token leftangle = read();
-
   std::vector<ast::NodeRef> args;
 
-  while (iterator() != targlist_frag.end())
+  while (!reader.atEnd())
   {
-    Fragment frag{ targlist_frag.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-    TemplateArgParser argparser{ context(), frag };
-    args.push_back(parse_and_seek(argparser));
+    TemplateArgParser argparser{ context(), reader.next<Fragment::ListElement>() };
+    args.push_back(argparser.parse());
     
-    if (iterator() != targlist_frag.end())
-      read(Token::Comma);
+    if (!reader.atEnd())
+      reader.read(Token::Comma);
   }
 
-  Token right_angle = unsafe_peek();
-
-  return ast::TemplateIdentifier::New(base, std::move(args), leftangle, right_angle);
+  return ast::TemplateIdentifier::New(base, std::move(args), *(reader.begin() - 1), *reader.end());
 }
 
-TemplateArgParser::TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+TemplateArgParser::TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -1443,9 +1410,7 @@ std::shared_ptr<ast::Node> TemplateArgParser::parse()
   auto p = iterator();
 
   {
-    RaiiRightRightAngleGuard guard{ context().get() };
-
-    TypeParser tp{ context(), midfragment() };
+    TypeParser tp{ context(), subfragment() };
     if (tp.detect())
     {
       try
@@ -1463,14 +1428,14 @@ std::shared_ptr<ast::Node> TemplateArgParser::parse()
 
   seek(p);
 
-  ExpressionParser ep{ context(), midfragment() };
+  ExpressionParser ep{ context(), subfragment() };
   return parse_and_seek(ep);
 }
 
 
 
-TypeParser::TypeParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+TypeParser::TypeParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
   , mReadFunctionSignature(true)
 {
 
@@ -1483,7 +1448,7 @@ ast::QualifiedType TypeParser::parse()
   if (peek() == Token::Const)
     ret.constQualifier = unsafe_read();
 
-  IdentifierParser idparser{ context(), midfragment() };
+  IdentifierParser idparser{ context(), subfragment() };
   ret.type = parse_and_seek(idparser);
 
   if (atEnd())
@@ -1541,24 +1506,24 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
   ast::QualifiedType ret;
   ret.functionType = std::make_shared<ast::FunctionType>();
   ret.functionType->returnType = rt;
+  
+  TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
 
-  Fragment params_frag{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
   const Token leftPar = unsafe_read();
-  while (iterator() != params_frag.end())
+  while (!params_reader.atEnd())
   {
-    Fragment listfrag{ params_frag.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-    TypeParser tp{ context(), listfrag };
-    auto param = parse_and_seek(tp);
+    TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
+    auto param = tp.parse();
     ret.functionType->params.push_back(param);
 
-    if (iterator() != listfrag.end())
-      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ peek(), Token::Invalid});
+    if (!tp.atEnd())
+      throw tp.SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ *tp.iterator(), Token::Invalid});
 
-    if (peek() == Token::Comma)
-      unsafe_read();
+    if (!params_reader.atEnd())
+      params_reader.read(Token::Comma);
   }
 
-  read(Token::RightPar);
+  seek(params_reader.end() + 1);
 
   if (atEnd())
     return ret;
@@ -1577,8 +1542,8 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
 
 
 
-FunctionParamParser::FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+FunctionParamParser::FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -1587,13 +1552,13 @@ ast::FunctionParameter FunctionParamParser::parse()
 {
   ast::FunctionParameter fp;
 
-  TypeParser tp{ context(), midfragment() };
+  TypeParser tp{ context(), subfragment() };
   fp.type = parse_and_seek(tp);
 
   if (atEnd())
     return fp;
 
-  IdentifierParser ip{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+  IdentifierParser ip{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
   /// TODO: add overload that returns SimpleIdentifier
   auto name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(ip));
   fp.name = name->name;
@@ -1602,15 +1567,15 @@ ast::FunctionParameter FunctionParamParser::parse()
     return fp;
 
   const Token eqSign = read(Token::Eq);
-  ExpressionParser ep{ context(), midfragment() };
+  ExpressionParser ep{ context(), subfragment() };
   auto defaultVal = parse_and_seek(ep);
   fp.defaultValue = defaultVal;
 
   return fp;
 }
 
-ExpressionListParser::ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+ExpressionListParser::ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -1625,9 +1590,7 @@ std::vector<std::shared_ptr<ast::Expression>> ExpressionListParser::parse()
   std::vector<std::shared_ptr<ast::Expression>> result;
   while (!atEnd())
   {
-    Fragment f{ midfragment(), Fragment::Type<Fragment::ListElement>()  };
-
-    ExpressionParser expr{ context(), f };
+    ExpressionParser expr{ context(), subfragment<Fragment::ListElement>() };
     auto e = parse_and_seek(expr);
     result.push_back(e);
     if (!atEnd())
@@ -1638,8 +1601,8 @@ std::vector<std::shared_ptr<ast::Expression>> ExpressionListParser::parse()
 }
 
 
-DeclParser::DeclParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment, std::shared_ptr<ast::Identifier> cn)
-  : ParserBase(shared_context, fragment)
+DeclParser::DeclParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader, std::shared_ptr<ast::Identifier> cn)
+  : ParserBase(shared_context, reader)
   , mDecision(Undecided)
   , mClassName(cn)
   , mParamsAlreadyRead(false)
@@ -1680,7 +1643,7 @@ bool DeclParser::detectBeforeReadingTypeSpecifier()
 
 bool DeclParser::readTypeSpecifier()
 {
-  TypeParser tp{ context(), midfragment() };
+  TypeParser tp{ context(), subfragment() };
   try
   {
     mType = parse_and_seek(tp);
@@ -1738,7 +1701,7 @@ bool DeclParser::detectBeforeReadingDeclarator()
 
 bool DeclParser::readDeclarator()
 {
-  IdentifierParser ip{ context(), midfragment() };
+  IdentifierParser ip{ context(), subfragment() };
   ip.setOptions(mDeclaratorOptions);
 
   try
@@ -1901,25 +1864,22 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
   if (peek() == Token::Eq)
   {
     const Token eqsign = read();
-    Fragment exprFrag{ midfragment(), Fragment::Type<Fragment::Statement>() };
-    ExpressionParser ep{ context(), exprFrag };
+    ExpressionParser ep{ context(), subfragment<Fragment::Statement>() };
     auto expr = parse_and_seek(ep);
     mVarDecl->init = ast::AssignmentInitialization::New(eqsign, expr);
   }
   else if (peek() == Token::LeftBrace)
   {
-    Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-    const Token leftBrace = read();
-    ExpressionListParser argsParser{ context(), sentinel };
+    const Token leftBrace = unsafe_peek();
+    ExpressionListParser argsParser{ context(), subfragment<Fragment::DelimiterPair>() };
     auto args = parse_and_seek(argsParser);
     const Token rightbrace = read(Token::RightBrace);
     mVarDecl->init = ast::BraceInitialization::New(leftBrace, std::move(args), rightbrace);
   }
   else if (peek() == Token::LeftPar)
   {
-    Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-    const Token leftpar = read();
-    ExpressionListParser argsParser{ context(), sentinel };
+    const Token leftpar = unsafe_peek();
+    ExpressionListParser argsParser{ context(), subfragment<Fragment::DelimiterPair>() };
     auto args = parse_and_seek(argsParser);
     const Token rightpar = read(Token::RightPar);
     mVarDecl->init = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
@@ -1981,13 +1941,12 @@ void DeclParser::readOptionalMemberInitializers()
 
   for (;;)
   {
-    IdentifierParser idp{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId | IdentifierParser::ParseTemplateId };
+    IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId | IdentifierParser::ParseTemplateId };
     auto id = parse_and_seek(idp);
     if (peek() == Token::LeftBrace)
     {
-      Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-      const Token leftBrace = unsafe_read();
-      ExpressionListParser argsParser{ context(), sentinel };
+      const Token leftBrace = unsafe_peek();
+      ExpressionListParser argsParser{ context(), subfragment<Fragment::DelimiterPair>() };
       auto args = parse_and_seek(argsParser);
       const Token rightBrace = read(Token::RightBrace);
       auto braceinit = ast::BraceInitialization::New(leftBrace, std::move(args), rightBrace);
@@ -1995,9 +1954,8 @@ void DeclParser::readOptionalMemberInitializers()
     }
     else if (peek() == Token::LeftPar)
     {
-      Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-      const Token leftpar = unsafe_read();
-      ExpressionListParser argsParser{ context(), sentinel };
+      const Token leftpar = unsafe_peek();
+      ExpressionListParser argsParser{ context(), subfragment<Fragment::DelimiterPair>() };
       auto args = parse_and_seek(argsParser);
       const Token rightpar = read(Token::RightPar);
       auto ctorinit = ast::ConstructorInitialization::New(leftpar, std::move(args), rightpar);
@@ -2096,20 +2054,16 @@ bool DeclParser::readOptionalExplicit()
 
 void DeclParser::readParams()
 {
-  Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
+  TokenReader parameters = next<Fragment::DelimiterPair>();
 
-  const Token leftpar = read(Token::LeftPar);
-
-  while (iterator() != sentinel.end())
+  while (!parameters.atEnd())
   {
-    Fragment listfrag{ sentinel.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-
-    FunctionParamParser pp{ context(), listfrag };
-    auto param = parse_and_seek(pp);
+    FunctionParamParser pp{ context(), parameters.next<Fragment::ListElement>() };
+    auto param = pp.parse();
     mFuncDecl->params.push_back(param);
 
-    if (peek() == Token::Comma)
-      read(Token::Comma);
+    if (!parameters.atEnd())
+      parameters.read(Token::Comma);
   }
 
   read(Token::RightPar);
@@ -2118,24 +2072,24 @@ void DeclParser::readParams()
 
 void DeclParser::readArgsOrParams()
 {
-  Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
-  const Token leftPar = read();
+  const Token leftPar = unsafe_peek();
   assert(leftPar == Token::LeftPar);
+
+  TokenReader args_or_params = next<Fragment::DelimiterPair>();
 
   if (mDecision == Undecided || mDecision == ParsingVariable)
     mVarDecl->init = ast::ConstructorInitialization::New(leftPar, {}, parser::Token{});
 
-  while (iterator() != sentinel.end())
+  while (!args_or_params.atEnd())
   {
-    Fragment listfrag{ sentinel.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
+    TokenReader listelem_reader = args_or_params.next<Fragment::ListElement>();
 
     if (mDecision == Undecided || mDecision == ParsingVariable)
     {
-      ExpressionParser ep{ context(), listfrag };
       try
       {
-        auto expr = parse_and_seek(ep);
+        ExpressionParser ep{ context(), listelem_reader };
+        auto expr = ep.parse();
         mVarDecl->init->as<ast::ConstructorInitialization>().args.push_back(expr);
       }
       catch (const SyntaxError&)
@@ -2149,16 +2103,12 @@ void DeclParser::readArgsOrParams()
       }
     }
 
-    auto position = iterator();
-
     if (mDecision == Undecided || isParsingFunction())
     {
-      seek(listfrag.begin());
-
-      FunctionParamParser pp{ context(), listfrag };
       try
       {
-        auto param = parse_and_seek(pp);
+        FunctionParamParser pp{ context(), listelem_reader };
+        auto param = pp.parse();
         mFuncDecl->params.push_back(param);
       }
       catch (const SyntaxError&)
@@ -2172,12 +2122,8 @@ void DeclParser::readArgsOrParams()
       }
     }
 
-    if (iterator() != listfrag.end())
-      seek(position);
-    assert(iterator() == listfrag.end());
-
-    if (peek() == Token::Comma)
-      unsafe_read();
+    if (!args_or_params.atEnd())
+      args_or_params.read(Token::Comma);
   }
 
   const Token rightpar = read(Token::RightPar);
@@ -2302,7 +2248,7 @@ std::shared_ptr<ast::CompoundStatement> DeclParser::readFunctionBody()
   if (peek() != Token::LeftBrace)
     throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftBrace});
 
-  ProgramParser pParser{ context(), midfragment() };
+  ProgramParser pParser{ context(), subfragment() };
   auto ret = std::dynamic_pointer_cast<ast::CompoundStatement>(pParser.parseStatement());
   seek(pParser.iterator());
   return ret;
@@ -2314,7 +2260,7 @@ bool DeclParser::detectCtorDecl()
     return false;
 
   auto p = iterator();
-  IdentifierParser ip{ context(), midfragment() };
+  IdentifierParser ip{ context(), subfragment() };
   std::shared_ptr<ast::Identifier> iden;
   try
   {
@@ -2331,7 +2277,8 @@ bool DeclParser::detectCtorDecl()
     return false;
   }
 
-  if (peek() != Token::LeftPar) {
+  if (peek() != Token::LeftPar) 
+  {
     seek(p);
     return false;
   }
@@ -2353,7 +2300,7 @@ bool DeclParser::detectDtorDecl()
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
-  IdentifierParser ip{ context(), midfragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
+  IdentifierParser ip{ context(), subfragment(), IdentifierParser::ParseSimpleId | IdentifierParser::ParseTemplateId };
   auto iden = parse_and_seek(ip);
 
   if (!isClassName(iden))
@@ -2375,7 +2322,7 @@ bool DeclParser::detectCastDecl()
   const auto p = iterator();
   
   const Token opKw = read();
-  TypeParser tp{ context(), midfragment() };
+  TypeParser tp{ context(), subfragment() };
   tp.setReadFunctionSignature(false); // people should use a typedef in this situtation
   ast::QualifiedType type;
   try
@@ -2419,8 +2366,8 @@ bool DeclParser::isClassName(const std::shared_ptr<ast::Identifier> & name) cons
 
 
 
-EnumValueParser::EnumValueParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+EnumValueParser::EnumValueParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2429,40 +2376,36 @@ void EnumValueParser::parse()
 {
   while (!atEnd())
   {
-    Fragment frag{ midfragment(), Fragment::Type<Fragment::ListElement>() };
+    TokenReader value_reader = next<Fragment::ListElement>();
 
-    if (iterator() == frag.end())
-    {
-      if (!atEnd())
-        read(Token::Comma);
-      continue;
-    }
-
-    IdentifierParser idparser{ context(), frag, IdentifierParser::ParseOnlySimpleId };
+    IdentifierParser idparser{ context(), value_reader, IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overlaod that returns ast::SimpleIdentifier
-    auto name = parse_and_seek(idparser);
-    if (iterator() == frag.end())
+    auto name = idparser.parse();
+
+    value_reader.seek(idparser.iterator());
+
+    if (value_reader.atEnd())
     {
       values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), nullptr });
-      if (!atEnd())
-        read(Token::Comma);
-      continue;
+    }
+    else
+    {
+      const Token equalsign = value_reader.read(Token::Eq);
+
+      ExpressionParser valparser{ context(), value_reader };
+      auto expr = valparser.parse();
+
+      values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), expr });
     }
 
-    const Token equalsign = read(Token::Eq);
-
-    ExpressionParser valparser{ context(), frag.mid(iterator()) };
-    auto expr = parse_and_seek(valparser);
-
-    values.push_back(ast::EnumValueDeclaration{ std::static_pointer_cast<ast::SimpleIdentifier>(name), expr });
     if (!atEnd())
       read(Token::Comma);
   }
 }
 
 
-EnumParser::EnumParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+EnumParser::EnumParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2477,16 +2420,15 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
 
   std::shared_ptr<ast::SimpleIdentifier> enum_name;
   {
-    IdentifierParser idparser{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+    IdentifierParser idparser{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to avoid this cast
     enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idparser));
   }
 
-  Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
   read(Token::LeftBrace);
+  seek(iterator() - 1);
 
-  EnumValueParser value_parser{ context(), sentinel };
+  EnumValueParser value_parser{ context(), subfragment<Fragment::DelimiterPair>() };
   value_parser.parse();
   seek(value_parser.iterator());
 
@@ -2498,8 +2440,8 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
 
 
 
-ClassParser::ClassParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+ClassParser::ClassParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
   , mTemplateSpecialization(false)
 {
 
@@ -2543,21 +2485,21 @@ void ClassParser::parseAccessSpecifier()
 
 void ClassParser::parseFriend()
 {
-  FriendParser fdp{ context(), midfragment() };
+  FriendParser fdp{ context(), subfragment() };
   auto friend_decl = parse_and_seek(fdp);
   mClass->content.push_back(friend_decl);
 }
 
 void ClassParser::parseTemplate()
 {
-  TemplateParser tp{ context(), midfragment() };
+  TemplateParser tp{ context(), subfragment() };
   auto template_decl = parse_and_seek(tp);
   mClass->content.push_back(template_decl);
 }
 
 void ClassParser::parseUsing()
 {
-  UsingParser np{ context(), midfragment() };
+  UsingParser np{ context(), subfragment() };
   auto decl = parse_and_seek(np);
   mClass->content.push_back(decl);
 }
@@ -2565,7 +2507,7 @@ void ClassParser::parseUsing()
 std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 {
   auto opts = mTemplateSpecialization ? IdentifierParser::ParseTemplateId : 0;
-  IdentifierParser nameParser{ context(), midfragment(), opts | IdentifierParser::ParseSimpleId };
+  IdentifierParser nameParser{ context(), subfragment(), opts | IdentifierParser::ParseSimpleId };
   return parse_and_seek(nameParser);
 }
 
@@ -2582,7 +2524,7 @@ void ClassParser::readOptionalParent()
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
-  IdentifierParser nameParser{ context(), midfragment(), IdentifierParser::ParseTemplateId | IdentifierParser::ParseQualifiedId}; // TODO : forbid read operator name directly here
+  IdentifierParser nameParser{ context(), subfragment(), IdentifierParser::ParseTemplateId | IdentifierParser::ParseQualifiedId}; // TODO : forbid read operator name directly here
   auto parent = parse_and_seek(nameParser);
   //if(parent->is<ast::OperatorName>())
   //  throw Error{ "Unexpected operator name read after ':' " };
@@ -2595,7 +2537,7 @@ void ClassParser::readDecl()
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
-  DeclParser dp{ context(), midfragment(), mClass->name };
+  DeclParser dp{ context(), subfragment(), mClass->name };
   
   if (!dp.detectDecl())
     throw SyntaxErr(ParserError::ExpectedDeclaration);
@@ -2639,8 +2581,8 @@ bool ClassParser::readClassEnd()
   return true;
 }
 
-NamespaceParser::NamespaceParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+NamespaceParser::NamespaceParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2655,7 +2597,7 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
   {
     const Token eq_sign = unsafe_read();
 
-    IdentifierParser idp{ context(), midfragment() };
+    IdentifierParser idp{ context(), subfragment() };
     std::shared_ptr<ast::Identifier> aliased_name = parse_and_seek(idp);
 
     read(Token::Semicolon);
@@ -2663,15 +2605,12 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
     return ast::NamespaceAliasDefinition::New(ns_tok, name, eq_sign, aliased_name);
   }
 
-  Fragment sentinel{ midfragment(), Fragment::Type<Fragment::DelimiterPair>() };
-
   const Token lb = read(Token::LeftBrace);
+  seek(iterator() - 1);
 
   Parser parser;
-  parser.reset(context(), sentinel);
-
+  parser.reset(context(), next<Fragment::DelimiterPair>());
   auto statements = parser.parseProgram();
-  seek(parser.iterator());
 
   const Token rb = read(Token::RightBrace);
 
@@ -2680,14 +2619,14 @@ std::shared_ptr<ast::Declaration> NamespaceParser::parse()
 
 std::shared_ptr<ast::SimpleIdentifier> NamespaceParser::readNamespaceName()
 {
-  IdentifierParser idp{ context(), midfragment(), IdentifierParser::ParseOnlySimpleId };
+  IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
   return std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
 }
 
 
 
-FriendParser::FriendParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+FriendParser::FriendParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2700,7 +2639,7 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
 
   std::shared_ptr<ast::Identifier> class_name;
   {
-    IdentifierParser idp{ context(), midfragment() };
+    IdentifierParser idp{ context(), subfragment() };
     class_name = parse_and_seek(idp);
   }
 
@@ -2711,8 +2650,8 @@ std::shared_ptr<ast::FriendDeclaration> FriendParser::parse()
 
 
 
-UsingParser::UsingParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+UsingParser::UsingParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2751,14 +2690,14 @@ std::shared_ptr<ast::Declaration> UsingParser::parse()
 
 std::shared_ptr<ast::Identifier> UsingParser::read_name()
 {
-  IdentifierParser idp{ context(), midfragment() };
+  IdentifierParser idp{ context(), subfragment() };
   return parse_and_seek(idp);
 }
 
 
 
-ImportParser::ImportParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment) { }
+ImportParser::ImportParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader) { }
 
 std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 {
@@ -2794,8 +2733,8 @@ std::shared_ptr<ast::ImportDirective> ImportParser::parse()
 
 
 
-TemplateParser::TemplateParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+TemplateParser::TemplateParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2804,39 +2743,25 @@ std::shared_ptr<ast::TemplateDeclaration> TemplateParser::parse()
 {
   const Token tmplt_k = unsafe_read();
 
-  Fragment::iterator current_frag_end = context()->half_consumed_right_right_angle && fragment().end()->id == Token::RightRightAngle ?
-    fragment().end() + 1 : fragment().end();
-  Fragment::iterator frag_begin;
-  Fragment::iterator frag_end;
-  bool half_consumed_right_right = false;
+  TokenReader tparams_reader = subfragment<Fragment::Template>();
 
-  bool ok = Fragment::tryBuildTemplateFragment(iterator(), current_frag_end,
-    frag_begin, frag_end, half_consumed_right_right);
-
-  if (!ok)
+  if (!tparams_reader.valid())
     throw SyntaxErr(ParserError::UnexpectedFragmentEnd);
-
-  RaiiRightRightAngleGuard guard{ context().get() };
-  if (guard.value && half_consumed_right_right)
-    context()->half_consumed_right_right_angle = false;
-  else if (half_consumed_right_right)
-    context()->half_consumed_right_right_angle = true;
-
-  Fragment sentinel{ frag_begin, frag_end };
 
   const Token left_angle = read(Token::LeftAngle);
 
   std::vector<ast::TemplateParameter> params;
 
-  while(iterator() != sentinel.end())
+  while(!tparams_reader.atEnd())
   {
-    Fragment frag{ sentinel.mid(iterator()), Fragment::Type<Fragment::ListElement>() };
-    TemplateParameterParser param_parser{ context(), frag };
-    params.push_back(parse_and_seek(param_parser));
+    TemplateParameterParser param_parser{ context(), tparams_reader.next<Fragment::ListElement>() };
+    params.push_back(param_parser.parse());
 
-    if (iterator() != sentinel.end())
-      read(Token::Comma);
+    if (!tparams_reader.atEnd())
+      tparams_reader.read(Token::Comma);
   }
+
+  seek(tparams_reader.end());
 
   //const Token right_angle = sentinel.consumeSentinel();
   const Token right_angle = read();
@@ -2851,12 +2776,12 @@ std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
 {
   if (peek() == Token::Class || peek() == Token::Struct)
   {
-    ClassParser parser{ context(), midfragment() };
+    ClassParser parser{ context(), subfragment() };
     parser.setTemplateSpecialization(true);
     return parse_and_seek(parser);
   }
 
-  DeclParser funcparser{ context(), midfragment() };
+  DeclParser funcparser{ context(), subfragment() };
   funcparser.setDeclaratorOptions(IdentifierParser::ParseSimpleId | IdentifierParser::ParseOperatorName | IdentifierParser::ParseTemplateId);
 
   if (!funcparser.detectDecl())
@@ -2868,8 +2793,8 @@ std::shared_ptr<ast::Declaration> TemplateParser::parse_decl()
 
 
 
-TemplateParameterParser::TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment)
-  : ParserBase(shared_context, fragment)
+TemplateParameterParser::TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
 {
 
 }
@@ -2897,7 +2822,7 @@ ast::TemplateParameter TemplateParameterParser::parse()
 
   result.eq = read(Token::Eq);
 
-  TemplateArgParser argp{ context(), midfragment() };
+  TemplateArgParser argp{ context(), subfragment() };
   result.default_value = parse_and_seek(argp);
 
   return result;
@@ -2931,7 +2856,7 @@ Parser::Parser(const char* str)
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 {
   auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
-  reset(c, Fragment{ *c });
+  reset(c, TokenReader(c->source(), Fragment{ *c }));
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   ret->root = ast::ScriptRootNode::New(ret);
@@ -2947,16 +2872,16 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 std::shared_ptr<ast::Expression> Parser::parseExpression(const std::string& source)
 {
   auto c = std::make_shared<ParserContext>(source);
-  reset(c, Fragment{ *c });
+  reset(c, TokenReader(c->source(), Fragment{ *c }));
 
-  ExpressionParser ep{ context(), fragment() };
+  ExpressionParser ep{ context(), subfragment() };
   return parse_and_seek(ep);
 }
 
 
 std::shared_ptr<ast::ClassDecl> Parser::parseClassDeclaration()
 {
-  ClassParser cp{ context(), midfragment() };
+  ClassParser cp{ context(), subfragment() };
   return parse_and_seek(cp);
 }
 

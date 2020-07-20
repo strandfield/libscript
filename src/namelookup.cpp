@@ -235,8 +235,8 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
     /// TODO : make this whole block less ugly !!
 
     auto pdata = std::make_shared<parser::ParserContext>(name);
-    parser::Fragment fragment{ *pdata };
-    parser::IdentifierParser idp{ pdata, fragment };
+    parser::TokenReader reader{ *pdata };
+    parser::IdentifierParser idp{ pdata, reader };
     std::shared_ptr<ast::Identifier> id;
     try
     {
