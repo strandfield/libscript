@@ -19,9 +19,9 @@ struct ParserContext
 {
 private:
   const char* m_source;
+  size_t m_size;
   std::vector<Token> m_tokens;
 public:
-  std::shared_ptr<ast::AST> mAst; // @TODO: not so usefull apparently
   bool half_consumed_right_right_angle = false; // @TODO: avoid making this 'public'
 public:
   explicit ParserContext(const char* src);
@@ -29,6 +29,9 @@ public:
   ParserContext(const char* src, size_t s);
   ParserContext(const char* src, std::vector<Token> tokens);
   ~ParserContext();
+
+  const char* source() const { return m_source; }
+  size_t source_length() const { return m_size; }
 
   const std::vector<Token>& tokens() const { return m_tokens; }
 };
@@ -119,8 +122,6 @@ public:
   virtual ~ParserBase();
 
   void reset(std::shared_ptr<ParserContext> shared_context, const Fragment& fragment);
-
-  std::shared_ptr<ast::AST> ast() const;
 
   const Fragment& fragment() const;
   Fragment::iterator iterator() const;

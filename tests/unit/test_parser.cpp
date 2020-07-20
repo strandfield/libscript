@@ -15,9 +15,7 @@
 
 std::shared_ptr<script::parser::ParserContext> parser_context(const char *source)
 {
-  auto src = script::SourceFile::fromString(std::string(source));
-  auto ret = std::make_shared<script::parser::ParserContext>(src.content());
-  ret->mAst = std::make_shared<script::ast::AST>(src);
+  auto ret = std::make_shared<script::parser::ParserContext>(source);
   return ret;
 }
 
@@ -685,7 +683,8 @@ TEST(ParserTests, class_decls_1) {
     " class A  { public: int a; } ; "
     " class A  { A() { } } ; ";
 
-  Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<ClassDecl>());
@@ -735,7 +734,8 @@ TEST(ParserTests, class_decls_2) {
     " class A  { operator int () { } } ; "
     " class A  { A & operator=(const A & other) { } } ; ";
 
-  Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->is<ClassDecl>());
@@ -781,7 +781,8 @@ TEST(ParserTests, lambda) {
 
   const char *source = "auto f = [](){};";
 
-  script::parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = script::SourceFile::fromString(source);
+  script::parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
 
@@ -808,7 +809,8 @@ TEST(ParserTests, user_defined_literal) {
 
   const char *source = "Distance operator\"\"km(double x) { }";
 
-  script::parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = script::SourceFile::fromString(source);
+  script::parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
 
@@ -833,7 +835,8 @@ TEST(ParserTests, typedefs) {
 
   using namespace script;
   
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->type() == ast::NodeType::Typedef);
@@ -877,7 +880,8 @@ TEST(ParserTests, namespace_decl) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_TRUE(actual->type() == ast::NodeType::NamespaceDecl);
@@ -897,7 +901,8 @@ TEST(ParserTests, illegal_class_friend_decl) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
   ASSERT_THROW(parser.parseStatement(), parser::SyntaxError);
 }
 
@@ -908,7 +913,8 @@ TEST(ParserTests, class_friend_decl) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
 
@@ -933,7 +939,8 @@ TEST(ParserTests, using_parser) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
 
@@ -969,7 +976,8 @@ TEST(ParserTests, namespace_alias) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_EQ(actual->type(), ast::NodeType::NamespaceAliasDef);
@@ -992,7 +1000,8 @@ TEST(ParserTests, import_directives) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_EQ(actual->type(), ast::NodeType::ImportDirective);
@@ -1041,7 +1050,8 @@ TEST(ParserTests, function_template) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
@@ -1082,7 +1092,8 @@ TEST(ParserTests, class_template) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);
@@ -1113,7 +1124,8 @@ TEST(ParserTests, template_specialization) {
 
   using namespace script;
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
 
   auto actual = parser.parseStatement();
   ASSERT_EQ(actual->type(), ast::NodeType::TemplateDecl);

@@ -293,7 +293,8 @@ TEST(TemplateTests, argument_deduction_1) {
     "  template<typename T>           "
     "  T abs(const T & a) { }    ";
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
   auto template_declaration = std::static_pointer_cast<ast::TemplateDeclaration>(parser.parseStatement());
 
   std::vector<TemplateParameter> params{
@@ -336,7 +337,8 @@ TEST(TemplateTests, argument_deduction_2) {
     "  template<typename T>           "
     "  void swap(T & a, T & b) { }    ";
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
   auto template_declaration = std::static_pointer_cast<ast::TemplateDeclaration>(parser.parseStatement());
   
   std::vector<TemplateParameter> params{
@@ -378,7 +380,8 @@ TEST(TemplateTests, argument_deduction_3) {
     "  template<typename T>           "
     "  T max(const Array<T> & a) { }    ";
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
   auto template_declaration = std::static_pointer_cast<ast::TemplateDeclaration>(parser.parseStatement());
 
   std::vector<TemplateParameter> params{
@@ -421,7 +424,8 @@ TEST(TemplateTests, argument_deduction_4) {
     "  template<typename R, typename A>           "
     "  R apply(R(A) func, const A & arg) { }    ";
 
-  parser::Parser parser{ script::SourceFile::fromString(source) };
+  auto src_file = SourceFile::fromString(source);
+  parser::Parser parser{ src_file };
   auto template_declaration = std::static_pointer_cast<ast::TemplateDeclaration>(parser.parseStatement());
 
   std::vector<TemplateParameter> params{

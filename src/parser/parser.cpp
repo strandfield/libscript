@@ -274,7 +274,8 @@ ParserContext::ParserContext(const std::string& str)
 }
 
 ParserContext::ParserContext(const char* src, size_t s)
-  : m_source(src)
+  : m_source(src),
+    m_size(0)
 {
   Lexer lexer{ src, s };
 
@@ -289,6 +290,7 @@ ParserContext::ParserContext(const char* src, size_t s)
 
 ParserContext::ParserContext(const char* src, std::vector<Token> tokens)
   : m_source(src),
+    m_size(0),
     m_tokens(std::move(tokens))
 {
 
@@ -321,14 +323,9 @@ void ParserBase::reset(std::shared_ptr<ParserContext> shared_context, const Frag
   m_iterator = m_fragment.begin();
 }
 
-std::shared_ptr<ast::AST> ParserBase::ast() const
-{
-  return context()->mAst;
-}
-
 size_t ParserBase::offset() const
 {
-  return atEnd() ? ast()->source.content().length() : (unsafe_peek().text().data() - ast()->source.content().data());
+  return atEnd() ? context()->source_length() : (unsafe_peek().text().data() - context()->source());
 }
 
 bool ParserBase::atEnd() const
@@ -2922,7 +2919,7 @@ Parser::Parser()
 Parser::Parser(const SourceFile & source)
   : ProgramParser(std::make_shared<ParserContext>(loaded_source_file(source).content()))
 {
-  m_context->mAst = std::make_shared<ast::AST>(source);
+
 }
 
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
@@ -2932,7 +2929,6 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   ret->root = ast::ScriptRootNode::New(ret);
-  c->mAst = ret;
 
   while (!atEnd())
   {
@@ -2948,7 +2944,6 @@ std::shared_ptr<ast::AST> Parser::parseExpression(const SourceFile & source)
   reset(c, Fragment{ *c });
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
-  c->mAst = ret;
 
   ExpressionParser ep{ context(), fragment() };
   ret->root = parse_and_seek(ep);
