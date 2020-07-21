@@ -154,20 +154,11 @@ public:
   Array newArray(ElementType t, fail_if_not_instantiated_t);
 
   Value construct(Type t, const std::vector<Value> & args);
-  
-  /// TODO: remove (depecated)
-  template<typename InitFunc>
-  Value construct(Type t, InitFunc && f)
-  {
-    Value ret = allocate(t);
-    f(ret);
-    return ret;
-  }
 
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    Value ret = allocate(Type::make<T>());
+    Value ret;
     ThisObject self{ ret };
     self.init<T>(std::forward<Args>(args)...);
     return ret;
@@ -180,22 +171,16 @@ public:
   {
     ThisObject self{ val };
     self.destroy<T>();
-    free(val);
   }
 
   template<typename T>
   Value expose(T& val)
   {
-    Value ret = allocate(Type::make<T&>());
-    ret.d->data_ptr = &val;
-    return ret;
+    return Value(new CppReferenceValue<T>(this, val));
   }
 
   void manage(Value val);
   void garbageCollect();
-
-  Value allocate(const Type & t);
-  void free(Value & v);
 
   bool canCopy(const Type & t);
   Value copy(const Value & val);

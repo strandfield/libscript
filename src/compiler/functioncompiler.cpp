@@ -481,6 +481,7 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
 
       auto constructor_header = generateConstructorHeader();
       body->statements.insert(body->statements.begin(), constructor_header->statements.begin(), constructor_header->statements.end());
+      body->statements.push_back(program::ReturnStatement::New(expr_.implicit_object()));
     }
     else if (mFunction.isDestructor())
     {

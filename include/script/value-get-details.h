@@ -63,7 +63,7 @@ struct get_helper<T, details::small_object_tag>
 
   static T& get(const script::Value& val)
   {
-    return *reinterpret_cast<T*>(val.data());
+    return *reinterpret_cast<T*>(val.ptr());
   }
 };
 
@@ -74,7 +74,7 @@ struct get_helper<T, details::large_object_tag>
 
   static T& get(const script::Value& val)
   {
-    return *reinterpret_cast<T*>(val.data());
+    return *reinterpret_cast<T*>(val.ptr());
   }
 };
 

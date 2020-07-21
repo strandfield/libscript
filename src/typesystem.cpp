@@ -32,7 +32,7 @@ namespace callbacks
 
 Value function_variable_assignment(interpreter::FunctionCall* c)
 {
-  c->arg(0).impl()->set_function(c->arg(1).toFunction());
+  static_cast<FunctionValue*>(c->arg(0).impl())->function = c->arg(1).toFunction();
   return c->arg(0);
 }
 

@@ -82,8 +82,7 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   }
   else
   {
-    val = e->allocate(var_type);
-    val.impl()->type.setFlag(Type::UninitializedFlag);
+    val = e->construct(var_type, {});
     uninitialized_variables_.push_back(Variable{ val, decl, scp });
   }
 
@@ -121,7 +120,7 @@ void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableD
     }
     else
     {
-      Value staticMember = c.impl()->add_uninitialized_static_data_member(decl->name->getName(), var_type, scp.accessibility());
+      Value staticMember = c.impl()->add_default_constructed_static_data_member(decl->name->getName(), var_type, scp.accessibility());
       uninitialized_variables_.push_back(Variable{ staticMember, decl, scp });
     }
   }
@@ -200,19 +199,19 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
     switch (t.baseType().data())
     {
     case Type::Boolean:
-      var.variable.impl()->set_bool(arg.toBool());
+      script::get<bool>(var.variable) = arg.toBool();
       break;
     case Type::Char:
-      var.variable.impl()->set_char(arg.toChar());
+      script::get<char>(var.variable) = arg.toChar();
       break;
     case Type::Int:
-      var.variable.impl()->set_int(arg.toInt());
+      script::get<int>(var.variable) = arg.toInt();
       break;
     case Type::Float:
-      var.variable.impl()->set_float(arg.toFloat());
+      script::get<float>(var.variable) = arg.toFloat();
       break;
     case Type::Double:
-      var.variable.impl()->set_double(arg.toDouble());
+      script::get<double>(var.variable) = arg.toDouble();
       break;
     default:
       break;
@@ -220,11 +219,11 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
   }
   else if (t.isEnumType())
   {
-    var.variable.impl()->set_enumerator(arg.toEnumerator());
+    static_cast<EnumeratorValue*>(var.variable.impl())->value = arg.toEnumerator();
   }
   else if (t.isFunctionType())
   {
-    var.variable.impl()->set_function(arg.toFunction());
+    static_cast<FunctionValue*>(var.variable.impl())->function = arg.toFunction();
   }
   else if (t.isObjectType())
   {
@@ -232,6 +231,8 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
     if(copy_ctor.isNull())
       throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
 
+    // @TODO: perform assignment
+    throw CompilationFailure{ CompilerError::FailedToInitializeStaticVariable };
     copy_ctor.invoke({ var.variable, arg });
   }
   else
@@ -384,7 +385,7 @@ Value VariableProcessor::visit(const program::LogicalOr & lo)
 Value VariableProcessor::visit(const program::MemberAccess & ma)
 {
   Value object = eval(ma.object);
-  return object.impl()->get_member(ma.offset);
+  return object.impl()->at(ma.offset);
 }
 
 Value VariableProcessor::visit(const program::StackValue &)

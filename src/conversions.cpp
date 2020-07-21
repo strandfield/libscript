@@ -565,9 +565,7 @@ Value StandardConversion::apply(const StandardConversion& conv, const Value& val
   if (conv.isDerivedToBaseConversion())
   {
     Class target = val.engine()->typeSystem()->getClass(val.type()).indirectBase(conv.derivedToBaseConversionDepth());
-    Value result = val.engine()->allocate(target.id());
-    target.copyConstructor().invoke({ result, val });
-    return result;
+    return target.copyConstructor().invoke({ Value(), val });
   }
 
   return fundamental_conversion(val, conv.destType().baseType().data(), val.engine());
@@ -847,9 +845,7 @@ Value Conversion::apply(const Conversion& conv, const Value& val)
   }
   else
   {
-    Value obj = e->allocate(conv.destType());
-    conv.userDefinedConversion().invoke({ obj, ret });
-    ret = obj;
+    ret = conv.userDefinedConversion().invoke({ Value(), ret });
   }
 
   return  StandardConversion::apply(conv.secondStandardConversion(), ret);

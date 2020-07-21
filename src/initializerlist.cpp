@@ -31,9 +31,9 @@ namespace initializer_list
 // InitializerList<T>();
 Value default_ctor(FunctionCall *c)
 {
-  Value & self = c->thisObject();
-  self.impl()->set_initializer_list(InitializerList{ &self, &self });
-  return self;
+  // @TODO: set the correct type for thisObject()
+  c->thisObject() = Value(new InitializerListValue(c->engine(), c->callee().memberOf().id(), InitializerList(nullptr, nullptr)));
+  return c->thisObject();
 }
 
 // InitializerList<T>(const InitializerList<T> & other);
@@ -41,16 +41,14 @@ Value copy_ctor(FunctionCall *c)
 {
   Value & self = c->thisObject();
   InitializerList other = c->arg(1).toInitializerList();
-  self.impl()->set_initializer_list(other);
+  c->thisObject() = Value(new InitializerListValue(c->engine(), c->arg(1).type(), other));
   return self;
 }
 
 // ~InitializerList<T>();
 Value dtor(FunctionCall *c)
 {
-  Value & self = c->thisObject();
-  self.impl()->clear();
-  return self;
+  return script::Value::Void;
 }
 
 // int size() const;
@@ -65,7 +63,7 @@ Value begin(FunctionCall *c)
   InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  ret.impl()->set_initializer_list(InitializerList{ self.begin(), self.begin() });
+  static_cast<InitializerListValue*>(ret.impl())->initlist = InitializerList{ self.begin(), self.begin() };
   return ret;
 }
 
@@ -75,17 +73,15 @@ Value end(FunctionCall *c)
   InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  ret.impl()->set_initializer_list(InitializerList{ self.end(), self.end() });
+  static_cast<InitializerListValue*>(ret.impl())->initlist = InitializerList{ self.end(), self.end() };
   return ret;
 }
 
 // InitializerList<T> & operator=(const InitializerList<T> & other);
 Value assign(FunctionCall *c)
 {
-  Value & self = c->thisObject();
-  InitializerList other = c->arg(1).toInitializerList();
-  self.impl()->set_initializer_list(other);
-  return self;
+  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = static_cast<InitializerListValue*>(c->arg(1).impl())->initlist;
+  return c->thisObject();
 }
 
 namespace iterator
@@ -94,6 +90,8 @@ namespace iterator
 // iterator();
 Value default_ctor(FunctionCall *c)
 {
+  // @TODO: set the correct type for thisObject()
+  c->thisObject() = Value(new InitializerListValue(c->engine(), c->callee().memberOf().id(), InitializerList(nullptr, nullptr)));
   return c->thisObject();
 }
 
@@ -101,30 +99,28 @@ Value default_ctor(FunctionCall *c)
 Value copy_ctor(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  self.impl()->set_initializer_list(c->arg(1).impl()->get_initializer_list());
+  c->thisObject() = Value(new InitializerListValue(c->engine(), c->arg(1).type(), c->arg(1).toInitializerList()));
   return self;
 }
 
 // ~iterator();
 Value dtor(FunctionCall *c)
 {
-  Value & self = c->thisObject();
-  self.impl()->set_initializer_list(InitializerList{ nullptr, nullptr });
-  return self;
+  return script::Value::Void;
 }
 
 // const T & get() const;
 Value get(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  return *(self.impl()->get_initializer_list().begin());
+  return *(self.toInitializerList().begin());
 }
 
 // iterator & operator=(const iterator & other);
 Value assign(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  self.impl()->set_initializer_list(c->arg(1).impl()->get_initializer_list());
+  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = static_cast<InitializerListValue*>(c->arg(1).impl())->initlist;
   return self;
 }
 
@@ -132,8 +128,8 @@ Value assign(FunctionCall *c)
 Value pre_increment(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  InitializerList iter = self.impl()->get_initializer_list();
-  self.impl()->set_initializer_list(InitializerList{ iter.begin() + 1, iter.begin() + 1 });
+  InitializerList iter = self.toInitializerList();
+  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
   return self;
 }
 
@@ -141,8 +137,8 @@ Value pre_increment(FunctionCall *c)
 Value pre_decrement(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  InitializerList iter = self.impl()->get_initializer_list();
-  self.impl()->set_initializer_list(InitializerList{ iter.begin() - 1, iter.begin() - 1 });
+  InitializerList iter = self.toInitializerList();
+  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
   return self;
 }
 
@@ -150,14 +146,14 @@ Value pre_decrement(FunctionCall *c)
 Value eq(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  return c->engine()->newBool(self.impl()->get_initializer_list().begin() == c->arg(1).impl()->get_initializer_list().begin());
+  return c->engine()->newBool(self.toInitializerList().begin() == c->arg(1).toInitializerList().begin());
 }
 
 // bool operator!=(const iterator & other) const;
 Value neq(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  return c->engine()->newBool(self.impl()->get_initializer_list().begin() != c->arg(1).impl()->get_initializer_list().begin());
+  return c->engine()->newBool(self.toInitializerList().begin() != c->arg(1).toInitializerList().begin());
 }
 
 } // namespace iterator

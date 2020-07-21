@@ -756,7 +756,7 @@ TEST(CoreUtilsTests, symbols) {
 static script::Value incr_callback(script::FunctionCall *c)
 {
   int n = c->arg(1).toInt();
-  c->arg(0).impl()->set_int(c->arg(0).toInt() + n);
+  script::get<int>(c->arg(0)) += n;
   return c->arg(0);
 }
 

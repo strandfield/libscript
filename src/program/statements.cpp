@@ -299,17 +299,17 @@ std::shared_ptr<InitObjectStatement> InitObjectStatement::New(Type t)
 
 
 
-PlacementStatement::PlacementStatement(const std::shared_ptr<Expression> &obj, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
-  : object(obj)
-  , constructor(ctor)
-  , arguments(std::move(args))
+PlacementStatement::PlacementStatement(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
+  : object_type(obj_type),
+    constructor(ctor), 
+    arguments(std::move(args))
 {
 
 }
 
-std::shared_ptr<PlacementStatement> PlacementStatement::New(const std::shared_ptr<Expression> &obj, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
+std::shared_ptr<PlacementStatement> PlacementStatement::New(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
 {
-  return std::make_shared<PlacementStatement>(obj, ctor, std::move(args));
+  return std::make_shared<PlacementStatement>(obj_type, ctor, std::move(args));
 }
 
 

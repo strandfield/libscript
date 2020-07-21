@@ -66,9 +66,7 @@ Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
   {
-    Value ret = engine->allocate(t.withoutRef());
-    ctor.invoke({ ret });
-    return ret;
+    return ctor.invoke({ Value() });
   }
   else
   {
@@ -94,9 +92,7 @@ Value EngineImpl::copy(const Value & val, const Function & copyctor)
 {
   if (!copyctor.isNull())
   {
-    Value ret = engine->allocate(val.type());
-    copyctor.invoke({ ret, val });
-    return ret;
+    return copyctor.invoke({ Value(), val });
   }
   else
   {
@@ -112,8 +108,6 @@ void EngineImpl::destroy(const Value & val, const Function & dtor)
   {
     dtor.invoke({ val });
   }
-
-  impl->clear();
 
   impl->type = 0;
   impl->engine = nullptr;
@@ -249,15 +243,6 @@ Engine::Engine()
  */
 Engine::~Engine()
 {
-  d->rootNamespace = Namespace{};
-
-  for (auto m : d->modules)
-    m.destroy();
-  d->modules.clear();
-
-  while (!d->scripts.empty())
-    d->destroy(d->scripts.back());
-
   {
     d->garbage_collector_running = true;
     size_t s = d->garbageCollector.size();
@@ -267,6 +252,15 @@ Engine::~Engine()
     }
     d->garbageCollector.clear();
   }
+
+  d->rootNamespace = Namespace{};
+
+  for (auto m : d->modules)
+    m.destroy();
+  d->modules.clear();
+
+  while (!d->scripts.empty())
+    d->destroy(d->scripts.back());
 
   d->typesystem = nullptr;
 }
@@ -310,9 +304,7 @@ TypeSystem* Engine::typeSystem() const
  */
 Value Engine::newBool(bool bval)
 {
-  Value v{ new ValueImpl{Type::Boolean, this} };
-  v.impl()->set_bool(bval);
-  return v;
+  return Value(new CppValue<bool>(this, bval));
 }
 
 /*!
@@ -321,9 +313,7 @@ Value Engine::newBool(bool bval)
  */
 Value Engine::newChar(char cval)
 {
-  Value v{ new ValueImpl{ Type::Char, this } };
-  v.impl()->set_char(cval);
-  return v;
+  return Value(new CppValue<char>(this, cval));
 }
 
 /*!
@@ -332,9 +322,7 @@ Value Engine::newChar(char cval)
  */
 Value Engine::newInt(int ival)
 {
-  Value v{ new ValueImpl{ Type::Int, this } };
-  v.impl()->set_int(ival);
-  return v;
+  return Value(new CppValue<int>(this, ival));
 }
 
 /*!
@@ -343,9 +331,7 @@ Value Engine::newInt(int ival)
  */
 Value Engine::newFloat(float fval)
 {
-  Value v{ new ValueImpl{ Type::Float, this } };
-  v.impl()->set_float(fval);
-  return v;
+  return Value(new CppValue<float>(this, fval));
 }
 
 /*!
@@ -354,9 +340,7 @@ Value Engine::newFloat(float fval)
  */
 Value Engine::newDouble(double dval)
 {
-  Value v{ new ValueImpl{ Type::Double, this } };
-  v.impl()->set_double(dval);
-  return v;
+  return Value(new CppValue<double>(this, dval));
 }
 
 /*!
@@ -365,9 +349,7 @@ Value Engine::newDouble(double dval)
  */
 Value Engine::newString(const String & sval)
 {
-  Value v{ new ValueImpl{ Type::String, this } };
-  v.impl()->set_string(sval);
-  return v;
+  return Value(new CppValue<String>(this, sval));
 }
 
 /*!
@@ -471,19 +453,15 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
     else if (selected.isDeleted())
       throw ConstructionError{ EngineError::ConstructorIsDeleted };
 
-    Value result = allocate(t.withoutRef());
-
     Locals arguments;
-    arguments.push(result);
+    arguments.push(Value::Void);
 
     for (const auto& a : args)
     {
       arguments.push(a);
     }
 
-    selected.call(arguments);
-
-    return result;
+    return selected.call(arguments);
   }
   else if (t.isFundamentalType())
   {
@@ -535,8 +513,6 @@ void Engine::destroy(Value val)
     Function dtor = typeSystem()->getClass(val.type()).destructor();
     dtor.invoke({ val });
   }
-
-  free(val);
 }
 
 /*!
@@ -592,42 +568,6 @@ void Engine::garbageCollect()
   std::swap(d->garbageCollector, temp);
 
   d->garbage_collector_running = false;
-}
-
-/*!
- * \fn Value allocate(const Type & t)
- * \param type of the value
- * \brief Creates an uninitialized value of the given type
- *
- * The returned value is left uninitialized. It is your responsability to 
- * assign it a value or manually call a constructor on it before using it.
- * Unless stated otherwise, all functions in the library expect initialized values.
- * There is no way to detect if a value is initialized or not, you have to remember 
- * the initialization-state of each value manually.
- */
-Value Engine::allocate(const Type & t)
-{
-  Value v{ new ValueImpl{ t, this } };
-  return v;
-}
-
-/*!
- * \fn void free(Value & v)
- * \param input value
- * \brief Transfer ownership of the value back to the engine.
- *
- * No destructor is called on the value, this function assumes that the value has 
- * already been destroyed (by manually calling a destructor) or never was initialized 
- * (for example after a call to \m allocate).
- */
-void Engine::free(Value & v)
-{
-  auto *impl = v.impl();
-
-  impl->clear();
-
-  impl->type = 0;
-  impl->engine = nullptr;
 }
 
 /*!
@@ -704,9 +644,7 @@ Value Engine::copy(const Value & val)
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw CopyError{};
 
-    Value object = allocate(cla.id());
-    copyCtor.invoke({ object, val });
-    return object;
+    return copyCtor.invoke({ Value(), val });
   }
   else if (val.type().isFunctionType())
     return Value::fromFunction(val.toFunction(), val.type().baseType());

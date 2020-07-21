@@ -28,7 +28,9 @@ namespace script
  */
 void ThisObject::init()
 {
-  get().impl()->init_object();
+  // @TODO: see what we should do with this function
+  throw std::runtime_error{ "call to ThisObject::init()" };
+  // get().impl()->init_object();
 }
 
 /*!
@@ -39,7 +41,7 @@ void ThisObject::init()
  */
 void ThisObject::push(const Value& val)
 {
-  get().impl()->push_member(val);
+  get().impl()->push(val);
 }
 
 /*!
@@ -48,7 +50,7 @@ void ThisObject::push(const Value& val)
  */
 Value ThisObject::pop()
 {
-  return get().impl()->pop_member();
+  return get().impl()->pop();
 }
 
 /*!
@@ -59,11 +61,11 @@ void ThisObject::destroy()
 {
   Value& self = get();
 
-  size_t n = self.impl()->member_count();
+  size_t n = self.impl()->size();
 
   while (n > 0)
   {
-    self.engine()->destroy(self.impl()->pop_member());
+    self.engine()->destroy(self.impl()->pop());
     --n;
   }
 }

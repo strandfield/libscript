@@ -197,7 +197,7 @@ void Interpreter::visit(const program::ContinueStatement & cs)
 void Interpreter::visit(const program::InitObjectStatement & cos)
 {
   Value & memplace = *mExecutionContext->callstack.top()->args().begin();
-  memplace.impl()->init_object();
+  memplace = Value(new ScriptValue(mExecutionContext->engine, cos.objectType));
 }
 
 void Interpreter::visit(const program::ExpressionStatement & es) 
@@ -243,7 +243,7 @@ void Interpreter::visit(const program::PlacementStatement & placement)
   Invoker invoker{ *mExecutionContext };
 
   mExecutionContext->stack.push(Value::Void);
-  mExecutionContext->stack.push(eval(placement.object));
+  mExecutionContext->stack.push(Value::Void);
   for (const auto & arg : placement.arguments)
     mExecutionContext->stack.push(eval(arg));
 
@@ -251,14 +251,17 @@ void Interpreter::visit(const program::PlacementStatement & placement)
 
   invoke(placement.constructor);
 
-  (void) mExecutionContext->pop();
+  Value object = mExecutionContext->pop();
+  object.impl()->type = placement.object_type;
+
+  mExecutionContext->stack[mExecutionContext->callstack.top()->stackOffset() + 1] = object;
 }
 
 void Interpreter::visit(const program::PushDataMember & ims)
 {
   Value object = mExecutionContext->callstack.top()->arg(0);
   Value member = eval(ims.value);
-  object.impl()->push_member(member);
+  object.impl()->push(member);
 }
 
 void Interpreter::visit(const program::ReturnStatement & rs) 
@@ -287,7 +290,7 @@ void Interpreter::visit(const program::PushValue & push)
 void Interpreter::visit(const program::PopDataMember & pop)
 {
   Value object = mExecutionContext->callstack.top()->arg(0);
-  mEngine->implementation()->destroy(object.impl()->pop_member(), pop.destructor);
+  mEngine->implementation()->destroy(object.impl()->pop(), pop.destructor);
 }
 
 void Interpreter::visit(const program::PopValue & pop) 
@@ -359,10 +362,8 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 {
   Invoker invoker{ *mExecutionContext };
 
-  Value object = mEngine->allocate(call.allocate->object_type);
-
-  mExecutionContext->stack.push(Value::Void);
-  mExecutionContext->stack.push(object);
+  mExecutionContext->stack.push(Value::Void); // ret
+  mExecutionContext->stack.push(Value::Void); // this
   for (const auto & arg : call.arguments)
     mExecutionContext->stack.push(inner_eval(arg));
 
@@ -370,9 +371,7 @@ Value Interpreter::visit(const program::ConstructorCall & call)
 
   invoke(call.constructor);
 
-  (void) mExecutionContext->pop();
-
-  return object;
+  return mExecutionContext->pop();
 }
 
 Value Interpreter::visit(const program::Copy & copy)
@@ -441,12 +440,9 @@ Value Interpreter::visit(const program::InitializerList & il)
 
   const size_t new_size = mExecutionContext->initializer_list_buffer.size();
 
-  Value ret = mEngine->construct(il.initializer_list_type, {});
-
   Value* begin = mExecutionContext->initializer_list_buffer.data() + old_size;
   Value* end = mExecutionContext->initializer_list_buffer.data() + new_size;
-  ret.impl()->set_initializer_list(InitializerList{ begin, end });
-  return ret;
+  return Value(new InitializerListValue(mExecutionContext->engine, il.initializer_list_type, InitializerList{ begin, end }));
 }
 
 Value Interpreter::visit(const program::LambdaExpression & lexpr)
@@ -486,7 +482,7 @@ Value Interpreter::visit(const program::LogicalOr & lo)
 Value Interpreter::visit(const program::MemberAccess & ma)
 {
   Value object = inner_eval(ma.object);
-  return object.impl()->get_member(ma.offset);
+  return object.impl()->at(ma.offset);
 }
 
 Value Interpreter::visit(const program::StackValue & sv)

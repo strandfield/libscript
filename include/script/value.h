@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Vincent Chambrin
+// Copyright (C) 2019-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -7,6 +7,7 @@
 
 #include "script/types.h"
 #include "script/string.h"
+#include "script/value-interface.h"
 
 #ifndef LIBSCRIPT_BUILTIN_MEMBUF_SIZE
 #define LIBSCRIPT_BUILTIN_MEMBUF_SIZE 24
@@ -33,7 +34,7 @@ public:
   Value(const Value& other);
   ~Value();
 
-  explicit Value(ValueImpl* impl);
+  explicit Value(IValue* impl);
 
   static constexpr ParameterPolicy Copy = ParameterPolicy::Copy;
   static constexpr ParameterPolicy Move = ParameterPolicy::Move;
@@ -53,7 +54,7 @@ public:
   bool isDouble() const;
   bool isPrimitive() const;
   bool isString() const;
-  bool isObject() const;
+  //bool isObject() const;
   bool isArray() const;
   bool isInitializerList() const;
 
@@ -64,7 +65,7 @@ public:
   double toDouble() const;
   String toString() const;
   Function toFunction() const;
-  Object toObject() const;
+  //Object toObject() const;
   Array toArray() const;
   Enumerator toEnumerator() const;
   Lambda toLambda() const;
@@ -72,9 +73,8 @@ public:
 
   static constexpr size_t MemoryBufferSize = LIBSCRIPT_BUILTIN_MEMBUF_SIZE;
 
-  void* memory() const;
-
   void* data() const;
+  void* ptr() const;
 
   static Value fromEnumerator(const Enumerator& ev);
   static Value fromFunction(const Function& f, const Type& ft);
@@ -85,21 +85,15 @@ public:
   bool isManaged() const;
 
   Value& operator=(const Value& other);
-  bool operator==(const Value& other) const;
-  inline bool operator!=(const Value& other) const { return !operator==(other); }
 
-  inline ValueImpl* impl() const { return d; }
-
-protected:
-  friend Engine;
-  friend ThisObject;
-
-  void* acquireMemory();
-  void releaseMemory();
+  IValue* impl() const { return d; }
 
 private:
-  ValueImpl* d;
+  IValue* d;
 };
+
+inline bool operator==(const Value& lhs, const Value& rhs) { return lhs.impl() == rhs.impl(); }
+inline bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
 } // namespace script
 
@@ -113,15 +107,6 @@ typename get_helper<T>::type get(const Value& val)
 {
   return get_helper<T>::get(val);
 }
-
-/* get<T>() specializations */
-
-template<> LIBSCRIPT_API bool& get<bool>(const Value& val);
-template<> LIBSCRIPT_API char& get<char>(const Value& val);
-template<> LIBSCRIPT_API int& get<int>(const Value& val);
-template<> LIBSCRIPT_API float& get<float>(const Value& val);
-template<> LIBSCRIPT_API double& get<double>(const Value& val);
-template<> LIBSCRIPT_API String& get<String>(const Value& val);
 
 } // namespace script
 

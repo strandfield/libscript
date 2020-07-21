@@ -239,16 +239,17 @@ public:
 };
 
 // represent a call to a base constructor or a delegate constructor
+// @TODO: should be renamed as placement does not exist anymore
 struct LIBSCRIPT_API PlacementStatement : public Statement
 {
-  std::shared_ptr<Expression> object;
+  Type object_type;
   Function constructor;
   std::vector<std::shared_ptr<Expression>> arguments;
 public:
-  PlacementStatement(const std::shared_ptr<Expression> &obj, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
+  PlacementStatement(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
   ~PlacementStatement() = default;
 
-  static std::shared_ptr<PlacementStatement> New(const std::shared_ptr<Expression> &obj, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
+  static std::shared_ptr<PlacementStatement> New(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
 
   void accept(StatementVisitor &) override;
 };

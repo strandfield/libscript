@@ -334,15 +334,68 @@ void* ValueImpl::get_data() const
   return data_ptr;
 }
 
-static ValueImpl construct_void()
+const Value Value::Void = Value{ new VoidValue() };
+
+IValue::~IValue()
 {
-  ValueImpl vs{ Type::Void, nullptr };
-  vs.ref = 1;
-  return vs;
+
 }
 
-ValueImpl void_struct = construct_void();
-const Value Value::Void = Value{ &void_struct };
+bool IValue::is_void() const
+{
+  return false;
+}
+
+bool IValue::is_reference() const
+{
+  return false;
+}
+
+bool IValue::is_function() const
+{
+  return false;
+}
+
+bool IValue::is_lambda() const
+{
+  return false;
+}
+
+bool IValue::is_array() const
+{
+  return false;
+}
+
+bool IValue::is_initializer_list() const
+{
+  return false;
+}
+
+bool IValue::is_enumerator() const
+{
+  return false;
+}
+
+size_t IValue::size() const
+{
+  return 0;
+}
+
+void IValue::push(const Value& val)
+{
+
+}
+
+Value IValue::pop()
+{
+  throw std::runtime_error{ "Value does not have any member" };
+}
+
+Value& IValue::at(size_t index)
+{
+  throw std::runtime_error{ "Value does not have any member" };
+}
+
 
 Value::Value()
   : d(nullptr)
@@ -369,7 +422,7 @@ Value::~Value()
   }
 }
 
-Value::Value(ValueImpl * impl)
+Value::Value(IValue* impl)
   : d(impl)
 {
   if (d)
@@ -394,7 +447,7 @@ bool Value::isConst() const
 
 bool Value::isReference() const
 {
-  return d->type.isReference();
+  return d->is_reference();
 }
 
 bool Value::isBool() const
@@ -432,10 +485,10 @@ bool Value::isString() const
   return d->type.baseType() == Type::String;
 }
 
-bool Value::isObject() const
-{
-  return d->is_object();
-}
+//bool Value::isObject() const
+//{
+//  return d->is_object();
+//}
 
 bool Value::isArray() const
 {
@@ -479,84 +532,71 @@ String Value::toString() const
 
 Function Value::toFunction() const
 {
-  return d->get_function();
+  return d->is_function() ? static_cast<FunctionValue*>(d)->function : Function();
 }
 
-Object Value::toObject() const
-{
-  return d->get_object();
-}
+//Object Value::toObject() const
+//{
+//  return d->get_object();
+//}
 
 Array Value::toArray() const
 {
-  return d->get_array();
+  return d->is_array() ? static_cast<ArrayValue*>(d)->array : Array();
 }
 
 Enumerator Value::toEnumerator() const
 {
-  return d->get_enumerator();
+  // @TODO: if 'd' is a CppValue that is a reference, we could do the conversion
+  return d->is_enumerator() ? static_cast<EnumeratorValue*>(d)->value : Enumerator();
 }
 
 Lambda Value::toLambda() const
 {
-  return d->get_lambda();
+  return d->is_lambda() ? static_cast<LambdaValue*>(d)->lambda : Lambda();
 }
 
 InitializerList Value::toInitializerList() const
 {
-  return d->get_initializer_list();
-}
-
-void* Value::memory() const
-{
-  assert(d->which == ValueImpl::MemoryField);
-
-  return &(d->data.memory);
+  return d->is_initializer_list() ? static_cast<InitializerListValue*>(d)->initlist : InitializerList();
 }
 
 void* Value::data() const
 {
-  return d->get_data();
+  return d->ptr();
+}
+
+void* Value::ptr() const
+{
+  return d->ptr();
 }
 
 Value Value::fromEnumerator(const Enumerator & ev)
 {
   if (ev.isNull())
     return Value{}; // TODO : should we throw
-  Engine *e = ev.enumeration().engine();
-  Value ret = e->allocate(ev.enumeration().id());
-  ret.impl()->set_enumerator(ev);
-  return ret;
+  return Value(new EnumeratorValue(ev));
 }
 
 Value Value::fromFunction(const Function & f, const Type & ft)
 {
   if (f.isNull())
     return Value{}; // TODO : should we throw
-  Engine *e = f.engine();
-  Value ret = e->allocate(ft);
-  ret.impl()->set_function(f);
-  return ret;
+  return Value(new FunctionValue(f, ft));
 }
 
 Value Value::fromArray(const Array & a)
 {
   if (a.isNull())
     return Value{};
-  Engine *e = a.engine();
-  Value ret = e->allocate(a.typeId());
-  ret.impl()->set_array(a);
-  return ret;
+  return Value(new ArrayValue(a));
 }
 
 Value Value::fromLambda(const Lambda & obj)
 {
   if (obj.isNull())
     return Value{};
-  Engine *e = obj.engine();
-  Value ret = e->allocate(obj.closureType().id());
-  ret.impl()->set_lambda(obj);
-  return ret;
+  return Value(new LambdaValue(obj));
 }
 
 Engine* Value::engine() const
@@ -567,16 +607,6 @@ Engine* Value::engine() const
 bool Value::isManaged() const
 {
   return d->type.testFlag(Type::ManagedFlag);
-}
-
-void* Value::acquireMemory()
-{
-  return d->acquire_memory();
-}
-
-void Value::releaseMemory()
-{
-  d->release_memory();
 }
 
 Value & Value::operator=(const Value & other)
@@ -593,58 +623,15 @@ Value & Value::operator=(const Value & other)
   return *(this);
 }
 
-bool Value::operator==(const Value & other) const
-{
-  return d == other.d;
-}
-
 namespace details
 {
 
 int get_enum_value(const Value& val)
 {
-    return val.impl()->get_enumerator().value();
+  return val.toEnumerator().value();
 }
 
 } // namespace details
-
-/* get<T>() specializations */
-
-template<>
-bool& get<bool>(const Value& val)
-{
-  return val.impl()->get_bool();
-}
-
-template<>
-char& get<char>(const Value& val)
-{
-  return val.impl()->get_char();
-}
-
-template<>
-int& get<int>(const Value& val)
-{
-  return val.impl()->get_int();
-}
-
-template<>
-float& get<float>(const Value& val)
-{
-  return val.impl()->get_float();
-}
-
-template<>
-double& get<double>(const Value& val)
-{
-  return val.impl()->get_double();
-}
-
-template<>
-String& get<String>(const Value& val)
-{
-  return val.impl()->get_string();
-}
 
 } // namespace script
 
