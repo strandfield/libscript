@@ -27,7 +27,7 @@ namespace callbacks
 
 Value enum_assignment(interpreter::FunctionCall *c)
 {
-  static_cast<EnumeratorValue*>(c->arg(0).impl())->value = c->arg(1).toEnumerator();
+  script::get<Enumerator>(c->arg(0)) = c->arg(1).toEnumerator();
   return c->arg(0);
 }
 

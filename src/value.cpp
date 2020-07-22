@@ -315,5 +315,42 @@ int get_enum_value(const Value& val)
 
 } // namespace details
 
+/* get<T>() specializations */
+
+template<>
+Function& get<Function>(const Value& val)
+{
+  assert(val.impl()->is_function());
+  return static_cast<FunctionValue*>(val.impl())->function;
+}
+
+template<>
+Array& get<Array>(const Value& val)
+{
+  assert(val.impl()->is_array());
+  return static_cast<ArrayValue*>(val.impl())->array;
+}
+
+template<>
+Enumerator& get<Enumerator>(const Value& val)
+{
+  assert(val.impl()->is_enumerator());
+  return static_cast<EnumeratorValue*>(val.impl())->value;
+}
+
+template<>
+Lambda& get<Lambda>(const Value& val)
+{
+  assert(val.impl()->is_lambda());
+  return static_cast<LambdaValue*>(val.impl())->lambda;
+}
+
+template<>
+InitializerList& get<InitializerList>(const Value& val)
+{
+  assert(val.impl()->is_initializer_list());
+  return static_cast<InitializerListValue*>(val.impl())->initlist;
+}
+
 } // namespace script
 

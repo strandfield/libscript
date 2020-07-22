@@ -63,7 +63,7 @@ Value begin(FunctionCall *c)
   InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  static_cast<InitializerListValue*>(ret.impl())->initlist = InitializerList{ self.begin(), self.begin() };
+  script::get<InitializerList>(ret) = InitializerList{ self.begin(), self.begin() };
   return ret;
 }
 
@@ -73,14 +73,14 @@ Value end(FunctionCall *c)
   InitializerList self = c->arg(0).toInitializerList();
 
   Value ret = c->engine()->construct(c->callee().returnType(), {});
-  static_cast<InitializerListValue*>(ret.impl())->initlist = InitializerList{ self.end(), self.end() };
+  script::get<InitializerList>(ret) = InitializerList{ self.end(), self.end() };
   return ret;
 }
 
 // InitializerList<T> & operator=(const InitializerList<T> & other);
 Value assign(FunctionCall *c)
 {
-  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = static_cast<InitializerListValue*>(c->arg(1).impl())->initlist;
+  script::get<InitializerList>(c->arg(0)) = script::get<InitializerList>(c->arg(1));
   return c->thisObject();
 }
 
@@ -120,7 +120,7 @@ Value get(FunctionCall *c)
 Value assign(FunctionCall *c)
 {
   Value & self = c->thisObject();
-  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = static_cast<InitializerListValue*>(c->arg(1).impl())->initlist;
+  script::get<InitializerList>(c->arg(0)) = script::get<InitializerList>(c->arg(1));
   return self;
 }
 
@@ -129,7 +129,7 @@ Value pre_increment(FunctionCall *c)
 {
   Value & self = c->thisObject();
   InitializerList iter = self.toInitializerList();
-  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
+  script::get<InitializerList>(c->arg(0)) = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
   return self;
 }
 
@@ -138,7 +138,7 @@ Value pre_decrement(FunctionCall *c)
 {
   Value & self = c->thisObject();
   InitializerList iter = self.toInitializerList();
-  static_cast<InitializerListValue*>(c->arg(0).impl())->initlist = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
+  script::get<InitializerList>(c->arg(0)) = InitializerList{ iter.begin() + 1, iter.begin() + 1 };
   return self;
 }
 

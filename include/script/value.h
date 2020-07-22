@@ -99,6 +99,13 @@ typename get_helper<T>::type get(const Value& val)
   return get_helper<T>::get(val);
 }
 
+
+template<> LIBSCRIPT_API Function& get<Function>(const Value& val);
+template<> LIBSCRIPT_API Array& get<Array>(const Value& val);
+template<> LIBSCRIPT_API Enumerator& get<Enumerator>(const Value& val);
+template<> LIBSCRIPT_API Lambda& get<Lambda>(const Value& val);
+template<> LIBSCRIPT_API InitializerList& get<InitializerList>(const Value& val);
+
 } // namespace script
 
 #endif // LIBSCRIPT_VALUE_H

@@ -11,13 +11,6 @@ namespace script
 namespace details
 {
 
-struct PtrWrapper
-{
-  void* value;
-
-  PtrWrapper(void* ptr) : value(ptr) { }
-};
-
 LIBSCRIPT_API int get_enum_value(const Value& val);
 
 } // namespace details

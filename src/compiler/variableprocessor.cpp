@@ -215,11 +215,11 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
   }
   else if (t.isEnumType())
   {
-    static_cast<EnumeratorValue*>(var.variable.impl())->value = arg.toEnumerator();
+    script::get<Enumerator>(var.variable) = arg.toEnumerator();
   }
   else if (t.isFunctionType())
   {
-    static_cast<FunctionValue*>(var.variable.impl())->function = arg.toFunction();
+    script::get<Function>(var.variable) = arg.toFunction();
   }
   else if (t.isObjectType())
   {
