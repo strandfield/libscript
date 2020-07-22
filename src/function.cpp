@@ -333,13 +333,11 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
 
   if (policy == Value::Take)
   {
-    engine()->manage(val);
     d->add_default_argument(program::VariableAccess::New(val));
   }
   else if (policy == Value::Copy || policy == Value::Move) // move not well supported yet
   {
     Value v = engine()->copy(val);
-    engine()->manage(v);
     d->add_default_argument(program::VariableAccess::New(val));
   }
 }

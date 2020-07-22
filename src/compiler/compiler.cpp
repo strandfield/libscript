@@ -116,8 +116,6 @@ void CompileSession::clear()
     engine()->destroy(s);
 
   this->generated.expression = nullptr;
-
-  this->engine()->garbageCollect();
 }
 
 

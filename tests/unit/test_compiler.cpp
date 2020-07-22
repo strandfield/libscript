@@ -138,7 +138,6 @@ TEST(CompilerTests, function1) {
   }
 
   Value input = engine.newInt(3);
-  engine.manage(input);
   Value val = f.invoke({ input , input });
   ASSERT_TRUE(val.type() == Type::Int);
   ASSERT_EQ(val.toInt(), 0);

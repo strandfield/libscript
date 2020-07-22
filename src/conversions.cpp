@@ -836,9 +836,6 @@ Value Conversion::apply(const Conversion& conv, const Value& val)
   Engine* e = val.engine();
   Value ret = StandardConversion::apply(conv.firstStandardConversion(), val);
   
-  if (!conv.firstStandardConversion().isReferenceConversion())
-    e->manage(ret); /// TODO: avoid that by using RAII
-
   if (conv.userDefinedConversion().isCast())
   {
     ret = conv.userDefinedConversion().invoke({ ret });

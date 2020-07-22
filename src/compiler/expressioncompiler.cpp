@@ -497,7 +497,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
   // suffix extraction
   std::string suffix = LiteralProcessor::take_suffix(str);
   Value val = LiteralProcessor::generate(engine(), str);
-  engine()->manage(val);
   auto lit = program::Literal::New(val);
   std::vector<std::shared_ptr<program::Expression>> args{ lit };
 
@@ -527,7 +526,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateLiteral(const s
     return generateUserDefinedLiteral(std::static_pointer_cast<ast::UserDefinedLiteral>(literalExpr));
 
   Value val = LiteralProcessor::generate(engine(), literalExpr);
-  engine()->manage(val);
   return program::Literal::New(val);
 }
 
@@ -732,7 +730,6 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctionAccess(
   Function f = lookup.functions().front();
   FunctionType ft = engine()->typeSystem()->getFunctionType(f.prototype());
   Value val = Value::fromFunction(f, ft.type());
-  engine()->manage(val);
   return program::Literal::New(val); /// TODO : perhaps a program::VariableAccess would be better ?
 }
 

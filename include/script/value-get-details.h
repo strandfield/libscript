@@ -11,37 +11,6 @@ namespace script
 namespace details
 {
 
-struct large_object_tag {};
-struct small_object_tag {};
-struct enum_tag {};
-
-template<bool IsSmall, bool IsEnum>
-struct tag_resolver_impl;
-
-template<bool IsSmall>
-struct tag_resolver_impl<IsSmall, true>
-{
-  typedef enum_tag type;
-};
-
-template<>
-struct tag_resolver_impl<true, false>
-{
-  typedef small_object_tag type;
-};
-
-template<>
-struct tag_resolver_impl<false, false>
-{
-  typedef large_object_tag type;
-};
-
-template<typename T>
-struct tag_resolver
-{
-  typedef typename tag_resolver_impl<(sizeof(T) <= Value::MemoryBufferSize), std::is_enum<T>::value>::type tag_type;
-};
-
 struct PtrWrapper
 {
   void* value;
@@ -53,11 +22,11 @@ LIBSCRIPT_API int get_enum_value(const Value& val);
 
 } // namespace details
 
-template<typename T, typename Tag = typename details::tag_resolver<T>::tag_type>
+template<typename T, bool IsEnum = std::is_enum<T>::value>
 struct get_helper;
 
 template<typename T>
-struct get_helper<T, details::small_object_tag>
+struct get_helper<T, false>
 {
   typedef T& type;
 
@@ -68,18 +37,7 @@ struct get_helper<T, details::small_object_tag>
 };
 
 template<typename T>
-struct get_helper<T, details::large_object_tag>
-{
-  typedef T& type;
-
-  static T& get(const script::Value& val)
-  {
-    return *reinterpret_cast<T*>(val.ptr());
-  }
-};
-
-template<typename T>
-struct get_helper<T, details::enum_tag>
+struct get_helper<T, true>
 {
   typedef T type;
 

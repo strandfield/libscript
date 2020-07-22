@@ -56,7 +56,7 @@ public:
     if (std::uncaught_exceptions())
     {
       while (context.stack.size > sp)
-        context.engine->manage(context.stack.pop());
+        context.stack.pop();
 
       if(!preparing)
         context.callstack.pop();
@@ -161,9 +161,6 @@ void Interpreter::invoke(const Function & f)
   } else {
     exec(impl->implementation.program);
   }
-
-  /// TODO: maybe remove this call to the GC
-  mEngine->garbageCollect();
 }
 
 void Interpreter::visit(const program::BreakStatement & bs) 

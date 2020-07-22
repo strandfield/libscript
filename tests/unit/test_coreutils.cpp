@@ -769,7 +769,6 @@ TEST(CoreUtilsTests, default_arguments) {
   e.setup();
 
   Value default_arg = e.newInt(1);
-  e.manage(default_arg);
 
   Function incr = Symbol{ e.rootNamespace() }.newFunction("incr")
     .returns(Type::ref(Type::Int))

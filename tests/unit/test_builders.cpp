@@ -61,7 +61,6 @@ TEST(Builders, operators) {
 static std::shared_ptr<script::program::Expression> create_default_arg(script::Value val)
 {
   using namespace script;
-  val.engine()->manage(val);
   return program::VariableAccess::New(val);
 }
 

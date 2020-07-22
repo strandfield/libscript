@@ -38,9 +38,6 @@ public:
     ConstFlag            = 0x200000,
     ForwardReferenceFlag = 0x400000,
     ThisFlag             = 0x800000,
-    ManagedFlag          = 0x1000000,
-    UninitializedFlag    = 0x2000000,
-    UnknownFlag          = UninitializedFlag,
     ProtectedFlag        = 0x4000000,
     PrivateFlag          = 0x8000000,
   };

@@ -86,7 +86,6 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
     uninitialized_variables_.push_back(Variable{ val, decl, scp });
   }
 
-  e->manage(val);
   ns.impl()->variables[decl->name->getName()] = val;
 }
 
@@ -148,9 +147,6 @@ void VariableProcessor::initialize(Variable v)
     std::shared_ptr<program::Expression> initexpr = expr_.generateExpression(parsed_initexpr);
     copy_initialization(v, initexpr);
   }
-
-  Type t = v.variable.impl()->type.withoutFlag(Type::UninitializedFlag);
-  v.variable.impl()->type = t;
 }
 
 void VariableProcessor::default_initialization(Variable & v)
@@ -266,7 +262,6 @@ Value VariableProcessor::eval(const std::shared_ptr<program::Expression> & e)
 
 Value VariableProcessor::manage(const Value & v)
 {
-  engine()->manage(v);
   return v;
 }
 
@@ -279,7 +274,6 @@ Value VariableProcessor::visit(const program::ArrayExpression & ae)
   for (size_t i(0); i < ae.elements.size(); ++i)
     aimpl->elements[i] = eval(ae.elements.at(i));
   Value ret = Value::fromArray(a);
-  engine()->manage(ret);
   return ret;
 }
 
@@ -347,7 +341,6 @@ Value VariableProcessor::visit(const program::FundamentalConversion & fc)
 {
   Value src = eval(fc.argument);
   Value ret = fundamental_conversion(src, fc.dest_type.baseType().data(), engine());
-  engine()->manage(ret);
   return ret;
 }
 

@@ -9,10 +9,6 @@
 #include "script/string.h"
 #include "script/value-interface.h"
 
-#ifndef LIBSCRIPT_BUILTIN_MEMBUF_SIZE
-#define LIBSCRIPT_BUILTIN_MEMBUF_SIZE 24
-#endif
-
 namespace script
 {
 
@@ -24,8 +20,6 @@ class InitializerList;
 class Lambda;
 class Object;
 class ThisObject;
-
-struct ValueImpl;
 
 class LIBSCRIPT_API Value
 {
@@ -71,8 +65,6 @@ public:
   Lambda toLambda() const;
   InitializerList toInitializerList() const;
 
-  static constexpr size_t MemoryBufferSize = LIBSCRIPT_BUILTIN_MEMBUF_SIZE;
-
   void* data() const;
   void* ptr() const;
 
@@ -82,7 +74,6 @@ public:
   static Value fromArray(const Array& a);
 
   Engine* engine() const;
-  bool isManaged() const;
 
   Value& operator=(const Value& other);
 

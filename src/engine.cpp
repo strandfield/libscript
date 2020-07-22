@@ -57,7 +57,6 @@ namespace script
 
 EngineImpl::EngineImpl(Engine *e)
   : engine(e)
-  , garbage_collector_running(false)
 {
 
 }
@@ -237,22 +236,9 @@ Engine::Engine()
  * \brief Destroys the script engine
  *
  * This function destroys the global namespace and all the modules.
- * All variables registered for garbage collection are also destroyed 
- * in the reverse order they have been added, regarless of the value 
- * of their reference counter.
  */
 Engine::~Engine()
 {
-  {
-    d->garbage_collector_running = true;
-    size_t s = d->garbageCollector.size();
-    while (s-- > 0)
-    {
-      destroy(d->garbageCollector[s]);
-    }
-    d->garbageCollector.clear();
-  }
-
   d->rootNamespace = Namespace{};
 
   for (auto m : d->modules)
@@ -513,61 +499,6 @@ void Engine::destroy(Value val)
     Function dtor = typeSystem()->getClass(val.type()).destructor();
     dtor.invoke({ val });
   }
-}
-
-/*!
- * \fn void manage(Value val)
- * \param value which lifetime is to be managed
- * \brief Adds a value to the garbage collector.
- *
- * By calling this function, you ask the engine to take care of 
- * destroying the value when it is no longer used.
- * Actual destruction takes place any time after the object is no longer 
- * reachable.
- * It is safe to call this function multiple times with the same value.
- *
- * \sa Value::isManaged
- */
-void Engine::manage(Value val)
-{
-  if (val.isManaged() || val.isReference())
-    return;
-
-  d->garbageCollector.push_back(val);
-  val.impl()->type = val.impl()->type.withFlag(Type::ManagedFlag);
-}
-
-/*!
- * \fn void garbageCollect()
- * \brief Runs garbage collection.
- *
- * The engine destroys all values that are no longer reachable.
- */
-void Engine::garbageCollect()
-{
-  if (d->garbage_collector_running)
-    return;
-
-  d->garbage_collector_running = true;
-
-  std::vector<Value> temp;
-  // we cannot use for-range loop here because iterators might be invalidated 
-  // during the call to a destructor...
-  for (size_t i(0); i < d->garbageCollector.size(); ++i)
-  {
-    const Value & val = d->garbageCollector.at(i);
-    if (val.impl()->ref > 1)
-    {
-      temp.push_back(val);
-      continue;
-    }
-
-    destroy(val);
-  }
-
-  std::swap(d->garbageCollector, temp);
-
-  d->garbage_collector_running = false;
 }
 
 /*!

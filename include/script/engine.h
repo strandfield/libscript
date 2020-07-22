@@ -179,9 +179,6 @@ public:
     return Value(new CppReferenceValue<T>(this, val));
   }
 
-  void manage(Value val);
-  void garbageCollect();
-
   bool canCopy(const Type & t);
   Value copy(const Value & val);
 
