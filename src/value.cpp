@@ -15,7 +15,6 @@
 
 #include "script/private/engine_p.h"
 #include "script/private/enum_p.h"
-#include "script/private/object_p.h"
 
 #include <cstring>
 
@@ -183,10 +182,10 @@ bool Value::isString() const
   return d->type.baseType() == Type::String;
 }
 
-//bool Value::isObject() const
-//{
-//  return d->is_object();
-//}
+bool Value::isObject() const
+{
+  return d->type.isObjectType();
+}
 
 bool Value::isArray() const
 {
@@ -233,10 +232,10 @@ Function Value::toFunction() const
   return d->is_function() ? static_cast<FunctionValue*>(d)->function : Function();
 }
 
-//Object Value::toObject() const
-//{
-//  return d->get_object();
-//}
+Object Value::toObject() const
+{
+  return Object(*this);
+}
 
 Array Value::toArray() const
 {

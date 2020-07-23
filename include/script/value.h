@@ -48,7 +48,7 @@ public:
   bool isDouble() const;
   bool isPrimitive() const;
   bool isString() const;
-  //bool isObject() const;
+  bool isObject() const;
   bool isArray() const;
   bool isInitializerList() const;
 
@@ -59,7 +59,7 @@ public:
   double toDouble() const;
   String toString() const;
   Function toFunction() const;
-  //Object toObject() const;
+  Object toObject() const;
   Array toArray() const;
   Enumerator toEnumerator() const;
   Lambda toLambda() const;

@@ -42,7 +42,6 @@
 #include "script/private/lambda_p.h"
 #include "script/private/module_p.h"
 #include "script/private/namespace_p.h"
-#include "script/private/object_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"

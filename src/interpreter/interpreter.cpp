@@ -16,7 +16,6 @@
 #include "script/private/array_p.h"
 #include "script/private/function_p.h"
 #include "script/private/lambda_p.h"
-#include "script/private/object_p.h"
 #include "script/private/script_p.h"
 #include "script/private/value_p.h"
 
