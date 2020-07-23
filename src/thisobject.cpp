@@ -26,9 +26,9 @@ namespace script
  *
  * After initialization, the \m toObject() method of \t Value returns a valid \t Object.
  */
-void ThisObject::init()
+void ThisObject::init(script::Type t)
 {
-  get().impl()->init_object();
+  m_value = Value(new ScriptValue(m_engine, t));
 }
 
 /*!
@@ -39,7 +39,7 @@ void ThisObject::init()
  */
 void ThisObject::push(const Value& val)
 {
-  get().impl()->push_member(val);
+  get().impl()->push(val);
 }
 
 /*!
@@ -48,7 +48,7 @@ void ThisObject::push(const Value& val)
  */
 Value ThisObject::pop()
 {
-  return get().impl()->pop_member();
+  return get().impl()->pop();
 }
 
 /*!
@@ -57,30 +57,9 @@ Value ThisObject::pop()
  */
 void ThisObject::destroy()
 {
-  Value& self = get();
-
-  size_t n = self.impl()->member_count();
-
-  while (n > 0)
-  {
-    self.engine()->destroy(self.impl()->pop_member());
-    --n;
-  }
+  while (get().impl()->size() > 0)
+    get().impl()->pop();
 }
-
-/*!
- * \fn template<typename T, typename...Args> void init<T>(Args &&...)
- * \brief Constructs an object in the value's memory buffer.
- *
- * The constructed object should be destroyed with a call to \m destroy<T>().
- */
-
-/*!
- * \fn template<typename T> void destroy<T>()
- * \brief Destroys the object stored in the value's memory buffer.
- *
- * This function should be called if the Value was initialized with a call to \m init<T>().
- */
 
 } // namespace script
 

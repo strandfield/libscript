@@ -10,11 +10,11 @@
 #include "script/private/scope_p.h"
 #include "script/functiontype.h"
 #include "script/staticdatamember.h"
+#include "script/templateargumentprocessor.h"
 #include "script/typesystem.h"
 
 #include "script/parser/parser.h"
 
-#include "script/compiler/expressioncompiler.h"
 #include "script/program/expression.h"
 
 namespace script

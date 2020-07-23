@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Vincent Chambrin
+// Copyright (C) 2019-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -7,10 +7,7 @@
 
 #include "script/types.h"
 #include "script/string.h"
-
-#ifndef LIBSCRIPT_BUILTIN_MEMBUF_SIZE
-#define LIBSCRIPT_BUILTIN_MEMBUF_SIZE 24
-#endif
+#include "script/value-interface.h"
 
 namespace script
 {
@@ -24,8 +21,6 @@ class Lambda;
 class Object;
 class ThisObject;
 
-struct ValueImpl;
-
 class LIBSCRIPT_API Value
 {
 public:
@@ -33,7 +28,7 @@ public:
   Value(const Value& other);
   ~Value();
 
-  explicit Value(ValueImpl* impl);
+  explicit Value(IValue* impl);
 
   static constexpr ParameterPolicy Copy = ParameterPolicy::Copy;
   static constexpr ParameterPolicy Move = ParameterPolicy::Move;
@@ -70,11 +65,8 @@ public:
   Lambda toLambda() const;
   InitializerList toInitializerList() const;
 
-  static constexpr size_t MemoryBufferSize = LIBSCRIPT_BUILTIN_MEMBUF_SIZE;
-
-  void* memory() const;
-
   void* data() const;
+  void* ptr() const;
 
   static Value fromEnumerator(const Enumerator& ev);
   static Value fromFunction(const Function& f, const Type& ft);
@@ -82,24 +74,17 @@ public:
   static Value fromArray(const Array& a);
 
   Engine* engine() const;
-  bool isManaged() const;
 
   Value& operator=(const Value& other);
-  bool operator==(const Value& other) const;
-  inline bool operator!=(const Value& other) const { return !operator==(other); }
 
-  inline ValueImpl* impl() const { return d; }
-
-protected:
-  friend Engine;
-  friend ThisObject;
-
-  void* acquireMemory();
-  void releaseMemory();
+  IValue* impl() const { return d; }
 
 private:
-  ValueImpl* d;
+  IValue* d;
 };
+
+inline bool operator==(const Value& lhs, const Value& rhs) { return lhs.impl() == rhs.impl(); }
+inline bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
 } // namespace script
 
@@ -114,14 +99,12 @@ typename get_helper<T>::type get(const Value& val)
   return get_helper<T>::get(val);
 }
 
-/* get<T>() specializations */
 
-template<> LIBSCRIPT_API bool& get<bool>(const Value& val);
-template<> LIBSCRIPT_API char& get<char>(const Value& val);
-template<> LIBSCRIPT_API int& get<int>(const Value& val);
-template<> LIBSCRIPT_API float& get<float>(const Value& val);
-template<> LIBSCRIPT_API double& get<double>(const Value& val);
-template<> LIBSCRIPT_API String& get<String>(const Value& val);
+template<> LIBSCRIPT_API Function& get<Function>(const Value& val);
+template<> LIBSCRIPT_API Array& get<Array>(const Value& val);
+template<> LIBSCRIPT_API Enumerator& get<Enumerator>(const Value& val);
+template<> LIBSCRIPT_API Lambda& get<Lambda>(const Value& val);
+template<> LIBSCRIPT_API InitializerList& get<InitializerList>(const Value& val);
 
 } // namespace script
 

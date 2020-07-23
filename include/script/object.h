@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,65 +6,40 @@
 #define LIBSCRIPT_OBJECT_H
 
 #include "script/value.h"
-#include "script/class.h" /// TODO: replace by forward declaration
-#include "script/userdata.h"
-
-#include <utility>
 
 namespace script
 {
 
-class ObjectImpl;
+class Class;
 
 class LIBSCRIPT_API Object
 {
 public:
   Object() = default;
-  Object(const Object & other) = default;
+  Object(const Object &) = default;
   ~Object() = default;
 
-  explicit Object(const std::shared_ptr<ObjectImpl> & impl);
+  explicit Object(const Value& val);
 
   bool isNull() const;
+  inline bool isValid() const { return !isNull(); }
   Class instanceOf() const;
 
-  void push(const Value & val);
-  Value pop();
-  const Value & at(size_t i) const;
   size_t size() const;
+  const Value & at(size_t i) const;
 
   Value get(const std::string & attrName) const;
 
-  void setUserData(const std::shared_ptr<UserData>& data);
-  const std::shared_ptr<UserData>& getUserData() const;
-
-  template<typename T, typename...Args>
-  void setUserData(Args&& ... args)
-  {
-    this->setUserData(script::make_userdata<T>(std::forward<Args>(args)...));
-  }
-
-  template<typename T>
-  T& getUserData() const
-  {
-    GenericUserData<T>* ud = dynamic_cast<GenericUserData<T>*>(getUserData().get());
-    assert(ud != nullptr);
-    return ud->value;
-  }
-
   Engine* engine() const;
 
-  static Object create(const Class & c);
-
-  inline const std::shared_ptr<ObjectImpl> & impl() const { return d; }
-
-  Object & operator=(const Object & other) = default;
-  bool operator==(const Object & other) const;
-  inline bool operator!=(const Object & other) const { return !operator==(other); }
+  Object& operator=(const Object &) = default;
+  bool operator==(const Object& other) const;
 
 private:
-  std::shared_ptr<ObjectImpl> d;
+  Value d;
 };
+
+inline bool operator!=(const Object& lhs, const Object& rhs) { return !(lhs == rhs); }
 
 } // namespace script
 

@@ -62,15 +62,11 @@ bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl)
       nl->typeResult = targ.type;
     else if (targ.kind == TemplateArgument::BoolArgument)
     {
-      Value val = engine()->newBool(targ.boolean);
-      engine()->manage(val);
-      nl->valueResult = val;
+      nl->valueResult = engine()->newBool(targ.boolean);
     }
     else if (targ.kind == TemplateArgument::IntegerArgument)
     {
-      Value val = engine()->newInt(targ.integer);
-      engine()->manage(val);
-      nl->valueResult = val;
+      nl->valueResult = engine()->newInt(targ.integer);
     }
     else if (targ.kind == TemplateArgument::PackArgument)
       throw std::runtime_error{ "Parameter packs not implemented yet" };

@@ -29,8 +29,6 @@ Value ValueConstructor::fundamental(Engine *e, const Type & t)
 std::shared_ptr<program::Expression> ValueConstructor::fundamental(Engine *e, const Type & t, bool copy)
 {
   Value val = fundamental(e, t);
-  e->manage(val);
-
   auto lit = program::Literal::New(val);
   if (copy)
     return program::Copy::New(t, lit);

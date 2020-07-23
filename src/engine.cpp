@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -42,7 +42,6 @@
 #include "script/private/lambda_p.h"
 #include "script/private/module_p.h"
 #include "script/private/namespace_p.h"
-#include "script/private/object_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/scope_p.h"
 #include "script/private/script_p.h"
@@ -57,7 +56,6 @@ namespace script
 
 EngineImpl::EngineImpl(Engine *e)
   : engine(e)
-  , garbage_collector_running(false)
 {
 
 }
@@ -66,9 +64,7 @@ Value EngineImpl::default_construct(const Type & t, const Function & ctor)
 {
   if (!ctor.isNull())
   {
-    Value ret = engine->allocate(t.withoutRef());
-    ctor.invoke({ ret });
-    return ret;
+    return ctor.invoke({ Value() });
   }
   else
   {
@@ -94,9 +90,7 @@ Value EngineImpl::copy(const Value & val, const Function & copyctor)
 {
   if (!copyctor.isNull())
   {
-    Value ret = engine->allocate(val.type());
-    copyctor.invoke({ ret, val });
-    return ret;
+    return copyctor.invoke({ Value(), val });
   }
   else
   {
@@ -112,8 +106,6 @@ void EngineImpl::destroy(const Value & val, const Function & dtor)
   {
     dtor.invoke({ val });
   }
-
-  impl->clear();
 
   impl->type = 0;
   impl->engine = nullptr;
@@ -243,9 +235,6 @@ Engine::Engine()
  * \brief Destroys the script engine
  *
  * This function destroys the global namespace and all the modules.
- * All variables registered for garbage collection are also destroyed 
- * in the reverse order they have been added, regarless of the value 
- * of their reference counter.
  */
 Engine::~Engine()
 {
@@ -257,16 +246,6 @@ Engine::~Engine()
 
   while (!d->scripts.empty())
     d->destroy(d->scripts.back());
-
-  {
-    d->garbage_collector_running = true;
-    size_t s = d->garbageCollector.size();
-    while (s-- > 0)
-    {
-      destroy(d->garbageCollector[s]);
-    }
-    d->garbageCollector.clear();
-  }
 
   d->typesystem = nullptr;
 }
@@ -310,9 +289,7 @@ TypeSystem* Engine::typeSystem() const
  */
 Value Engine::newBool(bool bval)
 {
-  Value v{ new ValueImpl{Type::Boolean, this} };
-  v.impl()->set_bool(bval);
-  return v;
+  return Value(new CppValue<bool>(this, bval));
 }
 
 /*!
@@ -321,9 +298,7 @@ Value Engine::newBool(bool bval)
  */
 Value Engine::newChar(char cval)
 {
-  Value v{ new ValueImpl{ Type::Char, this } };
-  v.impl()->set_char(cval);
-  return v;
+  return Value(new CppValue<char>(this, cval));
 }
 
 /*!
@@ -332,9 +307,7 @@ Value Engine::newChar(char cval)
  */
 Value Engine::newInt(int ival)
 {
-  Value v{ new ValueImpl{ Type::Int, this } };
-  v.impl()->set_int(ival);
-  return v;
+  return Value(new CppValue<int>(this, ival));
 }
 
 /*!
@@ -343,9 +316,7 @@ Value Engine::newInt(int ival)
  */
 Value Engine::newFloat(float fval)
 {
-  Value v{ new ValueImpl{ Type::Float, this } };
-  v.impl()->set_float(fval);
-  return v;
+  return Value(new CppValue<float>(this, fval));
 }
 
 /*!
@@ -354,9 +325,7 @@ Value Engine::newFloat(float fval)
  */
 Value Engine::newDouble(double dval)
 {
-  Value v{ new ValueImpl{ Type::Double, this } };
-  v.impl()->set_double(dval);
-  return v;
+  return Value(new CppValue<double>(this, dval));
 }
 
 /*!
@@ -365,9 +334,7 @@ Value Engine::newDouble(double dval)
  */
 Value Engine::newString(const String & sval)
 {
-  Value v{ new ValueImpl{ Type::String, this } };
-  v.impl()->set_string(sval);
-  return v;
+  return Value(new CppValue<String>(this, sval));
 }
 
 /*!
@@ -471,19 +438,15 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
     else if (selected.isDeleted())
       throw ConstructionError{ EngineError::ConstructorIsDeleted };
 
-    Value result = allocate(t.withoutRef());
-
     Locals arguments;
-    arguments.push(result);
+    arguments.push(Value::Void);
 
     for (const auto& a : args)
     {
       arguments.push(a);
     }
 
-    selected.call(arguments);
-
-    return result;
+    return selected.call(arguments);
   }
   else if (t.isFundamentalType())
   {
@@ -535,99 +498,6 @@ void Engine::destroy(Value val)
     Function dtor = typeSystem()->getClass(val.type()).destructor();
     dtor.invoke({ val });
   }
-
-  free(val);
-}
-
-/*!
- * \fn void manage(Value val)
- * \param value which lifetime is to be managed
- * \brief Adds a value to the garbage collector.
- *
- * By calling this function, you ask the engine to take care of 
- * destroying the value when it is no longer used.
- * Actual destruction takes place any time after the object is no longer 
- * reachable.
- * It is safe to call this function multiple times with the same value.
- *
- * \sa Value::isManaged
- */
-void Engine::manage(Value val)
-{
-  if (val.isManaged() || val.isReference())
-    return;
-
-  d->garbageCollector.push_back(val);
-  val.impl()->type = val.impl()->type.withFlag(Type::ManagedFlag);
-}
-
-/*!
- * \fn void garbageCollect()
- * \brief Runs garbage collection.
- *
- * The engine destroys all values that are no longer reachable.
- */
-void Engine::garbageCollect()
-{
-  if (d->garbage_collector_running)
-    return;
-
-  d->garbage_collector_running = true;
-
-  std::vector<Value> temp;
-  // we cannot use for-range loop here because iterators might be invalidated 
-  // during the call to a destructor...
-  for (size_t i(0); i < d->garbageCollector.size(); ++i)
-  {
-    const Value & val = d->garbageCollector.at(i);
-    if (val.impl()->ref > 1)
-    {
-      temp.push_back(val);
-      continue;
-    }
-
-    destroy(val);
-  }
-
-  std::swap(d->garbageCollector, temp);
-
-  d->garbage_collector_running = false;
-}
-
-/*!
- * \fn Value allocate(const Type & t)
- * \param type of the value
- * \brief Creates an uninitialized value of the given type
- *
- * The returned value is left uninitialized. It is your responsability to 
- * assign it a value or manually call a constructor on it before using it.
- * Unless stated otherwise, all functions in the library expect initialized values.
- * There is no way to detect if a value is initialized or not, you have to remember 
- * the initialization-state of each value manually.
- */
-Value Engine::allocate(const Type & t)
-{
-  Value v{ new ValueImpl{ t, this } };
-  return v;
-}
-
-/*!
- * \fn void free(Value & v)
- * \param input value
- * \brief Transfer ownership of the value back to the engine.
- *
- * No destructor is called on the value, this function assumes that the value has 
- * already been destroyed (by manually calling a destructor) or never was initialized 
- * (for example after a call to \m allocate).
- */
-void Engine::free(Value & v)
-{
-  auto *impl = v.impl();
-
-  impl->clear();
-
-  impl->type = 0;
-  impl->engine = nullptr;
 }
 
 /*!
@@ -664,11 +534,6 @@ static Value copy_fundamental(const Value & val, Engine *e)
   std::abort();
 }
 
-static Value copy_enumvalue(const Value & val, Engine *e)
-{
-  return Value::fromEnumerator(val.toEnumerator());
-}
-
 static Lambda copy_lambda(const Lambda & l, Engine *e)
 {
   auto ret = std::make_shared<LambdaImpl>(l.closureType());
@@ -694,9 +559,14 @@ static Lambda copy_lambda(const Lambda & l, Engine *e)
 Value Engine::copy(const Value & val)
 {
   if (val.type().isFundamentalType())
+  {
     return copy_fundamental(val, this);
+  }
   else if (val.type().isEnumType())
-    return copy_enumvalue(val, this);
+  {
+    Enum enm = typeSystem()->getEnum(val.type());
+    return enm.impl()->copy.invoke({ val });
+  }
   else if (val.type().isObjectType())
   {
     Class cla = typeSystem()->getClass(val.type());
@@ -704,16 +574,16 @@ Value Engine::copy(const Value & val)
     if (copyCtor.isNull() || copyCtor.isDeleted())
       throw CopyError{};
 
-    Value object = allocate(cla.id());
-    copyCtor.invoke({ object, val });
-    return object;
+    return copyCtor.invoke({ Value(), val });
   }
   else if (val.type().isFunctionType())
+  {
     return Value::fromFunction(val.toFunction(), val.type().baseType());
+  }
   else if (val.type().isClosureType())
+  {
     return Value::fromLambda(copy_lambda(val.toLambda(), this));
-
-  /// TODO : implement copy of closures and functions
+  }
 
   throw CopyError{};
 }

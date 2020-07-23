@@ -32,32 +32,29 @@ namespace string
 // String();
 Value default_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  that.impl()->set_string(String{});
-  return that;
+  c->thisObject().init<String>();
+  return c->thisObject();
 }
 
 // String(const String & other);
 Value copy_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  that.impl()->set_string(c->arg(1).toString());
-  return that;
+  c->thisObject().init<String>(script::get<String>(c->arg(1)));
+  return c->thisObject();
 }
 
 // String(char c);
 Value char_ctor(FunctionCall *c)
 {
-  Value that = c->thisObject();
-  that.impl()->set_string(String{ c->arg(1).toChar() });
-  return that;
+  c->thisObject().init<String>(String{ c->arg(1).toChar() });
+  return c->thisObject();
 }
 
 // ~String();
 Value dtor(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->clear();
+  script::get<String>(that).clear();
   return that;
 }
 
@@ -65,7 +62,7 @@ Value dtor(FunctionCall *c)
 Value at(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
   const int position = c->arg(1).toInt();
 
@@ -76,14 +73,14 @@ Value at(FunctionCall *c)
 Value capacity(FunctionCall *c)
 {
   Value that = c->thisObject();
-  return c->engine()->newInt(that.impl()->get_string().capacity());
+  return c->engine()->newInt(script::get<String>(that).capacity());
 }
 
 // void String::clear();
 Value clear(FunctionCall *c)
 {
   Value that = c->thisObject();
-  that.impl()->get_string().clear();
+  script::get<String>(that).clear();
   return Value::Void;
 }
 
@@ -91,14 +88,14 @@ Value clear(FunctionCall *c)
 Value empty(FunctionCall *c)
 {
   Value that = c->thisObject();
-  return c->engine()->newBool(that.impl()->get_string().empty());
+  return c->engine()->newBool(script::get<String>(that).empty());
 }
 
 // String & erase(int position, int n);
 Value erase(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
 
   const int position = c->arg(1).toInt();
   const int n = c->arg(2).toInt();
@@ -112,10 +109,10 @@ Value erase(FunctionCall *c)
 Value insert(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
 
   const int position = c->arg(1).toInt();
-  const String & str = c->arg(2).impl()->get_string();
+  const String& str = script::get<String>(c->arg(2));
 
   self.insert(position, str);
 
@@ -127,7 +124,7 @@ Value insert(FunctionCall *c)
 Value length(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
   return c->engine()->newInt(self.size());
 }
 
@@ -135,11 +132,11 @@ Value length(FunctionCall *c)
 Value replace(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
 
   const int pos = c->arg(1).toInt();
   const int count = c->arg(2).toInt();
-  const String & str = c->arg(3).impl()->get_string();
+  const String& str = script::get<String>(c->arg(3));
 
   self.replace(pos, count, str);
 
@@ -150,9 +147,9 @@ Value replace(FunctionCall *c)
 Value swap(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
 
-  auto & other = c->arg(1).impl()->get_string();
+  auto& other = script::get<String>(c->arg(1));
 
   self.swap(other);
 
@@ -166,9 +163,9 @@ namespace operators
 Value eq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self == other);
 }
@@ -177,9 +174,9 @@ Value eq(FunctionCall *c)
 Value neq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self != other);
 }
@@ -188,9 +185,9 @@ Value neq(FunctionCall *c)
 Value greater(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self > other);
 }
@@ -199,9 +196,9 @@ Value greater(FunctionCall *c)
 Value geq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self >= other);
 }
@@ -210,9 +207,9 @@ Value geq(FunctionCall *c)
 Value less(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self < other);
 }
@@ -221,9 +218,9 @@ Value less(FunctionCall *c)
 Value leq(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newBool(self <= other);
 }
@@ -232,9 +229,9 @@ Value leq(FunctionCall *c)
 Value assign(FunctionCall *c)
 {
   Value that = c->thisObject();
-  auto & self = that.impl()->get_string();
+  auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   self = other;
 
@@ -245,9 +242,9 @@ Value assign(FunctionCall *c)
 Value add(FunctionCall *c)
 {
   Value that = c->thisObject();
-  const auto & self = that.impl()->get_string();
+  const auto& self = script::get<String>(that);
 
-  const auto & other = c->arg(1).impl()->get_string();
+  const auto& other = script::get<String>(c->arg(1));
 
   return c->engine()->newString(self + other);
 }

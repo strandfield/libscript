@@ -34,44 +34,38 @@ namespace array
 // Array<T>();
 Value default_ctor(FunctionCall *c)
 {
-  Value that = c->arg(0);
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->typeSystem()->getClass(that.type()).data());
+  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->callee().memberOf().data());
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
-  that.impl()->set_array(Array{ array_impl });
-  return that;
+  c->thisObject() = Value(new ArrayValue(Array(array_impl)));
+  return c->thisObject();
 }
 
 // Array<T>(const Array<T> & other);
 Value copy_ctor(FunctionCall *c)
 {
-  Value that = c->arg(0);
   Array other = c->arg(1).toArray();
   other.detach();
-  that.impl()->set_array(other);
-  return that;
+  c->thisObject() = Value(new ArrayValue(other));
+  return c->thisObject();
 }
 
 // Array<T>(const int & size);
 Value size_ctor(FunctionCall *c)
 {
-  Value that = c->arg(0);
-
-  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->typeSystem()->getClass(that.type()).data());
+  auto array_data = std::dynamic_pointer_cast<SharedArrayData>(c->callee().memberOf().data());
 
   const int size = c->arg(1).toInt();
   auto array_impl = std::make_shared<ArrayImpl>(array_data->data, c->engine());
   array_impl->resize(size);
 
-  that.impl()->set_array(Array{ array_impl });
-  return that;
+  c->thisObject() = Value(new ArrayValue(Array(array_impl)));
+  return c->thisObject();
 }
 
 // ~Array<T>();
 Value dtor(FunctionCall *c)
 {
-  Value that = c->arg(0);
-  that.impl()->clear();
-  return that;
+  return script::Value::Void;
 }
 
 // int Array<T>::size() const;

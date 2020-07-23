@@ -123,7 +123,7 @@ Value & FunctionCall::returnValue()
 
 ThisObject FunctionCall::thisObject() const
 {
-  return ThisObject(this->ec->stack[this->mStackIndex + 1]);
+  return ThisObject(this->ec->stack[this->mStackIndex + 1], this->engine());
 }
 
 Value FunctionCall::arg(int index) const

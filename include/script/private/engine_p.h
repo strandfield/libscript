@@ -44,9 +44,6 @@ public:
 
   Namespace rootNamespace;
 
-  std::vector<Value> garbageCollector;
-  bool garbage_collector_running;
-
   std::vector<Script> scripts;
   std::vector<Module> modules;
 

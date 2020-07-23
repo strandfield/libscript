@@ -44,11 +44,6 @@ TEST(NameLookup, variable) {
   e.setup();
 
   Value n = e.newInt(3);
-
-  ASSERT_FALSE(n.isManaged());
-  e.manage(n);
-  ASSERT_TRUE(n.isManaged());
-
   e.rootNamespace().addValue("n", n);
 
   NameLookup lookup = NameLookup::resolve("n", e.rootNamespace());
@@ -102,7 +97,6 @@ TEST(NameLookup, nested) {
   Scope nested_scope{ nested, e.rootNamespace() };
 
   Value n = e.newInt(3);
-  e.manage(n);
   e.rootNamespace().addValue("n", n);
 
   NameLookup lookup = NameLookup::resolve("n", nested_scope);
@@ -110,7 +104,6 @@ TEST(NameLookup, nested) {
   ASSERT_EQ(lookup.variable().toInt(), 3);
 
   n = e.newInt(4);
-  e.manage(n);
   nested.addValue("n", n);
 
   lookup = NameLookup::resolve("n", nested_scope);
@@ -176,7 +169,6 @@ TEST(NameLookup, parsing_nested_name) {
 
   Namespace nested = e.rootNamespace().newNamespace("nested");
   Value n = e.newInt(3);
-  e.manage(n);
   nested.addValue("n", n);
 
   NameLookup lookup = NameLookup::resolve("nested::n", e.rootNamespace());

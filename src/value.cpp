@@ -14,335 +14,85 @@
 #include "script/typesystem.h"
 
 #include "script/private/engine_p.h"
-#include "script/private/object_p.h"
+#include "script/private/enum_p.h"
 
 #include <cstring>
 
 namespace script
 {
 
-ValueImpl::ValueImpl(Type t, Engine* e) : ref(0), type(t), engine(e)
+const Value Value::Void = Value{ new VoidValue() };
+
+IValue::~IValue()
 {
-  std::memset(data.memory, 0, Value::MemoryBufferSize);
-  which = FundamentalsField;
+
 }
 
-ValueImpl::Data::Data()
+bool IValue::is_void() const
 {
-  fundamentals.boolean = false;
+  return false;
 }
 
-ValueImpl::Data::~Data()
+bool IValue::is_reference() const
 {
-  fundamentals.boolean = false;
+  return false;
 }
 
-ValueImpl::ValueImpl(const ValueImpl& other)
-  : ref(other.ref), type(other.type), engine(other.engine)
+bool IValue::is_function() const
 {
-  assert(type.isNull() || type == Type::Void);
+  return false;
 }
 
-ValueImpl::~ValueImpl()
+bool IValue::is_lambda() const
 {
-  clear();
+  return false;
 }
 
-String& ValueImpl::get_string()
+bool IValue::is_array() const
 {
-  assert(this->which == StringField);
-  return data.string;
+  return false;
 }
 
-void ValueImpl::set_string(const String& sval)
+bool IValue::is_initializer_list() const
 {
-  if (this->which != StringField)
-  {
-    clear();
-    new (&data.string) String{ sval };
-    which = StringField;
-  }
-  else
-  {
-    data.string = sval;
-  }
-
-  data_ptr = &(data.string);
+  return false;
 }
 
-bool ValueImpl::is_object() const
+bool IValue::is_enumerator() const
 {
-  return which == ObjectField && !data.object.isNull();
+  return false;
 }
 
-const Object& ValueImpl::get_object() const
+bool IValue::is_cpp_enum() const
 {
-  assert(which == ObjectField);
-
-  return data.object;
+  return false;
 }
 
-void ValueImpl::init_object()
+int IValue::get_cpp_enum_value() const
 {
-  if (which != ObjectField)
-  {
-    clear();
-
-    auto impl = std::make_shared<ObjectImpl>(this->engine->typeSystem()->getClass(this->type));
-    new (&data.object) Object{ impl };
-
-    which = ObjectField;
-  }
-  else
-  {
-    if (!data.object.isNull())
-      return;
-
-    auto impl = std::make_shared<ObjectImpl>(this->engine->typeSystem()->getClass(this->type));
-    data.object = Object{ impl };
-  }
-
-  data_ptr = &(data.object);
+  return -1;
 }
 
-void ValueImpl::push_member(const Value & val)
+size_t IValue::size() const
 {
-  assert(which == ObjectField);
-
-  data.object.push(val);
+  return 0;
 }
 
-Value ValueImpl::pop_member()
+void IValue::push(const Value& val)
 {
-  assert(which == ObjectField);
 
-  return data.object.pop();
 }
 
-Value ValueImpl::get_member(size_t i) const
+Value IValue::pop()
 {
-  assert(which == ObjectField);
-
-  return data.object.at(i);
+  throw std::runtime_error{ "Value does not have any member" };
 }
 
-size_t ValueImpl::member_count() const
+Value& IValue::at(size_t index)
 {
-  assert(which == ObjectField);
-
-  return data.object.size();
+  throw std::runtime_error{ "Value does not have any member" };
 }
 
-
-bool ValueImpl::is_array() const
-{
-  return which == ArrayField && !data.array.isNull();
-}
-
-const Array& ValueImpl::get_array() const
-{
-  assert(which == ArrayField);
-
-  return data.array;
-}
-
-void ValueImpl::set_array(const Array & aval)
-{
-  if (which != ArrayField)
-  {
-    clear();
-
-    new (&data.array) Array{ aval };
-
-    which = ArrayField;
-  }
-  else
-  {
-    data.array = aval;
-  }
-}
-
-bool ValueImpl::is_function() const
-{
-  return which == FunctionField && !data.function.isNull();
-}
-
-const Function& ValueImpl::get_function() const
-{
-  assert(which == FunctionField);
-
-  return *static_cast<Function*>(data_ptr);
-}
-
-void ValueImpl::set_function(const Function & fval)
-{
-  if (which != FunctionField)
-  {
-    clear();
-
-    new (&data.function) Function{ fval };
-
-    which = FunctionField;
-  }
-  else
-  {
-    data.function = fval;
-  }
-
-  data_ptr = &(data.function);
-}
-
-bool ValueImpl::is_lambda() const
-{
-  return which == LambdaField && !data.lambda.isNull();
-}
-
-const Lambda& ValueImpl::get_lambda() const
-{
-  assert(which == LambdaField);
-
-  return *static_cast<Lambda*>(data_ptr);
-}
-
-void ValueImpl::set_lambda(const Lambda & lval)
-{
-  if (which != LambdaField)
-  {
-    clear();
-
-    new (&data.lambda) Lambda{ lval };
-
-    which = LambdaField;
-  }
-  else
-  {
-    data.lambda = lval;
-  }
-
-  data_ptr = &(data.lambda);
-}
-
-const Enumerator& ValueImpl::get_enumerator() const
-{
-  assert(which == EnumeratorField);
-
-  return *static_cast<Enumerator*>(data_ptr);
-}
-
-void ValueImpl::set_enumerator(const Enumerator & en)
-{
-  if (which != EnumeratorField)
-  {
-    clear();
-
-    new (&data.enumerator) Enumerator{ en };
-
-    which = EnumeratorField;
-  }
-  else
-  {
-    data.enumerator = en;
-  }
-
-  data_ptr = &(data.enumerator);
-}
-
-bool ValueImpl::is_initializer_list() const
-{
-  return which == InitListField;
-}
-
-InitializerList ValueImpl::get_initializer_list() const
-{
-  assert(which == InitListField);
-
-  return *static_cast<InitializerList*>(data_ptr);
-}
-
-void ValueImpl::set_initializer_list(const InitializerList & il)
-{
-  if (which != InitListField)
-  {
-    clear();
-
-    new (&data.initializer_list) InitializerList{ il };
-
-    which = InitListField;
-  }
-  else
-  {
-    data.initializer_list = il;
-  }
-
-  data_ptr = &(data.initializer_list);
-}
-
-void ValueImpl::clear()
-{
-  assert(which != MemoryField);
-
-  switch (which)
-  {
-  case FundamentalsField:
-    return;
-  case StringField:
-    data.string.~String();
-    break;
-  case ObjectField:
-    data.object.~Object();
-    break;
-  case ArrayField:
-    data.array.~Array();
-    break;
-  case FunctionField:
-    data.function.~Function();
-    break;
-  case LambdaField:
-    data.lambda.~Lambda();
-    break;
-  case EnumeratorField:
-    data.enumerator.~Enumerator();
-    break;
-  case InitListField:
-    data.initializer_list.~InitializerList();
-    break;
-  }
-
-  data.fundamentals.boolean = false;
-  which = FundamentalsField;
-}
-
-void* ValueImpl::acquire_memory()
-{
-  if (which != ValueImpl::MemoryField)
-    clear();
-
-  which = ValueImpl::MemoryField;
-  data_ptr = &(data.memory);
-  return &(data.memory);
-}
-
-void ValueImpl::release_memory()
-{
-  assert(which == MemoryField);
-  data.fundamentals.boolean = false;
-  which = FundamentalsField;
-}
-
-void* ValueImpl::get_data() const
-{
-  return data_ptr;
-}
-
-static ValueImpl construct_void()
-{
-  ValueImpl vs{ Type::Void, nullptr };
-  vs.ref = 1;
-  return vs;
-}
-
-ValueImpl void_struct = construct_void();
-const Value Value::Void = Value{ &void_struct };
 
 Value::Value()
   : d(nullptr)
@@ -369,7 +119,7 @@ Value::~Value()
   }
 }
 
-Value::Value(ValueImpl * impl)
+Value::Value(IValue* impl)
   : d(impl)
 {
   if (d)
@@ -394,7 +144,7 @@ bool Value::isConst() const
 
 bool Value::isReference() const
 {
-  return d->type.isReference();
+  return d->is_reference();
 }
 
 bool Value::isBool() const
@@ -434,7 +184,7 @@ bool Value::isString() const
 
 bool Value::isObject() const
 {
-  return d->is_object();
+  return d->type.isObjectType();
 }
 
 bool Value::isArray() const
@@ -479,104 +229,83 @@ String Value::toString() const
 
 Function Value::toFunction() const
 {
-  return d->get_function();
+  return d->is_function() ? static_cast<FunctionValue*>(d)->function : Function();
 }
 
 Object Value::toObject() const
 {
-  return d->get_object();
+  return Object(*this);
 }
 
 Array Value::toArray() const
 {
-  return d->get_array();
+  return d->is_array() ? static_cast<ArrayValue*>(d)->array : Array();
 }
 
 Enumerator Value::toEnumerator() const
 {
-  return d->get_enumerator();
+  if (d->is_enumerator())
+    return static_cast<EnumeratorValue*>(d)->value;
+  else if (d->is_cpp_enum())
+    return Enumerator(engine()->typeSystem()->getEnum(type()), d->get_cpp_enum_value());
+  else
+    return Enumerator();
 }
 
 Lambda Value::toLambda() const
 {
-  return d->get_lambda();
+  return d->is_lambda() ? static_cast<LambdaValue*>(d)->lambda : Lambda();
 }
 
 InitializerList Value::toInitializerList() const
 {
-  return d->get_initializer_list();
-}
-
-void* Value::memory() const
-{
-  assert(d->which == ValueImpl::MemoryField);
-
-  return &(d->data.memory);
+  return d->is_initializer_list() ? static_cast<InitializerListValue*>(d)->initlist : InitializerList();
 }
 
 void* Value::data() const
 {
-  return d->get_data();
+  return d->ptr();
+}
+
+void* Value::ptr() const
+{
+  return d->ptr();
 }
 
 Value Value::fromEnumerator(const Enumerator & ev)
 {
   if (ev.isNull())
     return Value{}; // TODO : should we throw
-  Engine *e = ev.enumeration().engine();
-  Value ret = e->allocate(ev.enumeration().id());
-  ret.impl()->set_enumerator(ev);
-  return ret;
+  // An enumerator might be represented by a C++ enum and not by Enumerator
+  Enum enm = ev.enumeration();
+  Value arg = enm.engine()->newInt(ev.value());
+  return enm.impl()->from_int.invoke({ arg });
 }
 
 Value Value::fromFunction(const Function & f, const Type & ft)
 {
   if (f.isNull())
     return Value{}; // TODO : should we throw
-  Engine *e = f.engine();
-  Value ret = e->allocate(ft);
-  ret.impl()->set_function(f);
-  return ret;
+  return Value(new FunctionValue(f, ft));
 }
 
 Value Value::fromArray(const Array & a)
 {
   if (a.isNull())
     return Value{};
-  Engine *e = a.engine();
-  Value ret = e->allocate(a.typeId());
-  ret.impl()->set_array(a);
-  return ret;
+  return Value(new ArrayValue(a));
 }
 
 Value Value::fromLambda(const Lambda & obj)
 {
   if (obj.isNull())
     return Value{};
-  Engine *e = obj.engine();
-  Value ret = e->allocate(obj.closureType().id());
-  ret.impl()->set_lambda(obj);
-  return ret;
+  return Value(new LambdaValue(obj));
 }
 
 Engine* Value::engine() const
 {
   return d->engine;
-}
-
-bool Value::isManaged() const
-{
-  return d->type.testFlag(Type::ManagedFlag);
-}
-
-void* Value::acquireMemory()
-{
-  return d->acquire_memory();
-}
-
-void Value::releaseMemory()
-{
-  d->release_memory();
 }
 
 Value & Value::operator=(const Value & other)
@@ -593,17 +322,12 @@ Value & Value::operator=(const Value & other)
   return *(this);
 }
 
-bool Value::operator==(const Value & other) const
-{
-  return d == other.d;
-}
-
 namespace details
 {
 
 int get_enum_value(const Value& val)
 {
-    return val.impl()->get_enumerator().value();
+  return val.toEnumerator().value();
 }
 
 } // namespace details
@@ -611,39 +335,38 @@ int get_enum_value(const Value& val)
 /* get<T>() specializations */
 
 template<>
-bool& get<bool>(const Value& val)
+Function& get<Function>(const Value& val)
 {
-  return val.impl()->get_bool();
+  assert(val.impl()->is_function());
+  return static_cast<FunctionValue*>(val.impl())->function;
 }
 
 template<>
-char& get<char>(const Value& val)
+Array& get<Array>(const Value& val)
 {
-  return val.impl()->get_char();
+  assert(val.impl()->is_array());
+  return static_cast<ArrayValue*>(val.impl())->array;
 }
 
 template<>
-int& get<int>(const Value& val)
+Enumerator& get<Enumerator>(const Value& val)
 {
-  return val.impl()->get_int();
+  assert(val.impl()->is_enumerator());
+  return static_cast<EnumeratorValue*>(val.impl())->value;
 }
 
 template<>
-float& get<float>(const Value& val)
+Lambda& get<Lambda>(const Value& val)
 {
-  return val.impl()->get_float();
+  assert(val.impl()->is_lambda());
+  return static_cast<LambdaValue*>(val.impl())->lambda;
 }
 
 template<>
-double& get<double>(const Value& val)
+InitializerList& get<InitializerList>(const Value& val)
 {
-  return val.impl()->get_double();
-}
-
-template<>
-String& get<String>(const Value& val)
-{
-  return val.impl()->get_string();
+  assert(val.impl()->is_initializer_list());
+  return static_cast<InitializerListValue*>(val.impl())->initlist;
 }
 
 } // namespace script

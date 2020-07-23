@@ -72,8 +72,6 @@ void Script::run()
   if (d->program.isNull())
     throw std::runtime_error{ "Script was not compiled" };
 
-  for (const auto & v : d->globals)
-    engine()->manage(v);
   d->globals.clear();
 
   d->program.invoke({});

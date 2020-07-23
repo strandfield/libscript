@@ -83,12 +83,6 @@ public:
 
   ThisObject thisObject() const;
 
-  /// TODO: remove these
-  void initObject() { thisObject().init(); }
-  void push(const Value& val) { thisObject().push(val); }
-  Value pop() { return thisObject().pop(); }
-  void destroyObject() { thisObject().destroy(); }
-
   ExecutionContext * executionContext() const;
   Engine * engine() const;
   TypeSystem* typeSystem() const;

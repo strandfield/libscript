@@ -36,10 +36,9 @@ Name ClassImpl::get_name() const
   return Name{ this->name };
 }
 
-Value ClassImpl::add_uninitialized_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)
+Value ClassImpl::add_default_constructed_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)
 {
-  Value ret = this->engine->allocate(t);
-  ret.impl()->type.setFlag(Type::UninitializedFlag);
+  Value ret = this->engine->construct(t, {});
   this->staticMembers[name] = Class::StaticDataMember{ name, ret, aspec };
   return ret;
 }

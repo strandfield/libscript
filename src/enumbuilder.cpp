@@ -25,9 +25,20 @@ namespace script
 namespace callbacks
 {
 
+Value enum_from_int(interpreter::FunctionCall* c)
+{
+  Enumerator ev{ c->engine()->typeSystem()->getEnum(c->callee().returnType()), c->arg(0).toInt() };
+  return Value(new EnumeratorValue(ev));
+}
+
+Value enum_copy(interpreter::FunctionCall* c)
+{
+  return Value(new EnumeratorValue(c->arg(0).toEnumerator()));
+}
+
 Value enum_assignment(interpreter::FunctionCall *c)
 {
-  c->arg(0).impl()->set_enumerator(c->arg(1).toEnumerator());
+  script::get<Enumerator>(c->arg(0)) = c->arg(1).toEnumerator();
   return c->arg(0);
 }
 
@@ -43,10 +54,29 @@ Enum EnumBuilder::get()
   
   symbol.engine()->typeSystem()->impl()->register_enum(result, id);
 
-  BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
-  auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine(), FunctionFlags{});
-  op->implementation.callback = callbacks::enum_assignment;
-  impl->assignment = Operator{ op };
+  // E(int)
+  {
+    DynamicPrototype proto{ Type(result.id()), {Type::cref(Type::Int)} };
+    auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
+    ctor->implementation.callback = this->from_int_callback != nullptr ? this->from_int_callback : callbacks::enum_from_int;
+    impl->from_int = Function(ctor);
+  }
+
+  // E(const E&)
+  {
+    DynamicPrototype proto{ Type(result.id()), {Type::cref(result.id())} };
+    auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
+    ctor->implementation.callback = this->copy_callback != nullptr ? this->copy_callback : callbacks::enum_copy;
+    impl->copy = Function(ctor);
+  }
+
+  // E operator=(const E&)
+  {
+    BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
+    auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine(), FunctionFlags{});
+    op->implementation.callback = this->assignment_callback != nullptr ? this->assignment_callback : callbacks::enum_assignment;
+    impl->assignment = Operator{ op };
+  }
 
   if (symbol.isClass())
     std::static_pointer_cast<ClassImpl>(symbol.impl())->enums.push_back(result);

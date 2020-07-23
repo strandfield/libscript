@@ -1,119 +1,94 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/object.h"
-#include "script/private/object_p.h"
+
+#include "script/class.h"
+#include "script/engine.h"
+#include "script/typesystem.h"
 
 namespace script
 {
 
 /*!
  * \class Object
- * \brief Provides a representation of classes instances.
+ * \brief provides functions for Value that are objects
  *
- * The Object class provides a very basic way to represent instances of 
- * a class, i.e. objects.
- * It is basically implemented as a a \t Class and a vector of \t{Value}s (the data-members).
+ * The Object class provides a uniform way to access the data members of an object.
  *
- * This class is the default representation of objects in the library. 
- * This means that it is used to represent objects of user-defined types introduced in 
- * scripts.
+ * An Object can be constructed from any Value. If the Value represents an Object, 
+ * isValid() will return true.
  *
- * This class is implicitly shared and has a null-state that can be checked with \m isNull. 
- * Unless stated otherwise, all methods in this class assumes that the object is not null.
  */
 
 /*!
  * \fn Object()
- * \brief Constructs a null object.
+ * \brief constructs a null object
  */
 
 /*!
- * \fn Object(const Object & other)
- * \brief Copy constructor.
+ * \fn Object(const Object& other)
+ * \brief copy constructor
  *
- * Warning: the class is implicitly shared so this does not copy the data members.
+ * Warning: this does not copy the underlying object.
  */
 
 
 /*!
- * \fn Object(const std::shared_ptr<ObjectImpl> & impl)
- * \brief Constructor used for internal use
+ * \fn Object(const Value& val)
+ * \brief constructs an object from a value
  *
- * Constructs an object from its implementation.
  */
-Object::Object(const std::shared_ptr<ObjectImpl> & impl)
-  : d(impl)
+Object::Object(const Value& val)
+  : d(val.isObject() ? val : Value())
 {
 
 }
 
 /*!
  * \fn bool isNull() const
- * \brief Returns whether the object is null.
+ * \brief returns whether the object is null
  *
  */
 bool Object::isNull() const
 {
-  return d == nullptr;
+  return d.isNull();
 }
 
 /*!
  * \fn Class instanceOf() const
- * \brief Returns the class that was passed upon construction.
+ * \brief returns the class associated with the object
  *
  */
 Class Object::instanceOf() const
 {
-  return d->instanceOf;
+  return d.engine()->typeSystem()->getClass(d.type());
 }
 
 /*!
- * \fn void push(const Value & val)
- * \brief Adds a data-member to the object.
+ * \fn const Value& at(size_t i) const
+ * \brief returns the data-member at the given offset
  *
  */
-void Object::push(const Value & val)
+const Value& Object::at(size_t i) const
 {
-  d->attributes.push_back(val);
-}
-
-/*!
- * \fn Value pop()
- * \brief Pops the last data-member inserted.
- *
- */
-Value Object::pop()
-{
-  auto ret = d->attributes.back();
-  d->attributes.pop_back();
-  return ret;
-}
-
-/*!
- * \fn const Value & at(size_t i) const
- * \brief Returns the data-member at the given offset.
- *
- */
-const Value & Object::at(size_t i) const
-{
-  return d->attributes.at(i);
+  return d.impl()->at(i);
 }
 
 /*!
  * \fn size_t size() const
- * \brief Returns the actual number of data-member in the object.
+ * \brief returns the actual number of data-member in the object
  *
  */
 size_t Object::size() const
 {
-  return d->attributes.size();
+  return d.impl()->size();
 }
 
 /*!
  * \fn Value get(const std::string & attrName) const
- * \brief Returns the data-member with the given name.
+ * \brief returns the data-member with the given name
  *
  * If no such data member exists, this returns a default constructed \t Value.
  */
@@ -123,37 +98,7 @@ Value Object::get(const std::string & attrName) const
   int index = c.attributeIndex(attrName);
   if (index < 0)
     return Value{};
-  return d->attributes[index];
-}
-
-/*!
- * \fn void setUserData(const std::shared_ptr<UserData>& data)
- * \brief Sets the user data on this object.
- */
-
-/*!
- * \fn void setUserData<T>(Args &&...)
- * \brief Sets the user data on this object.
- */
-void Object::setUserData(const std::shared_ptr<UserData>& data)
-{
-  d->data = data;
-}
-
-/*!
- * \fn const std::shared_ptr<UserData>& getUserData() const
- * \brief Retrieves the object's user data.
- */
-
-/*!
-  * \fn T& getUserData<T>()
-  * \brief Retrieves the object's user data.
-  * This function can only be used if the data was previously set 
-  * with setUserData<T>().
-  */
-const std::shared_ptr<UserData>& Object::getUserData() const
-{
-  return d->data;
+  return at(index);
 }
 
 /*!
@@ -163,25 +108,12 @@ const std::shared_ptr<UserData>& Object::getUserData() const
  */
 Engine* Object::engine() const
 {
-  return d->instanceOf.engine();
+  return d.engine();
 }
 
 /*!
- * \fn Object create(const Class & c)
- * \brief Creates a non-null object.
- *
- * This function creates and returns an object with enough space reserved to 
- * store all data-members of the given \t Class.
- * It is your responsability to provides all the data-members by using \m push.
- */
-Object Object::create(const Class & c)
-{
-  return Object{ std::make_shared<ObjectImpl>(c) };
-}
-
-/*!
- * \fn bool operator==(const Object & other) const
- * \brief Tests if two objects are the same object.
+ * \fn bool operator==(const Object& other) const
+ * \brief tests if two objects are the same object
  *
  * This function does not compare based on the object value but rather 
  * the object address.

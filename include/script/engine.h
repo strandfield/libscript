@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -15,7 +15,6 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
-#include "script/thisobject.h"
 
 #include "script/modulecallbacks.h"
 
@@ -154,23 +153,11 @@ public:
   Array newArray(ElementType t, fail_if_not_instantiated_t);
 
   Value construct(Type t, const std::vector<Value> & args);
-  
-  /// TODO: remove (depecated)
-  template<typename InitFunc>
-  Value construct(Type t, InitFunc && f)
-  {
-    Value ret = allocate(t);
-    f(ret);
-    return ret;
-  }
 
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    Value ret = allocate(Type::make<T>());
-    ThisObject self{ ret };
-    self.init<T>(std::forward<Args>(args)...);
-    return ret;
+    return Value(new CppValue<T>(this, T(std::forward<Args>(args)...)));
   }
 
   void destroy(Value val);
@@ -178,24 +165,14 @@ public:
   template<typename T>
   void destroy(Value val)
   {
-    ThisObject self{ val };
-    self.destroy<T>();
-    free(val);
+    /* this is a no-op */
   }
 
   template<typename T>
   Value expose(T& val)
   {
-    Value ret = allocate(Type::make<T&>());
-    ret.d->data_ptr = &val;
-    return ret;
+    return Value(new CppReferenceValue<T>(this, val));
   }
-
-  void manage(Value val);
-  void garbageCollect();
-
-  Value allocate(const Type & t);
-  void free(Value & v);
 
   bool canCopy(const Type & t);
   Value copy(const Value & val);
