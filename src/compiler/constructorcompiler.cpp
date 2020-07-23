@@ -166,7 +166,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateDefault
     else if (parent_default_ctor.isDeleted())
       throw CompilationFailure{ CompilerError::ParentHasDeletedDefaultConstructor };
 
-    parent_ctor_call = program::PlacementStatement::New(this_object->type(), parent_default_ctor, { });
+    parent_ctor_call = program::ConstructionStatement::New(this_object->type(), parent_default_ctor, { });
   }
 
   // Initializating data members
@@ -204,7 +204,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateCopyCon
     else if (parent_copy_ctor.isDeleted())
       throw CompilationFailure{ CompilerError::ParentHasDeletedCopyConstructor };
 
-    parent_ctor_call = program::PlacementStatement::New(this_object->type(), parent_copy_ctor, { other_object });
+    parent_ctor_call = program::ConstructionStatement::New(this_object->type(), parent_copy_ctor, { other_object });
   }
 
   // Initializating data members
@@ -251,7 +251,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
       if (parent_move_ctor.isDeleted())
         throw CompilationFailure{ CompilerError::ParentHasDeletedMoveConstructor };
 
-      parent_ctor_call = program::PlacementStatement::New(this_object->type(), parent_move_ctor, { other_object });
+      parent_ctor_call = program::ConstructionStatement::New(this_object->type(), parent_move_ctor, { other_object });
     }
     else
     {
@@ -261,7 +261,7 @@ std::shared_ptr<program::CompoundStatement> ConstructorCompiler::generateMoveCon
       else if (parent_copy_ctor.isDeleted())
         throw CompilationFailure{ CompilerError::ParentHasDeletedCopyConstructor };
 
-      parent_ctor_call = program::PlacementStatement::New(this_object->type(), parent_copy_ctor, { other_object });
+      parent_ctor_call = program::ConstructionStatement::New(this_object->type(), parent_copy_ctor, { other_object });
     }
   }
 
@@ -347,7 +347,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructor
   Function ctor = resol.selectedOverload();
   const auto & inits = resol.initializations();
   ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
-  return program::PlacementStatement::New(object->type(), ctor, std::move(args));
+  return program::ConstructionStatement::New(object->type(), ctor, std::move(args));
 }
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
@@ -378,7 +378,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCa
   Function ctor = resol.selectedOverload();
   const auto & inits = resol.initializations();
   ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
-  return program::PlacementStatement::New(object->type(), ctor, std::move(args));
+  return program::ConstructionStatement::New(object->type(), ctor, std::move(args));
 }
 
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)

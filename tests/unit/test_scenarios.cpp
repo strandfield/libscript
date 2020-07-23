@@ -13,57 +13,6 @@
 #include "script/typesystem.h"
 #include "script/value.h"
 
-TEST(Scenarios, manual_construction_and_delegate_ctor) {
-  using namespace script;
-
-  const char *source =
-    "  class Foo                  "
-    "  {                          "
-    "  public:                    "
-    "    int n;                   "
-    "  public:                    "
-    "    Foo(int a) : n(a) { }    "
-    "    Foo() : Foo(10) { }      "
-    "    ~Foo() { }               "
-    "  };                         ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  ASSERT_TRUE(success);
-
-  ASSERT_ANY_THROW(engine.typeId("Foo"));
-
-  Type foo_type = engine.typeId("Foo", Scope{ s });
-  Class foo = engine.typeSystem()->getClass(foo_type);
-
-  //// We create a value of type Foo without initializing it
-  //Value val = engine.allocate(foo_type);
-
-  //Function default_ctor = foo.defaultConstructor();
-  //ASSERT_FALSE(default_ctor.isNull());
-
-  //// We manually call Foo's constructor
-  //default_ctor.invoke({ val });
-
-  //Object obj = val.toObject();
-  //ASSERT_EQ(obj.size(), 1);
-
-  //Value n = obj.at(0);
-  //ASSERT_EQ(n.toInt(), 10);
-
-  //Function dtor = foo.destructor();
-  //ASSERT_FALSE(dtor.isNull());
-
-  //// We call the destructor manually
-  //dtor.invoke({ val });
-
-  //// We free the memory
-  //engine.free(val);
-}
-
 #include "script/ast.h"
 #include "script/ast/node.h"
 

@@ -239,17 +239,16 @@ public:
 };
 
 // represent a call to a base constructor or a delegate constructor
-// @TODO: should be renamed as placement does not exist anymore
-struct LIBSCRIPT_API PlacementStatement : public Statement
+struct LIBSCRIPT_API ConstructionStatement : public Statement
 {
   Type object_type;
   Function constructor;
   std::vector<std::shared_ptr<Expression>> arguments;
 public:
-  PlacementStatement(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
-  ~PlacementStatement() = default;
+  ConstructionStatement(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
+  ~ConstructionStatement() = default;
 
-  static std::shared_ptr<PlacementStatement> New(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
+  static std::shared_ptr<ConstructionStatement> New(Type obj_type, const Function & ctor, std::vector<std::shared_ptr<Expression>> && args);
 
   void accept(StatementVisitor &) override;
 };
@@ -291,7 +290,7 @@ public:
   virtual void visit(const ContinueStatement &) = 0;
   virtual void visit(const PopDataMember &) = 0;
   virtual void visit(const InitObjectStatement &) = 0;
-  virtual void visit(const PlacementStatement &) = 0;
+  virtual void visit(const ConstructionStatement &) = 0;
   virtual void visit(const ExpressionStatement &) = 0;
   virtual void visit(const ForLoop &) = 0;
   virtual void visit(const IfStatement &) = 0;

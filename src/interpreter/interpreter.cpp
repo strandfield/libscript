@@ -234,21 +234,21 @@ void Interpreter::visit(const program::IfStatement & is)
   }
 }
 
-void Interpreter::visit(const program::PlacementStatement & placement)
+void Interpreter::visit(const program::ConstructionStatement & construction)
 {
   Invoker invoker{ *mExecutionContext };
 
   mExecutionContext->stack.push(Value::Void);
   mExecutionContext->stack.push(Value::Void);
-  for (const auto & arg : placement.arguments)
+  for (const auto & arg : construction.arguments)
     mExecutionContext->stack.push(eval(arg));
 
-  invoker.push(placement.constructor);
+  invoker.push(construction.constructor);
 
-  invoke(placement.constructor);
+  invoke(construction.constructor);
 
   Value object = mExecutionContext->pop();
-  object.impl()->type = placement.object_type;
+  object.impl()->type = construction.object_type;
 
   mExecutionContext->stack[mExecutionContext->callstack.top()->stackOffset() + 1] = object;
 }

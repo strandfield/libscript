@@ -47,7 +47,7 @@ private:
   void visit(const program::ExpressionStatement &) override;
   void visit(const program::ForLoop &) override;
   void visit(const program::IfStatement &) override;
-  void visit(const program::PlacementStatement &) override;
+  void visit(const program::ConstructionStatement &) override;
   void visit(const program::PushDataMember &) override;
   void visit(const program::PushGlobal &) override;
   void visit(const program::PushValue &) override;

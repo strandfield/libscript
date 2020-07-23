@@ -11,17 +11,24 @@
 namespace script
 {
 
+/*!
+ * \class ThisObject
+ */
 class LIBSCRIPT_API ThisObject
 {
 public:
   ThisObject(Value& val, Engine* e) : m_value(val), m_engine(e) { }
   ~ThisObject() = default;
 
-  void init();
+  void init(script::Type t);
   void push(const Value& val);
   Value pop();
   void destroy();
-
+  
+  /*!
+   * \fn template<typename T, typename...Args> void init<T>(Args &&...)
+   * \brief initializes this with a C++ object
+   */
   template<typename T, typename...Args>
   void init(Args&& ... args)
   {
