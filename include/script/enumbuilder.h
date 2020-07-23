@@ -7,6 +7,7 @@
 #define LIBSCRIPT_ENUM_BUILDER_H
 
 #include "script/symbol.h"
+#include "script/callbacks.h"
 
 #include <stdexcept>
 
@@ -22,14 +23,15 @@ public:
   std::string name;
   bool is_enum_class;
   int id;
+  NativeFunctionSignature from_int_callback = nullptr;
+  NativeFunctionSignature copy_callback = nullptr;
+  NativeFunctionSignature assignment_callback = nullptr;
 
 public:
-  EnumBuilder(const EnumBuilder & ) = default;
+  EnumBuilder(const EnumBuilder&) = default;
   ~EnumBuilder() = default;
 
-  EnumBuilder(const Symbol & s, const std::string & n)
-    : symbol(s), name(n), is_enum_class(false), id(0) { }
-  EnumBuilder(const Symbol & s, std::string && n)
+  EnumBuilder(const Symbol& s, std::string n)
     : symbol(s), name(std::move(n)), is_enum_class(false), id(0) { }
 
   EnumBuilder & setEnumClass(bool on = true) {
@@ -41,6 +43,14 @@ public:
   {
     id = n;
     return (*this);
+  }
+
+  EnumBuilder& setCallbacks(NativeFunctionSignature from_int, NativeFunctionSignature copy, NativeFunctionSignature assign)
+  {
+    from_int_callback = from_int;
+    copy_callback = copy;
+    assignment_callback = assign;
+    return *(this);
   }
 
   Enum get();

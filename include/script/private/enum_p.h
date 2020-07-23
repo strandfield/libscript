@@ -22,6 +22,8 @@ public:
   std::string name;
   bool enumClass;
   std::map<std::string, int> values;
+  Function from_int;
+  Function copy;
   Operator assignment;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
 

@@ -535,11 +535,6 @@ static Value copy_fundamental(const Value & val, Engine *e)
   std::abort();
 }
 
-static Value copy_enumvalue(const Value & val, Engine *e)
-{
-  return Value::fromEnumerator(val.toEnumerator());
-}
-
 static Lambda copy_lambda(const Lambda & l, Engine *e)
 {
   auto ret = std::make_shared<LambdaImpl>(l.closureType());
@@ -565,9 +560,14 @@ static Lambda copy_lambda(const Lambda & l, Engine *e)
 Value Engine::copy(const Value & val)
 {
   if (val.type().isFundamentalType())
+  {
     return copy_fundamental(val, this);
+  }
   else if (val.type().isEnumType())
-    return copy_enumvalue(val, this);
+  {
+    Enum enm = typeSystem()->getEnum(val.type());
+    return enm.impl()->copy.invoke({ val });
+  }
   else if (val.type().isObjectType())
   {
     Class cla = typeSystem()->getClass(val.type());
@@ -578,11 +578,13 @@ Value Engine::copy(const Value & val)
     return copyCtor.invoke({ Value(), val });
   }
   else if (val.type().isFunctionType())
+  {
     return Value::fromFunction(val.toFunction(), val.type().baseType());
+  }
   else if (val.type().isClosureType())
+  {
     return Value::fromLambda(copy_lambda(val.toLambda(), this));
-
-  /// TODO : implement copy of closures and functions
+  }
 
   throw CopyError{};
 }

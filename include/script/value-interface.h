@@ -46,11 +46,33 @@ public:
   virtual bool is_initializer_list() const;
   virtual bool is_enumerator() const;
 
+  virtual bool is_cpp_enum() const;
+  virtual int get_cpp_enum_value() const;
+
   virtual size_t size() const; // numbers of members
   virtual void push(const Value& val);
   virtual Value pop();
   virtual Value& at(size_t index);
 };
+
+namespace details
+{
+
+template<typename T>
+typename std::enable_if<std::is_enum<T>::value, int>::type get_enum_value(const T& val)
+{
+  return static_cast<int>(val);
+}
+
+template<typename T>
+typename std::enable_if<!std::is_enum<T>::value, int>::type get_enum_value(const T&)
+{
+  return -1;
+}
+
+} // namespace details
+
+
 
 template<typename T>
 class CppValue : public IValue
@@ -76,6 +98,9 @@ public:
   }
 
   void* ptr() override { return &value; }
+
+  bool is_cpp_enum() const override { return std::is_enum<T>::value; }
+  int get_cpp_enum_value() const override { return details::get_enum_value(value); }
 };
 
 template<typename T>
@@ -103,6 +128,9 @@ public:
 
   bool is_reference() const override { return true; }
   void* ptr() override { return &reference; }
+
+  bool is_cpp_enum() const override { return std::is_enum<T>::value; }
+  int get_cpp_enum_value() const override { return details::get_enum_value(reference); }
 };
 
 } // namespace script

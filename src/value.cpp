@@ -14,6 +14,7 @@
 #include "script/typesystem.h"
 
 #include "script/private/engine_p.h"
+#include "script/private/enum_p.h"
 #include "script/private/object_p.h"
 
 #include <cstring>
@@ -61,6 +62,16 @@ bool IValue::is_initializer_list() const
 bool IValue::is_enumerator() const
 {
   return false;
+}
+
+bool IValue::is_cpp_enum() const
+{
+  return false;
+}
+
+int IValue::get_cpp_enum_value() const
+{
+  return -1;
 }
 
 size_t IValue::size() const
@@ -234,8 +245,12 @@ Array Value::toArray() const
 
 Enumerator Value::toEnumerator() const
 {
-  // @TODO: if 'd' is a CppValue that is a reference, we could do the conversion
-  return d->is_enumerator() ? static_cast<EnumeratorValue*>(d)->value : Enumerator();
+  if (d->is_enumerator())
+    return static_cast<EnumeratorValue*>(d)->value;
+  else if (d->is_cpp_enum())
+    return Enumerator(engine()->typeSystem()->getEnum(type()), d->get_cpp_enum_value());
+  else
+    return Enumerator();
 }
 
 Lambda Value::toLambda() const
@@ -262,7 +277,10 @@ Value Value::fromEnumerator(const Enumerator & ev)
 {
   if (ev.isNull())
     return Value{}; // TODO : should we throw
-  return Value(new EnumeratorValue(ev));
+  // An enumerator might be represented by a C++ enum and not by Enumerator
+  Enum enm = ev.enumeration();
+  Value arg = enm.engine()->newInt(ev.value());
+  return enm.impl()->from_int.invoke({ arg });
 }
 
 Value Value::fromFunction(const Function & f, const Type & ft)
