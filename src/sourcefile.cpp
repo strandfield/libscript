@@ -6,6 +6,7 @@
 #include "script/private/sourcefile_p.h"
 
 #include <fstream>
+#include <limits>
 #include <sstream>
 
 namespace script

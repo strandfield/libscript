@@ -13,6 +13,8 @@
 
 #include "script/parser/errors.h"
 
+#include <limits>
+
 namespace script
 {
 

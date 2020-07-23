@@ -7,6 +7,7 @@
 
 #include "libscriptdefs.h"
 
+#include <cstring>
 #include <string>
 
 namespace script
