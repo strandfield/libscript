@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -15,7 +15,6 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
-#include "script/thisobject.h"
 
 #include "script/modulecallbacks.h"
 
@@ -158,10 +157,7 @@ public:
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    Value ret;
-    ThisObject self{ ret };
-    self.init<T>(std::forward<Args>(args)...);
-    return ret;
+    return Value(new CppValue<T>(this, T(std::forward<Args>(args)...)));
   }
 
   void destroy(Value val);
@@ -169,8 +165,7 @@ public:
   template<typename T>
   void destroy(Value val)
   {
-    ThisObject self{ val };
-    self.destroy<T>();
+    /* this is a no-op */
   }
 
   template<typename T>

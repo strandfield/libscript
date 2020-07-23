@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -8,6 +8,7 @@
 
 #include "script/array.h"
 #include "script/context.h"
+#include "script/function.h"
 #include "script/script.h"
 #include "script/value.h"
 

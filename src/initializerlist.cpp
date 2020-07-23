@@ -31,7 +31,6 @@ namespace initializer_list
 // InitializerList<T>();
 Value default_ctor(FunctionCall *c)
 {
-  // @TODO: set the correct type for thisObject()
   c->thisObject() = Value(new InitializerListValue(c->engine(), c->callee().memberOf().id(), InitializerList(nullptr, nullptr)));
   return c->thisObject();
 }
@@ -90,7 +89,6 @@ namespace iterator
 // iterator();
 Value default_ctor(FunctionCall *c)
 {
-  // @TODO: set the correct type for thisObject()
   c->thisObject() = Value(new InitializerListValue(c->engine(), c->callee().memberOf().id(), InitializerList(nullptr, nullptr)));
   return c->thisObject();
 }
