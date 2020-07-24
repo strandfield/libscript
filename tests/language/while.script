@@ -1,0 +1,5 @@
+int n = 0;
+while (n < 10) ++n;
+while (n < 20) { ++n; }
+
+Assert(n == 20);

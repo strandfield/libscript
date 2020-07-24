@@ -1,0 +1,4 @@
+enum A{AA, AB, AC};
+A a = AA;
+a = AB;
+Assert(a != AA);

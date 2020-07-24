@@ -1,0 +1,4 @@
+int n = 5;
+int get_n() { return n; }
+int a = get_n() + 5;
+Assert(a == 10);

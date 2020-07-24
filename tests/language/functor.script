@@ -1,0 +1,9 @@
+class A {
+public:
+  A() { }
+  ~A() { }
+  int operator()(int a, int b, int c) { return a-c; }
+};
+A a;
+int n = a(1, 2, 3);
+Assert(n == -2);

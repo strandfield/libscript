@@ -1,0 +1,14 @@
+namespace foo {
+  int get() { return 4; }
+}
+
+using namespace foo;
+
+int bar()
+{
+  return get();
+}
+
+int n = bar();
+
+Assert(n == 4);

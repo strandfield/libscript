@@ -1,0 +1,38 @@
+class A
+{
+public:
+  ~A() = default;
+
+  int n;
+
+  A(int a) : n(a) { }
+
+  A(InitializerList<int> list) : n(0)
+  {
+    for(auto it = list.begin(); it != list.end(); ++it)
+    {
+      n += it.get();
+    }
+  }
+};
+
+int foo(A a)
+{
+  return a.n;
+}
+
+Assert(foo({1, 2, 3, 4}) == 10);
+
+int sum(InitializerList<int> list)
+{
+  int s = 0;
+  for(auto it = list.begin(); it != list.end(); ++it)
+  {
+    s += it.get();
+  }
+  return s;
+}
+
+int n = sum({1, 2, 3, 4});
+
+Assert(n == 10);

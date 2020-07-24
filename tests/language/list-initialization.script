@@ -1,0 +1,13 @@
+class A
+{
+public:
+  int n;
+  ~A() { }
+  A(int a, bool b, const String & c) : n(a) { }
+};
+
+int foo(A a) { return a.n; }
+
+int n = foo({66, true, "Hello"});
+
+Assert(n == 66);

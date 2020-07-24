@@ -1,0 +1,25 @@
+int n = 0;
+for(int i(0); i < 10; ++i)
+  n = n + i;
+  
+Assert(n == 45);
+
+n = 0;
+for(int i(0); i < 10; ++i)
+{
+  if(i == 5)
+    continue;
+  n = n + i;
+}
+
+Assert(n == 40);
+
+n = 0;
+for(int i(0); i < 10; ++i)
+{
+  if(i == 5)
+    break;
+  n = n + i;
+}
+
+Assert(n == 10);

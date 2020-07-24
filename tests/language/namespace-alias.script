@@ -1,0 +1,14 @@
+namespace foo {
+  int get() { return 4; }
+}
+
+namespace qux = foo;
+
+int bar()
+{
+  return qux::get();
+}
+
+int n = bar();
+
+Assert(n == 4);

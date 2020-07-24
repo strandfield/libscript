@@ -1,0 +1,23 @@
+namespace foo {
+  int get() { return 4; }
+  int fetch() { return 5; }
+}
+
+using foo::get;
+
+int bar()
+{
+  return get();
+}
+
+int qux()
+{
+  using foo::fetch;
+  return fetch();
+}
+
+int n = bar();
+int m = qux();
+
+Assert(n == 4);
+Assert(m == 5);
