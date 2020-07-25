@@ -1573,33 +1573,3 @@ TEST(CompilerTests, func_arg_default_list_init) {
   ASSERT_EQ(a.type(), Type::Int);
   ASSERT_EQ(a.toInt(), 0);
 }
-
-TEST(CompilerTests, static_local_variables) {
-  using namespace script;
-
-  const char *source =
-    "  int counter()         "
-    "  {                     "
-    "    static int n = 0;   "
-    "    return ++n;         "
-    "  }                     "
-    "                        "
-    "  int a = counter();    "
-    "  int b = counter();    ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.toInt(), 1);
-  Value b = s.globals().back();
-  ASSERT_EQ(b.toInt(), 2);
-}

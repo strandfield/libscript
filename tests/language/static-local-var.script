@@ -1,0 +1,11 @@
+int counter()
+{
+  static int n = 0;
+  return ++n;
+}
+
+int a = counter();
+int b = counter();
+
+Assert(a == 1);
+Assert(b == 2);
