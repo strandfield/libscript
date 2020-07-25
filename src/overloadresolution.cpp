@@ -8,7 +8,6 @@
 #include "script/class.h"
 #include "script/conversions.h"
 #include "script/engine.h"
-#include "script/initialization.h"
 #include "script/operator.h"
 #include "script/typesystem.h"
 
@@ -16,6 +15,8 @@
 
 namespace script
 {
+
+typedef OverloadResolution::Candidate ORCandidate;
 
 struct ORInputs
 {
@@ -90,32 +91,7 @@ ORInputs::ORInputs()
 }
 
 
-struct ORCandidate
-{
-  Function function;
-  std::vector<Initialization> initializations;
 
-public:
-  ORCandidate() = default;
-  ORCandidate(const ORCandidate &) = delete;
-  ORCandidate(ORCandidate &&) = default;
-  ~ORCandidate() = default;
-
-  ORCandidate & operator=(ORCandidate &) = delete;
-  ORCandidate & operator=(ORCandidate &&) = default;
-
-  inline void set(const Function & f)
-  {
-    function = f;
-    initializations.clear();
-  }
-
-  inline void reset()
-  {
-    function = Function{};
-    initializations.clear();
-  }
-};
 
 struct OverloadResolutionImpl
 {
@@ -141,7 +117,6 @@ struct OverloadResolutionImpl
   bool processOverloadResolution();
   bool processORWithoutObject(int nbIgnored);
 
-  static OverloadResolution::OverloadComparison compare(const ORCandidate & a, const ORCandidate & b);
   void processCurrentCandidate();
 };
 
@@ -227,7 +202,7 @@ bool OverloadResolutionImpl::processORWithoutObject(int nbIgnored)
   return false;
 }
 
-OverloadResolution::OverloadComparison OverloadResolutionImpl::compare(const ORCandidate & a, const ORCandidate & b)
+OverloadResolution::OverloadComparison OverloadResolution::compare(const Candidate& a, const Candidate& b)
 {
   if (b.function.isNull() && !a.function.isNull())
     return OverloadResolution::FirstIsBetter;
@@ -278,7 +253,7 @@ void OverloadResolutionImpl::processCurrentCandidate()
   if (current_candidate.function == selected_candidate.function || current_candidate.function == ambiguous_candidate.function)
     return;
 
-  OverloadResolution::OverloadComparison comp = compare(current_candidate, selected_candidate);
+  OverloadResolution::OverloadComparison comp = OverloadResolution::compare(current_candidate, selected_candidate);
   if (comp == OverloadResolution::Indistinguishable || comp == OverloadResolution::NotComparable)
   {
     std::swap(ambiguous_candidate, current_candidate);
@@ -289,7 +264,7 @@ void OverloadResolutionImpl::processCurrentCandidate()
 
     if (!ambiguous_candidate.function.isNull())
     {
-      comp = compare(selected_candidate, ambiguous_candidate);
+      comp = OverloadResolution::compare(selected_candidate, ambiguous_candidate);
       if (comp == OverloadResolution::FirstIsBetter)
         ambiguous_candidate.reset();
     }
@@ -298,7 +273,7 @@ void OverloadResolutionImpl::processCurrentCandidate()
   {
     if (!ambiguous_candidate.function.isNull())
     {
-      comp = compare(current_candidate, ambiguous_candidate);
+      comp = OverloadResolution::compare(current_candidate, ambiguous_candidate);
       if (comp == OverloadResolution::FirstIsBetter)
       {
         std::swap(ambiguous_candidate, current_candidate);

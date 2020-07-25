@@ -420,6 +420,16 @@ public:
 
 } // namespace program
 
+namespace details
+{
+
+inline Type overloadresolution_get_type(const std::shared_ptr<program::Expression>& expr)
+{
+  return expr->type();
+}
+
+} // namespace details
+
 } // namespace script
 
 #endif // LIBSCRIPT_PROGRAM_EXPRESSION_H

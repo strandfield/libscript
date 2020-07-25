@@ -360,11 +360,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (lookup.resultType() == NameLookup::UnknownName)
     throw CompilationFailure{ CompilerError::NoSuchCallee };
 
-  OverloadResolution resol = OverloadResolution::New(engine());
-  if (!resol.process(lookup.functions(), args, object))
+  OverloadResolution::Candidate resol = resolve_overloads(lookup.functions(), object, args);
+
+  if (!resol)
     throw CompilationFailure{ CompilerError::CouldNotFindValidMemberFunction };
 
-  Function selected = resol.selectedOverload();
+  Function selected = resol.function;
 
   if (selected.isDeleted())
     throw CompilationFailure{ CompilerError::CallToDeletedFunction };
@@ -380,7 +381,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
   if (selected.hasImplicitObject() && object != nullptr)
     args.insert(args.begin(), object);
 
-  const auto & inits = resol.initializations();
+  const auto & inits = resol.initializations;
   ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   if (selected.isVirtual() && callee->type() == ast::NodeType::SimpleIdentifier)
@@ -409,12 +410,12 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
     return generateFunctionVariableCall(call, functor, std::move(args));
   
   std::vector<Function> functions = getCallOperator(functor->type());
-  OverloadResolution resol = OverloadResolution::New(engine());
+  OverloadResolution::Candidate resol = resolve_overloads(functions, functor, args);
 
-  if (!resol.process(functions, args, functor))
+  if (!resol)
     throw CompilationFailure{ CompilerError::CouldNotFindValidCallOperator };
 
-  Function selected = resol.selectedOverload();
+  Function selected = resol.function;
 
   if (selected.isDeleted())
     throw CompilationFailure{ CompilerError::CallToDeletedFunction };
@@ -423,7 +424,7 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateFunctorCall(con
 
   assert(selected.isMemberFunction());
   args.insert(args.begin(), functor);
-  const auto & inits = resol.initializations();
+  const auto & inits = resol.initializations;
   ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
   complete(selected, args);
   return program::FunctionCall::New(selected, std::move(args));
@@ -501,13 +502,13 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateUserDefinedLite
   std::vector<std::shared_ptr<program::Expression>> args{ lit };
 
   const auto & lops = getLiteralOperators(suffix);
-  OverloadResolution resol = OverloadResolution::New(engine());
+  OverloadResolution::Candidate resol = resolve_overloads(lops, args);
 
-  if (!resol.process(lops, args))
+  if (!resol)
     throw CompilationFailure{ CompilerError::CouldNotFindValidLiteralOperator };
 
-  Function selected = resol.selectedOverload();
-  const auto & inits = resol.initializations();
+  Function selected = resol.function;
+  const auto & inits = resol.initializations;
   ValueConstructor::prepare(engine(), args, selected.prototype(), inits);
 
   return program::FunctionCall::New(selected, std::move(args));
