@@ -10,6 +10,8 @@
 namespace script
 {
 
+class ScriptImpl;
+
 namespace program
 {
 
@@ -63,6 +65,21 @@ public:
   void accept(StatementVisitor &) override;
 };
 
+struct LIBSCRIPT_API PushStaticValue : public Statement
+{
+  std::string name;
+  size_t script_index;
+  size_t static_index;
+  std::shared_ptr<Expression> expr;
+
+public:
+  PushStaticValue(std::string n, size_t script_id, size_t static_id, const std::shared_ptr<Expression>& val);
+  ~PushStaticValue() = default;
+
+  static std::shared_ptr<PushStaticValue> New(std::string n, size_t script_id, size_t static_id, const std::shared_ptr<Expression>& val);
+
+  void accept(StatementVisitor&) override;
+};
 
 class LIBSCRIPT_API PopValue : public Statement
 {
@@ -296,7 +313,8 @@ public:
   virtual void visit(const IfStatement &) = 0;
   virtual void visit(const PushDataMember &) = 0;
   virtual void visit(const PushGlobal &) = 0;
-  virtual void visit(const PushValue &) = 0;
+  virtual void visit(const PushValue&) = 0;
+  virtual void visit(const PushStaticValue&) = 0;
   virtual void visit(const ReturnStatement &) = 0;
   virtual void visit(const PopValue &) = 0;
   virtual void visit(const WhileLoop &) = 0;

@@ -1593,13 +1593,13 @@ TEST(CompilerTests, static_local_variables) {
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();
   const auto & errors = s.messages();
-  ASSERT_FALSE(success);
+  ASSERT_TRUE(success);
 
- /* s.run();
+  s.run();
 
   ASSERT_EQ(s.globals().size(), 2);
   Value a = s.globals().front();
   ASSERT_EQ(a.toInt(), 1);
   Value b = s.globals().back();
-  ASSERT_EQ(b.toInt(), 2);*/
+  ASSERT_EQ(b.toInt(), 2);
 }

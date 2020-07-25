@@ -32,6 +32,7 @@ public:
   std::vector<Value> globals;
   std::vector<Type> global_types;
   std::map<std::string, int> globalNames;
+  std::vector<Value> static_variables;
   std::vector<diagnostic::DiagnosticMessage> messages;
   bool astlock;
   std::shared_ptr<ast::AST> ast;

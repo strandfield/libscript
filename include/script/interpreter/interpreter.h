@@ -50,7 +50,8 @@ private:
   void visit(const program::ConstructionStatement &) override;
   void visit(const program::PushDataMember &) override;
   void visit(const program::PushGlobal &) override;
-  void visit(const program::PushValue &) override;
+  void visit(const program::PushValue&) override;
+  void visit(const program::PushStaticValue&) override;
   void visit(const program::PopDataMember &) override;
   void visit(const program::PopValue &) override;
   void visit(const program::ReturnStatement &) override;

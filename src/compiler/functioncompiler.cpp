@@ -128,15 +128,17 @@ bool FunctionScope::catch_continue() const
 Variable::Variable()
   : index(-1)
   , global(false)
+  , is_static(false)
 {
 
 }
 
-Variable::Variable(const Type & t, std::string n, int i, bool g)
+Variable::Variable(const Type & t, std::string n, int i, bool g, bool s)
   : type(t)
   , name(std::move(n))
   , index(i)
   , global(g)
+  , is_static(false)
 {
 
 }
@@ -838,9 +840,6 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
 {
   const Type var_type = type_.resolve(var_decl->variable_type, mCurrentScope);
 
-  if (var_decl->staticSpecifier.isValid())
-    throw NotImplemented{ "Static variables not implemented yet" };
-
   if (var_decl->init == nullptr)
     return processVariableDeclaration(var_decl, var_type, nullptr);
 
@@ -862,7 +861,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   try
   {
     expr_.setScope(mCurrentScope);
-    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(engine(), var_type, nullptr));
+    processVariableCreation(var_decl, var_type, ValueConstructor::construct(engine(), var_type, nullptr));
   }
   catch (const CompilationFailure & ex)
   {
@@ -881,7 +880,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   try
   {
     expr_.setScope(mCurrentScope);
-    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
+    processVariableCreation(var_decl, var_type, ValueConstructor::construct(expr_, var_type, init));
   }
   catch (const CompilationFailure& ex)
   {
@@ -900,7 +899,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   try
   {
     expr_.setScope(mCurrentScope);
-    processVariableCreation(var_type, var_decl->name->getName(), ValueConstructor::construct(expr_, var_type, init));
+    processVariableCreation(var_decl, var_type, ValueConstructor::construct(expr_, var_type, init));
   }
   catch (const CompilationFailure& ex)
   {
@@ -937,7 +936,7 @@ void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::Var
   /// TODO : this is not optimal I believe
   // we could add copy elision
   value = ConversionProcessor::convert(engine(), value, conv);
-  processVariableCreation(var_type, var_decl->name->getName(), value);
+  processVariableCreation(var_decl, var_type, value);
 }
 
 void FunctionCompiler::processVariableInitListDecl(const std::shared_ptr<ast::VariableDecl> & varDecl, const std::shared_ptr<program::InitializerList> & initlist)
@@ -945,11 +944,25 @@ void FunctionCompiler::processVariableInitListDecl(const std::shared_ptr<ast::Va
   throw NotImplemented{ "Initializer list variables not implemented yet" };
 }
 
-void FunctionCompiler::processVariableCreation(const Type & type, const std::string & name, const std::shared_ptr<program::Expression> & value)
+void FunctionCompiler::processVariableCreation(const std::shared_ptr<ast::VariableDecl>& var_decl, const Type & type, const std::shared_ptr<program::Expression> & value)
 {
+  std::string name = var_decl->name->getName();
   const int stack_index = std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(name, type);
 
-  write(program::PushValue::New(type, name, value, stack_index));
+  if (!var_decl->staticSpecifier.isValid())
+  {
+    write(program::PushValue::New(type, std::move(name), value, stack_index));
+  }
+  else
+  {
+    mStack[stack_index].is_static = true;
+
+    auto simpl = script().impl();
+
+    write(program::PushStaticValue::New(std::move(name), script().id(), simpl->static_variables.size(), value));
+
+    simpl->static_variables.push_back(Value());
+  }
 
   if (std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->category() == FunctionScope::FunctionBody && isCompilingAnonymousFunction())
   {
@@ -964,7 +977,7 @@ void FunctionCompiler::processVariableCreation(const Type & type, const std::str
 
 void FunctionCompiler::processVariableDestruction(const Variable & var)
 {
-  if (var.global)
+  if (var.global || var.is_static)
     return write(program::PopValue::New(false, Function{}, var.index));
 
   const bool is_ref = var.type.isReference() || var.type.isRefRef();
