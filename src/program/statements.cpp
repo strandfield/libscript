@@ -76,6 +76,11 @@ void PushValue::accept(StatementVisitor & visitor)
   visitor.visit(*this);
 }
 
+void PushStaticValue::accept(StatementVisitor& visitor)
+{
+  visitor.visit(*this);
+}
+
 void PopValue::accept(StatementVisitor & visitor)
 {
   visitor.visit(*this);
@@ -100,6 +105,22 @@ PushValue::PushValue(const Type & t, const std::string & name, const std::shared
 std::shared_ptr<PushValue> PushValue::New(const Type & t, const std::string & name, const std::shared_ptr<Expression> & val, int si)
 {
   return std::make_shared<PushValue>(t, name, val, si);
+}
+
+
+
+PushStaticValue::PushStaticValue(std::string n, size_t script_id, size_t static_id, const std::shared_ptr<Expression>& val)
+  : name(n),
+    script_index(script_id),
+    static_index(static_id),
+    expr(val)
+{
+
+}
+
+std::shared_ptr<PushStaticValue> PushStaticValue::New(std::string n, size_t script_id, size_t static_id, const std::shared_ptr<Expression>& val)
+{
+  return std::make_shared<PushStaticValue>(std::move(n), script_id, static_id, val);
 }
 
 

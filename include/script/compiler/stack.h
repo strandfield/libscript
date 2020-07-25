@@ -19,9 +19,10 @@ struct Variable
   std::string name;
   int index;
   bool global;
+  bool is_static;
 
   Variable();
-  Variable(const Type & t, std::string n, int i, bool g = false);
+  Variable(const Type & t, std::string n, int i, bool g = false, bool s = false);
 };
 
 class Stack

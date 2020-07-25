@@ -94,6 +94,7 @@ int main(int argc, char **argv)
     "for",
     "simple-functions",
     "access-global",
+    "static-local-var",
     "default-arguments",
     "enum-assignment",
     "functor",

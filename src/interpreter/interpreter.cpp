@@ -283,6 +283,18 @@ void Interpreter::visit(const program::PushValue & push)
   mExecutionContext->stack.push(val);
 }
 
+void Interpreter::visit(const program::PushStaticValue& push)
+{
+  Script s = mExecutionContext->engine->implementation()->scripts.at(push.script_index);
+  
+  Value& val = s.impl()->static_variables[push.static_index];
+
+  if (val.isNull())
+    val = eval(push.expr);
+
+  mExecutionContext->stack.push(val);
+}
+
 void Interpreter::visit(const program::PopDataMember & pop)
 {
   Value object = mExecutionContext->callstack.top()->arg(0);
