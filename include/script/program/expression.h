@@ -156,21 +156,6 @@ public:
   Value accept(ExpressionVisitor &) override;
 };
 
-struct LIBSCRIPT_API AllocateExpression : public Expression
-{
-  Type object_type;
-
-public:
-  AllocateExpression(const Type & t);
-  ~AllocateExpression() = default;
-
-  Type type() const override;
-
-  static std::shared_ptr<AllocateExpression> New(const Type & t);
-
-  Value accept(ExpressionVisitor &) override;
-};
-
 struct LIBSCRIPT_API ConstructorCall : public Expression
 {
   Function constructor;
