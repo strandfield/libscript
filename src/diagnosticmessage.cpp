@@ -481,36 +481,6 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const compiler::CompilationF
   }
 }
 
-std::string MessageBuilder::produce(const OverloadResolution& resol) const
-{
-  if (resol.success())
-    return "Overload resolution succeeded";
-
-  std::stringstream ss;
-
-  if (!resol.ambiguousOverload().isNull())
-  {
-    ss << "Overload resolution failed because at least two candidates are not comparable or indistinguishable \n";
-    ss << engine()->toString(resol.selectedOverload()) << "\n";
-    ss << engine()->toString(resol.ambiguousOverload()) << "\n";
-    return ss.str();
-  }
-
-  ss << "Overload resolution failed because no viable overload could be found \n";
-  std::vector<Initialization> paraminits;
-  for (const auto& f : resol.candidates())
-  {
-    auto status = resol.getViabilityStatus(f, &paraminits);
-    ss << engine()->toString(f);
-    if (status == OverloadResolution::IncorrectParameterCount)
-      ss << "\n" << "Incorrect argument count, expects " << f.prototype().count() << " but " << resol.inputSize() << " were provided";
-    else if (status == OverloadResolution::CouldNotConvertArgument)
-      ss << "\n" << "Could not convert argument " << paraminits.size();
-    ss << "\n";
-  }
-  return ss.str();
-}
-
 } // namespace diagnostic
 
 } // namespace script

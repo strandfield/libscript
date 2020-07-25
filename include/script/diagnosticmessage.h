@@ -188,8 +188,6 @@ public:
     return mssg;
   }
 
-  std::string produce(const OverloadResolution& resol) const;
-
 private:
   Engine *mEngine;
   Verbosity mVerbosity = Verbosity::Normal;

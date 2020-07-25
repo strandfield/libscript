@@ -25,24 +25,22 @@ TEST(OverloadResolution, test1) {
 
   std::vector<Function> overloads;
 
-
   overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").get());
 
-  OverloadResolution resol = OverloadResolution::New(&e);
-  ASSERT_FALSE(resol.process(overloads, std::vector<Type>{ Type::Int }));
+  OverloadResolution::Candidate resol = resolve_overloads(overloads, std::vector<Type>{ Type::Int });
+  ASSERT_FALSE(bool(resol));
 
   overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).get());
 
-  resol = OverloadResolution::New(&e);
-  ASSERT_TRUE(resol.process(overloads, std::vector<Type>{ Type::Int }));
-  ASSERT_EQ(resol.selectedOverload(), overloads.at(1));
-  auto inits = resol.initializations();
+  resol = resolve_overloads(overloads, std::vector<Type>{ Type::Int });
+  ASSERT_TRUE(bool(resol));
+  ASSERT_EQ(resol.function, overloads.at(1));
+  auto inits = resol.initializations;
   ASSERT_TRUE(inits.at(0).conversion().firstStandardConversion().isCopy());
 
   overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Char).get());
-  resol = OverloadResolution::New(&e);
-  bool result = resol.process(overloads, std::vector<Type>{ Type::Float });
-  ASSERT_FALSE(result);
+  resol = resolve_overloads(overloads, std::vector<Type>{ Type::Float });
+  ASSERT_FALSE(bool(resol));
 }
 
 
@@ -59,9 +57,9 @@ TEST(OverloadResolution, builtin_operators) {
     if (op.operatorId() == AdditionOperator)
       overloads.push_back(op);
   }
-  OverloadResolution resol = OverloadResolution::New(&e);
-  ASSERT_TRUE(resol.process(overloads, std::vector<Type>{Type::Int, Type::Float}));
-  auto selected = resol.selectedOverload();
+  OverloadResolution::Candidate resol = resolve_overloads(overloads, std::vector<Type>{Type::Int, Type::Float});
+  ASSERT_TRUE(bool(resol));
+  auto selected = resol.function;
   ASSERT_TRUE(selected.prototype().at(0).baseType() == Type::Float);
   ASSERT_TRUE(selected.prototype().at(1).baseType() == Type::Float);
 }
@@ -78,16 +76,11 @@ TEST(OverloadResolution, failure_indistinguishable) {
 
   overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").returns(Type::Int).get());
 
-  auto resol = OverloadResolution::New(&e);
   std::vector<Type> types{ };
-  resol.process(overloads, types);
-  ASSERT_FALSE(resol.success());
+  OverloadResolution::Candidate resol = resolve_overloads(overloads, types);
+  ASSERT_FALSE(bool(resol));
 
-
-  diagnostic::MessageBuilder builder{ &e };
-  std::string mssg = builder.produce(resol);
-  //std::cout << mssg.to_string() << std::endl;
-  ASSERT_TRUE(mssg.find("indistinguishable") != std::string::npos);
+  // @TODO: test that OR fails because the overloads are indistinguishable
 }
 
 TEST(OverloadResolution, failure_no_viable_candidates) {
@@ -105,19 +98,9 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
   overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").returns(Type::Int).params(Type::Boolean, A.id()).get());
 
-  auto resol = OverloadResolution::New(&e);
-  std::vector<Type> types{Type::Int, Type::Float};
-  resol.process(overloads, types);
-  ASSERT_FALSE(resol.success());
+  std::vector<Type> types{ Type::Int, Type::Float };
+  OverloadResolution::Candidate resol = resolve_overloads(overloads, types);
+  ASSERT_FALSE(bool(resol));
 
-  ASSERT_EQ(resol.inputKind(), OverloadResolution::TypeInputs);
-  ASSERT_EQ(resol.typeInputs().size(), 2);
-  ASSERT_EQ(resol.typeInputs().back(), Type::Float);
-  
-  diagnostic::MessageBuilder builder{ &e };
-  std::string mssg = builder.produce(resol);
-  //std::cout << mssg.to_string() << std::endl;
-  ASSERT_TRUE(mssg.find("expects 1 but 2 were provided") != std::string::npos);
-  ASSERT_TRUE(mssg.find("Could not convert argument 2") != std::string::npos);
-
+  // @TODO: test that OR fails because argument are missing or not convertible
 }

@@ -432,10 +432,11 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
   {
     Class cla = typeSystem()->getClass(t);
     const auto & ctors = cla.constructors();
-    Function selected = OverloadResolution::selectConstructor(ctors, args);
-    if (selected.isNull())
+    OverloadResolution::Candidate selected = resolve_overloads(ctors, Type(cla.id()), args);
+
+    if (selected.function.isNull())
       throw ConstructionError{EngineError::NoMatchingConstructor };
-    else if (selected.isDeleted())
+    else if (selected.function.isDeleted())
       throw ConstructionError{ EngineError::ConstructorIsDeleted };
 
     Locals arguments;
@@ -446,7 +447,7 @@ Value Engine::construct(Type t, const std::vector<Value> & args)
       arguments.push(a);
     }
 
-    return selected.call(arguments);
+    return selected.function.call(arguments);
   }
   else if (t.isFundamentalType())
   {

@@ -9,6 +9,8 @@
 
 #include "script/ast/forwards.h"
 
+#include "script/overloadresolution.h"
+
 #include <vector>
 
 namespace script
@@ -43,13 +45,13 @@ public:
 protected:
   static void checkNarrowingConversions(const std::vector<Initialization> & inits, const std::vector<std::shared_ptr<program::Expression>> & args, const Prototype & proto);
 
-  static OverloadResolution getDelegateConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args);
-  std::shared_ptr<program::Statement> makeDelegateConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args);
+  static OverloadResolution::Candidate getDelegateConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args);
+  std::shared_ptr<program::Statement> makeDelegateConstructorCall(const OverloadResolution::Candidate& resol, std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateDelegateConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateDelegateConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args);
   
-  static OverloadResolution getParentConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args);
-  std::shared_ptr<program::Statement> makeParentConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args);
+  static OverloadResolution::Candidate getParentConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args);
+  std::shared_ptr<program::Statement> makeParentConstructorCall(const OverloadResolution::Candidate& resol, std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateParentConstructorCall(const std::shared_ptr<ast::ConstructorInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args);
   std::shared_ptr<program::Statement> generateParentConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args);
 };

@@ -87,13 +87,13 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
   {
     auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(e);
+    OverloadResolution::Candidate resol = resolve_overloads(ctors, type.baseType(), args);
 
-    if (!resol.process(ctors, args, alloc))
+    if (!resol)
       throw CompilationFailure{ CompilerError::CouldNotFindValidConstructor };
 
-    const Function ctor = resol.selectedOverload();
-    const auto & inits = resol.initializations();
+    const Function ctor = resol.function;
+    const auto & inits = resol.initializations;
     for (std::size_t i(0); i < inits.size(); ++i)
     {
       const auto & init = inits.at(i);
@@ -132,13 +132,13 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   {
     auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
-    OverloadResolution resol = OverloadResolution::New(e);
+    OverloadResolution::Candidate resol = resolve_overloads(ctors, type.baseType(), args);
 
-    if (!resol.process(ctors, args, alloc))
+    if (!resol)
       throw CompilationFailure{ CompilerError::CouldNotFindValidConstructor };
 
-    const Function ctor = resol.selectedOverload();
-    const auto & inits = resol.initializations();
+    const Function ctor = resol.function;
+    const auto & inits = resol.initializations;
     ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
     return program::ConstructorCall::New(ctor, alloc, std::move(args));
   }

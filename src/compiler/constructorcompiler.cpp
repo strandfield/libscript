@@ -332,20 +332,20 @@ void ConstructorCompiler::checkNarrowingConversions(const std::vector<Initializa
   }
 }
 
-OverloadResolution ConstructorCompiler::getDelegateConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
+OverloadResolution::Candidate ConstructorCompiler::getDelegateConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   const std::vector<Function> & ctors = cla.constructors();
-  OverloadResolution resol = OverloadResolution::New(cla.engine());
-  if (!resol.process(ctors, args, program::AllocateExpression::New(cla.id())))
+  OverloadResolution::Candidate resol = resolve_overloads(ctors, Type(cla.id()), args);
+  if (!resol)
     throw CompilationFailure{ CompilerError::NoDelegatingConstructorFound };
   return resol;
 }
 
-std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args)
+std::shared_ptr<program::Statement> ConstructorCompiler::makeDelegateConstructorCall(const OverloadResolution::Candidate& resol, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto object = program::StackValue::New(1, Type::ref(currentClass().id()));
-  Function ctor = resol.selectedOverload();
-  const auto & inits = resol.initializations();
+  Function ctor = resol.function;
+  const auto & inits = resol.initializations;
   ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
   return program::ConstructionStatement::New(object->type(), ctor, std::move(args));
 }
@@ -358,25 +358,25 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstru
 std::shared_ptr<program::Statement> ConstructorCompiler::generateDelegateConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getDelegateConstructor(currentClass(), args);
-  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations, args, resol.function.prototype());
   return makeDelegateConstructorCall(resol, args);
 }
 
 
-OverloadResolution ConstructorCompiler::getParentConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
+OverloadResolution::Candidate ConstructorCompiler::getParentConstructor(const Class & cla, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   const std::vector<Function> & ctors = cla.parent().constructors();
-  OverloadResolution resol = OverloadResolution::New(cla.engine());
-  if (!resol.process(ctors, args, program::AllocateExpression::New(cla.parent().id())))
+  OverloadResolution::Candidate resol = resolve_overloads(ctors, Type(cla.id()), args);
+  if (!resol)
     throw CompilationFailure{ CompilerError::CouldNotFindValidBaseConstructor };
   return resol;
 }
 
-std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCall(const OverloadResolution & resol, std::vector<std::shared_ptr<program::Expression>> & args)
+std::shared_ptr<program::Statement> ConstructorCompiler::makeParentConstructorCall(const OverloadResolution::Candidate& resol, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto object = program::StackValue::New(1, Type::ref(currentClass().id()));
-  Function ctor = resol.selectedOverload();
-  const auto & inits = resol.initializations();
+  Function ctor = resol.function;
+  const auto & inits = resol.initializations;
   ValueConstructor::prepare(engine(), object, args, ctor.prototype(), inits);
   return program::ConstructionStatement::New(object->type(), ctor, std::move(args));
 }
@@ -389,7 +389,7 @@ std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstruct
 std::shared_ptr<program::Statement> ConstructorCompiler::generateParentConstructorCall(const std::shared_ptr<ast::BraceInitialization> & init, std::vector<std::shared_ptr<program::Expression>> & args)
 {
   auto resol = getParentConstructor(currentClass(), args);
-  checkNarrowingConversions(resol.initializations(), args, resol.selectedOverload().prototype());
+  checkNarrowingConversions(resol.initializations, args, resol.function.prototype());
   return makeParentConstructorCall(resol, args);
 }
 

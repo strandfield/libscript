@@ -121,14 +121,14 @@ class MaxFunctionTemplate : public script::FunctionTemplateNativeBackend
     Engine* e = functionTemplate().engine();
 
     NameLookup lookup = NameLookup::resolve(LessOperator, e->rootNamespace());
-    OverloadResolution resol = OverloadResolution::New(e);
     const Type param_type = function.parameter(0);
-    if (!resol.process(lookup.functions(), { param_type , param_type }))
+    OverloadResolution::Candidate resol = resolve_overloads(lookup.functions(), std::vector<Type>{ param_type, param_type });
+    if (!resol)
       throw std::runtime_error{ "Cannot instantiate max function template (no operator< was found)" };
 
-    Function less = resol.selectedOverload();
+    Function less = resol.function;
 
-    return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.initializations()));
+    return std::make_pair(max_function, std::make_shared<MaxData>(less, resol.initializations));
   }
 };
 
