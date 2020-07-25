@@ -8,17 +8,10 @@
 #include "script/function.h"
 #include "script/initialization.h"
 #include "script/value.h"
+#include "script/overload-resolution-helper.h"
 
 namespace script
 {
-
-namespace diagnostic
-{
-class DiagnosticMessage;
-class MessageBuilder;
-} // namespace diagnostic
-
-class Initialization;
 
 // see http://en.cppreference.com/w/cpp/language/overload_resolution
 // http://en.cppreference.com/w/cpp/language/implicit_conversion
@@ -71,50 +64,24 @@ public:
 };
 
 
+template<>
+struct overload_resolution_helper<Type>
+{
+  static bool is_null(const Type& type) { return type.isNull(); }
+  static Type get_type(const Type& type) { return type; }
+  static Initialization init(const Type& parameter_type, const Type& argtype, Engine* e) { return Initialization::compute(parameter_type, argtype, e, Initialization::CopyInitialization); }
+};
+
+template<>
+struct overload_resolution_helper<Value>
+{
+  static bool is_null(const Value& v) { return v.isNull(); }
+  static Type get_type(const Value& v) { return v.type(); }
+  static Initialization init(const Type& parameter_type, const Value& val, Engine* e) { return Initialization::compute(parameter_type, val.type(), e, Initialization::CopyInitialization); }
+};
+
 namespace details
 {
-
-// @TODO: add a overload_resolution_helper class template
-
-inline bool overloadresolution_is_null(const Type& type)
-{
-  return type.isNull();
-}
-
-inline bool overloadresolution_is_null(const Value& value)
-{
-  return value.isNull();
-}
-
-inline bool overloadresolution_is_null(const std::shared_ptr<program::Expression>& expr)
-{
-  return expr == nullptr;
-}
-
-inline Type overloadresolution_get_type(const Type& type)
-{
-  return type;
-}
-
-inline Type overloadresolution_get_type(const Value& value)
-{
-  return value.type();
-}
-
-inline Initialization overloadresolution_initialization(const Type& parameter_type, const Type& argtype, Engine* e)
-{
-  return Initialization::compute(parameter_type, argtype, e, Initialization::CopyInitialization);
-}
-
-inline Initialization overloadresolution_initialization(const Type& parameter_type, const Value& arg, Engine* e)
-{
-  return Initialization::compute(parameter_type, arg.type(), e, Initialization::CopyInitialization);
-}
-
-inline Initialization overloadresolution_initialization(const Type& parameter_type, const std::shared_ptr<program::Expression>& expr, Engine* e)
-{
-  return Initialization::compute(parameter_type, expr, e);
-}
 
 inline void overloadresolution_process_candidate(OverloadResolution::Candidate& current, OverloadResolution::Candidate& selected, OverloadResolution::Candidate& ambiguous)
 {
@@ -175,7 +142,7 @@ OverloadResolution::Candidate resolve_overloads(const std::vector<Function>& can
     bool ok = true;
     for (size_t i(0); i < argc; ++i)
     {
-      Initialization init = details::overloadresolution_initialization(func.parameter(static_cast<int>(i)), args.at(i), engine);
+      Initialization init = overload_resolution_helper<T>::init(func.parameter(static_cast<int>(i)), args.at(i), engine);
       if (init.kind() == Initialization::InvalidInitialization)
       {
         ok = false;
@@ -198,7 +165,7 @@ OverloadResolution::Candidate resolve_overloads(const std::vector<Function>& can
 template<typename T, typename U>
 OverloadResolution::Candidate resolve_overloads(const std::vector<Function>& candidates, const T& implicit_object, const std::vector<U>& args)
 {
-  if (details::overloadresolution_is_null(implicit_object))
+  if (overload_resolution_helper<T>::is_null(implicit_object))
     return resolve_overloads(candidates, args);
 
   OverloadResolution::Candidate current;
@@ -219,7 +186,7 @@ OverloadResolution::Candidate resolve_overloads(const std::vector<Function>& can
 
     if (func.hasImplicitObject())
     {
-      Conversion conv = Conversion::compute(details::overloadresolution_get_type(implicit_object), func.parameter(0), engine);
+      Conversion conv = Conversion::compute(overload_resolution_helper<T>::get_type(implicit_object), func.parameter(0), engine);
       if (conv == Conversion::NotConvertible() || conv.firstStandardConversion().isCopy())
         continue;
       current.initializations.push_back(Initialization{ Initialization::DirectInitialization, conv });
@@ -230,7 +197,7 @@ OverloadResolution::Candidate resolve_overloads(const std::vector<Function>& can
     bool ok = true;
     for (int i(0); i < argc; ++i)
     {
-      Initialization init = details::overloadresolution_initialization(func.parameter(i + parameter_offset), args.at(static_cast<size_t>(i)), engine);
+      Initialization init = overload_resolution_helper<U>::init(func.parameter(i + parameter_offset), args.at(static_cast<size_t>(i)), engine);
       if (init.kind() == Initialization::InvalidInitialization)
       {
         ok = false;

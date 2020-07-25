@@ -10,6 +10,8 @@
 #include "script/function.h"
 #include "script/types.h"
 #include "script/context.h"
+#include "script/initialization.h"
+#include "script/overload-resolution-helper.h"
 
 namespace script
 {
@@ -406,15 +408,13 @@ public:
 
 } // namespace program
 
-namespace details
+template<>
+struct overload_resolution_helper<std::shared_ptr<program::Expression>>
 {
-
-inline Type overloadresolution_get_type(const std::shared_ptr<program::Expression>& expr)
-{
-  return expr->type();
-}
-
-} // namespace details
+  static bool is_null(const std::shared_ptr<program::Expression>& expr) { return expr == nullptr; }
+  static Type get_type(const std::shared_ptr<program::Expression>& expr) { return expr->type(); }
+  static Initialization init(const Type& parameter_type, const std::shared_ptr<program::Expression>& expr, Engine* e) { return Initialization::compute(parameter_type, expr, e); }
+};
 
 } // namespace script
 
