@@ -85,7 +85,6 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
   }
   else if (type.isObjectType())
   {
-    auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution::Candidate resol = resolve_overloads(ctors, type.baseType(), args);
 
@@ -101,8 +100,8 @@ std::shared_ptr<program::Expression> ValueConstructor::brace_construct(Engine *e
         throw CompilationFailure{ CompilerError::NarrowingConversionInBraceInitialization, errors::NarrowingConversion{args.at(i)->type(), ctor.parameter(i)} };
     }
 
-    ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
-    return program::ConstructorCall::New(ctor, alloc, std::move(args));
+    ValueConstructor::prepare(e, nullptr, args, ctor.prototype(), inits);
+    return program::ConstructorCall::New(ctor, std::move(args));
   }
   else
     throw NotImplemented{ "ValueConstructor::brace_construct() : type not implemented" };
@@ -130,7 +129,6 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
   }
   else if (type.isObjectType())
   {
-    auto alloc = program::AllocateExpression::New(type.baseType());
     const std::vector<Function> & ctors = e->typeSystem()->getClass(type).constructors();
     OverloadResolution::Candidate resol = resolve_overloads(ctors, type.baseType(), args);
 
@@ -139,8 +137,8 @@ std::shared_ptr<program::Expression> ValueConstructor::construct(Engine *e, cons
 
     const Function ctor = resol.function;
     const auto & inits = resol.initializations;
-    ValueConstructor::prepare(e, alloc, args, ctor.prototype(), inits);
-    return program::ConstructorCall::New(ctor, alloc, std::move(args));
+    ValueConstructor::prepare(e, nullptr, args, ctor.prototype(), inits);
+    return program::ConstructorCall::New(ctor, std::move(args));
   }
   else
     throw NotImplemented{ "ValueConstructor::construct() : type not implemented" };

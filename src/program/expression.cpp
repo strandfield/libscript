@@ -278,9 +278,15 @@ std::shared_ptr<AllocateExpression> AllocateExpression::New(const Type & t)
 
 
 
-ConstructorCall::ConstructorCall(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args)
+ConstructorCall::ConstructorCall(const Function & ctor, std::vector<std::shared_ptr<Expression>> args)
+  : ConstructorCall(ctor.parameter(0).baseType(), ctor, std::move(args))
+{
+
+}
+
+ConstructorCall::ConstructorCall(const Type& obj_type, const Function& ctor, std::vector<std::shared_ptr<Expression>> args)
   : constructor(ctor)
-  , allocate(alloc)
+  , object_type(obj_type)
   , arguments(std::move(args))
 {
 
@@ -288,17 +294,12 @@ ConstructorCall::ConstructorCall(const Function & ctor, const std::shared_ptr<Al
 
 Type ConstructorCall::type() const
 {
-  return allocate->object_type;
+  return object_type;
 }
 
-std::shared_ptr<ConstructorCall> ConstructorCall::New(const Function & ctor, const std::shared_ptr<AllocateExpression> & alloc, std::vector<std::shared_ptr<Expression>> && args)
+std::shared_ptr<ConstructorCall> ConstructorCall::New(const Function& ctor, std::vector<std::shared_ptr<Expression>> args)
 {
-  return std::make_shared<ConstructorCall>(ctor, alloc, std::move(args));
-}
-
-std::shared_ptr<ConstructorCall> ConstructorCall::New(const Function & ctor, std::vector<std::shared_ptr<Expression>> && args)
-{
-  return std::make_shared<ConstructorCall>(ctor, program::AllocateExpression::New(ctor.parameter(0).baseType()), std::move(args));
+  return std::make_shared<ConstructorCall>(ctor, std::move(args));
 }
 
 
