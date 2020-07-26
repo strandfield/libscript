@@ -247,24 +247,21 @@ public:
 
   std::shared_ptr<ast::Expression> parse();
 
+protected:
+
   enum Decision {
-    Undecided = 0,
     ParsingLambda = 1,
     ParsingArray = 2
   };
 
-  Decision decision() const;
-  void setDecision(Decision d);
-
-protected:
-  void readBracketContent();
+  Decision detect(const Fragment& frag) const;
+  std::shared_ptr<ast::Expression> parseArray(TokenReader& bracket_content);
+  void readCaptures(TokenReader& bracket_content);
   void readParams();
   std::shared_ptr<ast::CompoundStatement> readBody();
 
 protected:
-  Decision mDecision;
   std::shared_ptr<ast::LambdaExpression> mLambda;
-  std::shared_ptr<ast::ArrayExpression> mArray;
 };
 
 class LambdaCaptureParser : public ParserBase

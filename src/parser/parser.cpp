@@ -741,123 +741,90 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
 
 LambdaParser::LambdaParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
   : ParserBase(shared_context, reader)
-  , mDecision(Undecided)
 {
 
 }
 
 std::shared_ptr<ast::Expression> LambdaParser::parse()
 {
-  mArray = ast::ArrayExpression::New(peek());
-  mLambda = ast::LambdaExpression::New(unsafe_peek());
+  TokenReader bracket_content = subfragment<Fragment::DelimiterPair>();
 
-  readBracketContent();
-
-  if (atEnd()) 
+  if (detect(bracket_content.fragment()) == ParsingArray)
   {
-    if (mDecision == ParsingLambda)
-    {
-      throw SyntaxError{ ParserError::UnexpectedFragmentEnd };
-    }
-    else 
-    {
-      setDecision(ParsingArray);
-      return mArray;
-    }
+    return parseArray(bracket_content);
   }
-
-  if (peek() != Token::LeftPar) 
+  else
   {
-    if (mDecision == ParsingLambda)
-    {
-      throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{unsafe_peek(), Token::LeftPar} };
-    }
-    else
-    {
-      setDecision(ParsingArray);
-      return mArray;
-    }
+    mLambda = ast::LambdaExpression::New(unsafe_peek());
+    readCaptures(bracket_content);
+    readParams();
+    mLambda->body = readBody();
+    return mLambda;
   }
-
-  setDecision(ParsingLambda);
-
-  readParams();
-
-  mLambda->body = readBody();
-  return mLambda;
 }
 
-void LambdaParser::readBracketContent()
+LambdaParser::Decision LambdaParser::detect(const Fragment& frag) const
 {
-  TokenReader capture_list_reader = subfragment<Fragment::DelimiterPair>();
+  auto it = frag.end();
+  assert(it->id == Token::RightBracket);
+  ++it;
+  
+  if (it == context()->tokens().end() || it->id != Token::LeftPar)
+    return Decision::ParsingArray;
+  else
+    return Decision::ParsingLambda;
+}
 
-  read(Token::LeftBracket);
+std::shared_ptr<ast::Expression> LambdaParser::parseArray(TokenReader& bracket_content)
+{
+  std::shared_ptr<ast::ArrayExpression> result = ast::ArrayExpression::New(read(Token::LeftBracket));
 
-  while (!capture_list_reader.atEnd())
+  while (!bracket_content.atEnd())
   {
-    TokenReader listelem_reader = capture_list_reader.next<Fragment::ListElement>();
+    TokenReader listelem_reader = bracket_content.next<Fragment::ListElement>();
 
-    if(mDecision == Undecided || mDecision == ParsingArray)
-    {
-      ExpressionParser ep{ context(), listelem_reader };
-      try
-      {
-        auto elem = ep.parse();
-        mArray->elements.push_back(elem);
-      }
-      catch (const SyntaxError &)
-      {
-        if (mDecision == ParsingArray)
-          throw;
-        mDecision = ParsingLambda;
-        mArray = nullptr;
-      }
-    }
+    ExpressionParser ep{ context(), listelem_reader };
+    result->elements.push_back(ep.parse());
 
-
-    if (mDecision == Undecided || mDecision == ParsingLambda)
-    {
-      LambdaCaptureParser capp{ context(), listelem_reader };
-
-      if (!capp.detect())
-      {
-        if (mDecision == ParsingLambda)
-          throw SyntaxError{ ParserError::CouldNotParseLambdaCapture };
-
-        setDecision(ParsingArray);
-      }
-      else
-      {
-        try
-        {
-          auto capture = capp.parse();
-          mLambda->captures.push_back(capture);
-        }
-        catch (const SyntaxError&)
-        {
-          if (mDecision == ParsingLambda)
-            throw;
-          setDecision(ParsingArray);
-        }
-      }
-    }
-
-    if (!capture_list_reader.atEnd())
-      capture_list_reader.read(Token::Comma);
+    if (!bracket_content.atEnd())
+      bracket_content.read(Token::Comma);
   }
 
-  seek(capture_list_reader.end());
+  seek(bracket_content.end());
+  result->rightBracket = unsafe_read();
+
+  return result;
+}
+
+void LambdaParser::readCaptures(TokenReader& bracket_content)
+{
+  read(Token::LeftBracket);
+
+  while (!bracket_content.atEnd())
+  {
+    TokenReader listelem_reader = bracket_content.next<Fragment::ListElement>();
+
+    LambdaCaptureParser capp{ context(), listelem_reader };
+
+    if (!capp.detect())
+      throw SyntaxError{ ParserError::CouldNotParseLambdaCapture };
+
+    auto capture = capp.parse();
+    mLambda->captures.push_back(capture);
+
+    if (!bracket_content.atEnd())
+      bracket_content.read(Token::Comma);
+  }
+
+  seek(bracket_content.end());
   const Token rb = unsafe_read();
 
-  if (mArray)
-    mArray->rightBracket = rb;
-  if (mLambda)
-    mLambda->rightBracket = rb;
+  mLambda->rightBracket = rb;
 }
 
 void LambdaParser::readParams()
 {
-  assert(mDecision == ParsingLambda);
+  assert(mLambda != nullptr);
 
   TokenReader params_reader = next<Fragment::DelimiterPair>();
 
@@ -935,20 +902,6 @@ ast::LambdaCapture LambdaCaptureParser::parse()
   return cap;
 }
 
-
-LambdaParser::Decision LambdaParser::decision() const
-{
-  return mDecision;
-}
-
-void LambdaParser::setDecision(Decision d)
-{
-  mDecision = d;
-  if (mDecision == ParsingArray)
-    mLambda = nullptr;
-  else if (mDecision == ParsingLambda)
-    mArray = nullptr;
-}
 
 
 ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context)
