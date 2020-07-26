@@ -31,7 +31,7 @@ namespace script
 namespace compiler
 {
 
-Capture::Capture(const std::string & n, const std::shared_ptr<program::Expression> & val)
+Capture::Capture(utils::StringView n, const std::shared_ptr<program::Expression> & val)
   : type(val->type())
   , name(n)
   , value(val)
@@ -93,7 +93,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
 
     TranslationTarget target{ c, cap.name };
 
-    const std::string name = cap.name.toString();
+    const utils::StringView name = cap.name.text();
     std::shared_ptr<program::Expression> value;
     if (cap.value != nullptr)
     {
@@ -171,7 +171,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   for (const auto & cap : task.captures)
   {
-    mLambda.impl()->captures.push_back(ClosureType::Capture{ cap.type, cap.name });
+    mLambda.impl()->captures.push_back(ClosureType::Capture{ cap.type, cap.name.toString() });
   }
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };

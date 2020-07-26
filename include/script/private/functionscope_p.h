@@ -7,6 +7,8 @@
 
 #include "script/private/scope_p.h"
 
+#include "script/utils/stringview.h"
+
 namespace script
 {
 
@@ -39,7 +41,7 @@ public:
 
   bool lookup(const std::string & name, NameLookupImpl *nl) const override;
 
-  int add_var(std::string name, const Type & t);
+  int add_var(utils::StringView n, const Type & t);
   void destroy();
 
   Category category() const;

@@ -95,9 +95,9 @@ bool FunctionScope::lookup(const std::string & name, NameLookupImpl *nl) const
   return ExtensibleScope::lookup(name, nl);
 }
 
-int FunctionScope::add_var(std::string name, const Type & t)
+int FunctionScope::add_var(utils::StringView name, const Type & t)
 {
-  int stack_index = mCompiler->mStack.addVar(t, std::move(name));
+  int stack_index = mCompiler->mStack.addVar(t, name);
   mSize++;
   return stack_index;
 }
@@ -133,7 +133,7 @@ Variable::Variable()
 
 }
 
-Variable::Variable(const Type & t, std::string n, int i, bool g, bool s)
+Variable::Variable(const Type & t, utils::StringView n, int i, bool g, bool s)
   : type(t)
   , name(std::move(n))
   , index(i)
@@ -166,7 +166,7 @@ void Stack::clear()
   this->capacity = 0;
 }
 
-int Stack::addVar(const Type & t, const std::string & name)
+int Stack::addVar(const Type & t, utils::StringView name)
 {
   if (this->size == this->capacity)
   {
@@ -195,6 +195,11 @@ int Stack::indexOf(const std::string & var) const
 }
 
 int Stack::lastIndexOf(const std::string & var) const
+{
+  return lastIndexOf(utils::StringView(var.data(), var.size()));
+}
+
+int Stack::lastIndexOf(utils::StringView var) const
 {
   for (int i(this->size - 1); i >= 0; --i)
   {
@@ -400,7 +405,7 @@ bool FunctionCompiler::isCompilingAnonymousFunction() const
   return dynamic_cast<const ScriptFunctionImpl*>(compiledFunction().impl().get()) != nullptr;
 }
 
-std::string FunctionCompiler::argumentName(int index)
+utils::StringView FunctionCompiler::argumentName(int index) const
 {
   auto funcdecl = std::dynamic_pointer_cast<ast::FunctionDecl>(declaration());
 
@@ -946,12 +951,11 @@ void FunctionCompiler::processVariableInitListDecl(const std::shared_ptr<ast::Va
 
 void FunctionCompiler::processVariableCreation(const std::shared_ptr<ast::VariableDecl>& var_decl, const Type & type, const std::shared_ptr<program::Expression> & value)
 {
-  std::string name = var_decl->name->getName();
-  const int stack_index = std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(name, type);
+  const int stack_index = std::dynamic_pointer_cast<FunctionScope>(mCurrentScope.impl())->add_var(var_decl->name->name.text(), type);
 
   if (!var_decl->staticSpecifier.isValid())
   {
-    write(program::PushValue::New(type, std::move(name), value, stack_index));
+    write(program::PushValue::New(type, var_decl->name->getName(), value, stack_index));
   }
   else
   {
@@ -959,7 +963,7 @@ void FunctionCompiler::processVariableCreation(const std::shared_ptr<ast::Variab
 
     auto simpl = script().impl();
 
-    write(program::PushStaticValue::New(std::move(name), script().id(), simpl->static_variables.size(), value));
+    write(program::PushStaticValue::New(var_decl->name->getName(), script().id(), simpl->static_variables.size(), value));
 
     simpl->static_variables.push_back(Value());
   }
@@ -969,7 +973,7 @@ void FunctionCompiler::processVariableCreation(const std::shared_ptr<ast::Variab
     mStack[stack_index].global = true;
 
     auto simpl = script().impl();
-    simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name);
+    simpl->register_global(Type::ref(mStack[stack_index].type), mStack[stack_index].name.toString());
 
     write(program::PushGlobal::New(script().id(), stack_index));
   }

@@ -7,6 +7,8 @@
 
 #include "script/types.h"
 
+#include "script/utils/stringview.h"
+
 namespace script
 {
 
@@ -16,13 +18,13 @@ namespace compiler
 struct Variable
 {
   Type type;
-  std::string name;
+  utils::StringView name;
   int index;
   bool global;
   bool is_static;
 
   Variable();
-  Variable(const Type & t, std::string n, int i, bool g = false, bool s = false);
+  Variable(const Type & t, utils::StringView n, int i, bool g = false, bool s = false);
 };
 
 class Stack
@@ -35,10 +37,11 @@ public:
 
   void clear();
 
-  int addVar(const Type & t, const std::string & name);
+  int addVar(const Type & t, utils::StringView name);
   bool exists(const std::string & var) const;
   int indexOf(const std::string & var) const;
   int lastIndexOf(const std::string & var) const;
+  int lastIndexOf(utils::StringView var) const;
   void destroy(int n);
 
   Stack & operator=(const Stack &) = delete;

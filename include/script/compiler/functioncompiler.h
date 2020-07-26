@@ -72,7 +72,7 @@ public:
 protected:
   bool canUseThis() const;
   bool isCompilingAnonymousFunction() const;
-  std::string argumentName(int index);
+  utils::StringView argumentName(int index) const;
   std::shared_ptr<ast::CompoundStatement> bodyDeclaration();
 
   std::shared_ptr<program::Expression> generate(const std::shared_ptr<ast::Expression> & e);

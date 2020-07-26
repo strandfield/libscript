@@ -26,7 +26,7 @@ namespace compiler
 class Capture
 {
 public:
-  Capture(const std::string & n, const std::shared_ptr<program::Expression> & value);
+  Capture(utils::StringView n, const std::shared_ptr<program::Expression> & value);
   Capture(const Capture &) = default;
   ~Capture() = default;
 
@@ -34,7 +34,7 @@ public:
 
 public:
   Type type;
-  std::string name;
+  utils::StringView name;
   std::shared_ptr<program::Expression> value;
   bool used;
 };

@@ -592,9 +592,9 @@ FunctionDecl::FunctionDecl(const std::shared_ptr<Identifier> & name)
 
 }
 
-std::string FunctionDecl::parameterName(int index) const
+utils::StringView FunctionDecl::parameterName(int index) const
 {
-  return this->params.at(index).name.toString();
+  return this->params.at(index).name.text();
 }
 
 std::shared_ptr<FunctionDecl> FunctionDecl::New(const std::shared_ptr<Identifier> & name)
@@ -661,9 +661,9 @@ LambdaExpression::LambdaExpression(const parser::Token & lb)
 
 }
 
-std::string LambdaExpression::parameterName(int index) const
+utils::StringView LambdaExpression::parameterName(int index) const
 {
-  return this->params.at(index).name.toString();
+  return this->params.at(index).name.text();
 }
 
 std::shared_ptr<LambdaExpression> LambdaExpression::New(const parser::Token & lb)

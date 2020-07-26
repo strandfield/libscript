@@ -38,7 +38,7 @@ public:
   std::shared_ptr<ast::AST> ast;
   Scope exports;
 
-  void register_global(const Type & t, const std::string & name);
+  void register_global(const Type & t, std::string name);
 };
 
 } // namespace script

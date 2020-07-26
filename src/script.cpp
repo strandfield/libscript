@@ -22,10 +22,10 @@ ScriptImpl::ScriptImpl(int index, Engine *e, const SourceFile & src)
 }
 
 
-void ScriptImpl::register_global(const Type & t, const std::string & name)
+void ScriptImpl::register_global(const Type & t, std::string name)
 {
   this->global_types.push_back(t);
-  this->globalNames[name] = this->global_types.size() - 1;
+  this->globalNames.insert({ std::move(name), int(this->global_types.size() - 1) });
 }
 
 /*!

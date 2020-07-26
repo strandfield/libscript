@@ -969,7 +969,7 @@ public:
   FunctionDecl(const std::shared_ptr<Identifier> & name);
   ~FunctionDecl() = default;
 
-  std::string parameterName(int index) const;
+  utils::StringView parameterName(int index) const;
 
   static std::shared_ptr<FunctionDecl> New(const std::shared_ptr<Identifier> & name);
   static std::shared_ptr<FunctionDecl> New();
@@ -1069,8 +1069,7 @@ public:
   LambdaExpression(const parser::Token & lb);
   ~LambdaExpression() = default;
 
-  std::string parameterName(int index) const;
-
+  utils::StringView parameterName(int index) const;
 
   static std::shared_ptr<LambdaExpression> New(const parser::Token & lb);
 
