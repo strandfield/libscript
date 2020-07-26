@@ -75,7 +75,7 @@ protected:
   char currentChar() const noexcept;
   inline char peekChar() const { return currentChar(); }
   void consumeDiscardable();
-  Token create(size_t pos, int length, Token::Id type, int flags);
+  Token create(size_t pos, size_t length, Token::Id type, int flags);
   Token create(size_t pos, Token::Id type, int flags);
   Token readNumericLiteral(size_t pos);
   Token readHexa(size_t pos);
@@ -83,10 +83,10 @@ protected:
   Token readBinary(size_t pos);
   Token readDecimal(size_t pos);
   Token readIdentifier(size_t pos);
-  Token::Id identifierType(int begin, int end) const;
+  Token::Id identifierType(size_t begin, size_t end) const;
   Token readStringLiteral(size_t pos);
   Token readCharLiteral(size_t pos);
-  Token::Id getOperator(int begin, int end) const;
+  Token::Id getOperator(size_t begin, size_t end) const;
   Token readOperator(size_t pos);
   Token readColonOrColonColon(size_t pos);
   Token readFromPunctuator(size_t pos);

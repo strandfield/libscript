@@ -123,12 +123,12 @@ SourceFile::Position SourceFile::map(Offset off) const
   if (p == std::numeric_limits<size_t>::max())
   {
     result.line = 0;
-    result.col = off;
+    result.col = static_cast<decltype(result.col)>(off);
     return result;
   }
   else
   {
-    result.col = off - 1 - p;
+    result.col = static_cast<decltype(result.col)>(off - 1 - p);
   }
 
   result.line = 0;

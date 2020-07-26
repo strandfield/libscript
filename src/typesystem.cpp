@@ -395,7 +395,7 @@ FunctionType TypeSystem::getFunctionType(const Prototype& proto)
 
   /* Create new function type */
 
-  const int id = d->prototypes.size();
+  const int id = static_cast<int>(d->prototypes.size());
   Type type{ id | Type::PrototypeFlag };
 
   BinaryOperatorPrototype assign_proto{ Type::ref(type), Type::ref(type), Type::cref(type) };

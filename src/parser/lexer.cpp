@@ -163,7 +163,7 @@ void Lexer::consumeDiscardable()
     readChar();
 }
 
-Token Lexer::create(size_t pos, int length, Token::Id type, int flags)
+Token Lexer::create(size_t pos, size_t length, Token::Id type, int flags)
 {
   return Token{ type, flags, StringView(m_source + pos, length) };
 }
@@ -593,7 +593,7 @@ const Keyword l9k[] = {
   { "protected", Token::Protected },
 };
 
-static Token::Id findKeyword(const Keyword * keywords, int arraySize, const char *str, int length)
+static Token::Id findKeyword(const Keyword * keywords, size_t arraySize, const char *str, size_t length)
 {
   for (int i(0); i < arraySize; ++i) {
     if (std::memcmp(keywords[i].name, str, length) == 0)
@@ -602,10 +602,10 @@ static Token::Id findKeyword(const Keyword * keywords, int arraySize, const char
   return Token::UserDefinedName;
 }
 
-Token::Id Lexer::identifierType(int begin, int end) const
+Token::Id Lexer::identifierType(size_t begin, size_t end) const
 {
   const char *str = m_source + begin;
-  const int l = end - begin;
+  const size_t l = end - begin;
 
   switch (l) {
   case 1:
@@ -771,9 +771,9 @@ const OperatorLexeme l3op[] = {
 };
 
 
-static Token::Id findOperator(const OperatorLexeme * ops, int arraySize, const char *str, int length)
+static Token::Id findOperator(const OperatorLexeme * ops, size_t arraySize, const char *str, size_t length)
 {
-  for (int i(0); i < arraySize; ++i) {
+  for (size_t i(0); i < arraySize; ++i) {
     if (std::memcmp(ops[i].name, str, length) == 0)
       return ops[i].toktype;
   }
@@ -781,10 +781,10 @@ static Token::Id findOperator(const OperatorLexeme * ops, int arraySize, const c
 }
 
 
-Token::Id Lexer::getOperator(int begin, int end) const
+Token::Id Lexer::getOperator(size_t begin, size_t end) const
 {
   const char *str = m_source + begin;
-  const int l = end - begin;
+  const size_t l = end - begin;
 
   switch (l) {
   case 1:

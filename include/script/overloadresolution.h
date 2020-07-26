@@ -32,11 +32,11 @@ public:
   public:
     Candidate() = default;
     Candidate(const Candidate&) = delete;
-    Candidate(Candidate&&) = default;
+    Candidate(Candidate&&) noexcept = default;
     ~Candidate() = default;
 
     Candidate& operator=(Candidate&) = delete;
-    Candidate& operator=(Candidate&&) = default;
+    Candidate& operator=(Candidate&&) noexcept = default;
 
     inline void set(const Function& f)
     {

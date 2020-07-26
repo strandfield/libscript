@@ -270,7 +270,7 @@ Value VariableProcessor::visit(const program::ArrayExpression & ae)
 {
   Array a = engine()->newArray(Engine::ArrayType{ ae.arrayType });
   auto aimpl = a.impl();
-  aimpl->resize(ae.elements.size());
+  aimpl->resize(static_cast<int>(ae.elements.size()));
   for (size_t i(0); i < ae.elements.size(); ++i)
     aimpl->elements[i] = eval(ae.elements.at(i));
   Value ret = Value::fromArray(a);

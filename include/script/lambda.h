@@ -65,8 +65,8 @@ public:
   bool isNull() const;
   ClosureType closureType() const;
 
-  int captureCount() const;
-  Value getCapture(int index) const;
+  size_t captureCount() const;
+  Value getCapture(size_t index) const;
   const std::vector<Value> & captures() const;
 
   Engine* engine() const;

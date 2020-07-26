@@ -671,8 +671,8 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
   std::vector<Token>::const_iterator opBegin,
   std::vector<Token>::const_iterator opEnd)
 {
-  const auto numOp = std::distance(opBegin, opEnd);
-  auto getOp = [opBegin](int num) -> Token {
+  const size_t numOp = std::distance(opBegin, opEnd);
+  auto getOp = [opBegin](size_t num) -> Token {
     return *(opBegin + num);
   };
 
@@ -691,9 +691,9 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
       return Operator::precedence(ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp));
   };
 
-  int index = 0;
+  size_t index = 0;
   int preced = getPrecedence(getOp(index));
-  for (int i(1); i < numOp; ++i)
+  for (size_t i(1); i < numOp; ++i)
   {
     int p = getPrecedence(getOp(i));
     if (p > preced)
@@ -712,8 +712,8 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
   {
     auto cond = buildExpression(exprBegin, exprBegin + (index + 1), opBegin, opBegin + index);
 
-    int colonIndex = -1;
-    for (int j = numOp - 1; j > index; --j)
+    size_t colonIndex = std::numeric_limits<size_t>::max();
+    for (size_t j = numOp - 1; j > index; --j)
     {
       if (getOp(j) == Token::Colon)
       {
@@ -722,7 +722,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
       }
     }
 
-    if (colonIndex == -1)
+    if (colonIndex == std::numeric_limits<size_t>::max())
       throw SyntaxError{ ParserError::MissingConditionalColon };
 
     auto onTrue = buildExpression(exprBegin + (index + 1), exprBegin + (colonIndex + 1), opBegin + (index + 1), opBegin + colonIndex);

@@ -53,7 +53,7 @@ Value dtor(FunctionCall *c)
 // int size() const;
 Value size(FunctionCall *c)
 {
-  return c->engine()->newInt(c->arg(0).toInitializerList().size());
+  return c->engine()->newInt(static_cast<int>(c->arg(0).toInitializerList().size()));
 }
 
 // iterator begin() const;

@@ -22,22 +22,22 @@ class Interpreter;
 struct Stack
 {
   Stack();
-  Stack(int c);
+  Stack(size_t c);
   ~Stack();
 
   typedef Value* iterator;
   typedef const Value* const_iterator;
 
-  int size;
-  int capacity;
+  size_t size;
+  size_t capacity;
   Value *data;
 
-  void push(const Value & val);
-  Value & top();
-  const Value & top() const;
+  void push(const Value& val);
+  Value& top();
+  const Value& top() const;
   Value pop();
 
-  Value & operator[](int index);
+  Value& operator[](size_t index);
 
 public:
   Stack(const Stack &) = delete;
@@ -47,12 +47,12 @@ public:
 class LIBSCRIPT_API StackView
 {
 public:
-  StackView(Stack *s, int begin, int end);
+  StackView(Stack *s, size_t begin, size_t end);
   StackView(const StackView &) = default;
   ~StackView();
 
-  int size() const;
-  Value at(int index) const;
+  size_t size() const;
+  Value at(size_t index) const;
 
   Stack::iterator begin() const;
   Stack::iterator end() const;
@@ -61,8 +61,8 @@ public:
 
 private:
   Stack *mStack;
-  int mBegin;
-  int mEnd;
+  size_t mBegin;
+  size_t mEnd;
 };
 
 class ExecutionContext;
@@ -79,7 +79,7 @@ public:
   Value & returnValue();
   StackView args() const;
   Value arg(int index) const;
-  inline int argc() const { return callee().prototype().count(); }
+  inline size_t argc() const { return callee().prototype().count(); }
 
   ThisObject thisObject() const;
 
@@ -87,8 +87,8 @@ public:
   Engine * engine() const;
   TypeSystem* typeSystem() const;
 
-  inline int stackOffset() const { return mStackIndex; }
-  int depth() const;
+  inline size_t stackOffset() const { return mStackIndex; }
+  size_t depth() const;
 
   void setBreakFlag();
   void setContinueFlag();
@@ -107,7 +107,7 @@ private:
   friend class ExecutionContext;
 private:
   Function mCallee;
-  int mStackIndex; // index of return value in the callstack
+  size_t mStackIndex; // index of return value in the callstack
   int flags;
   ExecutionContext *ec;
 };
@@ -115,44 +115,44 @@ private:
 class Callstack
 {
 public:
-  Callstack(int capacity);
+  Callstack(size_t capacity);
   Callstack(const Callstack &) = delete;
   ~Callstack() = default;
 
-  int capacity() const;
-  int size();
+  size_t capacity() const;
+  size_t size();
 
-  FunctionCall * push(const Function & f, int stackOffset);
-  FunctionCall * top();
-  const FunctionCall * top() const;
+  FunctionCall* push(const Function& f, size_t stackOffset);
+  FunctionCall* top();
+  const FunctionCall* top() const;
   void pop();
 
   const FunctionCall* begin() const;
   const FunctionCall* end() const;
 
-  Callstack & operator=(const Callstack &) = delete;
-  FunctionCall * operator[](int index);
+  Callstack& operator=(const Callstack&) = delete;
+  FunctionCall* operator[](size_t index);
 
 private:
   std::vector<FunctionCall> mData;
-  int mSize;
+  size_t mSize;
 };
 
 
 class ExecutionContext
 {
 public:
-  ExecutionContext(Engine *e, int stackSize, int callStackSize);
+  ExecutionContext(Engine *e, size_t stackSize, size_t callStackSize);
   ~ExecutionContext();
 
   void push(const Function & f, const Value *obj, const Value *begin, const Value *end);
-  void push(const Function & f, int sp);
+  void push(const Function & f, size_t sp);
   Value pop();
 
   int flags() const;
   void clearFlags();
 
-  Engine *engine;
+  Engine* engine;
   Callstack callstack;
   Stack stack;
   std::vector<Value> initializer_list_buffer;

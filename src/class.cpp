@@ -150,7 +150,7 @@ const std::vector<Class::DataMember> & Class::dataMembers() const
 int Class::cumulatedDataMemberCount() const
 {
   Class p = parent();
-  return d->dataMembers.size() + (p.isNull() ? 0 : p.cumulatedDataMemberCount());
+  return static_cast<int>(d->dataMembers.size()) + (p.isNull() ? 0 : p.cumulatedDataMemberCount());
 }
 
 int Class::attributesOffset() const
@@ -167,7 +167,7 @@ int Class::attributeIndex(const std::string & attrName) const
   for (size_t i(0); i < d->dataMembers.size(); ++i)
   {
     if (d->dataMembers[i].name == attrName)
-      return offset + i;
+      return offset + static_cast<int>(i);
   }
 
   Class p = parent();

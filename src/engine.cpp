@@ -656,7 +656,7 @@ interpreter::Interpreter* Engine::interpreter() const
  */
 Script Engine::newScript(const SourceFile & source)
 {
-  Script ret{ std::make_shared<ScriptImpl>(d->scripts.size(), this, source) };
+  Script ret{ std::make_shared<ScriptImpl>(static_cast<int>(d->scripts.size()), this, source) };
   d->scripts.push_back(ret);
   return ret;
 }
@@ -721,7 +721,7 @@ Module Engine::newModule(const std::string & name, ModuleLoadFunction load, Modu
  */
 Module Engine::newModule(const std::string & name, const SourceFile & src)
 {
-  auto mimpl = std::make_shared<ScriptModule>(d->scripts.size(), this, src, name);
+  auto mimpl = std::make_shared<ScriptModule>(static_cast<int>(d->scripts.size()), this, src, name);
   d->scripts.push_back(Script{ mimpl });
   Module m{ mimpl };
   d->modules.push_back(m);
@@ -839,7 +839,7 @@ std::string Engine::toString(const Function & f) const
  */
 Context Engine::newContext()
 {
-  Context c{ std::make_shared<ContextImpl>(this, d->allContexts.size() + 1, "") };
+  Context c{ std::make_shared<ContextImpl>(this, static_cast<int>(d->allContexts.size() + 1), "") };
   d->allContexts.push_back(c);
   return c;
 }

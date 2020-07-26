@@ -53,7 +53,7 @@ bool TemplateArgumentScope::lookup(const std::string & name, NameLookupImpl *nl)
 
     if (arguments_.size() <= i)
     {
-      nl->templateParameterIndex = i;
+      nl->templateParameterIndex = static_cast<int>(i);
       return true;
     }
 
@@ -115,7 +115,7 @@ bool TemplateParameterScope::lookup(const std::string & name, NameLookupImpl *nl
     if (params.at(i).name() != name)
       continue;
 
-    nl->templateParameterIndex = i;
+    nl->templateParameterIndex = static_cast<int>(i);
     return true;
   }
 

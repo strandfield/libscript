@@ -39,7 +39,7 @@ std::shared_ptr<program::CompoundStatement> DestructorCompiler::generateDestruct
   std::vector<std::shared_ptr<program::Statement>> statements;
 
   const auto & data_members = cla.dataMembers();
-  for (int i(data_members.size() - 1); i >= 0; --i)
+  for (size_t i(data_members.size()); i-- > 0; )
     statements.push_back(program::PopDataMember::New(getDestructor(cla.engine(), data_members.at(i).type)));
 
   if (!cla.parent().isNull())

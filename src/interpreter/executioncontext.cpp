@@ -18,7 +18,7 @@ namespace interpreter
 
 Stack::Stack() : size(0), capacity(0), data(0) { }
 
-Stack::Stack(int c) : size(0), capacity(c)
+Stack::Stack(size_t c) : size(0), capacity(c)
 {
   this->data = new Value[c];
 }
@@ -34,12 +34,12 @@ void Stack::push(const Value & val)
   this->data[this->size++] = val;
 }
 
-Value & Stack::top()
+Value& Stack::top()
 {
   return this->data[this->size - 1];
 }
 
-const Value & Stack::top() const
+const Value& Stack::top() const
 {
   return this->data[this->size - 1];
 }
@@ -51,12 +51,12 @@ Value Stack::pop()
   return ret;
 }
 
-Value & Stack::operator[](int index)
+Value & Stack::operator[](size_t index)
 {
   return this->data[index];
 }
 
-StackView::StackView(Stack *s, int begin, int end)
+StackView::StackView(Stack *s, size_t begin, size_t end)
   : mStack(s)
   , mBegin(begin)
   , mEnd(end)
@@ -71,12 +71,12 @@ StackView::~StackView()
   mEnd = 0;
 }
 
-int StackView::size() const
+size_t StackView::size() const
 {
   return mEnd - mBegin;
 }
 
-Value StackView::at(int index) const
+Value StackView::at(size_t index) const
 {
   return mStack->data[mBegin + index];
 }
@@ -100,9 +100,9 @@ FunctionCall::FunctionCall()
 
 }
 
-FunctionCall * FunctionCall::caller() const
+FunctionCall* FunctionCall::caller() const
 {
-  const int d = depth();
+  const size_t d = depth();
 
   if (d == 0)
     return nullptr;
@@ -116,7 +116,7 @@ void FunctionCall::setReturnValue(const Value & val)
   this->flags = ReturnFlag;
 }
 
-Value & FunctionCall::returnValue()
+Value& FunctionCall::returnValue()
 {
   return this->ec->stack[this->mStackIndex];
 }
@@ -133,7 +133,7 @@ Value FunctionCall::arg(int index) const
 
 StackView FunctionCall::args() const
 {
-  return StackView{ &this->ec->stack, stackOffset() + 1, stackOffset() + 1 + argc() };
+  return StackView{ &this->ec->stack, static_cast<size_t>(stackOffset() + 1), static_cast<size_t>(stackOffset() + 1 + argc()) };
 }
 
 ExecutionContext * FunctionCall::executionContext() const
@@ -151,7 +151,7 @@ TypeSystem* FunctionCall::typeSystem() const
   return this->ec->engine->typeSystem();
 }
 
-int FunctionCall::depth() const
+size_t FunctionCall::depth() const
 {
   return std::distance(this->ec->callstack.begin(), this);
 }
@@ -173,23 +173,23 @@ void FunctionCall::clearFlags()
 
 
 
-Callstack::Callstack(int capacity)
+Callstack::Callstack(size_t capacity)
   : mSize(0)
 {
   mData.resize(capacity);
 }
 
-int Callstack::capacity() const
+size_t Callstack::capacity() const
 {
   return mData.capacity();
 }
 
-int Callstack::size()
+size_t Callstack::size()
 {
   return mSize;
 }
 
-FunctionCall * Callstack::push(const Function & f, int stackOffset)
+FunctionCall * Callstack::push(const Function & f, size_t stackOffset)
 {
   if (size() == capacity())
     throw std::runtime_error{ "Callstack overflow" };
@@ -227,14 +227,14 @@ const FunctionCall* Callstack::end() const
   return std::addressof(mData[mSize]);
 }
 
-FunctionCall * Callstack::operator[](int index)
+FunctionCall * Callstack::operator[](size_t index)
 {
   return std::addressof(mData[index]);
 }
 
 
 
-ExecutionContext::ExecutionContext(Engine *e, int stackSize, int callStackSize)
+ExecutionContext::ExecutionContext(Engine *e, size_t stackSize, size_t callStackSize)
   : engine(e)
   , stack(stackSize)
   , callstack(callStackSize)
@@ -260,7 +260,7 @@ void ExecutionContext::push(const Function & f, const Value *obj, const Value *b
   fc->ec = this;
 }
 
-void ExecutionContext::push(const Function & f, int sp)
+void ExecutionContext::push(const Function & f, size_t sp)
 {
   FunctionCall* fc = this->callstack.push(f, sp);
   fc->ec = this;

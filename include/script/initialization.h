@@ -36,6 +36,7 @@ public:
 
   Initialization();
   Initialization(const Initialization &) = default;
+  Initialization(Initialization&&) noexcept = default;
   ~Initialization() = default;
 
   Initialization(Category cat);
@@ -65,6 +66,9 @@ public:
   static Initialization compute(const Type & vartype, Engine *engine);
   static Initialization compute(const Type & vartype, const Type & arg, Engine *engine, Category cat = CopyInitialization);
   static Initialization compute(const Type & vartype, const std::shared_ptr<program::Expression> & expr, Engine *engine);
+
+  Initialization& operator=(const Initialization&) = default;
+  Initialization& operator=(Initialization&&) noexcept = default;
 
 private:
   Category mCategory;

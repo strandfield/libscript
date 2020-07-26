@@ -30,7 +30,7 @@ public:
   template<typename Builder>
   void generic_process(const std::vector<ast::FunctionParameter> & params, Builder & builder, const Scope & scp)
   {
-    const int param_offset = (builder.symbol.isClass() && !builder.isStatic()) ? 1 : 0;
+    const size_t param_offset = (builder.symbol.isClass() && !builder.isStatic()) ? 1 : 0;
 
     size_t first_default_index = 0;
     while (first_default_index < params.size() && params.at(first_default_index).defaultValue == nullptr)

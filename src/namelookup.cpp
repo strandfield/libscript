@@ -428,7 +428,7 @@ void NameLookup::recursive_member_lookup(NameLookupImpl *result, const std::stri
   {
     if (data_members.at(i).name == name)
     {
-      result->dataMemberIndex = i + cla.attributesOffset();
+      result->dataMemberIndex = static_cast<int>(i + cla.attributesOffset());
       return;
     }
   }

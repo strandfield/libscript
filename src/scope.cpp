@@ -328,7 +328,7 @@ bool ExtensibleScope::lookup(const std::string & name, NameLookupImpl *nl) const
     }
   }
 
-  const int size_before = nl->functions.size();
+  const size_t size_before = nl->functions.size();
   for (const auto & f : injected_functions)
   {
     if (f.name() == name)
@@ -702,11 +702,11 @@ bool ClassScope::lookup(const std::string & name, const Class & c, NameLookupImp
 
   {
     const auto & dm = c.dataMembers();
-    for (int i(dm.size() - 1); i >= 0; --i)
+    for (size_t i(dm.size()); i-- > 0; )
     {
       if (dm.at(i).name == name)
       {
-        nl->dataMemberIndex = i + c.attributesOffset();
+        nl->dataMemberIndex = static_cast<int>(i) + c.attributesOffset();
         nl->memberOfResult = c;
         return true;
       }
@@ -830,11 +830,11 @@ bool LambdaScope::lookup(const std::string & name, NameLookupImpl *nl) const
   if (captures.empty())
     return false;
 
-  for (int i(captures.size() - 1); i >= 0; --i)
+  for (size_t i(captures.size()); i-- > 0;)
   {
     if (captures.at(i).name == name)
     {
-      nl->captureIndex = i;
+      nl->captureIndex = static_cast<int>(i);
       return true;
     }
   }

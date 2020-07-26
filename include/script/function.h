@@ -34,6 +34,7 @@ class LIBSCRIPT_API Function
 public:
   Function() = default;
   Function(const Function & other) = default;
+  Function(Function&&) noexcept = default;
   ~Function() = default;
 
   explicit Function(const std::shared_ptr<FunctionImpl> & impl);
@@ -43,9 +44,9 @@ public:
   const std::string & name() const;
   Name getName() const;
 
-  const Prototype & prototype() const;
-  const Type & parameter(int index) const;
-  const Type & returnType() const;
+  const Prototype& prototype() const;
+  const Type& parameter(size_t index) const;
+  const Type& returnType() const;
 
   [[deprecated("Use defaultArguments().size() != 0 instead")]]
   bool hasDefaultArguments() const;
@@ -109,7 +110,8 @@ public:
   Value invoke(const std::vector<Value>& args) const;
   Value invoke(const Value* begin, const Value* end) const;
 
-  Function & operator=(const Function & other);
+  Function& operator=(const Function&) = default;
+  Function& operator=(Function&&) noexcept = default;
   bool operator==(const Function & other) const;
   bool operator!=(const Function & other) const;
 

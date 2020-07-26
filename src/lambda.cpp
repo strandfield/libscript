@@ -28,7 +28,7 @@ int ClosureType::id() const
 
 int ClosureType::captureCount() const
 {
-  return d->captures.size();
+  return static_cast<int>(d->captures.size());
 }
 
 bool ClosureType::isCaptureless() const
@@ -88,12 +88,12 @@ ClosureType Lambda::closureType() const
   return d->closureType;
 }
 
-int Lambda::captureCount() const
+size_t Lambda::captureCount() const
 {
   return d->captures.size();
 }
 
-Value Lambda::getCapture(int index) const
+Value Lambda::getCapture(size_t index) const
 {
   return d->captures.at(index);
 }

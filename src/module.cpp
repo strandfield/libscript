@@ -172,7 +172,7 @@ Module Module::newSubModule(const std::string& name, const SourceFile& src)
 
   NativeModule* nm = static_cast<NativeModule*>(impl());
 
-  auto mimpl = std::make_shared<ScriptModule>(engine()->implementation()->scripts.size(), engine(), src, name);
+  auto mimpl = std::make_shared<ScriptModule>(static_cast<int>(engine()->implementation()->scripts.size()), engine(), src, name);
   engine()->implementation()->scripts.push_back(Script(mimpl));
 
   Module m{ mimpl };
@@ -256,8 +256,9 @@ void Module::load()
     {
       s.run();
     }
-    catch (const RuntimeError & ex)
+    catch (const RuntimeError&)
     {
+      // @TODO: reproduce the error message
       throw ModuleLoadingError{ "script execution failed" };
     }
   }

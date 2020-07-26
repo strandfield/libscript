@@ -19,26 +19,25 @@ public:
   Prototype(const Prototype &) = delete;
   ~Prototype();
 
-  explicit Prototype(const Type & rt);
-  Prototype(const Type & rt, Type *begin, Type *end);
+  explicit Prototype(const Type& rt);
+  Prototype(const Type& rt, Type* begin, Type* end);
 
-  inline const Type & returnType() const { return mReturnType; }
-  void setReturnType(const Type & rt) { mReturnType = rt; }
+  inline const Type& returnType() const { return mReturnType; }
+  void setReturnType(const Type& rt) { mReturnType = rt; }
 
-  int parameterCount() const { return (int) std::distance(mBegin, mEnd); }
-  inline int count() const { return parameterCount(); }
-  inline int size() const { return parameterCount(); }
-  inline const Type & parameter(int index) const { return *(mBegin + index); }
-  inline const Type & at(int index) const { return parameter(index); }
+  size_t parameterCount() const { return static_cast<size_t>(std::distance(mBegin, mEnd)); }
+  inline size_t count() const { return parameterCount(); }
+  inline size_t size() const { return parameterCount(); }
+  inline const Type& parameter(size_t index) const { return *(mBegin + index); }
+  inline const Type& at(size_t index) const { return parameter(index); }
   inline std::vector<Type> parameters() const { return std::vector<Type>{ mBegin, mEnd }; }
-  inline const Type * begin() const { return mBegin; }
-  inline const Type * end() const { return mEnd; }
-  inline void setParameter(int index, const Type & t) { *(mBegin + index) = t; }
+  inline const Type* begin() const { return mBegin; }
+  inline const Type* end() const { return mEnd; }
+  inline void setParameter(size_t index, const Type& t) { *(mBegin + index) = t; }
 
-  Prototype & operator=(const Prototype & other) = delete;
-  inline Type & operator[](int index) { return *(mBegin + index); }
-  bool operator==(const Prototype & other) const;
-  inline bool operator!=(const Prototype & other) const { return !operator==(other); }
+  Prototype& operator=(const Prototype&) = delete;
+  inline Type& operator[](size_t index) { return *(mBegin + index); }
+  bool operator==(const Prototype& other) const;
 
 protected:
   inline void setParameters(Type *begin, Type *end) { mBegin = begin; mEnd = end; }
@@ -49,7 +48,8 @@ private:
   Type *mEnd;
 };
 
-} // namespace script
+inline bool operator!=(const Prototype& lhs, const Prototype& rhs) { return !(lhs == rhs); }
 
+} // namespace script
 
 #endif // LIBSCRIPT_PROTOTYPE_H

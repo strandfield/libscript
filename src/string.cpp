@@ -73,7 +73,7 @@ Value at(FunctionCall *c)
 Value capacity(FunctionCall *c)
 {
   Value that = c->thisObject();
-  return c->engine()->newInt(script::get<String>(that).capacity());
+  return c->engine()->newInt(static_cast<int>(script::get<String>(that).capacity()));
 }
 
 // void String::clear();
@@ -125,7 +125,7 @@ Value length(FunctionCall *c)
 {
   Value that = c->thisObject();
   auto& self = script::get<String>(that);
-  return c->engine()->newInt(self.size());
+  return c->engine()->newInt(static_cast<int>(self.size()));
 }
 
 // String & String::replace(int position, int n, const String & after);

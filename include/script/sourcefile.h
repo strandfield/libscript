@@ -22,7 +22,7 @@ public:
 
   inline bool isNull() const { return d == nullptr; }
 
-  typedef int Offset;
+  typedef size_t Offset;
 
   struct Position {
     Offset pos;

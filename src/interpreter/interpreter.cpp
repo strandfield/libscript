@@ -332,7 +332,7 @@ Value Interpreter::visit(const program::ArrayExpression & array)
   auto array_data = std::dynamic_pointer_cast<SharedArrayData>(array_class.data());
   Array a{ std::make_shared<ArrayImpl>(array_data->data, mEngine) };
   auto aimpl = a.impl();
-  aimpl->resize(array.elements.size());
+  aimpl->resize(static_cast<int>(array.elements.size()));
   for (size_t i(0); i < array.elements.size(); ++i)
     aimpl->elements[i] = inner_eval(array.elements.at(i));
   return Value::fromArray(a);

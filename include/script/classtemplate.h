@@ -64,9 +64,10 @@ public:
 
   const std::vector<TemplateParameter>& parameters() const;
   
-  [[deprecated("TODO:remove")]] Scope scope() const;
-  [[deprecated("TODO:remove")]] Scope argumentScope(const std::vector<TemplateArgument>& args) const;
-  [[deprecated("TODO:remove")]] Scope parameterScope() const;
+  // @TODO: it would be better to rely on Template::scope(), argumentScope() & parameterScope()
+  Scope scope() const;
+  Scope argumentScope(const std::vector<TemplateArgument>& args) const;
+  Scope parameterScope() const;
 
   const std::vector<std::shared_ptr<ast::Node>> & arguments() const;
   ClassTemplate specializationOf() const;

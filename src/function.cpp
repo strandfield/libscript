@@ -272,17 +272,17 @@ Name Function::getName() const
   return d->get_name();
 }
 
-const Prototype & Function::prototype() const
+const Prototype& Function::prototype() const
 {
   return d->prototype();
 }
 
-const Type & Function::parameter(int index) const
+const Type& Function::parameter(size_t index) const
 {
   return prototype().at(index);
 }
 
-const Type & Function::returnType() const
+const Type& Function::returnType() const
 {
   return prototype().returnType();
 }
@@ -603,12 +603,6 @@ Value Function::invoke(const std::vector<Value>& args) const
 Value Function::invoke(const Value* begin, const Value* end) const
 {
   return d->engine->interpreter()->invoke(*this, nullptr, begin, end);
-}
-
-Function & Function::operator=(const Function & other)
-{
-  d = other.d;
-  return *(this);
 }
 
 bool Function::operator==(const Function & other) const

@@ -36,15 +36,15 @@ OverloadResolution::OverloadComparison OverloadResolution::compare(const Candida
   else if (rank_a > rank_b)
     return OverloadResolution::SecondIsBetter;
 
-  const int nb_conversions = a.initializations.size();
+  const size_t nb_conversions = a.initializations.size();
   int first_diff = 0;
   int first_diff_index = -1;
-  for (int i(0); i < nb_conversions; ++i)
+  for (size_t i(0); i < nb_conversions; ++i)
   {
     first_diff = Initialization::comp(a.initializations.at(i), b.initializations.at(i));
     if (first_diff)
     {
-      first_diff_index = i;
+      first_diff_index = static_cast<int>(i);
       break;
     }
   }
@@ -52,7 +52,7 @@ OverloadResolution::OverloadComparison OverloadResolution::compare(const Candida
   if (first_diff_index == -1)
     return OverloadResolution::Indistinguishable;
 
-  for (int i(first_diff_index + 1); i < nb_conversions; ++i)
+  for (size_t i(static_cast<size_t>(first_diff_index) + 1); i < nb_conversions; ++i)
   {
     const int diff = Initialization::comp(a.initializations.at(i), b.initializations.at(i));
     if (diff == -first_diff)

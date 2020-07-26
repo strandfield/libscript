@@ -357,7 +357,7 @@ std::shared_ptr<FundamentalConversion> FundamentalConversion::New(const Type & t
 
 
 
-VirtualCall::VirtualCall(const std::shared_ptr<Expression> & obj, int methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments)
+VirtualCall::VirtualCall(const std::shared_ptr<Expression> & obj, size_t methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments)
   : object(obj)
   , vtableIndex(methodIndex)
   , returnValueType(t)
@@ -372,7 +372,7 @@ Type VirtualCall::type() const
 }
 
 
-std::shared_ptr<VirtualCall> VirtualCall::New(const std::shared_ptr<Expression> & obj, int methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments)
+std::shared_ptr<VirtualCall> VirtualCall::New(const std::shared_ptr<Expression> & obj, size_t methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments)
 {
   return std::make_shared<VirtualCall>(obj, methodIndex, t, std::move(arguments));
 }
@@ -399,7 +399,7 @@ std::shared_ptr<ArrayExpression> ArrayExpression::New(const Type & arrayType, st
 
 
 
-MemberAccess::MemberAccess(const Type & mt, const std::shared_ptr<Expression> & obj, int index)
+MemberAccess::MemberAccess(const Type & mt, const std::shared_ptr<Expression> & obj, size_t index)
   : memberType(mt)
   , object(obj)
   , offset(index)
@@ -412,7 +412,7 @@ Type MemberAccess::type() const
   return this->memberType;
 }
 
-std::shared_ptr<MemberAccess> MemberAccess::New(const Type & mt, const std::shared_ptr<Expression> & obj, int index)
+std::shared_ptr<MemberAccess> MemberAccess::New(const Type & mt, const std::shared_ptr<Expression> & obj, size_t index)
 {
   return std::make_shared<MemberAccess>(mt, obj, index);
 }

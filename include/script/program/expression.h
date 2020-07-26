@@ -245,17 +245,17 @@ public:
 struct LIBSCRIPT_API VirtualCall : public Expression
 {
   std::shared_ptr<Expression> object;
-  int vtableIndex;
+  size_t vtableIndex;
   Type returnValueType;
   std::vector<std::shared_ptr<Expression>> args;
 
 public:
-  VirtualCall(const std::shared_ptr<Expression> & obj, int methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments);
+  VirtualCall(const std::shared_ptr<Expression> & obj, size_t methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments);
   ~VirtualCall() = default;
 
   Type type() const override;
 
-  static std::shared_ptr<VirtualCall> New(const std::shared_ptr<Expression> & obj, int methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments);
+  static std::shared_ptr<VirtualCall> New(const std::shared_ptr<Expression> & obj, size_t methodIndex, const Type & t, std::vector<std::shared_ptr<Expression>> && arguments);
 
   Value accept(ExpressionVisitor &) override;
 };
@@ -279,14 +279,14 @@ struct LIBSCRIPT_API MemberAccess : public Expression
 {
   Type memberType;
   std::shared_ptr<Expression> object;
-  int offset;
+  size_t offset;
 public:
-  MemberAccess(const Type & mt, const std::shared_ptr<Expression> & obj, int index);
+  MemberAccess(const Type & mt, const std::shared_ptr<Expression> & obj, size_t index);
   ~MemberAccess() = default;
 
   Type type() const override;
 
-  static std::shared_ptr<MemberAccess> New(const Type & mt, const std::shared_ptr<Expression> & obj, int index);
+  static std::shared_ptr<MemberAccess> New(const Type & mt, const std::shared_ptr<Expression> & obj, size_t index);
 
   Value accept(ExpressionVisitor &) override;
 };
