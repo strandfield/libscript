@@ -93,8 +93,7 @@ void ScriptCompiler::add(const Script & task)
 {
   try
   {
-    parser::Parser parser;
-    auto ast = parser.parse(task.source());
+    auto ast = script::parser::parse(task.source());
     task.impl()->ast = ast;
     ast->script = task.impl();
   }

@@ -2467,36 +2467,32 @@ Parser::Parser(const char* str)
 
 }
 
-std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
+std::shared_ptr<ast::ClassDecl> Parser::parseClassDeclaration()
 {
-  auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
-  reset(c, TokenReader(c->source(), Fragment{ c->tokens() }));
+  ClassParser cp{ context(), subfragment() };
+  return parse_and_seek(cp);
+}
+
+std::shared_ptr<ast::AST> parse(const SourceFile& source)
+{
+  Parser p{ loaded_source_file(source).content() };
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   ret->root = ast::ScriptRootNode::New(ret);
 
-  while (!atEnd())
+  while (!p.atEnd())
   {
-    ret->add(parseStatement());
+    ret->add(p.parseStatement());
   }
 
   return ret;
 }
 
-std::shared_ptr<ast::Expression> Parser::parseExpression(const std::string& source)
+std::shared_ptr<ast::Expression> parseExpression(const std::string& source)
 {
   auto c = std::make_shared<ParserContext>(source);
-  reset(c, TokenReader(c->source(), Fragment{ c->tokens() }));
-
-  ExpressionParser ep{ context(), subfragment() };
-  return parse_and_seek(ep);
-}
-
-
-std::shared_ptr<ast::ClassDecl> Parser::parseClassDeclaration()
-{
-  ClassParser cp{ context(), subfragment() };
-  return parse_and_seek(cp);
+  ExpressionParser ep{ c, TokenReader(c->source(), c->tokens()) };
+  return ep.parse();
 }
 
 } // parser

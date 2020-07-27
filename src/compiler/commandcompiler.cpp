@@ -55,8 +55,7 @@ std::shared_ptr<program::Expression> CommandCompiler::compile(const std::string 
 
   try
   {
-    parser::Parser parser;
-    ast_expr = parser.parseExpression(expr);
+    ast_expr = script::parser::parseExpression(expr);
   }
   catch (parser::SyntaxError& ex)
   {

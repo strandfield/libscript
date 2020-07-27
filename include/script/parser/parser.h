@@ -457,13 +457,13 @@ public:
   explicit Parser(const char* str);
   ~Parser() = default;
 
-  std::shared_ptr<ast::AST> parse(const SourceFile & source);
-
-  std::shared_ptr<ast::Expression> parseExpression(const std::string& src);
-
 protected:
   std::shared_ptr<ast::ClassDecl> parseClassDeclaration() override;
 };
+
+LIBSCRIPT_API std::shared_ptr<ast::AST> parse(const SourceFile& source);
+
+LIBSCRIPT_API std::shared_ptr<ast::Expression> parseExpression(const std::string& src);
 
 } // namespace parser
 
