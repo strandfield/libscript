@@ -8,6 +8,7 @@
 #include "script/ast/ast_p.h"
 
 #include "script/parser/parsererrors.h"
+#include "script/parser/token-reader.h"
 
 namespace script
 {
@@ -33,138 +34,6 @@ public:
 
   const std::vector<Token>& tokens() const { return m_tokens; }
 };
-
-class DelimitersCounter
-{
-public:
-  int par_depth = 0;
-  int brace_depth = 0;
-  int bracket_depth = 0;
-
-  void reset();
-
-  void relaxed_feed(const Token& tok) noexcept;
-  void feed(const Token& tok);
-
-  bool balanced() const;
-  bool invalid() const;
-};
-
-class Fragment
-{
-public:
-  Fragment(const Fragment&) = default;
-
-  explicit Fragment(const ParserContext& context);
-
-  enum FragmentKind
-  {
-    DelimiterPair,
-    Statement,
-    ListElement,
-    Template,
-    Other,
-  };
-
-  template<FragmentKind FK>
-  struct Type {};
-
-  typedef std::vector<Token>::const_iterator iterator;
-
-  Fragment(iterator begin, iterator end);
-
-  iterator begin() const;
-  iterator end() const;
-
-  size_t size() const;
-
-  static bool tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right);
-
-  Fragment& operator=(const Fragment&) = default;
-
-private:
-  iterator m_begin;
-  iterator m_end;
-};
-
-bool operator==(const Fragment& lhs, const Fragment& rhs);
-inline bool operator!=(const Fragment& lhs, const Fragment& rhs) { return !(lhs == rhs); }
-
-class TokenReader
-{
-public:
-  const char* m_source; // used only for computing location when throwing
-  Fragment m_fragment;
-  Fragment::iterator m_iterator;
-  bool m_right_right_angle_flag;
-
-public:
-  TokenReader(const TokenReader&) = default;
-  ~TokenReader() = default;
-
-  explicit TokenReader(const ParserContext& c);
-  TokenReader(const char* src, const Fragment& frag, bool right_right_angle = false);
-
-  bool valid() const { return m_source != nullptr; }
-
-  Fragment::iterator iterator() const { return m_iterator; }
-  const Fragment& fragment() const { return m_fragment; }
-
-  Fragment::iterator begin() const { return fragment().begin(); }
-  Fragment::iterator end() const { return fragment().end(); }
-
-  bool atEnd() const;
-  Token read();
-  Token unsafe_read();
-  Token read(const Token::Id& t);
-  Token peek() const;
-  Token peek(size_t n) const;
-  Token unsafe_peek() const;
-  void seek(Fragment::iterator it);
-  TokenReader subfragment() const;
-
-  template<Fragment::FragmentKind FK>
-  TokenReader subfragment() const
-  {
-    return subfragment_helper(Fragment::Type<FK>());
-  }
-
-  template<Fragment::FragmentKind FK>
-  TokenReader next()
-  {
-    TokenReader r = subfragment<FK>();
-    seek(r.end());
-    return r;
-  }
-
-  operator const Fragment& () const { return m_fragment; }
-
-  SyntaxError SyntaxErr(ParserError e) const
-  {
-    SyntaxError err{ e };
-    err.offset = std::distance(m_source, m_iterator->text().data());
-    return err;
-  }
-
-  template<typename T>
-  SyntaxError SyntaxErr(ParserError e, T&& d) const
-  {
-    SyntaxError err{ e, std::forward<T>(d) };
-    err.offset = std::distance(m_source, m_iterator->text().data());
-    return err;
-  }
-
-  TokenReader& operator=(const TokenReader&) = default;
-
-private:
-  TokenReader subfragment_helper(Fragment::Type<Fragment::DelimiterPair>) const;
-  TokenReader subfragment_helper(Fragment::Type<Fragment::Statement>) const;
-  TokenReader subfragment_helper(Fragment::Type<Fragment::ListElement>) const;
-  TokenReader subfragment_helper(Fragment::Type<Fragment::Template>) const;
-};
-
-bool operator==(const TokenReader& lhs, const TokenReader& rhs);
-inline bool operator!=(const TokenReader& lhs, const TokenReader& rhs) { return !(lhs == rhs); }
 
 class ParserBase : protected TokenReader
 {

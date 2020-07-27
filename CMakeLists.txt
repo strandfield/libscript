@@ -51,3 +51,9 @@ target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
 ##################################################################
 
 add_subdirectory(tests)
+
+set(LIBSCRIPT_BUILD_EXAMPLES ON CACHE BOOL "whether to build the examples")
+
+if (LIBSCRIPT_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()

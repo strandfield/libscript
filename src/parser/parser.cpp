@@ -17,150 +17,6 @@ namespace script
 namespace parser
 {
 
-void DelimitersCounter::reset()
-{
-  par_depth = 0;
-  brace_depth = 0;
-  bracket_depth = 0;
-}
-
-void DelimitersCounter::relaxed_feed(const Token& tok) noexcept
-{
-  switch (tok.id)
-  {
-  case Token::LeftPar:
-    ++par_depth;
-    break;
-  case Token::RightPar:
-    --par_depth;
-    break;
-  case Token::LeftBrace:
-    ++brace_depth;
-    break;
-  case Token::RightBrace:
-    --brace_depth;
-    break;
-  case Token::LeftBracket:
-    ++bracket_depth;
-    break;
-  case Token::RightBracket:
-    --bracket_depth;
-    break;
-  default:
-    break;
-  }
-}
-
-void DelimitersCounter::feed(const Token& tok)
-{
-  relaxed_feed(tok);
-
-  if(invalid())
-    throw SyntaxError{ ParserError::UnexpectedFragmentEnd }; // @TODO: create better error enum
-}
-
-bool DelimitersCounter::balanced() const
-{
-  return par_depth == 0 && brace_depth == 0 && bracket_depth == 0;
-}
-
-bool DelimitersCounter::invalid() const
-{
-  return par_depth < 0 || brace_depth < 0 || bracket_depth < 0;
-}
-
-Fragment::Fragment(const ParserContext& context)
-  : m_begin(context.tokens().begin()),
-    m_end(context.tokens().end())
-{
-
-}
-
-Fragment::Fragment(iterator begin, iterator end)
-  : m_begin(begin),
-    m_end(end)
-{
-
-}
-
-std::vector<Token>::const_iterator Fragment::begin() const
-{
-  return m_begin;
-}
-
-std::vector<Token>::const_iterator Fragment::end() const
-{
-  return m_end;
-}
-
-size_t Fragment::size() const
-{
-  return std::distance(begin(), end());
-}
-
-bool Fragment::tryBuildTemplateFragment(iterator begin, iterator end, iterator& o_begin, iterator& o_end, bool& o_half_consumed_right_right)
-{
-  if (begin->id != Token::LeftAngle)
-    return false;
-
-  DelimitersCounter counter;
-  int angle_counter = 0;
-
-  for (auto it = begin; it != end; ++it)
-  {
-    counter.relaxed_feed(*it);
-
-    if (counter.invalid())
-      return false;
-
-    if (it->id == Token::RightAngle)
-    {
-      if (counter.balanced())
-      {
-        --angle_counter;
-
-        if (angle_counter == 0)
-        {
-          o_begin = begin + 1;
-          o_end = it;
-          o_half_consumed_right_right = false;
-          return true;
-        }
-      }
-    }
-    else if (it->id == Token::RightRightAngle)
-    {
-      if (counter.balanced())
-      {
-        if (angle_counter == 1 || angle_counter == 2)
-        {
-          angle_counter = 0;
-          o_half_consumed_right_right = true;
-          o_begin = begin + 1;
-          o_end = it;
-          return true;
-        }
-        else
-        {
-          angle_counter -= 2;
-        }
-      }
-    }
-    else if (it->id == Token::LeftAngle)
-    {
-      if (counter.balanced())
-        ++angle_counter;
-    }
-  }
-
-  return false;
-}
-
-bool operator==(const Fragment& lhs, const Fragment& rhs)
-{
-  return lhs.begin() == rhs.begin() && lhs.end() == rhs.end();
-}
-
 ParserContext::ParserContext(const char* src)
   : ParserContext(src, std::strlen(src))
 {
@@ -199,193 +55,6 @@ ParserContext::ParserContext(const char* src, std::vector<Token> tokens)
 ParserContext::~ParserContext()
 {
 
-}
-
-TokenReader::TokenReader(const ParserContext& c)
-  : TokenReader(c.source(), Fragment(c))
-{
-
-}
-
-TokenReader::TokenReader(const char* src, const Fragment& frag, bool right_right_angle)
-  : m_source(src),
-    m_fragment(frag),
-    m_iterator(frag.begin()),
-    m_right_right_angle_flag(right_right_angle)
-{
-
-}
-
-bool TokenReader::atEnd() const
-{
-  return m_iterator == fragment().end();
-}
-
-Token TokenReader::read()
-{
-  if (atEnd())
-    throw SyntaxError{ ParserError::UnexpectedEndOfInput };
-
-  return *(m_iterator++);
-}
-
-Token TokenReader::unsafe_read()
-{
-  return *(m_iterator++);
-}
-
-Token TokenReader::read(const Token::Id& type)
-{
-  Token ret = read();
-
-  if (ret != type)
-    throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{ret, type} };
-
-  return ret;
-}
-
-Token TokenReader::peek() const
-{
-  return *m_iterator;
-}
-
-Token TokenReader::peek(size_t n) const
-{
-  return *(std::next(m_iterator, n));
-}
-
-Token TokenReader::unsafe_peek() const
-{
-  return *(m_iterator);
-}
-
-void TokenReader::seek(Fragment::iterator it)
-{
-  m_iterator = it;
-}
-
-TokenReader TokenReader::subfragment() const
-{
-  return TokenReader(m_source, Fragment(iterator(), fragment().end()), m_right_right_angle_flag);
-}
-
-TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::Template>) const
-{
-  Fragment::iterator frag_begin;
-  Fragment::iterator frag_end;
-  Fragment::iterator current_frag_end = m_right_right_angle_flag && fragment().end()->id == Token::RightRightAngle ?
-    fragment().end() + 1 : fragment().end();
-  bool half_consumed_right_right = false;
-
-  bool ok = Fragment::tryBuildTemplateFragment(iterator(), current_frag_end,
-    frag_begin, frag_end, half_consumed_right_right);
-
-  if (ok)
-    return TokenReader(m_source, Fragment(frag_begin, frag_end), half_consumed_right_right && !m_right_right_angle_flag);
-  else
-    return TokenReader(nullptr, Fragment(begin(), begin()));
-}
-
-TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::DelimiterPair>) const
-{
-  DelimitersCounter counter;
-  counter.feed(*m_iterator);
-
-  if (counter.balanced())
-    throw std::runtime_error{ "bad call to Fragment ctor" };
-
-  auto begin = std::next(m_iterator);
-
-  auto it = begin;
-
-  while (it != fragment().end())
-  {
-    counter.feed(*it);
-
-    if (counter.balanced())
-    {
-      return TokenReader(m_source, Fragment(begin, it));
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
-}
-
-TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::Statement>) const
-{
-  DelimitersCounter counter;
-
-  auto it = m_iterator;
-
-  while (it != fragment().end())
-  {
-    counter.feed(*it);
-
-    if (it->id == Token::Semicolon)
-    {
-      if (counter.balanced())
-      {
-        return TokenReader(m_source, Fragment(m_iterator, it));;
-      }
-      else
-      {
-        // @TODO: we could check that we are inside brackets
-        ++it;
-      }
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
-}
-
-TokenReader TokenReader::subfragment_helper(Fragment::Type<Fragment::ListElement>) const
-{
-  DelimitersCounter counter;
-
-  auto it = m_iterator;
-
-  while (it != fragment().end())
-  {
-    counter.relaxed_feed(*it);
-
-    if(counter.invalid()) // @TODO: write offset
-      throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
-
-    if (it->id == Token::Comma)
-    {
-      if (counter.balanced())
-      {
-        return TokenReader(m_source, Fragment(m_iterator, it));
-      }
-      else
-      {
-        // @TODO: we could check that we are inside brackets
-        ++it;
-      }
-    }
-    else
-    {
-      ++it;
-    }
-  }
-
-  if (!counter.balanced())
-    throw SyntaxErr(ParserError::UnexpectedFragmentEnd); // @TODO: create better error enum
-
-  return TokenReader(m_source, Fragment(m_iterator, fragment().end()), m_right_right_angle_flag);
-}
-
-bool operator==(const TokenReader& lhs, const TokenReader& rhs)
-{
-  return lhs.fragment() == rhs.fragment() && lhs.iterator() == rhs.iterator();
 }
 
 ParserBase::ParserBase(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
@@ -905,7 +574,7 @@ ast::LambdaCapture LambdaCaptureParser::parse()
 
 
 ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context)
-  : ProgramParser(shared_context, TokenReader{shared_context->source(), Fragment(*shared_context)})
+  : ProgramParser(shared_context, TokenReader{shared_context->source(), Fragment(shared_context->tokens())})
 {
 
 }
@@ -2809,7 +2478,7 @@ Parser::Parser(const char* str)
 std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 {
   auto c = std::make_shared<ParserContext>(loaded_source_file(source).content());
-  reset(c, TokenReader(c->source(), Fragment{ *c }));
+  reset(c, TokenReader(c->source(), Fragment{ c->tokens() }));
 
   std::shared_ptr<ast::AST> ret = std::make_shared<ast::AST>(source);
   ret->root = ast::ScriptRootNode::New(ret);
@@ -2825,7 +2494,7 @@ std::shared_ptr<ast::AST> Parser::parse(const SourceFile & source)
 std::shared_ptr<ast::Expression> Parser::parseExpression(const std::string& source)
 {
   auto c = std::make_shared<ParserContext>(source);
-  reset(c, TokenReader(c->source(), Fragment{ *c }));
+  reset(c, TokenReader(c->source(), Fragment{ c->tokens() }));
 
   ExpressionParser ep{ context(), subfragment() };
   return parse_and_seek(ep);
