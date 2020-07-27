@@ -856,6 +856,29 @@ Token Lexer::readMultiLineComment(size_t start)
   return create(start, Token::MultiLineComment, 0);
 }
 
+std::vector<Token> tokenize(const char* src)
+{
+  return tokenize(src, std::strlen(src));
+}
+
+std::vector<Token> tokenize(const char* src, size_t len)
+{
+  std::vector<Token> result;
+
+  Lexer lexer{ src, len };
+
+  while (!lexer.atEnd())
+  {
+    Token t = lexer.read();
+
+    if (Lexer::isDiscardable(t))
+      continue;
+
+    result.push_back(t);
+  }
+
+  return result;
+}
 
 } // namespace parser
 

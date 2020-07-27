@@ -7,6 +7,8 @@
 
 #include "script/parser/token.h"
 
+#include <vector>
+
 namespace script
 {
 
@@ -105,6 +107,18 @@ private:
   size_t m_size;
   size_t m_pos;
 };
+
+/*!
+ * \fn std::vector<Token> tokenize(const char* src)
+ * \brief tokenize a string
+ */
+LIBSCRIPT_API std::vector<Token> tokenize(const char* src);
+
+/*!
+ * \fn std::vector<Token> tokenize(const char* src, size_t len)
+ * \brief tokenize some characters of a string
+ */
+LIBSCRIPT_API std::vector<Token> tokenize(const char* src, size_t len);
 
 } // parser
 

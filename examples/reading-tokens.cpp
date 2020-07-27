@@ -7,24 +7,6 @@
 
 #include <iostream>
 
-// @TODO: add this to the API
-std::vector<script::parser::Token> tokenize(const char* src)
-{
-  std::vector<script::parser::Token>r;
-
-  script::parser::Lexer lexer{ src };
-
-  while (!lexer.atEnd())
-  {
-    const script::parser::Token t = lexer.read();
-    if (script::parser::Lexer::isDiscardable(t))
-      continue;
-    r.push_back(t);
-  }
-
-  return r;
-}
-
 void recursive_print(script::parser::TokenReader reader, int depth = 0)
 {
   while (!reader.atEnd())
@@ -51,7 +33,7 @@ int main()
 {
   const char* src = "int n = (1+ (2+3) );";
 
-  std::vector<script::parser::Token> tokens = tokenize(src);
+  std::vector<script::parser::Token> tokens = script::parser::tokenize(src);
 
   script::parser::TokenReader reader{ src, tokens };
 

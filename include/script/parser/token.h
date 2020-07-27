@@ -9,9 +9,6 @@
 
 #include "script/utils/stringview.h"
 
-#include <cstring>
-#include <string>
-
 namespace script
 {
 

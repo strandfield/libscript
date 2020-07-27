@@ -33,15 +33,7 @@ ParserContext::ParserContext(const char* src, size_t s)
   : m_source(src),
     m_size(0)
 {
-  Lexer lexer{ src, s };
-
-  while (!lexer.atEnd())
-  {
-    const Token t = lexer.read();
-    if (Lexer::isDiscardable(t))
-      continue;
-    m_tokens.push_back(t);
-  }
+  m_tokens = parser::tokenize(src, s);
 }
 
 ParserContext::ParserContext(const char* src, std::vector<Token> tokens)

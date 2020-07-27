@@ -5,7 +5,6 @@
 #ifndef LIBSCRIPT_PARSER_PARSERERRORS_H
 #define LIBSCRIPT_PARSER_PARSERERRORS_H
 
-#include "script/parser/lexer.h"
 #include "script/ast/ast_p.h"
 
 #include "script/diagnosticmessage.h"
