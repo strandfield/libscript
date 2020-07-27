@@ -4,10 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "script/parser/lexer.h"
-#include "script/parser/token.h"
 #include "script/parser/parser.h"
-#include "script/parser/parsererrors.h"
+#include "script/parser/specific-parsers.h"
 
 #include "script/ast/node.h"
 #include "script/ast/ast_p.h"

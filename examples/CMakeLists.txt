@@ -1,4 +1,6 @@
 
 add_executable(EXAMPLE_libscript_reading_tokens reading-tokens.cpp)
-
 target_link_libraries(EXAMPLE_libscript_reading_tokens libscript)
+
+add_executable(EXAMPLE_libscript_parsing_statements parsing-statements.cpp)
+target_link_libraries(EXAMPLE_libscript_parsing_statements libscript)

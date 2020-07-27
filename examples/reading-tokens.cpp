@@ -2,8 +2,8 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "script/parser/parser.h"
 #include "script/parser/lexer.h"
+#include "script/parser/token-reader.h"
 
 #include <iostream>
 

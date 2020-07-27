@@ -75,10 +75,7 @@ TEST(InitializerLists, initializer_list_creation) {
   const char *source =
     "{1, 2.0, true}";
 
-  auto c = parser_context(source);
-  parser::ExpressionParser parser{ c, parser::TokenReader(c->source(), c->tokens()) };
-
-  auto astlistexpr = parser.parse();
+  auto astlistexpr = script::parser::parseExpression(source);
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
 
   compiler::SessionManager session{ engine.compiler() };
@@ -111,10 +108,7 @@ TEST(InitializerLists, initializer_list_conversion) {
   const char *source =
     "{1, 2.0, true}";
 
-  auto c = parser_context(source);
-  parser::ExpressionParser parser{ c, parser::TokenReader(c->source(), c->tokens()) };
-
-  auto astlistexpr = parser.parse();
+  auto astlistexpr = script::parser::parseExpression(source);
   ASSERT_TRUE(astlistexpr->is<ast::ListExpression>());
 
   compiler::SessionManager session{ engine.compiler() };

@@ -18,7 +18,7 @@ namespace parser
  * \class TokenReader
  * \brief basic facility for consuming tokens
  */
-class TokenReader
+class LIBSCRIPT_API TokenReader
 {
 public:
   const char* m_source; // used only for computing location when throwing

@@ -669,6 +669,9 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
   case ast::NodeType::ImportDirective:
     processImportDirective(std::static_pointer_cast<ast::ImportDirective>(s));
     return;
+  case ast::NodeType::ClassDeclaration:
+    // @TODO: throw exception, classes can not be defined inside functions
+    break;
   default:
     break;
   }

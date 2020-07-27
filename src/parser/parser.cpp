@@ -3,13 +3,11 @@
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/parser/parser.h"
+#include "script/parser/specific-parsers.h"
 
 #include "script/operator.h"
 
 #include "script/parser/lexer.h"
-
-#include <map>
-#include <stdexcept>
 
 namespace script
 {
@@ -160,13 +158,13 @@ std::shared_ptr<ast::Expression> ExpressionParser::parse()
 bool ExpressionParser::isPrefixOperator(const Token & tok)
 {
   auto op = ast::OperatorName::getOperatorId(tok, ast::OperatorName::PrefixOp);
-  return op != Operator::Null;
+  return op != OperatorName::InvalidOperator;
 }
 
 bool ExpressionParser::isInfixOperator(const Token & tok)
 {
   auto op = ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp);
-  return op != Operator::Null;
+  return op != OperatorName::InvalidOperator;
 }
 
 std::shared_ptr<ast::Expression> ExpressionParser::readOperand()
@@ -577,6 +575,11 @@ ProgramParser::ProgramParser(std::shared_ptr<ParserContext> shared_context, cons
 
 }
 
+std::shared_ptr<ast::Statement> ProgramParser::parse()
+{
+  return parseStatement();
+}
+
 std::vector<std::shared_ptr<ast::Statement>> ProgramParser::parseProgram()
 {
   std::vector<std::shared_ptr<ast::Statement>> ret;
@@ -653,7 +656,8 @@ std::shared_ptr<ast::Statement> ProgramParser::parseAmbiguous()
 
 std::shared_ptr<ast::ClassDecl> ProgramParser::parseClassDeclaration()
 {
-  throw SyntaxError{ ParserError::UnexpectedToken, errors::UnexpectedToken{peek(), Token::Invalid} };
+  ClassParser cp{ context(), subfragment() };
+  return parse_and_seek(cp);
 }
 
 std::shared_ptr<ast::EnumDeclaration> ProgramParser::parseEnumDeclaration()
@@ -2467,10 +2471,9 @@ Parser::Parser(const char* str)
 
 }
 
-std::shared_ptr<ast::ClassDecl> Parser::parseClassDeclaration()
+const std::vector<Token>& Parser::tokens() const
 {
-  ClassParser cp{ context(), subfragment() };
-  return parse_and_seek(cp);
+  return context()->tokens();
 }
 
 std::shared_ptr<ast::AST> parse(const SourceFile& source)
@@ -2493,6 +2496,26 @@ std::shared_ptr<ast::Expression> parseExpression(const std::string& source)
   auto c = std::make_shared<ParserContext>(source);
   ExpressionParser ep{ c, TokenReader(c->source(), c->tokens()) };
   return ep.parse();
+}
+
+std::shared_ptr<ast::Expression> parseExpression(const char* src)
+{
+  auto c = std::make_shared<ParserContext>(src);
+  ExpressionParser ep{ c, TokenReader(src, c->tokens()) };
+  return ep.parse();
+}
+
+std::shared_ptr<ast::Identifier> parseIdentifier(const std::string& src)
+{
+  auto c = std::make_shared<parser::ParserContext>(src);
+  parser::TokenReader reader{ c->source(), c->tokens() };
+  parser::IdentifierParser idp{ c, reader };
+  auto result = idp.parse();
+
+  if (!idp.atEnd())
+    throw SyntaxError(ParserError::ExpectedIdentifier);
+
+  return result;
 }
 
 } // parser

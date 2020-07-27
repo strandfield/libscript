@@ -232,28 +232,8 @@ NameLookup NameLookup::resolve(const std::string & name, const Scope & scope)
 {
   if (need_parse(name))
   {
-    /// TODO : make this whole block less ugly !!
-
-    auto pdata = std::make_shared<parser::ParserContext>(name);
-    parser::TokenReader reader{ pdata->source(), pdata->tokens() };
-    parser::IdentifierParser idp{ pdata, reader };
-    std::shared_ptr<ast::Identifier> id;
-    try
-    {
-      id = idp.parse();
-    }
-    catch (...)
-    {
-
-    }
-
-    if (!idp.atEnd() || id == nullptr)
-      throw std::runtime_error{ "Could not fully parse identifier" };
-
-    auto result = NameLookup::resolve(id, scope);
-    // the AST is going to die here so the identifier will no longer be valid
-    result.impl()->identifier = nullptr;
-    return result;
+    std::shared_ptr<ast::Identifier> id = script::parser::parseIdentifier(name);
+    return NameLookup::resolve(id, scope);
   }
 
   std::shared_ptr<NameLookupImpl> result = std::make_shared<NameLookupImpl>();
