@@ -27,11 +27,6 @@ public:
 
   static constexpr OperatorName Null = OperatorName::InvalidOperator;
 
-  enum Associativity {
-    LeftToRight,
-    RightToLeft
-  };
-
   BuiltInOperator operatorId() const;
   bool isBinary() const;
 

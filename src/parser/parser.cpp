@@ -5,8 +5,6 @@
 #include "script/parser/parser.h"
 #include "script/parser/specific-parsers.h"
 
-#include "script/operator.h"
-
 #include "script/parser/lexer.h"
 
 namespace script
@@ -345,9 +343,9 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
     if (tok == Token::Colon)
       return -66;
     else if (tok == Token::QuestionMark)
-      return Operator::precedence(ConditionalOperator);
+      return script::precedence(ConditionalOperator);
     else
-      return Operator::precedence(ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp));
+      return script::precedence(ast::OperatorName::getOperatorId(tok, ast::OperatorName::InfixOp));
   };
 
   size_t index = 0;
@@ -362,7 +360,7 @@ std::shared_ptr<ast::Expression> ExpressionParser::buildExpression(std::vector<s
     }
     else if (p == preced)
     {
-      if (Operator::associativity(preced) == Operator::LeftToRight)
+      if (script::associativity(preced) == Associativity::LeftToRight)
         index = i;
     }
   }

@@ -1,13 +1,30 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #ifndef LIBSCRIPT_OPERATOR_NAMES_H
 #define LIBSCRIPT_OPERATOR_NAMES_H
 
+#include "libscriptdefs.h"
+
 namespace script
 {
 
+/*!
+ * \enum Associativity
+ * \brief describes the associativity of operators
+ *
+ * Possible values are LeftToRight and RightToLeft.
+ */
+enum class Associativity {
+  LeftToRight,
+  RightToLeft
+};
+
+/*!
+ * \enum OperatorName
+ * \brief names the existing operators provided by the language
+ */
 enum OperatorName {
   InvalidOperator = 0,
   // Precedence 1 (Left-to-right)
@@ -69,6 +86,9 @@ enum OperatorName {
   // Precedence 15 (Left-to-right)
   CommaOperator = 43,
 };
+
+LIBSCRIPT_API int precedence(OperatorName op);
+LIBSCRIPT_API Associativity associativity(int group);
 
 } // namespace script
 

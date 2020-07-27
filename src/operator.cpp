@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -9,6 +9,83 @@
 
 namespace script
 {
+
+/*!
+ * \fn int precedence(OperatorName op)
+ * \param the name of an operator
+ * \brief returns the precedence group of an operator
+ * 
+ * For any valid operator name, this function returns the precedence group 
+ * of the operator.
+ * This is a value between 1 and 15 with 1 being the operator of highest 
+ * precedence and 15 of lowest precedence.
+ */
+int precedence(OperatorName op)
+{
+  if (op == ScopeResolutionOperator)
+    return 1;
+  else if (PostIncrementOperator <= op && op <= MemberAccessOperator)
+    return 2;
+  else if (PreIncrementOperator <= op && op <= BitwiseNot)
+    return 3;
+  else if (MultiplicationOperator <= op && op <= RemainderOperator)
+    return 4;
+  else if (AdditionOperator == op || op == SubstractionOperator)
+    return 5;
+  else if (LeftShiftOperator == op || op == RightShiftOperator)
+    return 6;
+  else if (LessOperator <= op && op <= GreaterEqualOperator)
+    return 7;
+  else if (EqualOperator == op || op == InequalOperator)
+    return 8;
+  else if (op == BitwiseAndOperator)
+    return 9;
+  else if (op == BitwiseXorOperator)
+    return 10;
+  else if (op == BitwiseOrOperator)
+    return 11;
+  else if (op == LogicalAndOperator)
+    return 12;
+  else if (op == LogicalOrOperator)
+    return 13;
+  else if (ConditionalOperator <= op && op <= BitwiseXorAssignmentOperator)
+    return 14;
+  else if (op == CommaOperator)
+    return 15;
+  return 0;
+}
+
+/*!
+ * \fn Associativity associativity(int group)
+ * \param the id of a precedence group
+ * \brief returns the associativity of a an operator given its group
+ *
+ * The input parameter must be a value returned by the function precedence().
+ */
+Associativity associativity(int group)
+{
+  assert(group >= 0 && group <= 15);
+
+  static Associativity table[] = {
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::RightToLeft,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::LeftToRight,
+    Associativity::RightToLeft,
+    Associativity::LeftToRight,
+  };
+
+  return table[group - 1];
+}
 
 OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags)
   : FunctionImpl(engine, flags)
@@ -140,66 +217,14 @@ bool Operator::onlyAsMember(BuiltInOperator op)
   return op == AssignmentOperator || op == FunctionCallOperator || op == SubscriptOperator;
 }
 
-
 int Operator::precedence(BuiltInOperator op)
 {
-  if (op == ScopeResolutionOperator)
-    return 1;
-  else if (PostIncrementOperator <= op && op <= MemberAccessOperator)
-    return 2;
-  else if (PreIncrementOperator <= op && op <= BitwiseNot)
-    return 3;
-  else if (MultiplicationOperator <= op && op <= RemainderOperator)
-    return 4;
-  else if (AdditionOperator == op || op == SubstractionOperator)
-    return 5;
-  else if (LeftShiftOperator == op || op == RightShiftOperator)
-    return 6;
-  else if (LessOperator <= op && op <= GreaterEqualOperator)
-    return 7;
-  else if (EqualOperator == op || op == InequalOperator)
-    return 8;
-  else if (op == BitwiseAndOperator)
-    return 9;
-  else if (op == BitwiseXorOperator)
-    return 10;
-  else if (op == BitwiseOrOperator)
-    return 11;
-  else if (op == LogicalAndOperator)
-    return 12;
-  else if (op == LogicalOrOperator)
-    return 13;
-  else if (ConditionalOperator <= op && op <= BitwiseXorAssignmentOperator)
-    return 14;
-  else if (op == CommaOperator)
-    return 15;
-  return 0;
+  return script::precedence(op);
 }
 
-Operator::Associativity Operator::associativity(int group)
+Associativity Operator::associativity(int group)
 {
-  static Associativity table[] = {
-    LeftToRight,
-    LeftToRight,
-    RightToLeft,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    LeftToRight,
-    RightToLeft,
-    LeftToRight,
-  };
-
-  if (group > 0 && group <= 15)
-    return table[group - 1];
-
-  throw std::runtime_error{ "Operator::associativity() : Invalid group" };
+  return script::associativity(group);
 }
 
 Type Operator::firstOperand() const
