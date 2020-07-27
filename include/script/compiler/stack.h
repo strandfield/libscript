@@ -9,6 +9,8 @@
 
 #include "script/utils/stringview.h"
 
+#include <vector>
+
 namespace script
 {
 
@@ -19,44 +21,37 @@ struct Variable
 {
   Type type;
   utils::StringView name;
-  int index;
+  size_t index;
   bool global;
   bool is_static;
 
   Variable();
-  Variable(const Type & t, utils::StringView n, int i, bool g = false, bool s = false);
+  Variable(const Type & t, utils::StringView n, size_t i, bool g = false, bool s = false);
 };
 
 class Stack
 {
 public:
-  Stack() : size(0), capacity(0), data(nullptr) { }
-  Stack(const Stack &) = delete;
-  Stack(int s);
-  ~Stack();
+  std::vector<Variable> data;
 
-  void clear();
+public:
+  Stack() = default;
+  Stack(const Stack &) = delete;
+
+  size_t size() const { return data.size(); }
+  void clear() { data.clear(); }
 
   int addVar(const Type & t, utils::StringView name);
-  bool exists(const std::string & var) const;
   int indexOf(const std::string & var) const;
   int lastIndexOf(const std::string & var) const;
   int lastIndexOf(utils::StringView var) const;
-  void destroy(int n);
+  void destroy(size_t n);
 
   Stack & operator=(const Stack &) = delete;
 
-  const Variable & at(int i) const;
-  Variable & operator[](int index);
-  const Variable & operator[](int index) const;
-
-protected:
-  void realloc(int s);
-
-public:
-  int size;
-  int capacity;
-  Variable *data;
+  const Variable& at(size_t i) const { return data.at(i); }
+  Variable& operator[](size_t index) { return data[index]; }
+  const Variable& operator[](size_t index) const { return data[index]; }
 };
 
 } // namespace compiler

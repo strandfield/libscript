@@ -50,7 +50,7 @@ LambdaCompiler::LambdaCompiler(Compiler* c)
 void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c, const Stack & stack, int first_capture_offset)
 {
   auto can_use_this = [&stack, first_capture_offset]() -> bool {
-    return stack.size > first_capture_offset && stack.at(first_capture_offset).name == "this";
+    return stack.size() > first_capture_offset && stack.at(first_capture_offset).name == "this";
   };
 
   // fetching all captures
@@ -68,7 +68,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
   if (capture_all_by_reference.isValid() && capture_all_by_value.isValid())
     throw CompilationFailure{ CompilerError::CannotCaptureByValueAndByRef };
 
-  std::vector<bool> capture_flags(stack.size, false);
+  std::vector<bool> capture_flags(stack.size(), false);
   std::vector<Capture> captures;
 
   Class captured_class;
@@ -129,7 +129,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
   {
     TranslationTarget target{ c, capture_all_by_value };
 
-    for (int i(first_capture_offset); i < stack.size; ++i)
+    for (int i(first_capture_offset); i < stack.size(); ++i)
     {
       if (capture_flags[i])
         continue;
@@ -145,7 +145,7 @@ void LambdaCompiler::preprocess(CompileLambdaTask & task, ExpressionCompiler *c,
   }
   else if (capture_all_by_reference.isValid())
   {
-    for (int i(first_capture_offset); i < stack.size; ++i)
+    for (int i(first_capture_offset); i < stack.size(); ++i)
     {
       if (capture_flags[i])
         continue;

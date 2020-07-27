@@ -660,7 +660,6 @@ std::shared_ptr<ast::ClassDecl> ProgramParser::parseClassDeclaration()
 
 std::shared_ptr<ast::EnumDeclaration> ProgramParser::parseEnumDeclaration()
 {
-  /// TODO : shouldn't we also throw here but not in Parser (as in parseClassDeclaration()) 
   EnumParser ep{ context(), subfragment() };
   return parse_and_seek(ep);
 }

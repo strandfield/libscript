@@ -42,7 +42,7 @@ FunctionScope::FunctionScope(FunctionCompiler *fc, Category cat, Scope p)
   , mCategory(cat)
 {
   mSize = 0;
-  mSp = mCompiler->mStack.size;
+  mSp = static_cast<int>(mCompiler->mStack.size());
 }
 
 FunctionScope::FunctionScope(const FunctionScope & other)
@@ -126,14 +126,14 @@ bool FunctionScope::catch_continue() const
 
 
 Variable::Variable()
-  : index(-1)
+  : index(std::numeric_limits<size_t>::max())
   , global(false)
   , is_static(false)
 {
 
 }
 
-Variable::Variable(const Type & t, utils::StringView n, int i, bool g, bool s)
+Variable::Variable(const Type & t, utils::StringView n, size_t i, bool g, bool s)
   : type(t)
   , name(std::move(n))
   , index(i)
@@ -143,52 +143,18 @@ Variable::Variable(const Type & t, utils::StringView n, int i, bool g, bool s)
 
 }
 
-Stack::Stack(int s) : size(0), capacity(s)
-{
-  this->data = new Variable[s];
-}
-
-Stack::~Stack()
-{
-  this->clear();
-}
-
-
-void Stack::clear()
-{
-  if (this->data)
-  {
-    delete[] this->data;
-    this->data = 0;
-  }
-
-  this->size = 0;
-  this->capacity = 0;
-}
-
 int Stack::addVar(const Type & t, utils::StringView name)
 {
-  if (this->size == this->capacity)
-  {
-    this->realloc((this->size + 1) * 2);
-  }
-
-  this->data[this->size] = Variable{ t, name, this->size };
-  this->size += 1;
-  return this->size - 1;
-}
-
-bool Stack::exists(const std::string & var) const
-{
-  return indexOf(var) != -1;
+  this->data.push_back(Variable(t, name, this->data.size()));
+  return static_cast<int>(this->data.size()) - 1;
 }
 
 int Stack::indexOf(const std::string & var) const
 {
-  for (int i(0); i < this->size; ++i)
+  for (size_t i(0); i < data.size(); ++i)
   {
     if (this->data[i].name == var)
-      return i;
+      return static_cast<int>(i);
   }
 
   return -1;
@@ -201,66 +167,23 @@ int Stack::lastIndexOf(const std::string & var) const
 
 int Stack::lastIndexOf(utils::StringView var) const
 {
-  for (int i(this->size - 1); i >= 0; --i)
+  for (size_t i(data.size()); i-- > 0; )
   {
     if (this->data[i].name == var)
-      return i;
+      return static_cast<int>(i);
   }
 
   return -1;
 }
 
-void Stack::destroy(int n)
+void Stack::destroy(size_t n)
 {
-  if (n > this->size)
-    n = this->size;
+  assert(n <= data.size());
 
-  while (n > 0)
-  {
-    this->data[this->size - 1] = Variable{};
-    this->size -= 1;
-    n--;
-  }
+  while (n-- > 0)
+    data.pop_back();
 }
 
-
-const Variable & Stack::at(int i) const
-{
-  return this->data[i];
-}
-
-Variable & Stack::operator[](int i)
-{
-  return this->data[i];
-}
-
-const Variable & Stack::operator[](int i) const
-{
-  return this->data[i];
-}
-
-void Stack::realloc(int s)
-{
-  const int former_size = (this->size > s ? s : this->size);
-  Variable *old_vars = this->data;
-
-  this->data = new Variable[s];
-
-  if (old_vars)
-  {
-    int i(0);
-    while (i < former_size)
-    {
-      this->data[i] = old_vars[i];
-      ++i;
-    }
-
-    delete[] old_vars;
-  }
-
-  this->size = this->size > s ? s : this->size;
-  this->capacity = s;
-}
 
 
 EnterScope::EnterScope(FunctionCompiler *c, FunctionScope::Category scp)
@@ -670,7 +593,8 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
     processImportDirective(std::static_pointer_cast<ast::ImportDirective>(s));
     return;
   case ast::NodeType::ClassDeclaration:
-    // @TODO: throw exception, classes can not be defined inside functions
+  case ast::NodeType::EnumDeclaration:
+    // @TODO: throw exception, classes and enums can not be defined inside functions
     break;
   default:
     break;
@@ -689,7 +613,7 @@ void FunctionCompiler::processExitScope(const Scope & scp)
   const int sp = fscp->sp();
   Stack & stack = mStack;
 
-  for (int i(stack.size - 1); i >= sp; --i)
+  for (size_t i(stack.size()); i-- > sp; )
     processVariableDestruction(stack.at(i));
 }
 
@@ -985,7 +909,7 @@ void FunctionCompiler::processVariableCreation(const std::shared_ptr<ast::Variab
 void FunctionCompiler::processVariableDestruction(const Variable & var)
 {
   if (var.global || var.is_static)
-    return write(program::PopValue::New(false, Function{}, var.index));
+    return write(program::PopValue::New(false, Function{}, static_cast<int>(var.index)));
 
   const bool is_ref = var.type.isReference() || var.type.isRefRef();
   const bool destroy = !is_ref;
@@ -996,10 +920,10 @@ void FunctionCompiler::processVariableDestruction(const Variable & var)
     if (dtor.isNull())
       throw CompilationFailure{ CompilerError::ObjectHasNoDestructor };
 
-    return write(program::PopValue::New(destroy, dtor, var.index));
+    return write(program::PopValue::New(destroy, dtor, static_cast<int>(var.index)));
   }
 
-  write(program::PopValue::New(destroy, Function{}, var.index));
+  write(program::PopValue::New(destroy, Function{}, static_cast<int>(var.index)));
 }
 
 void FunctionCompiler::processWhileLoop(const std::shared_ptr<ast::WhileLoop> & whileLoop)
