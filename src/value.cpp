@@ -322,16 +322,6 @@ Value & Value::operator=(const Value & other)
   return *(this);
 }
 
-namespace details
-{
-
-int get_enum_value(const Value& val)
-{
-  return val.toEnumerator().value();
-}
-
-} // namespace details
-
 /* get<T>() specializations */
 
 template<>

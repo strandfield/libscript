@@ -86,19 +86,11 @@ private:
 inline bool operator==(const Value& lhs, const Value& rhs) { return lhs.impl() == rhs.impl(); }
 inline bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
-} // namespace script
-
-#include "script/value-get-details.h"
-
-namespace script
-{
-
 template<typename T>
-typename get_helper<T>::type get(const Value& val)
+T& get(const Value& val)
 {
-  return get_helper<T>::get(val);
+  return *reinterpret_cast<T*>(val.ptr());
 }
-
 
 template<> LIBSCRIPT_API Function& get<Function>(const Value& val);
 template<> LIBSCRIPT_API Array& get<Array>(const Value& val);
