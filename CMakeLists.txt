@@ -43,14 +43,17 @@ foreach(_source IN ITEMS ${HDR_FILES} ${SRC_FILES})
     source_group("${_group_path}" FILES "${_source}")
 endforeach()
 
-target_compile_definitions(libscript PUBLIC -DLIBSCRIPT_COMPILE_LIBRARY)
-#add_definitions(-DLIBSCRIPT_COMPILE_LIBRARY)
+target_compile_definitions(libscript PRIVATE -DLIBSCRIPT_COMPILE_LIBRARY)
 
 ##################################################################
 ###### tests
 ##################################################################
 
-add_subdirectory(tests)
+set(LIBSCRIPT_BUILD_TESTS ON CACHE BOOL "whether to build the tests")
+
+if (LIBSCRIPT_BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 set(LIBSCRIPT_BUILD_EXAMPLES ON CACHE BOOL "whether to build the examples")
 
