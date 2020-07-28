@@ -817,7 +817,7 @@ std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
   /// TODO: add overload to IdentifierParser that only parses symple identifier.
   const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
 
-  const parser::Token semicolon = read(parser::Token::Semicolon);
+  read(parser::Token::Semicolon);
 
   return ast::Typedef::New(typedef_tok, qtype, name);
 }
@@ -1124,7 +1124,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
   
   TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
 
-  const Token leftPar = unsafe_read();
+  unsafe_read();
   while (!params_reader.atEnd())
   {
     TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
@@ -1181,7 +1181,7 @@ ast::FunctionParameter FunctionParamParser::parse()
   if (atEnd())
     return fp;
 
-  const Token eqSign = read(Token::Eq);
+  read(Token::Eq);
   ExpressionParser ep{ context(), subfragment() };
   auto defaultVal = parse_and_seek(ep);
   fp.defaultValue = defaultVal;
@@ -1505,7 +1505,7 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     assert(peek() == Token::Semicolon);
   }
 
-  const Token semicolon = read(Token::Semicolon);
+  read(Token::Semicolon);
 
   return mVarDecl;
 }
@@ -1552,7 +1552,7 @@ void DeclParser::readOptionalMemberInitializers()
     return;
 
   auto ctor = std::dynamic_pointer_cast<ast::ConstructorDecl>(mFuncDecl);
-  const Token colon = unsafe_read();
+  unsafe_read();
 
   for (;;)
   {
@@ -1586,8 +1586,8 @@ void DeclParser::readOptionalMemberInitializers()
 
 std::shared_ptr<ast::FunctionDecl> DeclParser::parseDestructor()
 {
-  const Token leftpar = read(Token::LeftPar);
-  const Token rightpar = read(Token::RightPar);
+  read(Token::LeftPar);
+  read(Token::RightPar);
 
   if (readOptionalDeleteSpecifier() || readOptionalDefaultSpecifier()) {
     return mFuncDecl;
@@ -1771,7 +1771,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
     return false;
 
   auto p = iterator();
-  const Token eqSign = read();
+  unsafe_read();
 
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
@@ -1836,7 +1836,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
     return false;
 
   auto p = iterator();
-  const Token eqSign = unsafe_read();
+  unsafe_read();
 
   if (peek() != Token::OctalLiteral)
   {
@@ -2005,7 +2005,7 @@ void EnumValueParser::parse()
     }
     else
     {
-      const Token equalsign = value_reader.read(Token::Eq);
+      value_reader.read(Token::Eq);
 
       ExpressionParser valparser{ context(), value_reader };
       auto expr = valparser.parse();

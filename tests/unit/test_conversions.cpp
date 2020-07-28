@@ -132,7 +132,7 @@ TEST(Conversions, comparisons) {
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function ctor_float = A.newConstructor().params(Type::Float).get();
+  A.newConstructor().params(Type::Float).create();
   convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
 
@@ -257,7 +257,7 @@ TEST(Conversions, converting_constructor_selection) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function ctor_int = A.newConstructor().params(Type::Int).get();
+  A.newConstructor().params(Type::Int).create();
   Function ctor_bool = A.newConstructor().params(Type::Boolean).get();
 
   Conversion conv = Conversion::compute(Type::Boolean, A.id(), &e);

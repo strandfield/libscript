@@ -277,8 +277,6 @@ FunctionCompiler::~FunctionCompiler()
 
 void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
-  Script s = task.function.script();
-
   expr_.setCaller(task.function);
   
   mFunction = task.function;

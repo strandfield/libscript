@@ -485,6 +485,7 @@ void ScriptCompiler::processNamespaceDecl(const std::shared_ptr<ast::NamespaceDe
   const std::string name = ndecl.namespace_name->getName();
 
   Namespace ns = parent_ns.getNamespace(name);
+  (void)ns;
 
   Scope child_scope = scp.child(name);
   for (const auto & s : ndecl.statements)
