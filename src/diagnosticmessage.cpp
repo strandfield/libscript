@@ -399,8 +399,8 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const compiler::CompilationF
     {
     case CompilerError::SyntaxError:
     {
-      auto& data = ex.data()->get<DiagnosticMessage>();
-      std::string text = format(fmt, data.message());
+      auto& data = ex.data()->get<std::string>();
+      std::string text = format(fmt, data);
       mssg.setContent(std::move(text));
     }
     break;

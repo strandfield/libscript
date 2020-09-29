@@ -38,7 +38,7 @@ public:
   ExceptionDataWrapper(const ExceptionDataWrapper<T>&) = delete;
   ~ExceptionDataWrapper() = default;
 
-  ExceptionDataWrapper(T&& data) : value(std::move(data)) { }
+  ExceptionDataWrapper(T data) : value(std::move(data)) { }
 
   bool test(const std::type_info& info) const noexcept override
   {
@@ -72,7 +72,7 @@ public:
   template<typename T>
   Exceptional(const std::error_code& err, T&& data)
     : m_error_code{ err },
-    m_data{ std::make_shared<ExceptionDataWrapper<T>>(std::forward<T>(data)) }
+    m_data{ std::make_shared<ExceptionDataWrapper<typename std::remove_cv<typename std::remove_reference<T>::type>::type>>(std::forward<T>(data)) }
   {
 
   }
