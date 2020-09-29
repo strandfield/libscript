@@ -33,9 +33,9 @@ public:
   void init(Args&& ... args)
   {
     if(std::is_class<T>::value)
-      m_value = Value(new HybridCppValue<T>(m_engine, T(std::forward<Args>(args)...)));
+      m_value = Value(new HybridCppValue<T>(m_engine, std::forward<Args>(args)...));
     else
-      m_value = Value(new CppValue<T>(m_engine, T(std::forward<Args>(args)...)));
+      m_value = Value(new CppValue<T>(m_engine, std::forward<Args>(args)...));
   }
 
   template<typename T>

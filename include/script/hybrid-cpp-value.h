@@ -22,9 +22,10 @@ public:
 public:
   ~HybridCppValue() = default;
 
-  HybridCppValue(script::Engine* e, T val)
+  template<typename...Args>
+  HybridCppValue(script::Engine* e, Args &&... args)
     : IValue(script::Type::make<T>(), e),
-      value(std::move(val))
+      value(std::forward<Args>(args)...)
   {
 
   }

@@ -83,9 +83,10 @@ public:
 public:
   ~CppValue() = default;
 
-  CppValue(script::Engine*e, T val)
+  template<typename...Args>
+  CppValue(script::Engine* e, Args &&... args)
     : IValue(script::Type::make<T>(), e), 
-      value(std::move(val))
+      value(std::forward<Args>(args)...)
   {
 
   }

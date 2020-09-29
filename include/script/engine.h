@@ -157,7 +157,7 @@ public:
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    return Value(new CppValue<T>(this, T(std::forward<Args>(args)...)));
+    return Value(new CppValue<T>(this, std::forward<Args>(args)...));
   }
 
   void destroy(Value val);
