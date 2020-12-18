@@ -31,7 +31,7 @@ file(GLOB_RECURSE HDR_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
   ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 )
-add_library(libscript ${HDR_FILES} ${SRC_FILES})
+add_library(libscript SHARED ${HDR_FILES} ${SRC_FILES})
 target_include_directories(libscript PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 # the following line causes trouble with standard headers like string.h... :(
 #target_include_directories(libscript PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include/script")
@@ -48,6 +48,8 @@ target_compile_definitions(libscript PRIVATE -DLIBSCRIPT_COMPILE_LIBRARY)
 ##################################################################
 ###### tests
 ##################################################################
+
+set(LIBSCRIPT_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(LIBSCRIPT_BUILD_TESTS ON CACHE BOOL "whether to build the tests")
 

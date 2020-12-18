@@ -16,7 +16,7 @@ namespace script
 namespace parser
 {
 
-struct ParserContext
+struct LIBSCRIPT_API ParserContext
 {
 private:
   const char* m_source;

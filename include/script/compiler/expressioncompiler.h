@@ -37,7 +37,7 @@ class ExpressionCompiler;
 class FunctionCompiler;
 class Logger;
 
-class LambdaProcessor : Component
+class LIBSCRIPT_API LambdaProcessor : public Component
 {
 private:
   Stack* stack_ = nullptr;
@@ -56,7 +56,7 @@ public:
   LambdaProcessor & operator=(const LambdaProcessor &) = delete;
 };
 
-class ExpressionCompiler : public Component
+class LIBSCRIPT_API ExpressionCompiler : public Component
 {
 private:
   Scope scope_;

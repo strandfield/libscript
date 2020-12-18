@@ -21,7 +21,7 @@ enum class AccessSpecifier {
   Private,
 };
 
-struct Accessibility
+struct LIBSCRIPT_API Accessibility
 {
   static bool check(const Function & f, const Class & cla, AccessSpecifier aspec);
   static bool check(const Function & caller, const Function & member);

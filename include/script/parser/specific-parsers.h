@@ -13,7 +13,7 @@ namespace script
 namespace parser
 {
 
-class LiteralParser : public ParserBase
+class LIBSCRIPT_API LiteralParser : public ParserBase
 {
 public:
   LiteralParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -21,7 +21,7 @@ public:
   std::shared_ptr<ast::Literal> parse();
 };
 
-class ExpressionParser : public ParserBase
+class LIBSCRIPT_API ExpressionParser : public ParserBase
 {
 public:
   ExpressionParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -42,7 +42,7 @@ protected:
 };
 
 // parses a lambda or an array expression
-class LambdaParser : public ParserBase
+class LIBSCRIPT_API LambdaParser : public ParserBase
 {
 public:
   LambdaParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -66,7 +66,7 @@ protected:
   std::shared_ptr<ast::LambdaExpression> mLambda;
 };
 
-class LambdaCaptureParser : public ParserBase
+class LIBSCRIPT_API LambdaCaptureParser : public ParserBase
 {
 public:
   LambdaCaptureParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -76,7 +76,7 @@ public:
 
 };
 
-class IdentifierParser : public ParserBase
+class LIBSCRIPT_API IdentifierParser : public ParserBase
 {
 public:
   enum Options {
@@ -106,7 +106,7 @@ protected:
   int mOptions;
 };
 
-class TemplateArgParser : public ParserBase
+class LIBSCRIPT_API TemplateArgParser : public ParserBase
 {
 public:
   TemplateArgParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -114,7 +114,7 @@ public:
   std::shared_ptr<ast::Node> parse();
 };
 
-class TypeParser : public ParserBase
+class LIBSCRIPT_API TypeParser : public ParserBase
 {
 public:
   TypeParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -131,7 +131,7 @@ protected:
   ast::QualifiedType tryReadFunctionSignature(const ast::QualifiedType & rt);
 };
 
-class FunctionParamParser : public ParserBase
+class LIBSCRIPT_API FunctionParamParser : public ParserBase
 {
 public:
   FunctionParamParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -139,7 +139,7 @@ public:
   ast::FunctionParameter parse();
 };
 
-class ExpressionListParser : public ParserBase
+class LIBSCRIPT_API ExpressionListParser : public ParserBase
 {
 public:
   ExpressionListParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -149,7 +149,7 @@ public:
 };
 
 // parses a variable or function declaration
-class DeclParser : public ParserBase
+class LIBSCRIPT_API DeclParser : public ParserBase
 {
 public:
   DeclParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader, std::shared_ptr<ast::Identifier> className = nullptr);
@@ -243,7 +243,7 @@ protected:
   int mDeclaratorOptions;
 };
 
-class EnumValueParser : public ParserBase
+class LIBSCRIPT_API EnumValueParser : public ParserBase
 {
 public:
   EnumValueParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -254,7 +254,7 @@ public:
   std::vector<ast::EnumValueDeclaration> values;
 };
 
-class EnumParser : public ParserBase
+class LIBSCRIPT_API EnumParser : public ParserBase
 {
 public:
   EnumParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -263,7 +263,7 @@ public:
   std::shared_ptr<ast::EnumDeclaration> parse();
 };
 
-class ClassParser : public ParserBase
+class LIBSCRIPT_API ClassParser : public ParserBase
 {
 public:
   ClassParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -289,7 +289,7 @@ protected:
   bool mTemplateSpecialization;
 };
 
-class NamespaceParser : public ParserBase
+class LIBSCRIPT_API NamespaceParser : public ParserBase
 {
 public:
   NamespaceParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -304,7 +304,7 @@ protected:
   std::shared_ptr<ast::NamespaceDeclaration> mNamespaceDecl;
 };
 
-class FriendParser : public ParserBase
+class LIBSCRIPT_API FriendParser : public ParserBase
 {
 public:
   FriendParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -313,7 +313,7 @@ public:
   std::shared_ptr<ast::FriendDeclaration> parse();
 };
 
-class UsingParser : public ParserBase
+class LIBSCRIPT_API UsingParser : public ParserBase
 {
 public:
   UsingParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -325,7 +325,7 @@ protected:
   std::shared_ptr<ast::Identifier> read_name();
 };
 
-class ImportParser : public ParserBase
+class LIBSCRIPT_API ImportParser : public ParserBase
 {
 public:
   ImportParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -334,7 +334,7 @@ public:
   std::shared_ptr<ast::ImportDirective> parse();
 };
 
-class TemplateParser : public ParserBase
+class LIBSCRIPT_API TemplateParser : public ParserBase
 {
 public:
   TemplateParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
@@ -346,7 +346,7 @@ protected:
   std::shared_ptr<ast::Declaration> parse_decl();
 };
 
-class TemplateParameterParser : public ParserBase
+class LIBSCRIPT_API TemplateParameterParser : public ParserBase
 {
 public:
   TemplateParameterParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);

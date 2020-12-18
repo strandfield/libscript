@@ -60,7 +60,7 @@ public:
   inline bool started_session() const { return mStartedSession; }
 };
 
-class Compiler
+class LIBSCRIPT_API Compiler
 {
 public:
   explicit Compiler(Engine *e);

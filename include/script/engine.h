@@ -57,7 +57,7 @@ class Expression;
 namespace errors
 {
 
-const std::error_category& engine_category() noexcept;
+LIBSCRIPT_API const std::error_category& engine_category() noexcept;
 
 } // namespace errors
 

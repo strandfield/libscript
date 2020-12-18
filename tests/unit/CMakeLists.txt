@@ -12,7 +12,7 @@ set(GTEST_DIR "${CMAKE_BINARY_DIR}/googletest-src/googletest" CACHE PATH "Root d
 set(SRC_TESTS test_arrays.cpp test_coreutils.cpp test_namelookup.cpp test_conversions.cpp test_overloadresolution.cpp test_classes.cpp test_templates.cpp test_lexer.cpp test_parser.cpp test_eval.cpp test_compiler_components.cpp test_compiler.cpp test_compiler_errors.cpp test_modules.cpp test_string.cpp test_namespaces.cpp test_symbols.cpp test_initializer_lists.cpp test_builders.cpp test_scenarios.cpp test_typesystem.cpp test_runtime.cpp ${GTEST_DIR}/src/gtest-all.cc ${GTEST_DIR}/src/gtest_main.cc)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  list(APPEND SRC_TESTS "${CMAKE_SOURCE_DIR}/vs/libscript.natvis")
+  list(APPEND SRC_TESTS "${LIBSCRIPT_PROJECT_DIR}/vs/libscript.natvis")
 endif()
 
 add_executable(TEST_libscript_unit_tests ${SRC_TESTS})
