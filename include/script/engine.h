@@ -10,6 +10,7 @@
 #include <typeindex>
 #include <vector>
 
+#include "script/compilemode.h"
 #include "script/exception.h"
 #include "script/scope.h"
 #include "script/string.h"
@@ -183,7 +184,7 @@ public:
   Namespace rootNamespace() const;
 
   Script newScript(const SourceFile & source);
-  bool compile(Script s);
+  bool compile(Script s, CompileMode mode = CompileMode::Release);
   void destroy(Script s);
 
   Module newModule(const std::string & name);

@@ -4,6 +4,8 @@
 
 #include "script/interpreter/interpreter.h"
 
+#include "script/interpreter/debug-handler.h"
+
 #include "script/engine.h"
 #include "script/private/engine_p.h"
 
@@ -63,9 +65,16 @@ public:
   }
 };
 
+class DefaultDebugHandler : public DebugHandler
+{
+public:
+  void interrupt(FunctionCall&, program::Breakpoint&) override { }
+};
+
 Interpreter::Interpreter(std::shared_ptr<ExecutionContext> ec, Engine *e)
   : mEngine(e)
   , mExecutionContext(ec)
+  , mDebugHandler(std::make_shared<DefaultDebugHandler>())
 {
 
 }
@@ -148,6 +157,14 @@ void Interpreter::exec(program::Statement & s)
 void Interpreter::exec(const std::shared_ptr<program::Statement> & s)
 {
   s->accept(*this);
+}
+
+void Interpreter::setDebugHandler(std::shared_ptr<DebugHandler> h)
+{
+  if (h)
+    mDebugHandler = h;
+  else
+    mDebugHandler = std::make_shared<DefaultDebugHandler>();
 }
 
 
@@ -323,6 +340,12 @@ void Interpreter::visit(const program::WhileLoop & wl)
     if (flags == FunctionCall::BreakFlag)
       break;
   }
+}
+
+void Interpreter::visit(const program::Breakpoint& bp)
+{
+  mExecutionContext->callstack.top()->last_breakpoint = &bp;
+  mDebugHandler->interrupt(*mExecutionContext->callstack.top(), const_cast<program::Breakpoint&>(bp));
 }
 
 

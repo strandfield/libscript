@@ -91,6 +91,10 @@ void WhileLoop::accept(StatementVisitor & visitor)
   visitor.visit(*this);
 }
 
+void Breakpoint::accept(StatementVisitor& visitor)
+{
+  visitor.visit(*this);
+}
 
 
 PushValue::PushValue(const Type & t, const std::string & name, const std::shared_ptr<Expression> & val, int si)
@@ -357,6 +361,15 @@ PopDataMember::PopDataMember(const Function & dtor)
 std::shared_ptr<PopDataMember> PopDataMember::New(const Function & dtor)
 {
   return std::make_shared<PopDataMember>(dtor);
+}
+
+
+
+Breakpoint::Breakpoint(int l, std::shared_ptr<compiler::DebugInfoBlock> dbg)
+  : line(l),
+    debug_info(dbg)
+{
+
 }
 
 } // namespace program

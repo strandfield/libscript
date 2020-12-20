@@ -662,14 +662,15 @@ Script Engine::newScript(const SourceFile & source)
 }
 
 /*!
- * \fn bool compile(Script s)
+ * \fn bool compile(Script s, CompileMode mode)
  * \param input script
+ * \param compilation mode
  * \brief Compiles a script.
  *
  */
-bool Engine::compile(Script s)
+bool Engine::compile(Script s, CompileMode mode)
 {
-  return compiler()->compile(s);
+  return compiler()->compile(s, mode);
 }
 
 /*!

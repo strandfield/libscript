@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include "script/compilemode.h"
+
 #include <memory>
 #include <vector>
 
@@ -54,7 +56,7 @@ private:
 
 public:
   explicit SessionManager(Compiler* c);
-  SessionManager(Compiler* c, const Script& s);
+  SessionManager(Compiler* c, const Script& s, CompileMode m);
   ~SessionManager();
 
   inline bool started_session() const { return mStartedSession; }
@@ -72,7 +74,7 @@ public:
 
   bool hasActiveSession() const;
 
-  bool compile(Script s);
+  bool compile(Script s, CompileMode mode);
 
   void addToSession(Script s);
 

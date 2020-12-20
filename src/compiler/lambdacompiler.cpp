@@ -284,7 +284,7 @@ void LambdaCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnSta
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  generateExitScope(mFunctionBodyScope, statements);
+  generateExitScope(mFunctionBodyScope, statements, *rs);
 
   std::shared_ptr<program::Expression> retval = rs->expression != nullptr ? generate(rs->expression) : nullptr;
   deduceReturnType(rs, retval);

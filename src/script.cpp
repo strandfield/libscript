@@ -8,6 +8,8 @@
 #include "script/ast.h"
 #include "script/engine.h"
 
+#include "script/program/statements.h"
+
 namespace script
 {
 
@@ -26,6 +28,25 @@ void ScriptImpl::register_global(const Type & t, std::string name)
 {
   this->global_types.push_back(t);
   this->globalNames.insert({ std::move(name), int(this->global_types.size() - 1) });
+}
+
+void ScriptImpl::add_breakpoint(std::shared_ptr<program::Breakpoint> bp)
+{
+  if (this->breakpoints.empty() || this->breakpoints.back()->line < bp->line)
+  {
+    this->breakpoints.push_back(bp);
+  }
+  else
+  {
+    auto it = std::find_if(this->breakpoints.begin(), this->breakpoints.end(), [bp](const std::shared_ptr<program::Breakpoint>& other) {
+      return other->line >= bp->line;
+    });
+
+    if (it != this->breakpoints.end() && (*it)->line == bp->line)
+      return;
+
+    this->breakpoints.insert(it, bp);
+  }
 }
 
 /*!
@@ -50,16 +71,16 @@ const std::string & Script::path() const
 }
 
 /*!
- * \fn bool compile()
+ * \fn bool compile(CompileMode mode)
  * \brief Compiles the script
  * Returns true on success, false otherwise. 
  * If the compilation failed, use messages() to retrieve the error messages.
  * Warning: Calling this function while a script is compiling is undefined behavior.
  */
-bool Script::compile()
+bool Script::compile(CompileMode mode)
 {
   Engine *e = d->engine;
-  return e->compile(*this);
+  return e->compile(*this, mode);
 }
 
 bool Script::isReady() const
@@ -136,6 +157,15 @@ void Script::clearAst()
     return;
 
   d->ast = nullptr;
+}
+
+/*!
+ * \fn const std::vector<std::shared_ptr<program::Breakpoint>>& breakpoints() const
+ * \brief returns the ordered list of available break positions
+ */
+const std::vector<std::shared_ptr<program::Breakpoint>>& Script::breakpoints() const
+{
+  return d->breakpoints;
 }
 
 Engine * Script::engine() const

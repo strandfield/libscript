@@ -53,8 +53,6 @@ struct LambdaCompilationResult
   ClosureType closure_type;
 };
 
-class LambdaCompiler;
-
 class LambdaCompiler : public FunctionCompiler
 {
 public:
