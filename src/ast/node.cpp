@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -14,14 +14,57 @@ namespace script
 namespace ast
 {
 
+inline utils::StringView compute_source(const utils::StringView& begin, const utils::StringView& end)
+{
+  size_t dist = end.data() - begin.data();
+  return utils::StringView(begin.data(), dist + end.size());
+}
+
+inline utils::StringView compute_source(const parser::Token& begin, const parser::Token& end)
+{
+  size_t dist = end.text().data() - begin.text().data();
+  return utils::StringView(begin.text().data(), dist + end.text().size());
+}
+
+inline utils::StringView compute_source(const ast::Node& begin, const ast::Node& end)
+{
+  size_t dist = end.source().data() - begin.source().data();
+  return utils::StringView(begin.source().data(), dist + end.source().size());
+}
+
+utils::StringView Node::source() const 
+{ 
+  return base_token().text(); 
+}
+
 parser::Token Operation::base_token() const
 {
   return this->operatorToken;
 }
 
+utils::StringView Operation::source() const
+{
+  if (arg2 != nullptr)
+  {
+    return compute_source(*arg1, *arg2);
+  }
+  else
+  {
+    if(operatorToken.text().data() < arg1->source().data())
+      return compute_source(operatorToken.text(), arg1->source());
+    else
+      return compute_source(arg1->source(), operatorToken.text());
+  }
+}
+
 parser::Token ConditionalExpression::base_token() const
 {
   return this->questionMark;
+}
+
+utils::StringView ConditionalExpression::source() const
+{
+  return compute_source(*condition, *onFalse);
 }
 
 parser::Token NullStatement::base_token() const
@@ -34,14 +77,32 @@ parser::Token ExpressionStatement::base_token() const
   return this->expression->base_token();
 }
 
+utils::StringView ExpressionStatement::source() const
+{
+  return compute_source(expression->source(), semicolon.text());
+}
+
 parser::Token CompoundStatement::base_token() const
 {
   return this->openingBrace;
 }
 
+utils::StringView CompoundStatement::source() const
+{
+  return compute_source(openingBrace, closingBrace);
+}
+
 parser::Token IfStatement::base_token() const
 {
   return this->keyword;
+}
+
+utils::StringView IfStatement::source() const
+{
+  if (elseClause)
+    return compute_source(keyword.text(), elseClause->source());
+  else
+    return compute_source(keyword.text(), body->source());
 }
 
 parser::Token IterationStatement::base_token() const
@@ -60,9 +121,19 @@ parser::Token TypeNode::base_token() const
   return value.type->base_token();
 }
 
+utils::StringView TypeNode::source() const
+{
+  return value.source();
+}
+
 parser::Token FunctionDecl::base_token() const
 {
   return name->base_token();
+}
+
+utils::StringView FunctionDecl::source() const
+{
+  return compute_source(returnType.source(), body->source());
 }
 
 
@@ -82,6 +153,11 @@ std::string SimpleIdentifier::getName() const
 std::string TemplateIdentifier::getName() const
 {
   return this->name.toString();
+}
+
+utils::StringView TemplateIdentifier::source() const
+{
+  return compute_source(name, rightAngle);
 }
 
 
@@ -163,9 +239,19 @@ script::OperatorName OperatorName::getOperatorId(const parser::Token & tok, Buil
   return InvalidOperator;
 }
 
+utils::StringView OperatorName::source() const
+{
+  return compute_source(keyword, symbol);
+}
+
 std::string LiteralOperatorName::suffix_string() const
 {
   return this->suffix.toString();
+}
+
+utils::StringView LiteralOperatorName::source() const
+{
+  return compute_source(keyword, suffix);
 }
 
 std::shared_ptr<ScopedIdentifier> ScopedIdentifier::New(const std::vector<std::shared_ptr<Identifier>>::const_iterator & begin, const std::vector<std::shared_ptr<Identifier>>::const_iterator & end)
@@ -177,6 +263,10 @@ std::shared_ptr<ScopedIdentifier> ScopedIdentifier::New(const std::vector<std::s
   return ScopedIdentifier::New(lhs, parser::Token{}, *(begin + (d - 1)));
 }
 
+utils::StringView ScopedIdentifier::source() const
+{
+  return compute_source(*lhs, *rhs);
+}
 
 FunctionCall::FunctionCall(const std::shared_ptr<Expression> & f,
   const parser::Token & lp,
@@ -193,6 +283,11 @@ FunctionCall::FunctionCall(const std::shared_ptr<Expression> & f,
 FunctionCall::~FunctionCall()
 {
 
+}
+
+utils::StringView FunctionCall::source() const
+{
+  return compute_source(callee->source(), rightPar.text());
 }
 
 std::shared_ptr<FunctionCall> FunctionCall::New(const std::shared_ptr<Expression> & callee,
@@ -212,6 +307,11 @@ BraceConstruction::BraceConstruction(const std::shared_ptr<Identifier> & t, cons
   , right_brace(rb)
 {
 
+}
+
+utils::StringView BraceConstruction::source() const
+{
+  return compute_source(temporary_type->source(), right_brace.text());
 }
 
 std::shared_ptr<BraceConstruction> BraceConstruction::New(const std::shared_ptr<Identifier> & t, const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && args, const parser::Token & rb)
@@ -235,6 +335,11 @@ ArraySubscript::ArraySubscript(const std::shared_ptr<Expression> & a,
 ArraySubscript::~ArraySubscript()
 {
 
+}
+
+utils::StringView ArraySubscript::source() const
+{
+  return compute_source(array->source(), rightBracket.text());
 }
 
 std::shared_ptr<ArraySubscript> ArraySubscript::New(const std::shared_ptr<Expression> & a,
@@ -312,6 +417,11 @@ std::shared_ptr<ArrayExpression> ArrayExpression::New(const parser::Token & lb)
   return std::make_shared<ArrayExpression>(lb);
 }
 
+utils::StringView ArrayExpression::source() const
+{
+  return compute_source(leftBracket, rightBracket);
+}
+
 
 
 ListExpression::ListExpression(const parser::Token & lb)
@@ -325,6 +435,10 @@ std::shared_ptr<ListExpression> ListExpression::New(const parser::Token & lb)
   return std::make_shared<ListExpression>(lb);
 }
 
+utils::StringView ListExpression::source() const
+{
+  return compute_source(left_brace, right_brace);
+}
 
 
 NullStatement::NullStatement(const parser::Token & semicolon)
@@ -421,6 +535,11 @@ std::shared_ptr<WhileLoop> WhileLoop::New(const parser::Token & keyword)
   return std::make_shared<WhileLoop>(keyword);
 }
 
+utils::StringView WhileLoop::source() const
+{
+  return compute_source(keyword.text(), body->source());
+}
+
 ForLoop::ForLoop(const parser::Token & forKw)
   : IterationStatement(forKw)
 {
@@ -432,6 +551,10 @@ std::shared_ptr<ForLoop> ForLoop::New(const parser::Token & keyword)
   return std::make_shared<ForLoop>(keyword);
 }
 
+utils::StringView ForLoop::source() const
+{
+  return compute_source(keyword.text(), body->source());
+}
 
 JumpStatement::JumpStatement(const parser::Token & k)
   : keyword(k)
@@ -480,25 +603,39 @@ std::shared_ptr<ReturnStatement> ReturnStatement::New(const parser::Token & keyw
   return ret;
 }
 
+utils::StringView ReturnStatement::source() const
+{
+  if (expression)
+    return compute_source(keyword.text(), expression->source());
+  else
+    return keyword.text();
+}
+
 bool Declaration::isDeclaration() const
 {
   return true;
 }
 
-EnumDeclaration::EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals)
+EnumDeclaration::EnumDeclaration(const parser::Token& ek, const parser::Token& ck, const parser::Token& lb, const std::shared_ptr<SimpleIdentifier>& n, std::vector<EnumValueDeclaration> vals, const parser::Token& rb)
   : enumKeyword(ek)
   , classKeyword(ck)
+  , leftBrace(lb)
   , name(n)
   , values(std::move(vals))
+  , rightBrace(rb)
 {
 
 }
 
-std::shared_ptr<EnumDeclaration> EnumDeclaration::New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals)
+std::shared_ptr<EnumDeclaration> EnumDeclaration::New(const parser::Token& ek, const parser::Token& ck, const parser::Token& lb, const std::shared_ptr<SimpleIdentifier>& n, std::vector<EnumValueDeclaration> vals, const parser::Token& rb)
 {
-  return std::make_shared<EnumDeclaration>(ek, ck, n, std::move(vals));
+  return std::make_shared<EnumDeclaration>(ek, ck, lb, n, std::move(vals), rb);
 }
 
+utils::StringView EnumDeclaration::source() const
+{
+  return compute_source(enumKeyword, rightBrace);
+}
 
 
 ConstructorInitialization::ConstructorInitialization(const parser::Token &lp, std::vector<std::shared_ptr<Expression>> && args, const parser::Token &rp)
@@ -514,6 +651,11 @@ std::shared_ptr<ConstructorInitialization> ConstructorInitialization::New(const 
   return std::make_shared<ConstructorInitialization>(lp, std::move(args), rp);
 }
 
+utils::StringView ConstructorInitialization::source() const
+{
+  return compute_source(left_par, right_par);
+}
+
 BraceInitialization::BraceInitialization(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && a, const parser::Token & rb)
   : left_brace(lb)
   , args(std::move(a))
@@ -525,6 +667,11 @@ BraceInitialization::BraceInitialization(const parser::Token & lb, std::vector<s
 std::shared_ptr<BraceInitialization> BraceInitialization::New(const parser::Token & lb, std::vector<std::shared_ptr<Expression>> && args, const parser::Token & rb)
 {
   return std::make_shared<BraceInitialization>(lb, std::move(args), rb);
+}
+
+utils::StringView BraceInitialization::source() const
+{
+  return compute_source(left_brace, right_brace);
 }
 
 AssignmentInitialization::AssignmentInitialization(const parser::Token & eq, const std::shared_ptr<Expression> & val)
@@ -539,6 +686,12 @@ std::shared_ptr<AssignmentInitialization> AssignmentInitialization::New(const pa
   return std::make_shared<AssignmentInitialization>(eq, val);
 }
 
+utils::StringView AssignmentInitialization::source() const
+{
+  return compute_source(equalSign.text(), value->source());
+}
+
+
 VariableDecl::VariableDecl(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name)
   : variable_type(t)
   , name(name)
@@ -549,6 +702,12 @@ VariableDecl::VariableDecl(const QualifiedType & t, const std::shared_ptr<Simple
 std::shared_ptr<VariableDecl> VariableDecl::New(const QualifiedType & t, const std::shared_ptr<SimpleIdentifier> & name)
 {
   return std::make_shared<VariableDecl>(t, name);
+}
+
+utils::StringView VariableDecl::source() const
+{
+  utils::StringView begin = this->staticSpecifier.isValid() ? this->staticSpecifier.text() : variable_type.source();
+  return compute_source(begin, semicolon.text());
 }
 
 bool QualifiedType::isAmbiguous() const
@@ -580,6 +739,41 @@ bool QualifiedType::isFunctionType() const
 {
   return this->functionType != nullptr;
 }
+
+utils::StringView QualifiedType::source() const
+{
+  if (isFunctionType())
+  {
+    if (functionType->params.empty())
+      return functionType->returnType.source();
+    else
+      return compute_source(functionType->returnType.source(), functionType->params.back().source());
+  }
+  else
+  {
+    utils::StringView begin = type->source();
+    utils::StringView end = this->reference.isValid() ? this->reference.text() : begin;
+
+    if (this->constQualifier.isValid() && this->constQualifier.text().data() < begin.data())
+      begin = this->constQualifier.text();
+
+    if (this->constQualifier.isValid() && this->constQualifier.text().data() > begin.data())
+      end = this->constQualifier.text();
+
+    return compute_source(begin, end);
+  }
+}
+
+utils::StringView ClassDecl::source() const
+{
+  return compute_source(classKeyword, endingSemicolon);
+}
+
+utils::StringView AccessSpecifier::source() const
+{
+  return compute_source(visibility, colon);
+}
+
 
 FunctionDecl::FunctionDecl()
 { 
@@ -653,6 +847,11 @@ std::shared_ptr<CastDecl> CastDecl::New(const QualifiedType & rt)
   return std::make_shared<CastDecl>(rt);
 }
 
+utils::StringView CastDecl::source() const
+{
+  return compute_source(operatorKw.text(), FunctionDecl::source());
+}
+
 
 
 LambdaExpression::LambdaExpression(const parser::Token & lb)
@@ -671,6 +870,12 @@ std::shared_ptr<LambdaExpression> LambdaExpression::New(const parser::Token & lb
   return std::make_shared<LambdaExpression>(lb);
 }
 
+utils::StringView LambdaExpression::source() const
+{
+  return compute_source(leftBracket.text(), body->source());
+}
+
+
 
 Typedef::Typedef(const parser::Token & typedef_tok, const QualifiedType & qtype, const std::shared_ptr<ast::SimpleIdentifier> & n)
   : typedef_token(typedef_tok)
@@ -685,6 +890,10 @@ std::shared_ptr<Typedef> Typedef::New(const parser::Token & typedef_tok, const Q
   return std::make_shared<Typedef>(typedef_tok, qtype, n);
 }
 
+utils::StringView Typedef::source() const
+{
+  return compute_source(typedef_token.text(), name->source());
+}
 
 
 NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
@@ -700,6 +909,11 @@ NamespaceDeclaration::NamespaceDeclaration(const parser::Token & ns_tok, const s
 std::shared_ptr<NamespaceDeclaration> NamespaceDeclaration::New(const parser::Token & ns_tok, const std::shared_ptr<ast::SimpleIdentifier> & n, const parser::Token & lb, std::vector<std::shared_ptr<Statement>> && stats, const parser::Token & rb)
 {
   return std::make_shared<NamespaceDeclaration>(ns_tok, n, lb, std::move(stats), rb);
+}
+
+utils::StringView NamespaceDeclaration::source() const
+{
+  return compute_source(namespace_token, right_brace);
 }
 
 
@@ -724,6 +938,11 @@ std::shared_ptr<ClassFriendDeclaration> ClassFriendDeclaration::New(const parser
   return std::make_shared<ClassFriendDeclaration>(friend_tok, class_tok, cname);
 }
 
+utils::StringView ClassFriendDeclaration::source() const
+{
+  return compute_source(friend_token.text(), class_name->source());
+}
+
 
 
 UsingDeclaration::UsingDeclaration(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name)
@@ -736,6 +955,11 @@ UsingDeclaration::UsingDeclaration(const parser::Token & using_tok, const std::s
 std::shared_ptr<UsingDeclaration> UsingDeclaration::New(const parser::Token & using_tok, const std::shared_ptr<ScopedIdentifier> & name)
 {
   return std::make_shared<UsingDeclaration>(using_tok, name);
+}
+
+utils::StringView UsingDeclaration::source() const
+{
+  return compute_source(using_keyword.text(), used_name->source());
 }
 
 
@@ -751,6 +975,11 @@ UsingDirective::UsingDirective(const parser::Token & using_tok, const parser::To
 std::shared_ptr<UsingDirective> UsingDirective::New(const parser::Token & using_tok, const parser::Token & namespace_tok, const std::shared_ptr<Identifier> & name)
 {
   return std::make_shared<UsingDirective>(using_tok, namespace_tok, name);
+}
+
+utils::StringView UsingDirective::source() const
+{
+  return compute_source(using_keyword.text(), namespace_name->source());
 }
 
 
@@ -769,6 +998,11 @@ std::shared_ptr<NamespaceAliasDefinition> NamespaceAliasDefinition::New(const pa
   return std::make_shared<NamespaceAliasDefinition>(namespace_tok, a, equal_tok, b);
 }
 
+utils::StringView NamespaceAliasDefinition::source() const
+{
+  return compute_source(namespace_keyword.text(), aliased_namespace->source());
+}
+
 
 
 TypeAliasDeclaration::TypeAliasDeclaration(const parser::Token & using_tok, const std::shared_ptr<SimpleIdentifier> & a, const parser::Token & equal_tok, const std::shared_ptr<Identifier> & b)
@@ -785,6 +1019,10 @@ std::shared_ptr<TypeAliasDeclaration> TypeAliasDeclaration::New(const parser::To
   return std::make_shared<TypeAliasDeclaration>(using_tok, a, equal_tok, b);
 }
 
+utils::StringView TypeAliasDeclaration::source() const
+{
+  return compute_source(using_keyword.text(), aliased_type->source());
+}
 
 
 ImportDirective::ImportDirective(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms)
@@ -798,6 +1036,12 @@ ImportDirective::ImportDirective(const parser::Token & exprt, const parser::Toke
 std::shared_ptr<ImportDirective> ImportDirective::New(const parser::Token & exprt, const parser::Token & imprt, std::vector<parser::Token> && nms)
 {
   return std::make_shared<ImportDirective>(exprt, imprt, std::move(nms));
+}
+
+utils::StringView ImportDirective::source() const
+{
+  utils::StringView begin = export_keyword.isValid() ? export_keyword.text() : import_keyword.text();
+  return compute_source(begin, names.back().text());
 }
 
 std::string ImportDirective::at(size_t i) const 
@@ -849,6 +1093,11 @@ std::shared_ptr<TemplateDeclaration> TemplateDeclaration::New(const parser::Toke
   return std::make_shared<TemplateDeclaration>(tmplt_k, left_angle_b, std::move(params), right_angle_b, decl);
 }
 
+utils::StringView TemplateDeclaration::source() const
+{
+  return compute_source(template_keyword.text(), declaration->source());
+}
+
 ScriptRootNode::ScriptRootNode(const std::shared_ptr<AST> & st)
   : ast(st)
 {
@@ -858,6 +1107,14 @@ ScriptRootNode::ScriptRootNode(const std::shared_ptr<AST> & st)
 std::shared_ptr<ScriptRootNode> ScriptRootNode::New(const std::shared_ptr<AST> & syntaxtree)
 {
   return std::make_shared<ScriptRootNode>(syntaxtree);
+}
+
+utils::StringView ScriptRootNode::source() const
+{
+  if (statements.empty())
+    return utils::StringView(ast.lock()->source.data(), 0);
+
+  return compute_source(statements.front()->source(), statements.back()->source());
 }
 
 } // namespace ast

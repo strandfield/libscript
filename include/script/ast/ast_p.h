@@ -30,6 +30,7 @@ public:
 
   void add(const std::shared_ptr<Statement> & statement);
 
+  size_t offset(utils::StringView sv) const;
   SourceFile::Position position(const parser::Token& tok) const;
 
 public:

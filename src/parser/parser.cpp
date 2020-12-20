@@ -1505,7 +1505,7 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     assert(peek() == Token::Semicolon);
   }
 
-  read(Token::Semicolon);
+  mVarDecl->semicolon = read(Token::Semicolon);
 
   return mVarDecl;
 }
@@ -2040,17 +2040,17 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
     enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idparser));
   }
 
-  read(Token::LeftBrace);
+  parser::Token lb = read(Token::LeftBrace);
   seek(iterator() - 1);
 
   EnumValueParser value_parser{ context(), subfragment<Fragment::DelimiterPair>() };
   value_parser.parse();
   seek(value_parser.iterator());
 
-  read(Token::RightBrace);
+  parser::Token rb = read(Token::RightBrace);
   read(Token::Semicolon);
 
-  return ast::EnumDeclaration::New(etok, ctok, enum_name, std::move(value_parser.values));
+  return ast::EnumDeclaration::New(etok, ctok, lb, enum_name, std::move(value_parser.values), rb);
 }
 
 

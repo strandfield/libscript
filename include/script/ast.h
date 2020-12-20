@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -37,6 +37,7 @@ public:
 
   const std::shared_ptr<ast::Node> & root() const;
 
+  size_t offset(const ast::Node& n) const;
 
   bool isScript() const;
   Script script() const;
