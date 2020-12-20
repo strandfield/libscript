@@ -30,23 +30,32 @@ void ScriptImpl::register_global(const Type & t, std::string name)
   this->globalNames.insert({ std::move(name), int(this->global_types.size() - 1) });
 }
 
-void ScriptImpl::add_breakpoint(std::shared_ptr<program::Breakpoint> bp)
+static void add_breakpoint_to_list(std::vector<std::shared_ptr<program::Breakpoint>>& breakpoints, std::shared_ptr<program::Breakpoint> bp)
 {
-  if (this->breakpoints.empty() || this->breakpoints.back()->line < bp->line)
+  if (breakpoints.empty() || breakpoints.back()->line < bp->line)
   {
-    this->breakpoints.push_back(bp);
+    breakpoints.push_back(bp);
+    bp->leading = true;
   }
   else
   {
-    auto it = std::find_if(this->breakpoints.begin(), this->breakpoints.end(), [bp](const std::shared_ptr<program::Breakpoint>& other) {
+    auto it = std::find_if(breakpoints.begin(), breakpoints.end(), [bp](const std::shared_ptr<program::Breakpoint>& other) {
       return other->line >= bp->line;
-    });
+      });
 
-    if (it != this->breakpoints.end() && (*it)->line == bp->line)
+    if (it != breakpoints.end() && (*it)->line == bp->line)
       return;
 
-    this->breakpoints.insert(it, bp);
+    breakpoints.insert(it, bp);
+    bp->leading = true;
   }
+}
+
+void ScriptImpl::add_breakpoint(script::Function f, std::shared_ptr<program::Breakpoint> bp)
+{
+  add_breakpoint_to_list(this->breakpoints, bp);
+  add_breakpoint_to_list(this->breakpoints_map[f.impl()], bp);
+
 }
 
 /*!
@@ -166,6 +175,69 @@ void Script::clearAst()
 const std::vector<std::shared_ptr<program::Breakpoint>>& Script::breakpoints() const
 {
   return d->breakpoints;
+}
+
+class BreakpointFetcher
+{
+public:
+  const Script& script;
+  int line;
+  int closest_dist = std::numeric_limits<int>::max();
+  std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> result;
+
+  BreakpointFetcher(const Script& s, int l)
+    : script(s), line(l)
+  {
+
+  }
+
+  void operator()()
+  {
+    for (auto it = script.impl()->breakpoints_map.begin(); it != script.impl()->breakpoints_map.end(); ++it)
+    {
+      const auto& elem = *it;
+      script::Function f{ elem.first };
+
+      if (f.isNull())
+        continue;
+
+      (*this)(f, elem.second);
+    }
+  }
+
+  void operator()(script::Function& f, const std::vector<std::shared_ptr<program::Breakpoint>>& bps)
+  {
+    auto it = std::find_if(bps.begin(), bps.end(), [this](const std::shared_ptr<program::Breakpoint>& bp) {
+      return bp->line >= line;
+      });
+
+    if (it == bps.end())
+      return;
+
+    std::shared_ptr<program::Breakpoint> bp = *it;
+
+    if ((bp->line - line) < closest_dist)
+    {
+      closest_dist = bp->line - line;
+      result.clear();
+    }
+    
+    if (bp->line - line == closest_dist)
+    {
+      result.push_back(std::make_pair(f, bp));
+    }
+  }
+};
+
+/*!
+ * \fn std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> breakpoints(int line) const
+ * \brief returns breakpoints associated to a given line from the script
+ */
+std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> Script::breakpoints(int line) const
+{
+  BreakpointFetcher fetcher{ *this, line };
+  fetcher();
+  return fetcher.result;
 }
 
 Engine * Script::engine() const

@@ -71,6 +71,7 @@ public:
   void clearAst();
 
   const std::vector<std::shared_ptr<program::Breakpoint>>& breakpoints() const;
+  std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> breakpoints(int line) const;
 
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }

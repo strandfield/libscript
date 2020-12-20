@@ -304,6 +304,7 @@ public:
 struct LIBSCRIPT_API Breakpoint : public Statement
 {
   const int line = -1;
+  bool leading = false;
   const std::shared_ptr<compiler::DebugInfoBlock> debug_info;
   int status = 0; // user-variable
 

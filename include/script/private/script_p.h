@@ -44,8 +44,10 @@ public:
   Scope exports;
   std::vector<std::shared_ptr<program::Breakpoint>> breakpoints;
 
+  std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
+
   void register_global(const Type& t, std::string name);
-  void add_breakpoint(std::shared_ptr<program::Breakpoint> bp);
+  void add_breakpoint(script::Function f, std::shared_ptr<program::Breakpoint> bp);
 };
 
 } // namespace script

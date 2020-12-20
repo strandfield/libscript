@@ -665,7 +665,7 @@ void FunctionCompiler::insertBreakpoint(const ast::Statement& s)
   int line = pos.line;
 
   auto bp = std::make_shared<program::Breakpoint>(line, mStack.debuginfo);
-  mFunction.script().impl()->add_breakpoint(bp);
+  mFunction.script().impl()->add_breakpoint(mFunction, bp);
   write(bp);
 }
 
@@ -681,7 +681,7 @@ void FunctionCompiler::insertExitBreakpoint(size_t delta, const ast::Statement& 
   int line = pos.line;
 
   auto bp = std::make_shared<program::Breakpoint>(line, DebugInfoBlock::fetch(mStack.debuginfo, delta));
-  mFunction.script().impl()->add_breakpoint(bp);
+  mFunction.script().impl()->add_breakpoint(mFunction, bp);
   write(bp);
 }
 
