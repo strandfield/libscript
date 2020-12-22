@@ -119,7 +119,7 @@ public:
   const program::Breakpoint* last_breakpoint = nullptr;
 };
 
-class Callstack
+class LIBSCRIPT_API Callstack
 {
 public:
   Callstack(size_t capacity);

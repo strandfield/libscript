@@ -26,6 +26,7 @@ TEST(Conversions, fundamentals) {
   using namespace script;
 
   Engine e;
+  e.setup();
 
   StandardConversion conv{ Type::Int, Type::cref(Type::Int) };
   ASSERT_TRUE(conv.isReferenceConversion());

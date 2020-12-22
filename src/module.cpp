@@ -327,7 +327,8 @@ void Module::destroy()
   {
     auto nm = static_cast<NativeModule*>(impl());
 
-    nm->cleanup(*this);
+    if(isLoaded())
+      nm->cleanup(*this);
 
     for (auto child : nm->modules)
     {

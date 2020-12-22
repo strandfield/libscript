@@ -135,6 +135,7 @@ public:
   Engine(const Engine & other) = delete;
 
   void setup();
+  void tearDown();
 
   TypeSystem* typeSystem() const;
 
