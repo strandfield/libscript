@@ -27,6 +27,7 @@ class LIBSCRIPT_API Workspace
 {
 private:
   FunctionCall* m_call = nullptr;
+  size_t m_offset = 0;
   std::vector<std::shared_ptr<compiler::DebugInfoBlock>> m_infos;
 
 public:

@@ -34,6 +34,7 @@ void Workspace::reset(FunctionCall* c)
 void Workspace::refresh()
 {
   m_infos.clear();
+  m_offset = 0;
 
   if (m_call && m_call->last_breakpoint)
   {
@@ -46,7 +47,10 @@ void Workspace::refresh()
     }
 
     if (!m_infos.empty() && m_infos.back()->varname == "return-value")
+    {
+      m_offset = 1;
       m_infos.pop_back();
+    }
 
     std::reverse(m_infos.begin(), m_infos.end());
   }
@@ -62,7 +66,7 @@ Value Workspace::valueAt(size_t i) const
   size_t off = i;
   size_t sp = m_call->stackOffset();
   interpreter::Stack& stack = m_call->executionContext()->stack;
-  return stack[off + sp];
+  return stack[off + sp + m_offset];
 }
 
 Type Workspace::varTypeAt(size_t i) const
@@ -79,7 +83,7 @@ size_t Workspace::stackOffsetAt(size_t i) const
 {
   size_t off = i;
   size_t sp = m_call->stackOffset();
-  return off + sp;
+  return off + sp + m_offset;
 }
 
 } // namespace interpreter
