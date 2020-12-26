@@ -101,27 +101,6 @@ public:
 
 typedef std::shared_ptr<Node> NodeRef;
 
-// @TODO: visitor!
-class AstVisitor
-{
-  enum What
-  {
-
-  };
-
-  enum RetCode
-  {
-    Stop,
-    Continue,
-  };
-  virtual RetCode visit(What, NodeRef) = 0;
-  virtual RetCode visit(What, parser::Token);
-  void recurse(NodeRef); // calls visit(*this, n);
-};
-void visit(AstVisitor&, NodeRef); // big switch!
-
-
-
 class LIBSCRIPT_API Expression : public Node
 {
 

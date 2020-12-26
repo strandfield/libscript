@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -14,7 +14,7 @@ namespace ast
 {
 
 template<typename Visitor>
-typename Visitor::return_type visit(Visitor & v, const std::shared_ptr<ast::Node> & n)
+typename Visitor::return_type dispatch(Visitor & v, const std::shared_ptr<ast::Node> & n)
 {
   switch (n->type())
   {
@@ -120,7 +120,7 @@ typename Visitor::return_type visit(Visitor & v, const std::shared_ptr<ast::Node
 }
 
 template<typename Visitor>
-typename Visitor::return_type visit(Visitor & v, ast::Node & n)
+typename Visitor::return_type dispatch(Visitor & v, ast::Node & n)
 {
   switch (n.type())
   {
@@ -135,7 +135,7 @@ typename Visitor::return_type visit(Visitor & v, ast::Node & n)
   case NodeType::UserDefinedLiteral:
     return v.visit(n.as<ast::UserDefinedLiteral>());
   case NodeType::SimpleIdentifier:
-    return v.visit(n.as<ast::Identifier>());
+    return v.visit(n.as<ast::SimpleIdentifier>());
   case NodeType::TemplateIdentifier:
     return v.visit(n.as<ast::TemplateIdentifier>());
   case NodeType::QualifiedIdentifier:
@@ -224,6 +224,29 @@ typename Visitor::return_type visit(Visitor & v, ast::Node & n)
     return v.visit(n.as<ast::TemplateDeclaration>());
   }
 }
+
+class LIBSCRIPT_API AstVisitor
+{
+public:
+  AstVisitor() = default;
+  virtual ~AstVisitor();
+  
+  enum What
+  {
+    Child = 0,
+    TemplateArgument,
+    FunctionArgument,
+    LambdaCapture,
+    LambdaParameter,
+  };
+
+  virtual void visit(What w, NodeRef n) = 0;
+  virtual void visit(What w, parser::Token tok);
+
+  void recurse(NodeRef);
+};
+
+LIBSCRIPT_API void visit(AstVisitor&, NodeRef);
 
 } // namespace ast
 
