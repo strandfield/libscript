@@ -212,6 +212,7 @@ Function ScriptCompiler::registerRootFunction()
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
   scriptfunc->enclosing_symbol = mCurrentScript.impl();
 
+  // @TODO: remove this fake decl, it causes a crash when using compile mode debug
   auto fakedecl = ast::FunctionDecl::New();
   fakedecl->body = ast::CompoundStatement::New(
     parser::Token{ parser::Token::LeftBrace, parser::Token::Punctuator, parser::StringView("{", 1) },
