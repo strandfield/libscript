@@ -462,6 +462,9 @@ public:
   Operation(const parser::Token & opTok, const std::shared_ptr<Expression> & arg);
   Operation(const parser::Token & opTok, const std::shared_ptr<Expression> & a1, const std::shared_ptr<Expression> & a2);
 
+  bool isBinary() const;
+  bool isPostfix() const;
+
   static std::shared_ptr<Operation> New(const parser::Token & opTok, const std::shared_ptr<Expression> & arg);
   static std::shared_ptr<Operation> New(const parser::Token & opTok, const std::shared_ptr<Expression> & a1, const std::shared_ptr<Expression> & a2);
 

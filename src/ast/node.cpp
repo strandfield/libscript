@@ -366,6 +366,16 @@ Operation::Operation(const parser::Token & opTok, const std::shared_ptr<Expressi
 
 }
 
+bool Operation::isBinary() const
+{
+  return arg1 != nullptr && arg2 != nullptr;
+}
+
+bool Operation::isPostfix() const
+{
+  // @Tricky: We compare the position of two tokens by comparing the pointer to the beginning of the text repr.
+  return arg1->base_token().text().data() < operatorToken.text().data();
+}
 
 std::shared_ptr<Operation> Operation::New(const parser::Token & opTok, const std::shared_ptr<Expression> & arg)
 {
