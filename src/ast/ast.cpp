@@ -110,6 +110,15 @@ size_t Ast::offset(const ast::Node& n) const
 }
 
 /*!
+ * \fn size_t offset(const parser::Token& tok) const
+ * \brief returns the offset of a token within the source code
+ */
+size_t Ast::offset(const parser::Token& tok) const
+{
+  return d->offset(tok.text());
+}
+
+/*!
  * \fn bool isScript() const
  * \brief Returns whether this is the ast of a Script
  */

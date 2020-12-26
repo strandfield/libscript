@@ -38,6 +38,7 @@ public:
   const std::shared_ptr<ast::Node> & root() const;
 
   size_t offset(const ast::Node& n) const;
+  size_t offset(const parser::Token& tok) const;
 
   bool isScript() const;
   Script script() const;
