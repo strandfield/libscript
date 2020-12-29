@@ -56,7 +56,7 @@ struct AstVisitorDispatcher
   void visit(const ast::FunctionParameter& fp)
   {
     visit_qualtype(fp.type);
-    visit_token(fp.name);
+    visit_token(fp.name, AstVisitor::Name);
 
     if (fp.defaultValue)
     {
@@ -138,14 +138,14 @@ struct AstVisitorDispatcher
     {
       if (qt.constQualifier.isValid())
       {
-        visitor.visit(AstVisitor::Child, qt.constQualifier);
+        visitor.visit(AstVisitor::Type, qt.constQualifier);
       }
 
-      visitor.visit(AstVisitor::Child, qt.type);
+      visitor.visit(AstVisitor::Type, qt.type);
 
       if (qt.reference.isValid())
       {
-        visitor.visit(AstVisitor::Child, qt.reference);
+        visitor.visit(AstVisitor::Type, qt.reference);
       }
     }
   }
@@ -157,35 +157,35 @@ struct AstVisitorDispatcher
 
   void visit(ast::SimpleIdentifier& id)
   {
-    visitor.visit(AstVisitor::Child, id.name);
+    visitor.visit(AstVisitor::Name, id.name);
   }
   
   void visit(ast::TemplateIdentifier& id)
   {
-    visitor.visit(AstVisitor::Child, id.name);
-    visitor.visit(AstVisitor::Child, id.leftAngle);
+    visitor.visit(AstVisitor::Name, id.name);
+    visitor.visit(AstVisitor::TemplateLeftAngle, id.leftAngle);
     recursive_visit(id.arguments, AstVisitor::TemplateArgument);
-    visitor.visit(AstVisitor::Child, id.rightAngle);
+    visitor.visit(AstVisitor::TemplateRightAngle, id.rightAngle);
   }
 
   void visit(ast::ScopedIdentifier& id)
   {
-    visitor.visit(AstVisitor::Child, id.lhs);
-    visitor.visit(AstVisitor::Child, id.scopeResolution);
-    visitor.visit(AstVisitor::Child, id.rhs);
+    visitor.visit(AstVisitor::NameQualifier, id.lhs);
+    visitor.visit(AstVisitor::NameResolutionOperator, id.scopeResolution);
+    visitor.visit(AstVisitor::Name, id.rhs);
   }
 
   void visit(ast::OperatorName& id)
   {
-    visitor.visit(AstVisitor::Child, id.keyword);
-    visitor.visit(AstVisitor::Child, id.symbol);
+    visitor.visit(AstVisitor::OperatorKeyword, id.keyword);
+    visitor.visit(AstVisitor::OperatorSymbol, id.symbol);
   }
 
   void visit(ast::LiteralOperatorName& id)
   {
-    visitor.visit(AstVisitor::Child, id.keyword);
-    visitor.visit(AstVisitor::Child, id.doubleQuotes);
-    visitor.visit(AstVisitor::Child, id.suffix);
+    visitor.visit(AstVisitor::OperatorKeyword, id.keyword);
+    visitor.visit(AstVisitor::LiteralOperatorDoubleQuotes, id.doubleQuotes);
+    visitor.visit(AstVisitor::LiteralOperatorSuffix, id.suffix);
   }
 
   void visit(ast::TypeNode& tn)
@@ -195,83 +195,83 @@ struct AstVisitorDispatcher
 
   void visit(ast::FunctionCall& fc)
   {
-    visitor.visit(AstVisitor::Child, fc.callee);
-    visitor.visit(AstVisitor::Child, fc.leftPar);
+    visitor.visit(AstVisitor::FunctionCallee, fc.callee);
+    visitor.visit(AstVisitor::LeftPar, fc.leftPar);
     recursive_visit(fc.arguments, AstVisitor::FunctionArgument);
-    visitor.visit(AstVisitor::Child, fc.rightPar);
+    visitor.visit(AstVisitor::RightPar, fc.rightPar);
   }
 
   void visit(ast::BraceConstruction& bc)
   {
-    visitor.visit(AstVisitor::Child, bc.temporary_type);
-    visitor.visit(AstVisitor::Child, bc.left_brace);
+    visitor.visit(AstVisitor::Type, bc.temporary_type);
+    visitor.visit(AstVisitor::LeftBrace, bc.left_brace);
     recursive_visit(bc.arguments, AstVisitor::FunctionArgument);
-    visitor.visit(AstVisitor::Child, bc.right_brace);
+    visitor.visit(AstVisitor::RightBrace, bc.right_brace);
   }
 
   void visit(ast::ArraySubscript& as)
   {
-    visitor.visit(AstVisitor::Child, as.array);
-    visitor.visit(AstVisitor::Child, as.leftBracket);
-    visitor.visit(AstVisitor::Child, as.index);
-    visitor.visit(AstVisitor::Child, as.rightBracket);
+    visitor.visit(AstVisitor::ArrayObject, as.array);
+    visitor.visit(AstVisitor::LeftBracket, as.leftBracket);
+    visitor.visit(AstVisitor::ArrayIndex, as.index);
+    visitor.visit(AstVisitor::RightBracket, as.rightBracket);
   }
 
   void visit(ast::Operation& op)
   {
     if (op.isBinary())
     {
-      visitor.visit(AstVisitor::Child, op.arg1);
-      visitor.visit(AstVisitor::Child, op.operatorToken);
-      visitor.visit(AstVisitor::Child, op.arg2);
+      visitor.visit(AstVisitor::OperationLhs, op.arg1);
+      visitor.visit(AstVisitor::OperatorSymbol, op.operatorToken);
+      visitor.visit(AstVisitor::OperationRhs, op.arg2);
     }
     else
     {
       if (op.isPostfix())
       {
-        visitor.visit(AstVisitor::Child, op.arg1);
-        visitor.visit(AstVisitor::Child, op.operatorToken);
+        visitor.visit(AstVisitor::OperationLhs, op.arg1);
+        visitor.visit(AstVisitor::OperatorSymbol, op.operatorToken);
       }
       else
       {
-        visitor.visit(AstVisitor::Child, op.operatorToken);
-        visitor.visit(AstVisitor::Child, op.arg1);
+        visitor.visit(AstVisitor::OperatorSymbol, op.operatorToken);
+        visitor.visit(AstVisitor::OperationRhs, op.arg1);
       }
     }
   }
 
   void visit(ast::ConditionalExpression& condop)
   {
-    visitor.visit(AstVisitor::Child, condop.condition);
-    visitor.visit(AstVisitor::Child, condop.questionMark);
-    visitor.visit(AstVisitor::Child, condop.onTrue);
-    visitor.visit(AstVisitor::Child, condop.colon);
-    visitor.visit(AstVisitor::Child, condop.onFalse);
+    visitor.visit(AstVisitor::Condition, condop.condition);
+    visitor.visit(AstVisitor::Punctuator, condop.questionMark);
+    visitor.visit(AstVisitor::TernaryTrueExpression, condop.onTrue);
+    visitor.visit(AstVisitor::Punctuator, condop.colon);
+    visitor.visit(AstVisitor::TernaryFalseExpression, condop.onFalse);
   }
 
   void visit(ast::ArrayExpression& ae)
   {
-    visitor.visit(AstVisitor::Child, ae.leftBracket);
-    recursive_visit(ae.elements, AstVisitor::Child);
-    visitor.visit(AstVisitor::Child, ae.rightBracket);
+    visitor.visit(AstVisitor::LeftBracket, ae.leftBracket);
+    recursive_visit(ae.elements, AstVisitor::FunctionArgument);
+    visitor.visit(AstVisitor::RightBracket, ae.rightBracket);
   }
 
   void visit(ast::ListExpression& le)
   {
-    visitor.visit(AstVisitor::Child, le.left_brace);
-    recursive_visit(le.elements, AstVisitor::Child);
-    visitor.visit(AstVisitor::Child, le.right_brace);
+    visitor.visit(AstVisitor::LeftBrace, le.left_brace);
+    recursive_visit(le.elements, AstVisitor::FunctionArgument);
+    visitor.visit(AstVisitor::RightBrace, le.right_brace);
   }
 
   void visit(ast::LambdaExpression& le)
   {
-    visitor.visit(AstVisitor::Child, le.leftBracket);
+    visitor.visit(AstVisitor::LeftBracket, le.leftBracket);
     recursive_visit(le.captures);
-    visitor.visit(AstVisitor::Child, le.rightBracket);
-    visitor.visit(AstVisitor::Child, le.leftPar);
+    visitor.visit(AstVisitor::RightBracket, le.rightBracket);
+    visitor.visit(AstVisitor::LeftPar, le.leftPar);
     recursive_visit(le.params, AstVisitor::LambdaParameter);
-    visitor.visit(AstVisitor::Child, le.rightPar);
-    visitor.visit(AstVisitor::Child, le.body);
+    visitor.visit(AstVisitor::RightPar, le.rightPar);
+    visitor.visit(AstVisitor::Body, le.body);
   }
 
   void visit(ast::NullStatement&)
@@ -280,164 +280,164 @@ struct AstVisitorDispatcher
 
   void visit(ast::ExpressionStatement& es)
   {
-    visitor.visit(AstVisitor::Child, es.expression);
-    visitor.visit(AstVisitor::Child, es.semicolon);
+    visitor.visit(AstVisitor::Expression, es.expression);
+    visitor.visit(AstVisitor::Punctuator, es.semicolon);
   }
 
   void visit(ast::CompoundStatement& cs)
   {
-    visitor.visit(AstVisitor::Child, cs.openingBrace);
+    visitor.visit(AstVisitor::LeftBrace, cs.openingBrace);
     recursive_visit(cs.statements);
-    visitor.visit(AstVisitor::Child, cs.closingBrace);
+    visitor.visit(AstVisitor::RightBrace, cs.closingBrace);
   }
 
   void visit(ast::IfStatement& is)
   {
-    visitor.visit(AstVisitor::Child, is.keyword);
-    visitor.visit(AstVisitor::Child, is.condition);
-    visitor.visit(AstVisitor::Child, is.body);
+    visitor.visit(AstVisitor::Keyword, is.keyword);
+    visitor.visit(AstVisitor::Condition, is.condition);
+    visitor.visit(AstVisitor::Body, is.body);
 
     if (is.elseClause)
     {
-      visitor.visit(AstVisitor::Child, is.elseKeyword);
-      visitor.visit(AstVisitor::Child, is.elseClause);
+      visitor.visit(AstVisitor::Keyword, is.elseKeyword);
+      visitor.visit(AstVisitor::Body, is.elseClause);
     }
   }
 
   void visit(ast::WhileLoop& wl)
   {
-    visitor.visit(AstVisitor::Child, wl.keyword);
-    visitor.visit(AstVisitor::Child, wl.condition);
-    visitor.visit(AstVisitor::Child, wl.body);
+    visitor.visit(AstVisitor::Keyword, wl.keyword);
+    visitor.visit(AstVisitor::Condition, wl.condition);
+    visitor.visit(AstVisitor::Body, wl.body);
   }
 
   void visit(ast::ForLoop& fl)
   {
-    visitor.visit(AstVisitor::Child, fl.keyword);
-    visitor.visit(AstVisitor::Child, fl.initStatement);
-    visitor.visit(AstVisitor::Child, fl.condition);
+    visitor.visit(AstVisitor::Keyword, fl.keyword);
+    visitor.visit(AstVisitor::InitStatement, fl.initStatement);
+    visitor.visit(AstVisitor::Condition, fl.condition);
     visitor.visit(AstVisitor::Child, fl.loopIncrement);
-    visitor.visit(AstVisitor::Child, fl.body);
+    visitor.visit(AstVisitor::LoopIncrement, fl.body);
   }
 
   void visit(ast::ReturnStatement& rs)
   {
-    visitor.visit(AstVisitor::Child, rs.keyword);
+    visitor.visit(AstVisitor::Keyword, rs.keyword);
 
     if (rs.expression)
     {
-      visitor.visit(AstVisitor::Child, rs.expression);
+      visitor.visit(AstVisitor::Expression, rs.expression);
     }
   }
 
   void visit(ast::JumpStatement& js)
   {
-    visitor.visit(AstVisitor::Child, js.keyword);
+    visitor.visit(AstVisitor::Keyword, js.keyword);
   }
 
   void visit(ast::EnumDeclaration& ed)
   {
-    visitor.visit(AstVisitor::Child, ed.enumKeyword);
+    visitor.visit(AstVisitor::Keyword, ed.enumKeyword);
 
     if (ed.classKeyword.isValid())
     {
-      visitor.visit(AstVisitor::Child, ed.classKeyword);
+      visitor.visit(AstVisitor::Keyword, ed.classKeyword);
     }
 
-    visitor.visit(AstVisitor::Child, ed.name);
+    visitor.visit(AstVisitor::Name, ed.name);
 
-    visitor.visit(AstVisitor::Child, ed.leftBrace);
+    visitor.visit(AstVisitor::LeftBrace, ed.leftBrace);
 
     recursive_visit(ed.values);
 
-    visitor.visit(AstVisitor::Child, ed.rightBrace);
+    visitor.visit(AstVisitor::RightBrace, ed.rightBrace);
   }
 
   void visit(ast::VariableDecl& vd)
   {
     if (vd.staticSpecifier.isValid())
     {
-      visitor.visit(AstVisitor::Child, vd.staticSpecifier);
+      visitor.visit(AstVisitor::Type, vd.staticSpecifier);
     }
 
     visit_qualtype(vd.variable_type);
 
-    visitor.visit(AstVisitor::Child, vd.name);
+    visitor.visit(AstVisitor::Name, vd.name);
 
     if (vd.init)
     {
-      visitor.visit(AstVisitor::Child, vd.init);
+      visitor.visit(AstVisitor::VarInit, vd.init);
     }
 
-    visitor.visit(AstVisitor::Child, vd.semicolon);
+    visitor.visit(AstVisitor::Punctuator, vd.semicolon);
   }
 
   void visit(ast::ClassDecl& cd)
   {
-    visitor.visit(AstVisitor::Child, cd.classKeyword);
+    visitor.visit(AstVisitor::Keyword, cd.classKeyword);
 
-    visitor.visit(AstVisitor::Child, cd.name);
+    visitor.visit(AstVisitor::Name, cd.name);
 
     if (cd.colon.isValid())
     {
-      visitor.visit(AstVisitor::Child, cd.colon);
+      visitor.visit(AstVisitor::Punctuator, cd.colon);
 
-      visitor.visit(AstVisitor::Child, cd.parent);
+      visitor.visit(AstVisitor::Name, cd.parent);
     }
 
-    visitor.visit(AstVisitor::Child, cd.openingBrace);
+    visitor.visit(AstVisitor::LeftBrace, cd.openingBrace);
 
     recursive_visit(cd.content);
 
-    visitor.visit(AstVisitor::Child, cd.closingBrace);
+    visitor.visit(AstVisitor::RightBrace, cd.closingBrace);
 
-    visitor.visit(AstVisitor::Child, cd.endingSemicolon);
+    visitor.visit(AstVisitor::Punctuator, cd.endingSemicolon);
   }
 
   void visit(ast::FunctionDecl& fd)
   {
     if (fd.explicitKeyword.isValid())
     {
-      visitor.visit(AstVisitor::Child, fd.explicitKeyword);
+      visitor.visit(AstVisitor::Type, fd.explicitKeyword);
     }
 
     if (fd.staticKeyword.isValid())
     {
-      visitor.visit(AstVisitor::Child, fd.staticKeyword);
+      visitor.visit(AstVisitor::Type, fd.staticKeyword);
     }
 
     if (fd.virtualKeyword.isValid())
     {
-      visitor.visit(AstVisitor::Child, fd.virtualKeyword);
+      visitor.visit(AstVisitor::Type, fd.virtualKeyword);
     }
 
     visit_qualtype(fd.returnType);
 
-    visitor.visit(AstVisitor::Child, fd.name);
+    visitor.visit(AstVisitor::Name, fd.name);
 
     recursive_visit(fd.params);
 
     if (fd.body)
     {
-      visitor.visit(AstVisitor::Child, fd.body);
+      visitor.visit(AstVisitor::Body, fd.body);
     }
     else
     {
-      visitor.visit(AstVisitor::Child, fd.equalSign);
+      visitor.visit(AstVisitor::Punctuator, fd.equalSign);
 
       if (fd.defaultKeyword.isValid())
       {
-        visitor.visit(AstVisitor::Child, fd.defaultKeyword);
+        visitor.visit(AstVisitor::Keyword, fd.defaultKeyword);
       }
 
       if (fd.deleteKeyword.isValid())
       {
-        visitor.visit(AstVisitor::Child, fd.deleteKeyword);
+        visitor.visit(AstVisitor::Keyword, fd.deleteKeyword);
       }
 
       if (fd.virtualPure.isValid())
       {
-        visitor.visit(AstVisitor::Child, fd.virtualPure);
+        visitor.visit(AstVisitor::Keyword, fd.virtualPure);
       }
     }
   }
@@ -446,8 +446,8 @@ struct AstVisitorDispatcher
   {
     for (auto& i : minits)
     {
-      visitor.visit(AstVisitor::Child, i.name);
-      visitor.visit(AstVisitor::Child, i.init);
+      visitor.visit(AstVisitor::Name, i.name);
+      visitor.visit(AstVisitor::VarInit, i.init);
     }
   }
 
@@ -455,10 +455,10 @@ struct AstVisitorDispatcher
   {
     if (fd.explicitKeyword.isValid())
     {
-      visitor.visit(AstVisitor::Child, fd.explicitKeyword);
+      visitor.visit(AstVisitor::Type, fd.explicitKeyword);
     }
 
-    visitor.visit(AstVisitor::Child, fd.name);
+    visitor.visit(AstVisitor::Name, fd.name);
 
     recursive_visit(fd.params);
 
@@ -466,20 +466,20 @@ struct AstVisitorDispatcher
     {
       vec_visit(fd.memberInitializationList);
 
-      visitor.visit(AstVisitor::Child, fd.body);
+      visitor.visit(AstVisitor::Body, fd.body);
     }
     else
     {
-      visitor.visit(AstVisitor::Child, fd.equalSign);
+      visitor.visit(AstVisitor::Punctuator, fd.equalSign);
 
       if (fd.defaultKeyword.isValid())
       {
-        visitor.visit(AstVisitor::Child, fd.defaultKeyword);
+        visitor.visit(AstVisitor::Keyword, fd.defaultKeyword);
       }
 
       if (fd.deleteKeyword.isValid())
       {
-        visitor.visit(AstVisitor::Child, fd.deleteKeyword);
+        visitor.visit(AstVisitor::Keyword, fd.deleteKeyword);
       }
     }
   }
@@ -496,79 +496,79 @@ struct AstVisitorDispatcher
 
   void visit(ast::AccessSpecifier& aspec)
   {
-    visitor.visit(AstVisitor::Child, aspec.visibility);
-    visitor.visit(AstVisitor::Child, aspec.colon);
+    visitor.visit(AstVisitor::Keyword, aspec.visibility);
+    visitor.visit(AstVisitor::Punctuator, aspec.colon);
   }
 
   void visit(ast::ConstructorInitialization& ctorinit)
   {
-    visitor.visit(AstVisitor::Child, ctorinit.left_par);
+    visitor.visit(AstVisitor::LeftPar, ctorinit.left_par);
     recursive_visit(ctorinit.args);
-    visitor.visit(AstVisitor::Child, ctorinit.right_par);
+    visitor.visit(AstVisitor::RightPar, ctorinit.right_par);
   }
 
   void visit(ast::BraceInitialization& braceinit)
   {
-    visitor.visit(AstVisitor::Child, braceinit.left_brace);
+    visitor.visit(AstVisitor::LeftBrace, braceinit.left_brace);
     recursive_visit(braceinit.args);
-    visitor.visit(AstVisitor::Child, braceinit.right_brace);
+    visitor.visit(AstVisitor::RightBrace, braceinit.right_brace);
   }
 
   void visit(ast::AssignmentInitialization& assigninit)
   {
-    visitor.visit(AstVisitor::Child, assigninit.equalSign);
-    visitor.visit(AstVisitor::Child, assigninit.value);
+    visitor.visit(AstVisitor::OperatorSymbol, assigninit.equalSign);
+    visitor.visit(AstVisitor::Expression, assigninit.value);
   }
 
   void visit(ast::Typedef& td)
   {
-    visitor.visit(AstVisitor::Child, td.typedef_token);
+    visitor.visit(AstVisitor::Keyword, td.typedef_token);
     visit_qualtype(td.qualified_type);
-    visitor.visit(AstVisitor::Child, td.name);
+    visitor.visit(AstVisitor::Name, td.name);
   }
 
   void visit(ast::NamespaceDeclaration& nd)
   {
-    visitor.visit(AstVisitor::Child, nd.namespace_token);
-    visitor.visit(AstVisitor::Child, nd.namespace_name);
-    visitor.visit(AstVisitor::Child, nd.left_brace);
+    visitor.visit(AstVisitor::Keyword, nd.namespace_token);
+    visitor.visit(AstVisitor::Name, nd.namespace_name);
+    visitor.visit(AstVisitor::LeftBrace, nd.left_brace);
     recursive_visit(nd.statements);
-    visitor.visit(AstVisitor::Child, nd.right_brace);
+    visitor.visit(AstVisitor::RightBrace, nd.right_brace);
   }
 
   void visit(ast::ClassFriendDeclaration& cfd)
   {
-    visitor.visit(AstVisitor::Child, cfd.friend_token);
-    visitor.visit(AstVisitor::Child, cfd.class_token);
-    visitor.visit(AstVisitor::Child, cfd.class_name);
+    visitor.visit(AstVisitor::Keyword, cfd.friend_token);
+    visitor.visit(AstVisitor::Keyword, cfd.class_token);
+    visitor.visit(AstVisitor::Name, cfd.class_name);
   }
 
   void visit(ast::UsingDeclaration& ud)
   {
-    visitor.visit(AstVisitor::Child, ud.using_keyword);
-    visitor.visit(AstVisitor::Child, ud.used_name);
+    visitor.visit(AstVisitor::Keyword, ud.using_keyword);
+    visitor.visit(AstVisitor::Name, ud.used_name);
   }
 
   void visit(ast::UsingDirective& ud)
   {
-    visitor.visit(AstVisitor::Child, ud.using_keyword);
-    visitor.visit(AstVisitor::Child, ud.namespace_keyword);
-    visitor.visit(AstVisitor::Child, ud.namespace_name);
+    visitor.visit(AstVisitor::Keyword, ud.using_keyword);
+    visitor.visit(AstVisitor::Keyword, ud.namespace_keyword);
+    visitor.visit(AstVisitor::Name, ud.namespace_name);
   }
 
   void visit(ast::NamespaceAliasDefinition& nad)
   {
-    visitor.visit(AstVisitor::Child, nad.namespace_keyword);
-    visitor.visit(AstVisitor::Child, nad.alias_name);
-    visitor.visit(AstVisitor::Child, nad.equal_token);
-    visitor.visit(AstVisitor::Child, nad.aliased_namespace);
+    visitor.visit(AstVisitor::Keyword, nad.namespace_keyword);
+    visitor.visit(AstVisitor::Name, nad.alias_name);
+    visitor.visit(AstVisitor::OperatorSymbol, nad.equal_token);
+    visitor.visit(AstVisitor::Name, nad.aliased_namespace);
   }
 
   void visit(ast::TypeAliasDeclaration& tad)
   {
-    visitor.visit(AstVisitor::Child, tad.using_keyword);
-    visitor.visit(AstVisitor::Child, tad.alias_name);
-    visitor.visit(AstVisitor::Child, tad.aliased_type);
+    visitor.visit(AstVisitor::Keyword, tad.using_keyword);
+    visitor.visit(AstVisitor::Name, tad.alias_name);
+    visitor.visit(AstVisitor::Type, tad.aliased_type);
   }
 
   void vec_visit(std::vector<parser::Token>& toks)
@@ -580,9 +580,9 @@ struct AstVisitorDispatcher
   void visit(ast::ImportDirective& impd)
   {
     if(impd.export_keyword.isValid())
-      visitor.visit(AstVisitor::Child, impd.export_keyword);
+      visitor.visit(AstVisitor::Keyword, impd.export_keyword);
 
-    visitor.visit(AstVisitor::Child, impd.import_keyword);
+    visitor.visit(AstVisitor::Keyword, impd.import_keyword);
     vec_visit(impd.names);
   }
 
@@ -590,21 +590,21 @@ struct AstVisitorDispatcher
   {
     for (auto& t : tparams)
     {
-      visitor.visit(AstVisitor::Child, t.kind);
+      visitor.visit(AstVisitor::Type, t.kind);
       visit_token(t.name);
       visit_token(t.eq);
       if(t.default_value)
-        visitor.visit(AstVisitor::Child, t.default_value);
+        visitor.visit(AstVisitor::Expression, t.default_value);
     }
   }
 
   void visit(ast::TemplateDeclaration& tdecl)
   {
-    visitor.visit(AstVisitor::Child, tdecl.template_keyword);
-    visitor.visit(AstVisitor::Child, tdecl.left_angle_bracket);
-    visitor.visit(AstVisitor::Child, tdecl.right_angle_bracket);
+    visitor.visit(AstVisitor::Keyword, tdecl.template_keyword);
+    visitor.visit(AstVisitor::TemplateLeftAngle, tdecl.left_angle_bracket);
     vec_visit(tdecl.parameters);
-    visitor.visit(AstVisitor::Child, tdecl.declaration);
+    visitor.visit(AstVisitor::TemplateRightAngle, tdecl.right_angle_bracket);
+    visitor.visit(AstVisitor::Body, tdecl.declaration);
   }
 };
 
@@ -613,11 +613,26 @@ AstVisitor::~AstVisitor()
 
 }
 
+/*!
+ * \fn virtual void AstVisitor::visit(What w, parser::Token tok)
+ * \brief function receiving the children of a node
+ * \param enumeration describing the child
+ * \param the child token
+ *
+ * The default implementation does nothing.
+ */
 void AstVisitor::visit(What /* w */, parser::Token /* tok */)
 {
   // no-op
 }
 
+/*!
+ * \fn void recurse(NodeRef n)
+ * \brief performs visitation of the node children
+ * \param the node
+ * 
+ * This effectively calls \c{ast::visit()} with this visitor and the given node.
+ */
 void AstVisitor::recurse(NodeRef n)
 {
   script::ast::visit(*this, n);

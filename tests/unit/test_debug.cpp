@@ -46,7 +46,7 @@ TEST(DebugMode, compilation) {
   const auto& errors = s.messages();
   ASSERT_TRUE(success);
 
-  ASSERT_TRUE(s.breakpoints().size() == 6);
+  ASSERT_TRUE(!s.breakpoints(3).empty());
 
   auto debug_handler = std::make_shared<CustomDebugHandler>();
 

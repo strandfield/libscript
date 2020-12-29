@@ -53,7 +53,6 @@ static void add_breakpoint_to_list(std::vector<std::shared_ptr<program::Breakpoi
 
 void ScriptImpl::add_breakpoint(script::Function f, std::shared_ptr<program::Breakpoint> bp)
 {
-  add_breakpoint_to_list(this->breakpoints, bp);
   add_breakpoint_to_list(this->breakpoints_map[f.impl()], bp);
 
 }
@@ -166,15 +165,6 @@ void Script::clearAst()
     return;
 
   d->ast = nullptr;
-}
-
-/*!
- * \fn const std::vector<std::shared_ptr<program::Breakpoint>>& breakpoints() const
- * \brief returns the ordered list of available break positions
- */
-const std::vector<std::shared_ptr<program::Breakpoint>>& Script::breakpoints() const
-{
-  return d->breakpoints;
 }
 
 class BreakpointFetcher

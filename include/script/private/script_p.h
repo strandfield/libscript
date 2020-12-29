@@ -42,7 +42,6 @@ public:
   bool astlock;
   std::shared_ptr<ast::AST> ast;
   Scope exports;
-  std::vector<std::shared_ptr<program::Breakpoint>> breakpoints;
 
   std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
 
