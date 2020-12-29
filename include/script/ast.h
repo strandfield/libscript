@@ -56,6 +56,11 @@ public:
   std::shared_ptr<ast::AST> d;
 };
 
+namespace ast
+{
+LIBSCRIPT_API Ast parse(const SourceFile& source);
+} // namespace ast
+
 } // namespace script
 
 #endif // LIBSCRIPT_AST_H

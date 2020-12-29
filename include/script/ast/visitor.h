@@ -133,6 +133,8 @@ typename Visitor::return_type dispatch(Visitor & v, const std::shared_ptr<ast::N
     return v.visit(std::static_pointer_cast<ast::ImportDirective>(n));
   case NodeType::TemplateDecl:
     return v.visit(std::static_pointer_cast<ast::TemplateDeclaration>(n));
+  case NodeType::ScriptRoot:
+    return v.visit(std::static_pointer_cast<ast::ScriptRootNode>(n));
   }
 }
 
@@ -248,6 +250,8 @@ typename Visitor::return_type dispatch(Visitor & v, ast::Node & n)
     return v.visit(n.as<ast::ImportDirective>());
   case NodeType::TemplateDecl:
     return v.visit(n.as<ast::TemplateDeclaration>());
+  case NodeType::ScriptRoot:
+    return v.visit(n.as<ast::ScriptRootNode>());
   }
 }
 

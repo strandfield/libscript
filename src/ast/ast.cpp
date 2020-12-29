@@ -6,6 +6,7 @@
 #include "script/ast/ast_p.h"
 
 #include "script/script.h"
+#include "script/parser/parser.h"
 
 namespace script
 {
@@ -184,5 +185,24 @@ std::shared_ptr<ast::Expression> Ast::expression() const
 {
   return std::dynamic_pointer_cast<ast::Expression>(d->root);
 }
+
+/*!
+ * \namespace ast
+ */
+namespace ast
+{
+
+/*!
+ * \fn Ast parse(const SourceFile& source)
+ * \brief produces an ast for a source file
+ * \param the source file
+ *
+ */
+Ast parse(const SourceFile& source)
+{
+  return Ast{ script::parser::parse(source) };
+}
+
+} // namespace ast
 
 } // namespace script

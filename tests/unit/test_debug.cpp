@@ -9,15 +9,26 @@
 
 #include "script/interpreter/interpreter.h"
 #include "script/interpreter/debug-handler.h"
+#include "script/interpreter/workspace.h"
 
 class CustomDebugHandler : public script::interpreter::DebugHandler
 {
 public:
-  bool triggerred = false;
+  size_t size = 0;
+  script::Type type;
+  std::string name;
+  int value;
 
   void interrupt(script::FunctionCall& call, script::program::Breakpoint& info)
   {
-    triggerred = true;
+    if (info.status)
+    {
+      script::interpreter::Workspace w{ &call };
+      size = w.size();
+      type = w.varTypeAt(0);
+      name = w.nameAt(0);
+      value = w.valueAt(0).toInt();
+    }
   }
 };
 
@@ -46,7 +57,10 @@ TEST(DebugMode, compilation) {
   const auto& errors = s.messages();
   ASSERT_TRUE(success);
 
-  ASSERT_TRUE(!s.breakpoints(3).empty());
+  auto bps = s.breakpoints(4);
+  ASSERT_TRUE(bps.size() == 1);
+
+  bps.front().second->status = 1;
 
   auto debug_handler = std::make_shared<CustomDebugHandler>();
 
@@ -56,5 +70,8 @@ TEST(DebugMode, compilation) {
 
   s.functions().front().invoke({});
 
-  ASSERT_TRUE(debug_handler->triggerred);
+  ASSERT_TRUE(debug_handler->size == 1);
+  ASSERT_TRUE(debug_handler->type == script::Type::Int);
+  ASSERT_TRUE(debug_handler->name == "a");
+  ASSERT_TRUE(debug_handler->value == 5);
 }

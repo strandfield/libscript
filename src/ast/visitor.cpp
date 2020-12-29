@@ -606,6 +606,12 @@ struct AstVisitorDispatcher
     visitor.visit(AstVisitor::TemplateRightAngle, tdecl.right_angle_bracket);
     visitor.visit(AstVisitor::Body, tdecl.declaration);
   }
+
+  void visit(ast::ScriptRootNode& root)
+  {
+    for (auto n : root.statements)
+      visitor.visit(AstVisitor::Child, n);
+  }
 };
 
 AstVisitor::~AstVisitor()
