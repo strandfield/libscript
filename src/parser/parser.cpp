@@ -1776,7 +1776,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
     return false;
 
   auto p = iterator();
-  unsafe_read();
+  Token eq_token = unsafe_read();
 
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
@@ -1788,6 +1788,7 @@ bool DeclParser::readOptionalDeleteSpecifier()
   }
 
   const Token delSpec = read();
+  mFuncDecl->equalSign = eq_token;
   mFuncDecl->deleteKeyword = delSpec;
 
   mDecision = ParsingFunction;
@@ -1822,6 +1823,7 @@ bool DeclParser::readOptionalDefaultSpecifier()
   }
 
   const Token defspec = read();
+  mFuncDecl->equalSign = eqSign;
   mFuncDecl->defaultKeyword = defspec;
 
   mDecision = ParsingFunction;
@@ -1841,7 +1843,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
     return false;
 
   auto p = iterator();
-  unsafe_read();
+  Token eq_sign = unsafe_read();
 
   if (peek() != Token::OctalLiteral)
   {
@@ -1849,6 +1851,7 @@ bool DeclParser::readOptionalVirtualPureSpecifier()
     return false;
   }
 
+  mFuncDecl->equalSign = eq_sign;
   mFuncDecl->virtualPure = read();
 
   if (!mFuncDecl->virtualPure.isZero())
