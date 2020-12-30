@@ -1041,6 +1041,8 @@ public:
   DestructorDecl(const std::shared_ptr<Identifier> & name);
   ~DestructorDecl() = default;
 
+  utils::StringView source() const override;
+
   static std::shared_ptr<DestructorDecl> New(const std::shared_ptr<Identifier> & name);
 
   static const NodeType type_code = NodeType::DestructorDeclaration;

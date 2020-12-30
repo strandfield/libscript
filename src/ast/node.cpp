@@ -32,6 +32,35 @@ inline utils::StringView compute_source(const ast::Node& begin, const ast::Node&
   return utils::StringView(begin.source().data(), dist + end.source().size());
 }
 
+inline utils::StringView compute_source_complex(const utils::StringView& a, const utils::StringView& b)
+{
+  if (a.size() == 0 && b.size() == 0)
+    return {};
+
+  if (a.size() == 0 && b.size() != 0)
+    return b;
+  else if (a.size() != 0 && b.size() == 0)
+    return a;
+
+  if (a.data() < b.data())
+  {
+    if (a.data() + a.size() < b.data() + b.size())
+      return compute_source(a, b);
+    else
+      return a;
+  }
+  else
+  {
+    assert(b.data() <= a.data());
+
+    if (b.data() + b.size() < a.data() + a.size())
+      return compute_source(b, a);
+    else
+      return a;
+  }
+}
+
+
 utils::StringView Node::source() const 
 { 
   return base_token().text(); 
@@ -133,7 +162,22 @@ parser::Token FunctionDecl::base_token() const
 
 utils::StringView FunctionDecl::source() const
 {
-  return compute_source(returnType.source(), body->source());
+  // @TODO: try to simplify this
+
+  utils::StringView src = compute_source_complex(explicitKeyword.text(), staticKeyword.text());
+  src = compute_source_complex(src, virtualKeyword.text());
+  src = compute_source_complex(src, deleteKeyword.text());
+  src = compute_source_complex(src, defaultKeyword.text());
+  src = compute_source_complex(src, virtualPure.text());
+  
+  if(body)
+    src = compute_source_complex(src, body->source());
+  if(!returnType.isNull())
+    src = compute_source_complex(src, returnType.source());
+  if(name)
+    src = compute_source_complex(src, name->source());
+
+  return src;
 }
 
 
@@ -837,6 +881,12 @@ DestructorDecl::DestructorDecl(const std::shared_ptr<Identifier> & name)
   : FunctionDecl(name)
 { }
 
+utils::StringView DestructorDecl::source() const
+{
+  return compute_source_complex(tilde.text(), FunctionDecl::source());
+}
+
+
 std::shared_ptr<DestructorDecl> DestructorDecl::New(const std::shared_ptr<Identifier> & name)
 {
   return std::make_shared<DestructorDecl>(name);
@@ -864,7 +914,7 @@ std::shared_ptr<CastDecl> CastDecl::New(const QualifiedType & rt)
 
 utils::StringView CastDecl::source() const
 {
-  return compute_source(operatorKw.text(), FunctionDecl::source());
+  return compute_source_complex(operatorKw.text(), FunctionDecl::source());
 }
 
 
