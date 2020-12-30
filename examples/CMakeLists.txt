@@ -4,3 +4,6 @@ target_link_libraries(EXAMPLE_libscript_reading_tokens libscript)
 
 add_executable(EXAMPLE_libscript_parsing_statements parsing-statements.cpp)
 target_link_libraries(EXAMPLE_libscript_parsing_statements libscript)
+
+add_executable(EXAMPLE_libscript_traversing_ast traversing-ast.cpp)
+target_link_libraries(EXAMPLE_libscript_traversing_ast libscript)

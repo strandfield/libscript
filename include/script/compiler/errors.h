@@ -5,6 +5,8 @@
 #ifndef LIBSCRIPT_COMPILER_ERRORS_H
 #define LIBSCRIPT_COMPILER_ERRORS_H
 
+#include "libscriptdefs.h"
+
 #include <functional>
 #include <system_error>
 
@@ -14,7 +16,7 @@ namespace script
 namespace errors
 {
 
-const std::error_category& compiler_category() noexcept;
+LIBSCRIPT_API const std::error_category& compiler_category() noexcept;
 
 } // namespace errors
 

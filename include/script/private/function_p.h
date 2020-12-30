@@ -87,6 +87,7 @@ public:
   ScriptFunctionImpl(Engine *e);
   ~ScriptFunctionImpl() = default;
 
+  const std::string& name() const override;
   const Prototype & prototype() const override;
 };
 

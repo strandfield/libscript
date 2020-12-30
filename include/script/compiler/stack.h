@@ -17,6 +17,8 @@ namespace script
 namespace compiler
 {
 
+class DebugInfoBlock;
+
 struct Variable
 {
   Type type;
@@ -33,13 +35,15 @@ class Stack
 {
 public:
   std::vector<Variable> data;
+  bool enable_debug = false;
+  std::shared_ptr<compiler::DebugInfoBlock> debuginfo;
 
 public:
   Stack() = default;
   Stack(const Stack &) = delete;
 
   size_t size() const { return data.size(); }
-  void clear() { data.clear(); }
+  void clear() { data.clear(); debuginfo = nullptr; }
 
   int addVar(const Type & t, utils::StringView name);
   int indexOf(const std::string & var) const;

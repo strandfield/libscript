@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -13,8 +13,25 @@ namespace script
 namespace ast
 {
 
+/*!
+ * \fn Visitor::return_type dispatch(Visitor& v, const std::shared_ptr<ast::Node>& n)
+ * \brief performs a virtual-like dispatch of the ast node
+ * \param the visitor
+ * \param a non-null shared pointer to the ast node
+ * 
+ * The Visitor class must provide a typedef to a \c{return_type} and one or more overloads 
+ * of a \c{visit} function having the following form:
+ * 
+ * \begin{code}
+ * return_type visit(std::shared_ptr<T> node)
+ * {
+ *   static_assert(std::is_base_of<ast::Node, T>::value);
+ *   ...
+ * }
+ * \end{code}
+ */
 template<typename Visitor>
-typename Visitor::return_type visit(Visitor & v, const std::shared_ptr<ast::Node> & n)
+typename Visitor::return_type dispatch(Visitor & v, const std::shared_ptr<ast::Node> & n)
 {
   switch (n->type())
   {
@@ -116,11 +133,22 @@ typename Visitor::return_type visit(Visitor & v, const std::shared_ptr<ast::Node
     return v.visit(std::static_pointer_cast<ast::ImportDirective>(n));
   case NodeType::TemplateDecl:
     return v.visit(std::static_pointer_cast<ast::TemplateDeclaration>(n));
+  case NodeType::ScriptRoot:
+    return v.visit(std::static_pointer_cast<ast::ScriptRootNode>(n));
   }
 }
 
+/*!
+ * \fn Visitor::return_type dispatch(Visitor& v, ast::Node& n)
+ * \brief performs a virtual-like dispatch of the ast node
+ * \param the visitor
+ * \param a non-const reference to the ast node
+ *
+ * This overload works in a similar way as the one taking a shared_ptr but takes 
+ * a reference instead.
+ */
 template<typename Visitor>
-typename Visitor::return_type visit(Visitor & v, ast::Node & n)
+typename Visitor::return_type dispatch(Visitor & v, ast::Node & n)
 {
   switch (n.type())
   {
@@ -135,7 +163,7 @@ typename Visitor::return_type visit(Visitor & v, ast::Node & n)
   case NodeType::UserDefinedLiteral:
     return v.visit(n.as<ast::UserDefinedLiteral>());
   case NodeType::SimpleIdentifier:
-    return v.visit(n.as<ast::Identifier>());
+    return v.visit(n.as<ast::SimpleIdentifier>());
   case NodeType::TemplateIdentifier:
     return v.visit(n.as<ast::TemplateIdentifier>());
   case NodeType::QualifiedIdentifier:
@@ -222,8 +250,84 @@ typename Visitor::return_type visit(Visitor & v, ast::Node & n)
     return v.visit(n.as<ast::ImportDirective>());
   case NodeType::TemplateDecl:
     return v.visit(n.as<ast::TemplateDeclaration>());
+  case NodeType::ScriptRoot:
+    return v.visit(n.as<ast::ScriptRootNode>());
   }
 }
+
+/*!
+ * \class AstVisitor
+ * \brief generic ast visitor
+ * 
+ * This class can be used to traverse an abstract syntax tree (AST) in 
+ * a generic way, i.e. without considering the actual type of the ast nodes.
+ */
+class LIBSCRIPT_API AstVisitor
+{
+public:
+  AstVisitor() = default;
+  virtual ~AstVisitor();
+  
+  enum What
+  {
+    Child = 0,
+    Name,
+    NameQualifier,
+    NameResolutionOperator,
+    Type,
+    TemplateLeftAngle,
+    TemplateRightAngle,
+    TemplateArgument,
+    FunctionArgument,
+    LambdaCapture,
+    LambdaParameter,
+    OperatorKeyword,
+    OperatorSymbol,
+    LiteralOperatorDoubleQuotes,
+    LiteralOperatorSuffix,
+    FunctionCallee,
+    LeftPar,
+    RightPar,
+    LeftBrace,
+    RightBrace,
+    LeftBracket,
+    RightBracket,
+    ArrayObject,
+    ArrayIndex,
+    OperationLhs,
+    OperationRhs,
+    Condition,
+    TernaryTrueExpression,
+    TernaryFalseExpression,
+    Punctuator,
+    Body,
+    Expression,
+    Keyword,
+    InitStatement,
+    LoopIncrement,
+    VarInit,
+  };
+
+  /*!
+   * \fn virtual void visit(What w, NodeRef n) = 0
+   * \brief function receiving the children of a node
+   * \param enumeration describing the child
+   * \param the child
+   */
+  virtual void visit(What w, NodeRef n) = 0;
+
+  virtual void visit(What w, parser::Token tok);
+
+  void recurse(NodeRef);
+};
+
+/*!
+ * \fn void visit(AstVisitor& visitor, NodeRef node);
+ * \brief feed the visitor with the children of an ast node
+ * \param the visitor
+ * \param non-null shared pointer to the node
+ */
+LIBSCRIPT_API void visit(AstVisitor&, NodeRef);
 
 } // namespace ast
 

@@ -234,20 +234,11 @@ Engine::Engine()
  * \fn ~Engine()
  * \brief Destroys the script engine
  *
- * This function destroys the global namespace and all the modules.
+ * This function calls tearDown().
  */
 Engine::~Engine()
 {
-  d->rootNamespace = Namespace{};
-
-  for (auto m : d->modules)
-    m.destroy();
-  d->modules.clear();
-
-  while (!d->scripts.empty())
-    d->destroy(d->scripts.back());
-
-  d->typesystem = nullptr;
+  tearDown();
 }
 
 
@@ -272,6 +263,36 @@ void Engine::setup()
 
   auto ec = std::make_shared<interpreter::ExecutionContext>(this, 1024, 256);
   d->interpreter = std::unique_ptr<interpreter::Interpreter>(new interpreter::Interpreter{ ec, this });
+}
+
+/*!
+ * \fn void tearDown()
+ * \brief destroys the engine
+ *
+ * This function destroys the global namespace and all the modules.
+ */
+void Engine::tearDown()
+{
+  while (!d->scripts.empty())
+    d->destroy(d->scripts.back());
+
+  for (auto m : d->modules)
+    m.destroy();
+  d->modules.clear();
+
+  d->rootNamespace = Namespace{};
+
+  d->templates.dict.clear();
+  d->templates.array = ClassTemplate();
+  d->templates.initializer_list = ClassTemplate();
+
+  if(!d->context.isNull())
+    d->context.clear();
+
+  d->interpreter.reset();
+  d->compiler.reset();
+
+  d->typesystem = nullptr;
 }
 
 /*!
@@ -662,14 +683,15 @@ Script Engine::newScript(const SourceFile & source)
 }
 
 /*!
- * \fn bool compile(Script s)
+ * \fn bool compile(Script s, CompileMode mode)
  * \param input script
+ * \param compilation mode
  * \brief Compiles a script.
  *
  */
-bool Engine::compile(Script s)
+bool Engine::compile(Script s, CompileMode mode)
 {
-  return compiler()->compile(s);
+  return compiler()->compile(s, mode);
 }
 
 /*!

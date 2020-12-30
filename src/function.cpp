@@ -152,6 +152,12 @@ ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
 
 }
 
+const std::string& ScriptFunctionImpl::name() const
+{
+  static std::string static_name = "__root";
+  return static_name;
+}
+
 const Prototype & ScriptFunctionImpl::prototype() const
 {
   return this->prototype_;

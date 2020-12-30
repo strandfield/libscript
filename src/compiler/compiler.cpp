@@ -45,17 +45,18 @@ SessionManager::SessionManager(Compiler *c)
   mStartedSession = true;
 }
 
-SessionManager::SessionManager(Compiler *c, const Script & s)
+SessionManager::SessionManager(Compiler* c, const Script& s, CompileMode m)
   : mCompiler(c)
   , mStartedSession(false)
 {
   if (c->hasActiveSession())
   {
+    assert(c->session()->compile_mode == m);
     c->session()->generated.scripts.push_back(s);
     return;
   }
 
-  c->mSession = std::make_shared<CompileSession>(c, s);
+  c->mSession = std::make_shared<CompileSession>(c, s, m);
   mStartedSession = true;
 }
 
@@ -74,11 +75,12 @@ CompileSession::CompileSession(Compiler *c)
 
 }
 
-CompileSession::CompileSession(Compiler *c, const Script & s)
+CompileSession::CompileSession(Compiler* c, const Script& s, CompileMode cm)
   : mCompiler(c)
   , mState(State::ProcessingDeclarations)
   , script(s)
   , error(false)
+  , compile_mode(cm)
 {
   current_script = s;
 }
@@ -172,9 +174,9 @@ bool Compiler::hasActiveSession() const
   return mSession != nullptr && mSession->state() != CompileSession::State::Finished;
 }
 
-bool Compiler::compile(Script s)
+bool Compiler::compile(Script s, CompileMode mode)
 {
-  SessionManager manager{ this, s };
+  SessionManager manager{ this, s, mode };
   assert(manager.started_session());
 
   ScriptCompiler *sc = getScriptCompiler();
@@ -209,7 +211,8 @@ bool Compiler::compile(Script s)
 
 void Compiler::addToSession(Script s)
 {
-  SessionManager manager{ this, s };
+  assert(hasActiveSession());
+  SessionManager manager{ this, s, mSession->compile_mode };
   assert(!manager.started_session());
 
   ScriptCompiler* sc = getScriptCompiler();

@@ -19,6 +19,11 @@ namespace ast
 class AST;
 } // namespace ast
 
+namespace program
+{
+struct Breakpoint;
+} // namespace program
+
 class ScriptImpl : public NamespaceImpl
 {
 public:
@@ -38,7 +43,10 @@ public:
   std::shared_ptr<ast::AST> ast;
   Scope exports;
 
-  void register_global(const Type & t, std::string name);
+  std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
+
+  void register_global(const Type& t, std::string name);
+  void add_breakpoint(script::Function f, std::shared_ptr<program::Breakpoint> bp);
 };
 
 } // namespace script

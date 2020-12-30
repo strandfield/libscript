@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,6 +6,7 @@
 #include "script/ast/ast_p.h"
 
 #include "script/script.h"
+#include "script/parser/parser.h"
 
 namespace script
 {
@@ -40,10 +41,15 @@ void AST::add(const std::shared_ptr<Statement> & statement)
     scriptnode->declarations.push_back(std::static_pointer_cast<Declaration>(statement));
 }
 
+size_t AST::offset(utils::StringView sv) const
+{
+  return sv.data() - source.content().data();
+}
+
 SourceFile::Position AST::position(const parser::Token& tok) const
 {
   SourceFile::Position pos;
-  pos.pos = tok.text().data() - source.content().data();
+  pos.pos = offset(tok.text());
   pos = source.map(pos.pos);
   return pos;
 }
@@ -93,6 +99,24 @@ SourceFile Ast::source() const
 const std::shared_ptr<ast::Node> & Ast::root() const
 {
   return d->root;
+}
+
+/*!
+ * \fn size_t offset(const ast::Node& n) const
+ * \brief returns the offset of a node within the source code
+ */
+size_t Ast::offset(const ast::Node& n) const
+{
+  return d->offset(n.source());
+}
+
+/*!
+ * \fn size_t offset(const parser::Token& tok) const
+ * \brief returns the offset of a token within the source code
+ */
+size_t Ast::offset(const parser::Token& tok) const
+{
+  return d->offset(tok.text());
 }
 
 /*!
@@ -161,5 +185,24 @@ std::shared_ptr<ast::Expression> Ast::expression() const
 {
   return std::dynamic_pointer_cast<ast::Expression>(d->root);
 }
+
+/*!
+ * \namespace ast
+ */
+namespace ast
+{
+
+/*!
+ * \fn Ast parse(const SourceFile& source)
+ * \brief produces an ast for a source file
+ * \param the source file
+ *
+ */
+Ast parse(const SourceFile& source)
+{
+  return Ast{ script::parser::parse(source) };
+}
+
+} // namespace ast
 
 } // namespace script

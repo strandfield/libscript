@@ -80,7 +80,7 @@ private:
   std::shared_ptr<PartialTemplateSpecializationImpl> d;
 };
 
-bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs);
+LIBSCRIPT_API bool operator==(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs);
 inline bool operator!=(const PartialTemplateSpecialization& lhs, const PartialTemplateSpecialization& rhs) { return !(lhs == rhs); }
 
 template<typename T>

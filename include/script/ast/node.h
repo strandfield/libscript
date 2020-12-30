@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2020 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -95,10 +95,11 @@ public:
 
   template<typename T>
   T & as() { return dynamic_cast<T&>(*this); }
+
+  virtual utils::StringView source() const;
 };
 
 typedef std::shared_ptr<Node> NodeRef;
-
 
 class LIBSCRIPT_API Expression : public Node
 {
@@ -256,7 +257,7 @@ public:
   static const NodeType type_code = NodeType::TemplateIdentifier;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->name; }
-
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API OperatorName : public Identifier
@@ -290,6 +291,7 @@ public:
   static const NodeType type_code = NodeType::OperatorName;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->keyword; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API LiteralOperatorName : public Identifier
@@ -317,7 +319,7 @@ public:
   static const NodeType type_code = NodeType::LiteralOperatorName;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->keyword; }
-
+  utils::StringView source() const override;
 };
 
 // qualified identifier
@@ -345,7 +347,7 @@ public:
   static const NodeType type_code = NodeType::QualifiedIdentifier;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return rhs->base_token(); }
-
+  utils::StringView source() const override;
 };
 
 
@@ -367,6 +369,7 @@ public:
   static const NodeType type_code = NodeType::FunctionCall;
   inline NodeType type() const override { return type_code; }
   parser::Token base_token() const override { return this->leftPar; }
+  utils::StringView source() const override;
 
   static std::shared_ptr<FunctionCall> New(const std::shared_ptr<Expression> & callee,
     const parser::Token & leftPar,
@@ -392,6 +395,7 @@ public:
   static const NodeType type_code = NodeType::BraceConstruction;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->left_brace; }
+  utils::StringView source() const override;
 
   static std::shared_ptr<BraceConstruction> New(const std::shared_ptr<Identifier> & t,
     const parser::Token & lb,
@@ -417,6 +421,7 @@ public:
   static const NodeType type_code = NodeType::ArraySubscript;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->leftBracket; }
+  utils::StringView source() const override;
 
   static std::shared_ptr<ArraySubscript> New(const std::shared_ptr<Expression> & a,
     const parser::Token & lb,
@@ -436,10 +441,14 @@ public:
   Operation(const parser::Token & opTok, const std::shared_ptr<Expression> & arg);
   Operation(const parser::Token & opTok, const std::shared_ptr<Expression> & a1, const std::shared_ptr<Expression> & a2);
 
+  bool isBinary() const;
+  bool isPostfix() const;
+
   static std::shared_ptr<Operation> New(const parser::Token & opTok, const std::shared_ptr<Expression> & arg);
   static std::shared_ptr<Operation> New(const parser::Token & opTok, const std::shared_ptr<Expression> & a1, const std::shared_ptr<Expression> & a2);
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::Operation;
   inline NodeType type() const override { return type_code; }
@@ -465,6 +474,7 @@ public:
     const std::shared_ptr<Expression> & ifFalse);
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::ConditionalExpression;
   inline NodeType type() const override { return type_code; }
@@ -486,6 +496,7 @@ public:
   static const NodeType type_code = NodeType::ArrayExpression;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->leftBracket; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API ListExpression : public Expression
@@ -504,7 +515,7 @@ public:
   static const NodeType type_code = NodeType::ListExpression;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return this->left_brace; }
-
+  utils::StringView source() const override;
 };
 
 
@@ -546,6 +557,7 @@ public:
   static std::shared_ptr<ExpressionStatement> New(const std::shared_ptr<Expression> & expr, const parser::Token & semicolon);
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::ExpressionStatement;
   inline NodeType type() const override { return type_code; }
@@ -565,6 +577,7 @@ public:
   static std::shared_ptr<CompoundStatement> New(const parser::Token & leftBrace, const parser::Token & rightBrace);
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::CompoundStatement;
   inline NodeType type() const override { return type_code; }
@@ -597,6 +610,7 @@ public:
   static std::shared_ptr<IfStatement> New(const parser::Token & keyword);
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::IfStatement;
   inline NodeType type() const override { return type_code; }
@@ -629,7 +643,7 @@ public:
 
   static const NodeType type_code = NodeType::WhileLoop;
   inline NodeType type() const override { return type_code; }
-
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API ForLoop : public IterationStatement
@@ -648,6 +662,7 @@ public:
 
   static const NodeType type_code = NodeType::ForLoop;
   inline NodeType type() const override { return type_code; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API JumpStatement : public Statement
@@ -700,7 +715,7 @@ public:
 
   static const NodeType type_code = NodeType::ReturnStatement;
   inline NodeType type() const override { return type_code; }
-
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API Declaration : public Statement
@@ -721,20 +736,22 @@ class LIBSCRIPT_API EnumDeclaration : public Declaration
 public:
   parser::Token enumKeyword;
   parser::Token classKeyword;
+  parser::Token leftBrace;
   std::shared_ptr<SimpleIdentifier> name;
   std::vector<EnumValueDeclaration> values;
+  parser::Token rightBrace;
 
 public:
   EnumDeclaration() = default;
-  EnumDeclaration(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals);
+  EnumDeclaration(const parser::Token& ek, const parser::Token& ck, const parser::Token& lb, const std::shared_ptr<SimpleIdentifier>& n, std::vector<EnumValueDeclaration> vals, const parser::Token& rb);
   ~EnumDeclaration() = default;
 
-  static std::shared_ptr<EnumDeclaration> New(const parser::Token & ek, const parser::Token & ck, const std::shared_ptr<SimpleIdentifier> & n, const std::vector<EnumValueDeclaration> && vals);
+  static std::shared_ptr<EnumDeclaration> New(const parser::Token& ek, const parser::Token& ck, const parser::Token& lb, const std::shared_ptr<SimpleIdentifier>& n, std::vector<EnumValueDeclaration> vals, const parser::Token& rb);
 
   static const NodeType type_code = NodeType::EnumDeclaration;
   inline NodeType type() const override { return type_code; }
   parser::Token base_token() const override { return enumKeyword; }
-
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API Initialization : public Node
@@ -758,7 +775,8 @@ public:
 
   static const NodeType type_code = NodeType::ConstructorInitialization;
   inline NodeType type() const override { return type_code; }
-  parser::Token base_token() const override { return left_par;  }
+  parser::Token base_token() const override { return left_par; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API BraceInitialization : public Initialization
@@ -778,7 +796,7 @@ public:
   static const NodeType type_code = NodeType::BraceInitialization;
   inline NodeType type() const override { return type_code; }
   parser::Token base_token() const override { return left_brace; }
-
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API AssignmentInitialization : public Initialization
@@ -796,7 +814,7 @@ public:
   static const NodeType type_code = NodeType::AssignmentInitialization;
   inline NodeType type() const override { return type_code; }
   parser::Token base_token() const override { return this->equalSign; }
-
+  utils::StringView source() const override;
 };
 
 
@@ -816,11 +834,15 @@ public:
   inline bool isRefRef() const { return reference == parser::Token::RefRef; }
   inline bool isSimple() const { return !constQualifier.isValid() && !reference.isValid(); }
 
+  bool isNull() const;
+
   // returns true if this type object might be interpreted as a variable name
   // e.g. 'const a &' and 'b &' are not ambiguous but 'a' is 
   bool isAmbiguous() const;
 
   bool isFunctionType() const;
+
+  utils::StringView source() const;
 };
 
 struct LIBSCRIPT_API FunctionType
@@ -848,6 +870,7 @@ public:
   }
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::QualifiedType;
   inline NodeType type() const override { return type_code; }
@@ -872,6 +895,7 @@ public:
   static const NodeType type_code = NodeType::VariableDeclaration;
   inline NodeType type() const override { return type_code; }
   inline parser::Token base_token() const override { return name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API ClassDecl : public Declaration
@@ -903,6 +927,8 @@ public:
     return name->base_token();
   }
 
+  utils::StringView source() const override;
+
   static const NodeType type_code = NodeType::ClassDeclaration;
   inline NodeType type() const override { return type_code; }
 };
@@ -928,6 +954,8 @@ public:
   {
     return visibility;
   }
+
+  utils::StringView source() const override;
 
   static const NodeType type_code = NodeType::AccessSpecifier;
   inline NodeType type() const override { return type_code; }
@@ -975,6 +1003,7 @@ public:
   static std::shared_ptr<FunctionDecl> New();
 
   parser::Token base_token() const override;
+  utils::StringView source() const override;
   
   static const NodeType type_code = NodeType::FunctionDeclaration;
   inline NodeType type() const override { return type_code; }
@@ -1043,6 +1072,7 @@ public:
 
   static const NodeType type_code = NodeType::CastDeclaration;
   inline NodeType type() const override { return type_code; }
+  utils::StringView source() const override;
 };
 
 struct LIBSCRIPT_API LambdaCapture
@@ -1077,6 +1107,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return this->leftBracket; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API Typedef : public Declaration
@@ -1096,6 +1127,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API NamespaceDeclaration : public Declaration
@@ -1117,6 +1149,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return namespace_name->base_token(); }
+  utils::StringView source() const override;
 };
 
 
@@ -1146,6 +1179,7 @@ public:
 
   static const NodeType type_code = NodeType::ClassFriendDecl;
   inline NodeType type() const override { return type_code; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API UsingDeclaration : public Declaration
@@ -1164,6 +1198,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return used_name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API UsingDirective : public Declaration
@@ -1183,6 +1218,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return namespace_name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API NamespaceAliasDefinition : public Declaration
@@ -1203,6 +1239,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return alias_name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API TypeAliasDeclaration : public Declaration
@@ -1223,6 +1260,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return alias_name->base_token(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API ImportDirective : public Declaration
@@ -1245,6 +1283,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return names.front(); }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API TemplateParameter
@@ -1284,6 +1323,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   parser::Token base_token() const override { return template_keyword; }
+  utils::StringView source() const override;
 };
 
 class LIBSCRIPT_API ScriptRootNode : public Node
@@ -1303,6 +1343,7 @@ public:
   inline NodeType type() const override { return type_code; }
 
   inline parser::Token base_token() const override { return parser::Token(); }
+  utils::StringView source() const override;
 };
 
 } // namespace ast

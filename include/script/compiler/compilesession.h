@@ -43,8 +43,7 @@ private:
 
 public:
   CompileSession(Compiler *c);
-  CompileSession(Compiler *c, const Script & s);
-
+  CompileSession(Compiler *c, const Script & s, CompileMode cm);
 
   inline Compiler* compiler() const { return mCompiler; }
   Engine* engine() const;
@@ -64,6 +63,7 @@ public:
   std::vector<diagnostic::DiagnosticMessage> messages;
   bool error;
   Script script; // the top-level script that is being compiled
+  CompileMode compile_mode = CompileMode::Release;
 
   // @TODO: it seems we could do with a current_source (const char*)
   Script current_script; // the script that is being processed

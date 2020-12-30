@@ -6,6 +6,23 @@
 
 #include <iostream>
 
+std::string to_one_line(std::string str)
+{
+  size_t r = 0;
+  size_t w = 0;
+
+  while (r < str.size())
+  {
+    if (str[r] == '\n' || str[r] == '\r')
+      ++r;
+    else
+      str[w++] = str[r++];
+  }
+
+  str.resize(w);
+  return str;
+}
+
 void pretty_print(const script::ast::Node& node, std::string indent = "", bool islast = true)
 {
   std::cout << indent;
@@ -28,7 +45,7 @@ void pretty_print(const script::ast::Node& node, std::string indent = "", bool i
   {
   case NodeType::CompoundStatement:
   {
-    std::cout << "{}" << std::endl;
+    std::cout << to_one_line(node.source().toString()) << std::endl;
 
     const auto& stmts = node.as<ast::CompoundStatement>();
 
@@ -40,7 +57,7 @@ void pretty_print(const script::ast::Node& node, std::string indent = "", bool i
   break;
   case NodeType::WhileLoop:
   {
-    std::cout << "while" << std::endl;
+    std::cout << to_one_line(node.source().toString()) << std::endl;
 
     const auto& whle = node.as<ast::WhileLoop>();
 
@@ -49,7 +66,7 @@ void pretty_print(const script::ast::Node& node, std::string indent = "", bool i
   }
   break;
   default:
-    std::cout << node.base_token().toString() << " (unexposed)" << std::endl;
+    std::cout << to_one_line(node.source().toString()) << " (unexposed)" << std::endl;
     break;
   }
 }

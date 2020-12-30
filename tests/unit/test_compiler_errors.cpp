@@ -19,6 +19,9 @@
 #include "script/parser/parser.h"
 #include "script/parser/parsererrors.h"
 
+// @TODO: create a test executable "error_tests" that works like "language_tests"
+// with the error list at the end of file (as a comment)
+
 TEST(CompilerErrors, illegal_this) {
   using namespace script;
 

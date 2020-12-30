@@ -8,6 +8,8 @@
 #include "script/ast.h"
 #include "script/engine.h"
 
+#include "script/program/statements.h"
+
 namespace script
 {
 
@@ -26,6 +28,33 @@ void ScriptImpl::register_global(const Type & t, std::string name)
 {
   this->global_types.push_back(t);
   this->globalNames.insert({ std::move(name), int(this->global_types.size() - 1) });
+}
+
+static void add_breakpoint_to_list(std::vector<std::shared_ptr<program::Breakpoint>>& breakpoints, std::shared_ptr<program::Breakpoint> bp)
+{
+  if (breakpoints.empty() || breakpoints.back()->line < bp->line)
+  {
+    breakpoints.push_back(bp);
+    bp->leading = true;
+  }
+  else
+  {
+    auto it = std::find_if(breakpoints.begin(), breakpoints.end(), [bp](const std::shared_ptr<program::Breakpoint>& other) {
+      return other->line >= bp->line;
+      });
+
+    if (it != breakpoints.end() && (*it)->line == bp->line)
+      return;
+
+    breakpoints.insert(it, bp);
+    bp->leading = true;
+  }
+}
+
+void ScriptImpl::add_breakpoint(script::Function f, std::shared_ptr<program::Breakpoint> bp)
+{
+  add_breakpoint_to_list(this->breakpoints_map[f.impl()], bp);
+
 }
 
 /*!
@@ -50,16 +79,16 @@ const std::string & Script::path() const
 }
 
 /*!
- * \fn bool compile()
+ * \fn bool compile(CompileMode mode)
  * \brief Compiles the script
  * Returns true on success, false otherwise. 
  * If the compilation failed, use messages() to retrieve the error messages.
  * Warning: Calling this function while a script is compiling is undefined behavior.
  */
-bool Script::compile()
+bool Script::compile(CompileMode mode)
 {
   Engine *e = d->engine;
-  return e->compile(*this);
+  return e->compile(*this, mode);
 }
 
 bool Script::isReady() const
@@ -136,6 +165,69 @@ void Script::clearAst()
     return;
 
   d->ast = nullptr;
+}
+
+class BreakpointFetcher
+{
+public:
+  const Script& script;
+  int line;
+  int closest_dist = std::numeric_limits<int>::max();
+  std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> result;
+
+  BreakpointFetcher(const Script& s, int l)
+    : script(s), line(l)
+  {
+
+  }
+
+  void operator()()
+  {
+    for (auto it = script.impl()->breakpoints_map.begin(); it != script.impl()->breakpoints_map.end(); ++it)
+    {
+      const auto& elem = *it;
+      script::Function f{ elem.first };
+
+      if (f.isNull())
+        continue;
+
+      (*this)(f, elem.second);
+    }
+  }
+
+  void operator()(script::Function& f, const std::vector<std::shared_ptr<program::Breakpoint>>& bps)
+  {
+    auto it = std::find_if(bps.begin(), bps.end(), [this](const std::shared_ptr<program::Breakpoint>& bp) {
+      return bp->line >= line;
+      });
+
+    if (it == bps.end())
+      return;
+
+    std::shared_ptr<program::Breakpoint> bp = *it;
+
+    if ((bp->line - line) < closest_dist)
+    {
+      closest_dist = bp->line - line;
+      result.clear();
+    }
+    
+    if (bp->line - line == closest_dist)
+    {
+      result.push_back(std::make_pair(f, bp));
+    }
+  }
+};
+
+/*!
+ * \fn std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> breakpoints(int line) const
+ * \brief returns breakpoints associated to a given line from the script
+ */
+std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> Script::breakpoints(int line) const
+{
+  BreakpointFetcher fetcher{ *this, line };
+  fetcher();
+  return fetcher.result;
 }
 
 Engine * Script::engine() const

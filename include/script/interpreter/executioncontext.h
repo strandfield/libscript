@@ -14,6 +14,11 @@ namespace script
 
 class TypeSystem;
 
+namespace program
+{
+struct Breakpoint;
+} // namespace program
+
 namespace interpreter
 {
 
@@ -110,9 +115,11 @@ private:
   size_t mStackIndex; // index of return value in the callstack
   int flags;
   ExecutionContext *ec;
+public:
+  const program::Breakpoint* last_breakpoint = nullptr;
 };
 
-class Callstack
+class LIBSCRIPT_API Callstack
 {
 public:
   Callstack(size_t capacity);

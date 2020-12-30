@@ -8,6 +8,7 @@
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/compilesession.h"
+#include "script/compiler/debug-info.h"
 
 #include "script/compiler/assignmentcompiler.h"
 #include "script/compiler/constructorcompiler.h"
@@ -146,6 +147,12 @@ Variable::Variable(const Type & t, utils::StringView n, size_t i, bool g, bool s
 int Stack::addVar(const Type & t, utils::StringView name)
 {
   this->data.push_back(Variable(t, name, this->data.size()));
+
+  if (enable_debug)
+  {
+    debuginfo = std::make_shared<DebugInfoBlock>(t, name.toString(), debuginfo);
+  }
+
   return static_cast<int>(this->data.size()) - 1;
 }
 
@@ -181,7 +188,12 @@ void Stack::destroy(size_t n)
   assert(n <= data.size());
 
   while (n-- > 0)
+  {
     data.pop_back();
+
+    if (enable_debug && debuginfo)
+      debuginfo = debuginfo->prev;
+  }
 }
 
 
@@ -262,6 +274,9 @@ FunctionCompiler::FunctionCompiler(Compiler *c)
   , expr_{c}
   , modules_(c)
 {
+  if (c->hasActiveSession())
+    setCompileMode(c->session()->compile_mode);
+
   expr_.variableAccessor().setStack(&mStack);
 
   expr_.setStack(&mStack);
@@ -274,6 +289,24 @@ FunctionCompiler::~FunctionCompiler()
 
 }
 
+script::CompileMode FunctionCompiler::compileMode() const
+{
+  return mCompileMode;
+}
+
+void FunctionCompiler::setCompileMode(script::CompileMode cm)
+{
+  if (cm != mCompileMode)
+  {
+    mCompileMode = cm;
+    mStack.enable_debug = (cm == script::CompileMode::Debug);
+  }
+}
+
+bool FunctionCompiler::isDebugCompilation() const
+{
+  return compileMode() == script::CompileMode::Debug;
+}
 
 void FunctionCompiler::compile(const CompileFunctionTask & task)
 {
@@ -538,15 +571,9 @@ std::shared_ptr<program::Statement> FunctionCompiler::generate(const std::shared
 
 std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
 {
-  TranslationTarget target{ this, cs };
-  EnterScope guard{ this, scopeType };
-
   const auto size = buffer_size();
 
-  for (const auto & s : cs->statements)
-    process(s);
-
-  processExitScope(mCurrentScope);
+  processCompoundStatement(cs, scopeType);
 
   return program::CompoundStatement::New(resize_buffer(size));
 }
@@ -554,6 +581,8 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateCompoundSt
 void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
 {
   TranslationTarget target{ this, s };
+
+  insertBreakpoint(*s);
 
   switch (s->type())
   {
@@ -602,7 +631,7 @@ void FunctionCompiler::process(const std::shared_ptr<ast::Statement> & s)
   throw std::runtime_error{ "FunctionCompiler::process() : not implemented" };
 }
 
-void FunctionCompiler::processExitScope(const Scope & scp)
+void FunctionCompiler::processExitScope(const Scope & scp, const ast::Statement& s)
 {
   assert(dynamic_cast<const FunctionScope *>(scp.impl().get()) != nullptr);
 
@@ -612,13 +641,48 @@ void FunctionCompiler::processExitScope(const Scope & scp)
   Stack & stack = mStack;
 
   for (size_t i(stack.size()); i-- > sp; )
+  {
+    insertExitBreakpoint(stack.size() - 1 - i, s);
     processVariableDestruction(stack.at(i));
+  }
 }
 
-void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements)
+void FunctionCompiler::generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements, const ast::Statement& s)
 {
   BufferSwap swap{ mBuffer, statements };
-  processExitScope(scp);
+  processExitScope(scp, s);
+}
+
+void FunctionCompiler::insertBreakpoint(const ast::Statement& s)
+{
+  if (!isDebugCompilation())
+    return;
+
+  // @TODO: optimize! map() is O(n)
+  utils::StringView tok = s.base_token().text();
+  size_t off = std::distance(mFunction.script().source().content().data(), tok.data());
+  SourceFile::Position pos = mFunction.script().source().map(off);
+  int line = pos.line;
+
+  auto bp = std::make_shared<program::Breakpoint>(line, mStack.debuginfo);
+  mFunction.script().impl()->add_breakpoint(mFunction, bp);
+  write(bp);
+}
+
+void FunctionCompiler::insertExitBreakpoint(size_t delta, const ast::Statement& s)
+{
+  if (!isDebugCompilation())
+    return;
+
+  // @TODO: optimize! map() is O(n)
+  utils::StringView src = s.source();
+  size_t off = std::distance(mFunction.script().source().content().data(), src.data()) + src.size() - 1;
+  SourceFile::Position pos = mFunction.script().source().map(off);
+  int line = pos.line;
+
+  auto bp = std::make_shared<program::Breakpoint>(line, DebugInfoBlock::fetch(mStack.debuginfo, delta));
+  mFunction.script().impl()->add_breakpoint(mFunction, bp);
+  write(bp);
 }
 
 void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & cs, FunctionScope::Category scopeType)
@@ -629,7 +693,7 @@ void FunctionCompiler::processCompoundStatement(const std::shared_ptr<ast::Compo
   for (const auto & s : cs->statements)
     process(s);
 
-  processExitScope(mCurrentScope);
+  processExitScope(mCurrentScope, *cs);
 }
 
 void FunctionCompiler::processExpressionStatement(const std::shared_ptr<ast::ExpressionStatement> & es)
@@ -672,7 +736,7 @@ void FunctionCompiler::processForLoop(const std::shared_ptr<ast::ForLoop> & fl)
 
 
   std::vector<std::shared_ptr<program::Statement>> statements;
-  generateExitScope(mCurrentScope, statements);
+  generateExitScope(mCurrentScope, statements, *fl);
 
   write(program::ForLoop::New(for_init, for_cond, for_loop_incr, body, program::CompoundStatement::New(std::move(statements))));
 }
@@ -716,14 +780,14 @@ void FunctionCompiler::processJumpStatement(const std::shared_ptr<ast::JumpState
   if (js->is<ast::BreakStatement>())
   {
     const Scope scp = breakScope();
-    generateExitScope(scp, statements);
+    generateExitScope(scp, statements, *js);
     write(program::BreakStatement::New(std::move(statements)));
     return;
   }
   else if (js->is<ast::ContinueStatement>())
   {
     const Scope scp = continueScope();
-    generateExitScope(scp, statements);
+    generateExitScope(scp, statements, *js);
     write(program::ContinueStatement::New(std::move(statements)));
     return;
   }
@@ -736,7 +800,7 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 {
   std::vector<std::shared_ptr<program::Statement>> statements;
 
-  generateExitScope(mFunctionBodyScope, statements);
+  generateExitScope(mFunctionBodyScope, statements, *rs);
 
   if (rs->expression == nullptr)
   {

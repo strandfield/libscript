@@ -15,7 +15,7 @@ namespace script
 namespace compiler
 {
 
-class LiteralProcessor
+class LIBSCRIPT_API LiteralProcessor
 {
 public:
 

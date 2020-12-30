@@ -46,7 +46,7 @@ public:
 
   Name & operator=(std::string && str);
 
-  friend bool operator==(const Name & lhs, const Name & rhs);
+  friend LIBSCRIPT_API bool operator==(const Name & lhs, const Name & rhs);
 
 private:
   Kind kind_;
@@ -60,7 +60,7 @@ private:
   Storage data_;
 };
 
-bool operator==(const Name & lhs, const Name & rhs);
+LIBSCRIPT_API bool operator==(const Name & lhs, const Name & rhs);
 inline bool operator!=(const Name & lhs, const Name & rhs) { return !(lhs == rhs); }
 
 } // namespace script

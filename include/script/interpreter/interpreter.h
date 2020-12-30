@@ -18,6 +18,8 @@ namespace script
 namespace interpreter
 {
 
+class DebugHandler;
+
 class LIBSCRIPT_API Interpreter : public program::StatementVisitor, public program::ExpressionVisitor
 {
 public:
@@ -30,6 +32,8 @@ public:
 
   void exec(program::Statement & s);
   void exec(const std::shared_ptr<program::Statement> & s);
+
+  void setDebugHandler(std::shared_ptr<DebugHandler> h);
 
 protected:
   bool evalCondition(const std::shared_ptr<program::Expression> & expr);
@@ -55,7 +59,8 @@ private:
   void visit(const program::PopDataMember &) override;
   void visit(const program::PopValue &) override;
   void visit(const program::ReturnStatement &) override;
-  void visit(const program::WhileLoop &) override;
+  void visit(const program::WhileLoop&) override;
+  void visit(const program::Breakpoint&) override;
 
   // ExpressionVisitor
   Value visit(const program::ArrayExpression &) override;
@@ -82,6 +87,7 @@ private:
 private:
   std::shared_ptr<ExecutionContext> mExecutionContext;
   Engine *mEngine;
+  std::shared_ptr<DebugHandler> mDebugHandler;
 };
 
 } // namespace interpreter

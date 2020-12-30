@@ -56,6 +56,9 @@ inline T& ExceptionData::get() noexcept
   return static_cast<ExceptionDataWrapper<T>*>(this)->value;
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4275)
+
 class LIBSCRIPT_API Exceptional : public std::exception
 {
 protected:
@@ -89,6 +92,8 @@ public:
   Exceptional& operator=(const Exceptional&) = delete;
   Exceptional& operator=(Exceptional&&) = delete;
 };
+
+#pragma warning(pop)
 
 } // namespace script
 

@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "script/compilemode.h"
 #include "script/diagnosticmessage.h" /// TODO: forward declare
 #include "script/sourcefile.h"
 #include "script/namespace.h"
@@ -19,6 +20,11 @@ class ScriptImpl;
 class Ast;
 class Engine;
 class Scope;
+
+namespace program
+{
+struct Breakpoint;
+} // namespace program
 
 class LIBSCRIPT_API Script
 {
@@ -33,7 +39,7 @@ public:
 
   int id() const;
 
-  bool compile();
+  bool compile(CompileMode mode = CompileMode::Release);
   bool isReady() const;
   inline bool isCompiled() const { return isReady(); }
   void run();
@@ -63,6 +69,8 @@ public:
 
   Ast ast() const;
   void clearAst();
+
+  std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> breakpoints(int line) const;
 
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }

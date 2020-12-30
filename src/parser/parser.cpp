@@ -770,14 +770,25 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
 
   auto forLoop = ast::ForLoop::New(forkw);
 
+  // @TODO: handle "for(;;)"
+
   {
     DeclParser initParser{ context(), init_loop_incr_reader };
     if (!initParser.detectDecl())
     {
-      ExpressionParser exprParser{ context(), init_loop_incr_reader.next<Fragment::Statement>() };
-      auto initExpr = exprParser.parse();
-      const Token semicolon = init_loop_incr_reader.read(Token::Semicolon);
-      forLoop->initStatement = ast::ExpressionStatement::New(initExpr, semicolon);
+      TokenReader reader = init_loop_incr_reader.next<Fragment::Statement>();
+      
+      if (!reader.atEnd())
+      {
+        ExpressionParser exprParser{ context(), reader };
+        auto initExpr = exprParser.parse();
+        const Token semicolon = init_loop_incr_reader.read(Token::Semicolon);
+        forLoop->initStatement = ast::ExpressionStatement::New(initExpr, semicolon);
+      }
+      else
+      {
+        init_loop_incr_reader.read(Token::Semicolon);
+      }
     }
     else
     {
@@ -808,18 +819,9 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
 
 std::shared_ptr<ast::Typedef> ProgramParser::parseTypedef()
 {
-  const parser::Token typedef_tok = unsafe_read();
-
-  TypeParser tp{ context(), subfragment() };
-  const ast::QualifiedType qtype = parse_and_seek(tp);
-
-  IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
-  /// TODO: add overload to IdentifierParser that only parses symple identifier.
-  const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
-
-  read(parser::Token::Semicolon);
-
-  return ast::Typedef::New(typedef_tok, qtype, name);
+  TypedefParser tp{ context(), subfragment() };
+  auto ret = parse_and_seek(tp);
+  return ret;
 }
 
 std::shared_ptr<ast::Declaration> ProgramParser::parseNamespace()
@@ -890,8 +892,10 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     throw SyntaxError{ ParserError::UnexpectedEndOfInput };
 
   Token op = peek();
-  if(op.isOperator())
+  if (op.isOperator())
+  {
     return ast::OperatorName::New(opkw, read());
+  }
   else if (op == Token::LeftPar)
   {
     const Token lp = read();
@@ -915,6 +919,7 @@ std::shared_ptr<ast::Identifier> IdentifierParser::readOperatorName()
     if (op.text().size() != 2)
       throw SyntaxError{ ParserError::ExpectedEmptyStringLiteral, errors::ActualToken{op} };
 
+    op = read();
     IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
     /// TODO: add overload to remove this cast
     auto suffixName = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
@@ -1505,7 +1510,7 @@ std::shared_ptr<ast::VariableDecl> DeclParser::parseVarDecl()
     assert(peek() == Token::Semicolon);
   }
 
-  read(Token::Semicolon);
+  mVarDecl->semicolon = read(Token::Semicolon);
 
   return mVarDecl;
 }
@@ -2040,17 +2045,17 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
     enum_name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idparser));
   }
 
-  read(Token::LeftBrace);
+  parser::Token lb = read(Token::LeftBrace);
   seek(iterator() - 1);
 
   EnumValueParser value_parser{ context(), subfragment<Fragment::DelimiterPair>() };
   value_parser.parse();
   seek(value_parser.iterator());
 
-  read(Token::RightBrace);
+  parser::Token rb = read(Token::RightBrace);
   read(Token::Semicolon);
 
-  return ast::EnumDeclaration::New(etok, ctok, enum_name, std::move(value_parser.values));
+  return ast::EnumDeclaration::New(etok, ctok, lb, enum_name, std::move(value_parser.values), rb);
 }
 
 
@@ -2119,6 +2124,13 @@ void ClassParser::parseUsing()
   mClass->content.push_back(decl);
 }
 
+void ClassParser::parseTypedef()
+{
+  TypedefParser tp{ context(), subfragment() };
+  auto decl = parse_and_seek(tp);
+  mClass->content.push_back(decl);
+}
+
 std::shared_ptr<ast::Identifier> ClassParser::readClassName()
 {
   auto opts = mTemplateSpecialization ? IdentifierParser::ParseTemplateId : 0;
@@ -2177,6 +2189,9 @@ void ClassParser::readNode()
     return;
   case Token::Template:
     parseTemplate();
+    return;
+  case Token::Typedef:
+    parseTypedef();
     return;
   default:
     break;
@@ -2307,6 +2322,32 @@ std::shared_ptr<ast::Identifier> UsingParser::read_name()
 {
   IdentifierParser idp{ context(), subfragment() };
   return parse_and_seek(idp);
+}
+
+
+
+TypedefParser::TypedefParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
+{
+
+}
+
+std::shared_ptr<ast::Typedef> TypedefParser::parse()
+{
+  assert(peek() == Token::Typedef);
+
+  const parser::Token typedef_tok = unsafe_read();
+
+  TypeParser tp{ context(), subfragment() };
+  const ast::QualifiedType qtype = parse_and_seek(tp);
+
+  IdentifierParser idp{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
+  /// TODO: add overload to IdentifierParser that only parses symple identifier.
+  const auto name = std::static_pointer_cast<ast::SimpleIdentifier>(parse_and_seek(idp));
+
+  read(parser::Token::Semicolon);
+
+  return ast::Typedef::New(typedef_tok, qtype, name);
 }
 
 

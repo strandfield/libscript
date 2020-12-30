@@ -10,6 +10,7 @@
 #include <typeindex>
 #include <vector>
 
+#include "script/compilemode.h"
 #include "script/exception.h"
 #include "script/scope.h"
 #include "script/string.h"
@@ -57,7 +58,7 @@ class Expression;
 namespace errors
 {
 
-const std::error_category& engine_category() noexcept;
+LIBSCRIPT_API const std::error_category& engine_category() noexcept;
 
 } // namespace errors
 
@@ -134,6 +135,7 @@ public:
   Engine(const Engine & other) = delete;
 
   void setup();
+  void tearDown();
 
   TypeSystem* typeSystem() const;
 
@@ -183,7 +185,7 @@ public:
   Namespace rootNamespace() const;
 
   Script newScript(const SourceFile & source);
-  bool compile(Script s);
+  bool compile(Script s, CompileMode mode = CompileMode::Release);
   void destroy(Script s);
 
   Module newModule(const std::string & name);

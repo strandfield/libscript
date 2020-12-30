@@ -59,6 +59,10 @@ public:
   explicit FunctionCompiler(Compiler *c);
   ~FunctionCompiler();
 
+  script::CompileMode compileMode() const;
+  void setCompileMode(script::CompileMode cm);
+  bool isDebugCompilation() const;
+
   void compile(const CompileFunctionTask & task);
 
   Script script();
@@ -128,8 +132,10 @@ protected:
   std::shared_ptr<program::Statement> generate(const std::shared_ptr<ast::Statement> & s);
   std::shared_ptr<program::CompoundStatement> generateCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
   void process(const std::shared_ptr<ast::Statement> & s);
-  void processExitScope(const Scope & scp);
-  void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements);
+  void processExitScope(const Scope & scp, const ast::Statement& s);
+  void generateExitScope(const Scope & scp, std::vector<std::shared_ptr<program::Statement>> & statements, const ast::Statement& s);
+  void insertBreakpoint(const ast::Statement& s);
+  void insertExitBreakpoint(size_t delta, const ast::Statement& s);
 
 private:
   void processCompoundStatement(const std::shared_ptr<ast::CompoundStatement> & compoundStatement, FunctionScope::Category scopeType);
@@ -157,6 +163,7 @@ protected:
 
   Stack mStack;
   Function mFunction;
+  script::CompileMode mCompileMode = script::CompileMode::Release;
   Scope mBaseScope;
   Scope mFunctionArgumentsScope;
   Scope mFunctionBodyScope;

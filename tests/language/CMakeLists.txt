@@ -2,7 +2,7 @@
 set(SRC_TESTS main.cpp)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  list(APPEND SRC_TESTS "${CMAKE_SOURCE_DIR}/vs/libscript.natvis")
+  list(APPEND SRC_TESTS "${LIBSCRIPT_PROJECT_DIR}/vs/libscript.natvis")
 endif()
 
 add_executable(TEST_libscript_language_tests ${SRC_TESTS})

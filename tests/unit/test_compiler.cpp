@@ -27,6 +27,8 @@
 
 #include "script/parser/parser.h"
 
+// @TODO: put almost all these tests in the "language_test" target
+
 
 void test_operation(const char *source, script::OperatorName op1, script::OperatorName op2, script::OperatorName op3)
 {

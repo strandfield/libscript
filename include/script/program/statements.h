@@ -12,6 +12,11 @@ namespace script
 
 class ScriptImpl;
 
+namespace compiler
+{
+class DebugInfoBlock;
+} // namespace compiler
+
 namespace program
 {
 
@@ -296,6 +301,20 @@ public:
   void accept(StatementVisitor &) override;
 };
 
+struct LIBSCRIPT_API Breakpoint : public Statement
+{
+  const int line = -1;
+  bool leading = false;
+  const std::shared_ptr<compiler::DebugInfoBlock> debug_info;
+  int status = 0; // user-variable
+
+public:
+  Breakpoint(int l, std::shared_ptr<compiler::DebugInfoBlock> dbg);
+  ~Breakpoint() = default;
+
+  void accept(StatementVisitor&) override;
+};
+
 class LIBSCRIPT_API StatementVisitor
 {
 public:
@@ -317,7 +336,8 @@ public:
   virtual void visit(const PushStaticValue&) = 0;
   virtual void visit(const ReturnStatement &) = 0;
   virtual void visit(const PopValue &) = 0;
-  virtual void visit(const WhileLoop &) = 0;
+  virtual void visit(const WhileLoop&) = 0;
+  virtual void visit(const Breakpoint&) = 0;
 };
 
 } // namespace program
