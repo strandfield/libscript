@@ -834,6 +834,8 @@ public:
   inline bool isRefRef() const { return reference == parser::Token::RefRef; }
   inline bool isSimple() const { return !constQualifier.isValid() && !reference.isValid(); }
 
+  bool isNull() const;
+
   // returns true if this type object might be interpreted as a variable name
   // e.g. 'const a &' and 'b &' are not ambiguous but 'a' is 
   bool isAmbiguous() const;

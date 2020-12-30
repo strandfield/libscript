@@ -720,6 +720,11 @@ utils::StringView VariableDecl::source() const
   return compute_source(begin, semicolon.text());
 }
 
+bool QualifiedType::isNull() const
+{
+  return this->functionType == nullptr && this->type == nullptr;
+}
+
 bool QualifiedType::isAmbiguous() const
 {
   using namespace parser;

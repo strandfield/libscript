@@ -7,7 +7,9 @@
 #include "script/parser/parser.h"
 #include "script/parser/specific-parsers.h"
 
+#include "script/ast.h"
 #include "script/ast/node.h"
+#include "script/ast/visitor.h"
 #include "script/ast/ast_p.h"
 
 
@@ -1114,4 +1116,139 @@ TEST(ParserTests, template_specialization) {
     ASSERT_FALSE(td.is_full_specialization());
     ASSERT_TRUE(td.is_partial_specialization());
   }
+}
+
+
+class AstVisitorTestVisitor : public script::ast::AstVisitor
+{
+public:
+  int nodes = 0;
+  int toks = 0;
+
+  void visit(What w, script::ast::NodeRef n) override
+  {
+    ++nodes;
+    recurse(n);
+  }
+
+  void visit(What w, script::parser::Token tok) override
+  {
+    ++toks;
+  }
+};
+
+TEST(ParserTests, visitall) {
+
+  const char* source =
+    "                                                                    \n"
+    "  export import std;                                                \n"
+    "                                                                    \n"
+    "  std::vector<int> a = [1, 2, 3, 4];                                \n"
+    "  std::vector<int> a = {1, 2, 3, 4};                                \n"
+    "  float b{3.14f};                                                   \n"
+    "  String str = \"Hello World!\";                                    \n"
+    "                                                                    \n"
+    "  double operator \"\" ms(double t) { return t; }                   \n"
+    "                                                                    \n"
+    "  double t = 3.14ms;                                                \n"
+    "                                                                    \n"
+    "  if(!vec.empty())                                                  \n"
+    "  {                                                                 \n"
+    "    bool is_empty = false && true;                                  \n"
+    "                                                                    \n"
+    "    int i(0);                                                       \n"
+    "                                                                    \n"
+    "    while(i < len(vec))                                             \n"
+    "    {                                                               \n"
+    "      if(vec.at(i) > 0)                                             \n"
+    "        break;                                                      \n"
+    "      else if(vec[i] < 0)                                           \n"
+    "        continue;                                                   \n"
+    "      else                                                          \n"
+    "        ;                                                           \n"
+    "                                                                    \n"
+    "      print(i++);                                                   \n"
+    "    }                                                               \n"
+    "  }                                                                 \n"
+    "                                                                    \n"
+    "  class Foo{};                                                      \n"
+    "                                                                    \n"
+    "  bool operator==(const Foo& lhs, const Foo& rhs) { return true; }  \n"
+    "                                                                    \n"
+    "  namespace priv                                                    \n"
+    "  {                                                                 \n"
+    "  class Base { };                                                   \n"
+    "  }                                                                 \n"
+    "                                                                    \n"
+    "  class Derived : priv::Base                                        \n"
+    "  {                                                                 \n"
+    "  public:                                                           \n"
+    "                                                                    \n"
+    "    explicit Derived(String s)                                      \n"
+    "      : m_str(s)                                                    \n"
+    "    {                                                               \n"
+    "      m_n += 1;                                                     \n"
+    "    }                                                               \n"
+    "                                                                    \n"
+    "    Derived(const Derived&) = delete;                               \n"
+    "                                                                    \n"
+    "    ~Derived()                                                      \n"
+    "    {                                                               \n"
+    "      m_n -= 1;                                                     \n"
+    "    }                                                               \n"
+    "                                                                    \n"
+    "    typedef Foo Bar;                                                \n"
+    "    using Qux = Bar;                                                \n"
+    "                                                                    \n"
+    "    const String& str() const { return m_str; }                     \n"
+    "                                                                    \n"
+    "    static void loop()                                              \n"
+    "    {                                                               \n"
+    "      using std::should_exit;                                       \n"
+    "      using namespace std;                                          \n"
+    "                                                                    \n"
+    "      for(;true;true) { if(should_exit()) terminate(); }                    \n"
+    "    }                                                               \n"
+    "                                                                    \n"
+    "    Derived& operator=(const Derived& other) = default;             \n"
+    "                                                                    \n"
+    "    operator Foo() const { return Foo{}; }                          \n"
+    "                                                                    \n"
+    "  private:                                                          \n"
+    "    friend class Foo;                                               \n"
+    "    static int m_n = 0;                                             \n"
+    "    String m_str;                                                   \n"
+    "  };                                                                \n"
+    "                                                                    \n"
+    "  template<typename T, int N> bool positive()                       \n"
+    "  { return T<N>::value < N ? true : false; }                        \n"
+    "                                                                    \n"
+    "  enum class Result { Success = 0, Failure };                       \n"
+    "                                                                    \n"
+    "  int main()                                                        \n"
+    "  {                                                                 \n"
+    "    auto func = [&](int a){ return 0;};                             \n"
+    "                                                                    \n"
+    "    return func(0);                                                 \n"
+    "  }                                                                 \n"
+    "                                                                    \n";
+
+  using namespace script;
+
+  script::SourceFile sourcefile = script::SourceFile::fromString(source);
+  try{
+    script::Ast syntaxtree = script::ast::parse(sourcefile);
+
+    AstVisitorTestVisitor visitor;
+    script::ast::visit(visitor, syntaxtree.root());
+
+    ASSERT_TRUE(visitor.toks > 0);
+    ASSERT_TRUE(visitor.nodes > 0);
+  }
+  catch (script::parser::SyntaxError& err)
+  {
+    auto pos = sourcefile.map(err.offset);
+    ASSERT_FALSE(true);
+  }
+
 }

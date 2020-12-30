@@ -123,6 +123,9 @@ struct AstVisitorDispatcher
 
   void visit_qualtype(const ast::QualifiedType& qt)
   {
+    if (qt.isNull())
+      return;
+
     if (qt.isFunctionType())
     {
       const ast::FunctionType& ft = *qt.functionType;
@@ -314,9 +317,9 @@ struct AstVisitorDispatcher
   void visit(ast::ForLoop& fl)
   {
     visitor.visit(AstVisitor::Keyword, fl.keyword);
-    visitor.visit(AstVisitor::InitStatement, fl.initStatement);
-    visitor.visit(AstVisitor::Condition, fl.condition);
-    visitor.visit(AstVisitor::Child, fl.loopIncrement);
+    if (fl.initStatement) visitor.visit(AstVisitor::InitStatement, fl.initStatement);
+    if (fl.condition) visitor.visit(AstVisitor::Condition, fl.condition);
+    if (fl.loopIncrement) visitor.visit(AstVisitor::Child, fl.loopIncrement);
     visitor.visit(AstVisitor::LoopIncrement, fl.body);
   }
 
@@ -413,7 +416,8 @@ struct AstVisitorDispatcher
 
     visit_qualtype(fd.returnType);
 
-    visitor.visit(AstVisitor::Name, fd.name);
+    if(fd.name) // fd.name can be nullptr (e.g. for a conversion function)
+      visitor.visit(AstVisitor::Name, fd.name);
 
     recursive_visit(fd.params);
 
@@ -491,6 +495,7 @@ struct AstVisitorDispatcher
 
   void visit(ast::CastDecl& castdecl)
   {
+    visitor.visit(AstVisitor::OperatorKeyword, castdecl.operatorKw);
     return this->visit(static_cast<ast::FunctionDecl&>(castdecl));
   }
 

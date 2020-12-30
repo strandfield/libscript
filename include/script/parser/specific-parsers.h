@@ -277,6 +277,7 @@ protected:
   void parseFriend();
   void parseTemplate();
   void parseUsing();
+  void parseTypedef();
   std::shared_ptr<ast::Identifier> readClassName();
   void readOptionalParent();
   void readDecl();
@@ -323,6 +324,15 @@ public:
 
 protected:
   std::shared_ptr<ast::Identifier> read_name();
+};
+
+class LIBSCRIPT_API TypedefParser : public ParserBase
+{
+public:
+  TypedefParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
+  ~TypedefParser() = default;
+
+  std::shared_ptr<ast::Typedef> parse();
 };
 
 class LIBSCRIPT_API ImportParser : public ParserBase
