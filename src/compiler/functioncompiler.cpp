@@ -460,6 +460,8 @@ std::shared_ptr<program::CompoundStatement> FunctionCompiler::generateBody()
     return body;
   }
 
+  TranslationTarget target{ this, mDeclaration };
+
   if (mFunction.isDefaultConstructor())
     return generateDefaultConstructor();
   else if (mFunction.isCopyConstructor())

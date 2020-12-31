@@ -9,4 +9,4 @@ class B : A
   B(B &&) = default; 
 };
 
-//>52429:52429: error C71: cannot generate defaulted move constructor because parent move constructor is deleted.
+//>9:3: error C71: cannot generate defaulted move constructor because parent move constructor is deleted.

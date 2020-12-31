@@ -142,6 +142,7 @@ std::string DiagnosticMessage::message() const
 {
   std::string result;
 
+  // @TODO: these conditions do not work because of conversions!
   if (line() != std::numeric_limits<uint16_t>::max())
   {
     result += std::to_string(line() + 1);
