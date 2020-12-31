@@ -1,16 +1,123 @@
 
-Assert(2 + 3*5 == 17);
-Assert(3*5 + 2 == 17);
-Assert(1 << 2 + 1 == 8);
-Assert((1 << 2) - 3 == 1);
-Assert(5 - 2 * (5 / 2) != 0);
-Assert(5 - 2 * (5 / 2) == 5 % 2);
-Assert(5 > 2);
-Assert(5 >= 2);
-Assert(-1 < 0);
-Assert(0 <= 0);
-Assert(((1 ^ 3) == 2) && ((1 & 3) == 1));
+{
+  Assert(2 + 3*5 == 17);
+  Assert(3*5 + 2 == 17);
+  Assert(1 << 2 + 1 == 8);
+  Assert((1 << 2) - 3 == 1);
+  Assert(5 - 2 * (5 / 2) != 0);
+  Assert(5 - 2 * (5 / 2) == 5 % 2);
+  Assert(5 > 2);
+  Assert(5 >= 2);
+  Assert(-1 < 0);
+  Assert(0 <= 0);
+  Assert(((1 ^ 3) == 2) && ((1 & 3) == 1));
 
-Assert(true && false || true);
-Assert(true || false && true);
-Assert(!false);
+  Assert(true && false || true);
+  Assert(true || false && true);
+  Assert(!false);
+
+}
+
+{
+  int a = (3 * 5 - 15 + 3) % 2;
+  int b = ((25 / 5) << 2) >> 1;
+  bool c = true || false;
+  bool d = !(true && false);
+  float e = (3.0f - 1.0f) * 2.0f + 2.0f;
+  float f = e / 6.0f;
+  double g = (3.0 - 1.0) * 2.0 + 2.0;
+  double h = g / 6.0;
+  char i = 'i';
+  char j = i + 1;
+
+  Assert(a == 1);
+  Assert(b == 10);
+  Assert(c == true);
+  Assert(d == true);
+  Assert(e == 6.0f);
+  Assert(f == 1.0f);
+  Assert(g == 6.0);
+  Assert(h == 1.0);
+  Assert(i == 'i');
+  Assert(j == 'j');
+}
+
+{
+  Assert(3 < 5);
+  Assert(!(6 >= 8));
+  Assert(1 < 2 && 2 > 1 && 3 >= 3 && 4 <= 4);
+  Assert(1.0 < 2.0 && 2.0 > 1.0);
+  Assert(2.0 <= 2.0 && 4.0 >= 3.0);
+  Assert('i' < 'j' && 'g' >= 'f');
+  Assert(3.f < 4.f && 5.f >= 2.f && 4.f <= 5.f);
+}
+
+{
+  int a = 0;
+  a = 1;
+  a += 2; // 3
+  a *= 2; // 6
+  a /= 2; // 3
+  a %= 2; // 1
+  a -= 1; // 0
+  Assert(a == 0);
+}
+
+{
+  Assert(true == true);
+  Assert(true != false);
+
+  bool a = true;
+  bool b = false;
+
+  Assert(!a == false);
+  Assert(a || b);
+  Assert(a && !b);
+}
+
+template<typename T>
+void test_number()
+{
+  T zero = 0;
+  T one = 1;
+  T two = 2;
+  T a = 0;
+  a = one;
+  a += one; Assert(a == 2);
+  a -= one; Assert(a == 1);
+  a *= two; Assert(a == 2);
+  a /= two; Assert(a == 1);
+  T b = two * a - one; Assert(b == 1);
+  a = a + b; Assert(a == 2);
+  b = a / two; Assert(b == 1);
+  Assert(b < two);
+  Assert(b >= zero);
+  Assert(b <= two);
+  Assert(b > zero);
+  Assert(b != zero);
+  b = -b; Assert(b == -1);
+  b = +b; Assert(b == -1);
+}
+
+template<typename T>
+void test_integral()
+{
+  test_number<T>();
+
+  T one = 1;
+  T two = 2;
+  T a = 1;
+  a %= two; Assert(a == 1);
+  a <<= one; Assert(a == 2);
+  T b = a % two; Assert(b == 0);
+  b = (a >> one); Assert(b == 1);
+  T c = (a | b); Assert(c == 3);
+  a = (c & b); Assert(a == 1);
+  b = a--; Assert(b == 1 && a == 0);
+  b = ++a; Assert(b == 1 && a == 1);
+}
+
+test_integral<char>();
+test_integral<int>();
+test_number<float>();
+test_number<double>();
