@@ -142,12 +142,11 @@ std::string DiagnosticMessage::message() const
 {
   std::string result;
 
-  // @TODO: these conditions do not work because of conversions!
-  if (line() != std::numeric_limits<uint16_t>::max())
+  if (location().m_pos.line != std::numeric_limits<uint16_t>::max())
   {
     result += std::to_string(line() + 1);
     result += std::string{ ":" };
-    if (column() != std::numeric_limits<uint16_t>::max())
+    if (location().m_pos.col != std::numeric_limits<uint16_t>::max())
       result += std::to_string(column() + 1) + std::string{ ":" };
     result += " ";
   }
