@@ -1,0 +1,4 @@
+
+int a{1, 2};
+
+//>2:5: error C46: too many arguments provided in variable initialization.

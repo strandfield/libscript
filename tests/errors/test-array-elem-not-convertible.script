@@ -1,0 +1,5 @@
+
+class A { A() = default; }; 
+auto a = [1, A{}];
+
+//>3:10: error C29: could not convert element to array's element type.

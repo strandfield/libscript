@@ -1,0 +1,5 @@
+
+class A {}; 
+A a;
+
+//>3:3: error C17: class does not provide a default constructor

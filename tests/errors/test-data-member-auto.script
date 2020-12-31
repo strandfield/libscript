@@ -1,0 +1,4 @@
+
+class A { auto x; };
+
+//>52429:52429: error C23: data members cannot be declared 'auto'.

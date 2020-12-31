@@ -1,0 +1,4 @@
+
+int a{ 3.14 };
+
+//>2:5: error C81: Narrowing conversion from const double& to int in brace initialization

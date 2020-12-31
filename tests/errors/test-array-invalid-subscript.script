@@ -1,0 +1,5 @@
+
+int a = 5; 
+int b = a[10];
+
+//>3:10: error C30: cannot perform array subscript on non object type.

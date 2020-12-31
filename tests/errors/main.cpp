@@ -89,7 +89,8 @@ int main(int argc, char **argv)
     if (result)
     {
       ++total_failures;
-      std::cout << " compiled successfully XXXXX" << std::endl;
+      std::cout << " FAIL!" << std::endl;
+      std::cout << "... script compiled successfully" << std::endl;
     }
     else
     {
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
       if (output != expected)
       {
         ++total_failures;
-        std::cout << " failed XXXXX" << std::endl;
+        std::cout << " FAIL!" << std::endl;
         std::cout << "Expected:\n" << expected << std::endl;
         std::cout << "Got:\n" << output << std::endl;
       }

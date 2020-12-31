@@ -1,0 +1,9 @@
+
+class A { };
+
+class B : A 
+{ 
+  B(const B &) = default; 
+};
+
+//>52429:52429: error C68: cannot generate defaulted copy constructor because parent has no copy constructor.

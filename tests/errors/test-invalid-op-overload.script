@@ -1,0 +1,5 @@
+
+class A {}; 
+int operator+(const A & a, const A & b, const A & c) { return 0; }
+
+//>3:5: error C20: Invalid parameter count found in operator overload, expected 1 got 3
