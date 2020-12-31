@@ -91,6 +91,7 @@ int main(int argc, char **argv)
   std::vector<std::string> list = {
     "print",
     "builtin-types",
+    "string",
     "while",
     "for",
     "simple-functions",
