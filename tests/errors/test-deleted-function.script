@@ -1,0 +1,5 @@
+
+int f(int) = delete;
+f(5);
+
+//>3:2: error C64: call to deleted function.

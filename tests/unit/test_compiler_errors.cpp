@@ -19,56 +19,6 @@
 #include "script/parser/parser.h"
 #include "script/parser/parsererrors.h"
 
-// @TODO: create a test executable "error_tests" that works like "language_tests"
-// with the error list at the end of file (as a comment)
-
-TEST(CompilerErrors, illegal_this) {
-  using namespace script;
-
-  const char *source =
-    " 3 + this; ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-
-  ASSERT_EQ(errors.size(), 1);
-  //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), CompilerError::IllegalUseOfThis);
-}
-
-TEST(CompilerErrors, no_destructor) {
-  using namespace script;
-
-  const char *source =
-    "  class A            \n"
-    "  {                  \n"
-    "    A() = default;   \n"
-    "  };                 \n"
-    "                     \n"
-    "  void foo()         \n"
-    "  {                  \n"
-    "    A a;             \n"
-    "  }                  \n";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-
-  ASSERT_EQ(errors.size(), 1);
-  //std::cout << errors.front().message() << std::endl;
-  ASSERT_EQ(errors.front().code(), CompilerError::ObjectHasNoDestructor);
-}
-
-
 TEST(CompilerErrors, invalid_use_delegated_ctor) {
   using namespace script;
 

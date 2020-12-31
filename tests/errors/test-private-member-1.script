@@ -1,0 +1,10 @@
+
+class A
+{
+protected:
+  static int foo() { return 66; }
+};
+
+int n = A::foo();
+
+//>8:15: error C87: foo is protected within this context

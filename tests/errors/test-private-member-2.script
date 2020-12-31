@@ -1,0 +1,15 @@
+
+class A
+{
+public:
+  A() = default;
+  ~A() = default;
+  
+private:
+  int bar() { return 57; }
+};
+
+A a;
+int n = a.bar();
+
+//>13:14: error C87: bar is private within this context

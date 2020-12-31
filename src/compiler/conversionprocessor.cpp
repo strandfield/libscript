@@ -55,6 +55,8 @@ std::shared_ptr<program::Expression> ConversionProcessor::convert(Engine *e, con
   }
   else
   {
+    // @TODO: check that constructor is accessible (might by private)
+    // (not easy to do here as the 'context' is not accessible...
     assert(conv.userDefinedConversion().isConstructor());
     ret = program::ConstructorCall::New(conv.userDefinedConversion(), { ret });
   }

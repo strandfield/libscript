@@ -14,6 +14,7 @@ namespace script
 
 class LocalsProxy;
 
+// @TODO: remove this class, it is no longer usefull
 class LIBSCRIPT_API Locals
 {
 public:

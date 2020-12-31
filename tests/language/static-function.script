@@ -1,0 +1,15 @@
+
+class A
+{
+public:
+  A() = default;
+  ~A() = default;
+  static int foo() { return 66; }
+};
+
+int n = A::foo();
+
+A a;
+int m = a.foo();
+
+Assert(n == m);

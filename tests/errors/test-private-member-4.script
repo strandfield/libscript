@@ -1,0 +1,14 @@
+
+class A
+{
+public:
+  A() = default;
+  ~A() = default;
+
+private:
+  static int a = 0;
+};
+
+int n = A::a;
+
+//>12:12: error C87: a is private within this context

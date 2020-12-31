@@ -1,0 +1,16 @@
+
+Assert(2 + 3*5 == 17);
+Assert(3*5 + 2 == 17);
+Assert(1 << 2 + 1 == 8);
+Assert((1 << 2) - 3 == 1);
+Assert(5 - 2 * (5 / 2) != 0);
+Assert(5 - 2 * (5 / 2) == 5 % 2);
+Assert(5 > 2);
+Assert(5 >= 2);
+Assert(-1 < 0);
+Assert(0 <= 0);
+Assert(((1 ^ 3) == 2) && ((1 & 3) == 1));
+
+Assert(true && false || true);
+Assert(true || false && true);
+Assert(!false);

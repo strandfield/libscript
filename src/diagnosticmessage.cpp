@@ -142,34 +142,36 @@ std::string DiagnosticMessage::message() const
 {
   std::string result;
 
+  if (line() != std::numeric_limits<uint16_t>::max())
+  {
+    result += std::to_string(line() + 1);
+    result += std::string{ ":" };
+    if (column() != std::numeric_limits<uint16_t>::max())
+      result += std::to_string(column() + 1) + std::string{ ":" };
+    result += " ";
+  }
+
   switch (mSeverity)
   {
   case Info:
-    result += "[info]";
+    result += "info";
     break;
   case Warning:
-    result += "[warning]";
+    result += "warning";
     break;
   case Error:
-    result += "[error]";
+    result += "error";
     break;
   }
 
-  if (!mCode)
+  if (mCode)
   {
-    /// TODO: do something with that ?
+    result.push_back(' ');
+    result += char(std::toupper(mCode.category().name()[0]));
+    result += std::to_string(mCode.value());
   }
 
-
-  if (line() != std::numeric_limits<uint16_t>::max())
-  {
-    result += std::to_string(line());
-    result += std::string{ ":" };
-    if (column() != std::numeric_limits<uint16_t>::max())
-      result += std::to_string(column()) + std::string{ ":" };
-  }
-
-  result += " ";
+  result += ": ";
 
   result += mContent;
 
