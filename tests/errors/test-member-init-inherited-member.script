@@ -1,0 +1,13 @@
+
+class A
+{
+  int n;
+  A() = default;
+};
+
+class B : A
+{
+  B() : n(0) { }
+};
+
+//>10:9: error C6: cannot initialize inherited data member n

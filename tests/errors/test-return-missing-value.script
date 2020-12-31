@@ -1,0 +1,4 @@
+
+int foo() { return; }
+
+//>2:13: error C11: cannot have return-statement without a value in function returning non-void

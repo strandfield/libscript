@@ -1,0 +1,4 @@
+
+int& a;
+
+//>2:6: error C13: references must be initialized

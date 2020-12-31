@@ -1,0 +1,10 @@
+
+class A
+{
+  int n;
+
+  A(int a) : n(a) { }
+  A() : A(2), n(0) { }
+};
+
+//>7:9: error C4: no other member initializer may be present when using delegating constructors

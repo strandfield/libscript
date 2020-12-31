@@ -1,0 +1,7 @@
+
+class A
+{
+  A(int a) : n(a) { }
+};                   
+
+//>4:14: error C5: n does not name a data member
