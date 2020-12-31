@@ -87,22 +87,20 @@ TEST(Builders, functioncalloperator) {
   ASSERT_TRUE(op.isConst());
 }
 
-
 TEST(Builders, literaloperator) {
   using namespace script;
 
   Engine e;
   e.setup();
 
-  Symbol s{ e.rootNamespace() };
+  Namespace ns = e.rootNamespace();
 
-  LiteralOperatorBuilder b{ s, "s" };
+  LiteralOperator op = ns.newUserDefinedLiteral("s", Type::Boolean, Type::Int).get();
 
-  LiteralOperator op = b.returns(Type::Int)
-    .params(Type::Boolean).get();
-
+  ASSERT_EQ(op.suffix(), "s");
   ASSERT_EQ(op.prototype().count(), 1);
   ASSERT_EQ(op.returnType(), Type::Int);
+  ASSERT_EQ(op.input(), Type::Boolean);
   ASSERT_EQ(op.enclosingNamespace(), e.rootNamespace());
 }
 

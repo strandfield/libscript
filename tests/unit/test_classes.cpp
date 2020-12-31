@@ -13,6 +13,7 @@
 #include "script/functionbuilder.h"
 #include "script/namespace.h"
 
+// @TODO: move all the builder tests in test_builder.cpp
 
 TEST(ClassTest, builder_functions) {
   using namespace script;
