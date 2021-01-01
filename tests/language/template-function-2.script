@@ -1,0 +1,12 @@
+
+template<typename T>
+int foo(T a) { return 1; }
+
+template<>
+int foo(int a) { return 0; }
+
+int a = foo(false);
+int b = foo(0);
+
+Assert(a == 1);
+Assert(b == 0);

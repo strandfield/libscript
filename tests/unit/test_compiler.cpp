@@ -11,6 +11,7 @@
 #include "script/enumerator.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/functiontemplate.h"
 #include "script/lambda.h"
 #include "script/locals.h"
 #include "script/namespace.h"
@@ -26,6 +27,8 @@
 #include "script/program/statements.h"
 
 #include "script/parser/parser.h"
+
+#include <array>
 
 // @TODO: put almost all these tests in the "language_test" target
 
@@ -1072,4 +1075,55 @@ TEST(CompilerTests, func_arg_default_list_init) {
   Value a = s.globals().front();
   ASSERT_EQ(a.type(), Type::Int);
   ASSERT_EQ(a.toInt(), 0);
+}
+
+
+TEST(CompilerTests, function_template_full_spec) {
+  using namespace script;
+
+  const char* source_1 =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo<int>(int a) { return 0; }   "
+    "                                      "
+    "  int a = foo<bool>(false);           "
+    "  int b = foo<int>(0);                ";
+
+  // template argument deduction for the win !
+  const char* source_2 =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo(int a) { return 0; }        "
+    "                                      "
+    "  int a = foo(false);                 "
+    "  int b = foo(0);                     ";
+
+
+  Engine engine;
+  engine.setup();
+
+  std::array<const char*, 2> sources = { source_1, source_2 };
+
+  for (const char* src : sources)
+  {
+    Script s = engine.newScript(SourceFile::fromString(src));
+    bool success = s.compile();
+    ASSERT_TRUE(success);
+
+    ASSERT_EQ(s.rootNamespace().templates().size(), 1);
+
+    FunctionTemplate foo = s.rootNamespace().templates().front().asFunctionTemplate();
+    ASSERT_EQ(foo.instances().size(), 2);
+
+    const auto& instances = foo.instances();
+    auto it = instances.begin();
+    ASSERT_EQ(it->first.at(0).type, script::Type::Boolean);
+
+    ++it;
+    ASSERT_EQ(it->first.at(0).type, script::Type::Int);
+  }
 }

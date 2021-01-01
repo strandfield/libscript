@@ -112,6 +112,8 @@ int main(int argc, char **argv)
     "namespace-alias",
     "typedef",
     "type-alias",
+    "template-function-1",
+    "template-function-2",
     "units",
     "math",
   };
