@@ -1139,6 +1139,8 @@ public:
 
 TEST(ParserTests, visitall) {
 
+  // @TODO: prefer using the cumulated source code of previous tests in this file
+
   const char* source =
     "                                                                    \n"
     "  export import std;                                                \n"
