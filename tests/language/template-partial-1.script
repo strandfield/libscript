@@ -1,0 +1,12 @@
+
+template<typename T, typename U>
+class foo { public: static int n = 2; };
+
+template<typename T>
+class foo<T, T> { public: static int n = 1; };
+
+int a = foo<int, int>::n;
+int b = foo<int, bool>::n;
+
+Assert(a == 1);
+Assert(b == 2);

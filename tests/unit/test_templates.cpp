@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -1233,85 +1233,4 @@ TEST(TemplateTests, full_spec_overload_selec) {
   ASSERT_EQ(result.first, foo_ArrayT);
   ASSERT_EQ(result.second.size(), 1);
   ASSERT_EQ(result.second.front().type, Type::Int);
-}
-
-
-/****************************************************************
-Testing class template with partial specialization
-****************************************************************/
-
-TEST(TemplateTests, class_template_complete_test_1) {
-  using namespace script;
-
-  const char *source =
-    "  template<typename T, typename U>                  "
-    "  class foo { public: static int n = 2; };          "
-    "                                                    "
-    "  template<typename T>                              "
-    "  class foo<T, T> { public: static int n = 1; };    "
-    "                                                    "
-    "  int a = foo<int, int>::n;                         "
-    "  int b = foo<int, bool>::n;                        ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
-
-  ClassTemplate foo = s.rootNamespace().templates().front().asClassTemplate();
-  ASSERT_EQ(foo.partialSpecializations().size(), 1);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), Type::Int);
-  ASSERT_EQ(a.toInt(), 1);
-
-  Value b = s.globals().back();
-  ASSERT_EQ(b.type(), Type::Int);
-  ASSERT_EQ(b.toInt(), 2);
-}
-
-TEST(TemplateTests, class_template_complete_test_2) {
-  using namespace script;
-
-  const char *source =
-    "  template<typename T>                                  "
-    "  class foo { public: static int n = 0; };              "
-    "                                                        "
-    "  template<typename T>                                  "
-    "  class foo<Array<T>> { public: static int n = 1; };    "
-    "                                                        "
-    "  int a = foo<int>::n;                                  "
-    "  int b = foo<Array<int>>::n;                           ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  ASSERT_EQ(s.rootNamespace().templates().size(), 1);
-
-  ClassTemplate foo = s.rootNamespace().templates().front().asClassTemplate();
-  ASSERT_EQ(foo.partialSpecializations().size(), 1);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), Type::Int);
-  ASSERT_EQ(a.toInt(), 0);
-
-  Value b = s.globals().back();
-  ASSERT_EQ(b.type(), Type::Int);
-  ASSERT_EQ(b.toInt(), 1);
 }

@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -30,7 +30,7 @@
 
 #include <array>
 
-// @TODO: put almost all these tests in the "language_test" target
+// @TODO: avoid calling run() in these tests, do that in the "language_test" target
 
 TEST(CompilerTests, bind_expression) {
   using namespace script;
@@ -118,8 +118,6 @@ TEST(CompilerTests, deleted_function) {
 
 TEST(CompilerTests, enum1) {
   using namespace script;
-
-  // @TODO: only do this test with EnumBuilder in test_builders.cpp
 
   const char *source =
     " enum A{AA, AB, AC}; ";
@@ -748,59 +746,6 @@ TEST(CompilerTests, function_variable_assignment) {
   ASSERT_EQ(func.toFunction(), bar);
 }
 
-
-TEST(CompilerTests, brace_initialization) {
-  using namespace script;
-
-  /// TODO : remove the need of a copy constructor
-  const char *source =
-    "  int a{5};                   "
-    "  int & ref{a};               "
-    "  class A {                   "
-    "    int n;                    "
-    "    A(const A &) = default;   "
-    "    A(int val) : n(val) { }   "
-    "    ~A() = default;           "
-    "  };                          "
-    "  A b{5};                     "
-    "  A c = A{5};                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  s.run();
-}
-
-TEST(CompilerTests, ctor_initialization) {
-  using namespace script;
-
-  /// TODO : remove the need of a copy constructor
-  const char *source =
-    "  int a(5);                   "
-    "  int & ref(a);               "
-    "  class A {                   "
-    "    int n;                    "
-    "    A(const A &) = default;   "
-    "    A(int val) : n(val) { }   "
-    "    ~A() = default;           "
-    "  };                          "
-    "  A b(5);                     "
-    "  A c = A(5);                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  s.run();
-}
-
 TEST(CompilerTests, typedef_script_scope) {
   using namespace script;
 
@@ -1051,30 +996,6 @@ TEST(CompilerTests, unknown_type) {
   Value n = s.globals().front();
   ASSERT_EQ(n.type(), Type::Int);
   ASSERT_EQ(n.toInt(), 42);
-}
-
-
-TEST(CompilerTests, func_arg_default_list_init) {
-  using namespace script;
-
-  const char *source =
-    "  int foo(int n) { return n; }     "
-    "  int a = foo({});                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), Type::Int);
-  ASSERT_EQ(a.toInt(), 0);
 }
 
 

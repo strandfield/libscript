@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -11,13 +11,93 @@
 #include "script/constructorbuilder.h"
 #include "script/destructorbuilder.h"
 #include "script/engine.h"
+#include "script/enum.h"
+#include "script/enumbuilder.h"
+#include "script/enumerator.h"
 #include "script/literals.h"
 #include "script/literaloperatorbuilder.h"
 #include "script/namespace.h"
 #include "script/operator.h"
 #include "script/operatorbuilder.h"
+#include "script/typesystem.h"
 
 #include "script/program/expression.h"
+
+TEST(Builders, namespaces) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace foo = e.rootNamespace().getNamespace("foo");
+
+  Namespace foo_2 = e.rootNamespace().getNamespace("foo");
+  ASSERT_EQ(foo, foo_2);
+
+  Namespace foo_3 = e.rootNamespace().newNamespace("foo");
+  ASSERT_NE(foo, foo_3);
+}
+
+TEST(Builders, functions) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Namespace root = e.rootNamespace();
+  Class A = Symbol{ root }.newClass("A").get();
+
+  Function foo = A.newMethod("foo").get();
+  ASSERT_EQ(foo.name(), "foo");
+  ASSERT_TRUE(foo.isMemberFunction());
+  ASSERT_EQ(foo.memberOf(), A);
+  ASSERT_EQ(A.memberFunctions().size(), 1);
+  ASSERT_EQ(foo.returnType(), Type::Void);
+  ASSERT_EQ(foo.prototype().count(), 1);
+  ASSERT_TRUE(foo.prototype().at(0).testFlag(Type::ThisFlag));
+
+  Function bar = A.newMethod("bar").setConst().get();
+  ASSERT_EQ(bar.name(), "bar");
+  ASSERT_EQ(A.memberFunctions().size(), 2);
+  ASSERT_TRUE(bar.isConst());
+
+  foo = root.newFunction("foo").returns(Type::Int).params(Type::Int, Type::Boolean).get();
+  ASSERT_EQ(foo.name(), "foo");
+  ASSERT_FALSE(foo.isMemberFunction());
+  ASSERT_EQ(root.functions().size(), 1);
+  ASSERT_EQ(foo.returnType(), Type::Int);
+  ASSERT_EQ(foo.prototype().count(), 2);
+  ASSERT_EQ(foo.prototype().at(0), Type::Int);
+  ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
+
+  Operator assign = A.newOperator(AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get();
+  ASSERT_EQ(assign.operatorId(), AssignmentOperator);
+  ASSERT_TRUE(assign.isMemberFunction());
+  ASSERT_EQ(assign.memberOf(), A);
+  ASSERT_EQ(A.operators().size(), 1);
+  ASSERT_EQ(assign.returnType(), Type::ref(A.id()));
+  ASSERT_EQ(assign.prototype().count(), 2);
+  ASSERT_EQ(assign.prototype().at(0), Type::ref(A.id()));
+  ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
+  ASSERT_TRUE(assign.isDeleted());
+
+  Namespace ops = root.newNamespace("ops");
+  assign = ops.newOperator(AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get();
+  ASSERT_EQ(assign.operatorId(), AdditionOperator);
+  ASSERT_FALSE(assign.isMemberFunction());
+  ASSERT_EQ(ops.operators().size(), 1);
+  ASSERT_EQ(assign.returnType(), A.id());
+  ASSERT_EQ(assign.prototype().count(), 2);
+  ASSERT_EQ(assign.prototype().at(0), Type::cref(A.id()));
+  ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
+
+  Cast to_int = A.newConversion(Type::Int).setConst().get();
+  ASSERT_EQ(to_int.destType(), Type::Int);
+  ASSERT_EQ(to_int.sourceType(), Type::cref(A.id()));
+  ASSERT_TRUE(to_int.isMemberFunction());
+  ASSERT_EQ(to_int.memberOf(), A);
+  ASSERT_EQ(A.casts().size(), 1);
+}
 
 TEST(Builders, classes) {
   using namespace script;
@@ -31,6 +111,32 @@ TEST(Builders, classes) {
 
   ASSERT_EQ(A.name(), "A");
   ASSERT_EQ(A.enclosingNamespace(), e.rootNamespace());
+}
+
+
+TEST(Builders, datamember) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  size_t off = e.typeSystem()->reserve(Type::ObjectFlag, 1);
+
+  auto builder = Symbol{ e.rootNamespace() }.newClass("MyClass").setId(Type::ObjectFlag | off);
+  builder.setFinal();
+  builder.addMember(Class::DataMember{ Type::Int, "n" });
+
+  Class my_class = builder.get();
+  ASSERT_EQ(my_class.id(), (Type::ObjectFlag | off));
+  ASSERT_EQ(my_class, e.rootNamespace().classes().back());
+
+  ASSERT_EQ(my_class.name(), "MyClass");
+  ASSERT_TRUE(my_class.parent().isNull());
+  ASSERT_TRUE(my_class.isFinal());
+
+  ASSERT_EQ(my_class.dataMembers().size(), 1);
+  ASSERT_EQ(my_class.dataMembers().front().name, "n");
+  ASSERT_EQ(my_class.dataMembers().front().type, Type::Int);
 }
 
 TEST(Builders, operators) {
@@ -399,4 +505,57 @@ TEST(Builders, inheritance) {
   ASSERT_EQ(D.indirectBase(0), D);
   ASSERT_EQ(D.indirectBase(1), C);
   ASSERT_EQ(D.indirectBase(2), B);
+}
+
+TEST(Builders, inheritance2) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  auto builder = Symbol{ e.rootNamespace() }.newClass("Base");
+  builder.addMember(Class::DataMember{ Type::Int, "n" });
+
+  Class base = builder.get();
+
+  ASSERT_FALSE(base.isFinal());
+
+  ASSERT_EQ(base.dataMembers().size(), 1);
+  ASSERT_EQ(base.dataMembers().front().name, "n");
+  ASSERT_EQ(base.dataMembers().front().type, Type::Int);
+  ASSERT_EQ(base.attributesOffset(), 0);
+
+  builder = Symbol{ e.rootNamespace() }.newClass("Derived").setBase(base).addMember(Class::DataMember{ Type::Boolean, "b" });
+  Class derived = builder.get();
+
+  ASSERT_EQ(derived.parent(), base);
+
+  ASSERT_EQ(derived.dataMembers().size(), 1);
+  ASSERT_EQ(derived.dataMembers().front().name, "b");
+  ASSERT_EQ(derived.dataMembers().front().type, Type::Boolean);
+  ASSERT_EQ(derived.attributesOffset(), 1);
+}
+
+
+TEST(Builders, enums) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Enum A = Symbol{ e.rootNamespace() }.newEnum("A").get();
+  A.addValue("A1", 1);
+  A.addValue("A2", 2);
+  A.addValue("A3", 3);
+
+  ASSERT_TRUE(A.hasKey("A1"));
+  ASSERT_FALSE(A.hasKey("HK47"));
+  ASSERT_TRUE(A.hasValue(2));
+  ASSERT_EQ(A.getKey(2), "A2");
+  ASSERT_EQ(Enumerator(A, 2).name(), "A2");
+  ASSERT_FALSE(A.hasValue(66));
+  ASSERT_EQ(A.getValue("A1"), 1);
+  ASSERT_EQ(A.getValue("HK47", -1), -1);
+
+  ASSERT_EQ(A.enclosingNamespace(), e.rootNamespace());
 }
