@@ -16,8 +16,10 @@
 #include "script/enumbuilder.h"
 #include "script/functiontype.h"
 #include "script/initializerlist.h"
+#include "script/name.h"
 #include "script/namespace.h"
 #include "script/prototype.h"
+#include "script/symbol.h"
 #include "script/typesystem.h"
 #include "script/typesystemtransaction.h"
 
@@ -564,6 +566,22 @@ TEST(Initializations, list_initialization_not_convertible) {
 
   init = Initialization::compute(Type::ref(Type::Int), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);
+}
+
+TEST(TypeSystemTests, symbolname) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace().getNamespace("bar") };
+  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().string(), "bar");
+
+  s = Symbol{ e.typeSystem()->getClass(Type::String) };
+  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().string(), "String");
+
 }
 
 TEST(TypeSystemTests, transaction) {

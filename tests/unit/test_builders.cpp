@@ -8,6 +8,7 @@
 #include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
+#include "script/classtemplate.h"
 #include "script/constructorbuilder.h"
 #include "script/destructorbuilder.h"
 #include "script/engine.h"
@@ -19,6 +20,7 @@
 #include "script/namespace.h"
 #include "script/operator.h"
 #include "script/operatorbuilder.h"
+#include "script/templatebuilder.h"
 #include "script/typesystem.h"
 
 #include "script/program/expression.h"
@@ -543,10 +545,17 @@ TEST(Builders, enums) {
   Engine e;
   e.setup();
 
-  Enum A = Symbol{ e.rootNamespace() }.newEnum("A").get();
+  size_t nb_enums = e.rootNamespace().enums().size();
+
+  Enum A = Symbol{ e.rootNamespace() }.newEnum("A")
+    .setEnumClass(true).get();
   A.addValue("A1", 1);
   A.addValue("A2", 2);
   A.addValue("A3", 3);
+
+  ASSERT_EQ(A.name(), "A");
+  ASSERT_TRUE(A.isEnumClass());
+  ASSERT_EQ(e.rootNamespace().enums().size(), nb_enums + 1);
 
   ASSERT_TRUE(A.hasKey("A1"));
   ASSERT_FALSE(A.hasKey("HK47"));
@@ -558,4 +567,93 @@ TEST(Builders, enums) {
   ASSERT_EQ(A.getValue("HK47", -1), -1);
 
   ASSERT_EQ(A.enclosingNamespace(), e.rootNamespace());
+}
+
+
+class DummyClassTemplateBackend : public script::ClassTemplateNativeBackend
+{
+  script::Class instantiate(script::ClassTemplateInstanceBuilder&)
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+};
+
+class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBackend
+{
+  void deduce(script::TemplateArgumentDeduction& deduction, const std::vector<script::TemplateArgument>& targs, const std::vector<script::Type>& itypes) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+
+  std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function& function) override
+  {
+    throw std::runtime_error{ "dummy" };
+  }
+};
+
+TEST(Builders, function_template_create) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace() };
+
+  const auto nb_templates = e.rootNamespace().templates().size();
+
+  // We cannot use get() here because FunctionTemplate has not been defined yet
+  s.newFunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+    .withBackend<DummyFunctionTemplateBackend>()
+    .setScope(e.rootNamespace()).create();
+
+  ASSERT_EQ(e.rootNamespace().templates().size(), nb_templates + 1);
+}
+
+#include "script/functiontemplate.h"
+
+TEST(Builders, function_template_get) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace() };
+
+  FunctionTemplate foo = s.newFunctionTemplate("foo").params(
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
+    .withBackend<DummyFunctionTemplateBackend>()
+    .setScope(e.rootNamespace()).get();
+
+  ASSERT_EQ(foo.name(), "foo");
+  ASSERT_EQ(foo.enclosingSymbol().toNamespace(), e.rootNamespace());
+  ASSERT_EQ(foo.parameters().size(), 2);
+  ASSERT_EQ(foo.parameters().at(0).name(), "T");
+  ASSERT_EQ(foo.parameters().at(1).name(), "U");
+}
+
+TEST(Builders, class_template_get) {
+  using namespace script;
+
+  Engine e;
+  e.setup();
+
+  Symbol s{ e.rootNamespace() };
+
+  ClassTemplate Bar = s.newClassTemplate("Bar").params(
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
+    TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
+    .withBackend<DummyClassTemplateBackend>()
+    .setScope(e.rootNamespace()).get();
+
+  ASSERT_EQ(Bar.name(), "Bar");
+  ASSERT_EQ(Bar.enclosingSymbol().toNamespace(), e.rootNamespace());
+  ASSERT_EQ(Bar.parameters().size(), 2);
+  ASSERT_EQ(Bar.parameters().at(0).name(), "T");
+  ASSERT_EQ(Bar.parameters().at(1).name(), "U");
 }
