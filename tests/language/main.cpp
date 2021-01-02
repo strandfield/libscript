@@ -122,6 +122,7 @@ int main(int argc, char **argv)
     "template-function-5",
     "template-partial-1",
     "template-partial-2",
+    "two-pass-compil",
     "units",
     "math",
   };

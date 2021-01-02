@@ -966,38 +966,6 @@ TEST(CompilerTests, friend_class) {
   ASSERT_EQ(A.friends(Class{}).front().name(), "B");
 }
 
-TEST(CompilerTests, unknown_type) {
-  using namespace script;
-
-  const char *source =
-    "  size_t get_size() { return 42; } "
-    "  typedef int size_t;              "
-    "  size_t n = get_size();           ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-
-  // When processing get_size() the first time, size_t is not defined and the
-  // building process fails. The declaration is scheduled to be re-processed later.
-  // The second pass correctly resolves size_t.
-  // If a using declaration is made, it will not find get_size() because it does 
-  // not exist until the second pass : this is a known limitation of the compilation 
-  // process. Using declarations made inside function bodies do not suffer from 
-  // this limitation and are generaly considered a better alternative anyway.
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value n = s.globals().front();
-  ASSERT_EQ(n.type(), Type::Int);
-  ASSERT_EQ(n.toInt(), 42);
-}
-
 
 TEST(CompilerTests, function_template_full_spec) {
   using namespace script;
