@@ -1,11 +1,10 @@
+
 template<typename T>
-int foo(T a) { return 1; }
-
-template<>
-int foo<int>(int a) { return 0; }
-
-int a = foo<bool>(false);
-int b = foo<int>(0);
+T abs(const T & a)
+{
+  if(a < 0) return -a;
+  return a;
+}
+int a = abs(-1);
 
 Assert(a == 1);
-Assert(b == 0);

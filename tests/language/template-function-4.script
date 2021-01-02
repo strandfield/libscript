@@ -1,0 +1,9 @@
+
+template<typename T>
+T max(const T & a, const T & b)
+{
+  return a > b ? a : b;
+}
+int n = max(2, 3);
+
+Assert(n == 3);
