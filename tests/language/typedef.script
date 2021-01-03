@@ -1,0 +1,5 @@
+
+typedef float Distance;
+Distance d{ 3.14f };
+
+Assert(d == 3.14f);

@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -1138,6 +1138,8 @@ public:
 };
 
 TEST(ParserTests, visitall) {
+
+  // @TODO: prefer using the cumulated source code of previous tests in this file
 
   const char* source =
     "                                                                    \n"

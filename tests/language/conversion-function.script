@@ -1,0 +1,16 @@
+
+class A
+{
+public:
+  int a;
+  A() : a(0) { }
+  ~A() { }
+  void incr(int n) { a += n; }
+  operator int() const { return a; }
+};
+
+A a;
+a.incr(2);
+int b = a;
+
+Assert(b == 2);

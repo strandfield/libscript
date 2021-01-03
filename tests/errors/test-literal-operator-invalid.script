@@ -1,0 +1,4 @@
+
+auto d = 3km;
+
+//>2:10: error C79: could not find valid literal operator.

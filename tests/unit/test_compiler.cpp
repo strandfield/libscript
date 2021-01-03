@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -11,6 +11,7 @@
 #include "script/enumerator.h"
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
+#include "script/functiontemplate.h"
 #include "script/lambda.h"
 #include "script/locals.h"
 #include "script/namespace.h"
@@ -27,61 +28,9 @@
 
 #include "script/parser/parser.h"
 
-// @TODO: put almost all these tests in the "language_test" target
+#include <array>
 
-
-void test_operation(const char *source, script::OperatorName op1, script::OperatorName op2, script::OperatorName op3)
-{
-  using namespace script;
-
-  Engine engine;
-  engine.setup();
-
-  compiler::Compiler cmd{ &engine };
-  auto expr = cmd.compile(source, engine.currentContext());
-
-  ASSERT_TRUE(expr->is<program::FunctionCall>());
-  const program::FunctionCall & call = dynamic_cast<const program::FunctionCall &>(*expr);
-  ASSERT_TRUE(call.callee.isOperator());
-  Operator op = call.callee.toOperator();
-  ASSERT_EQ(op.operatorId(), op1);
-
-  ASSERT_EQ(call.args.size(), 2);
-
-
-  if (op2 != Operator::Null)
-  {
-    ASSERT_TRUE(call.args.front()->is<program::FunctionCall>());
-    const program::FunctionCall & rhs = dynamic_cast<const program::FunctionCall &>(*(call.args.front()));
-    ASSERT_TRUE(rhs.callee.isOperator());
-    op = rhs.callee.toOperator();
-    ASSERT_EQ(op.operatorId(), op2);
-  }
-
-  if (op3 != Operator::Null)
-  {
-    ASSERT_TRUE(call.args.back()->is<program::FunctionCall>());
-    const program::FunctionCall & rhs = dynamic_cast<const program::FunctionCall &>(*(call.args.back()));
-    ASSERT_TRUE(rhs.callee.isOperator());
-    op = rhs.callee.toOperator();
-    ASSERT_EQ(op.operatorId(), op3);
-  }
-
-}
-
-TEST(CompilerTests, expressions) {
-  using namespace script;
-
-  auto None = Operator::Null;
-
-  test_operation(" 2+3*5 ", AdditionOperator, None, MultiplicationOperator);
-  test_operation(" 3*5 + 2 ", AdditionOperator, MultiplicationOperator, None);
-  test_operation(" 1 << 2 + 3  ", LeftShiftOperator, None, AdditionOperator);
-  test_operation(" true && false || true ", LogicalOrOperator, LogicalAndOperator, None);
-  test_operation(" true || false && true ", LogicalOrOperator, None, LogicalAndOperator);
-  test_operation(" 1 ^ 3 | 1 & 3 ", BitwiseOrOperator, BitwiseXorOperator, BitwiseAndOperator);
-
-}
+// @TODO: avoid calling run() in these tests, do that in the "language_test" target
 
 TEST(CompilerTests, bind_expression) {
   using namespace script;
@@ -167,24 +116,6 @@ TEST(CompilerTests, deleted_function) {
   ASSERT_TRUE(f.isDeleted());
 }
 
-
-TEST(CompilerTests, call_deleted_function) {
-  using namespace script;
-
-  const char *source =
-    "int f(int) = delete; f(5); ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-}
-
-
-
 TEST(CompilerTests, enum1) {
   using namespace script;
 
@@ -205,35 +136,6 @@ TEST(CompilerTests, enum1) {
   ASSERT_TRUE(A.hasKey("AA"));
   ASSERT_TRUE(A.hasKey("AB"));
   ASSERT_TRUE(A.hasKey("AC"));
-}
-
-
-
-TEST(CompilerTests, enum_assignment) {
-  using namespace script;
-
-  const char *source =
-    " enum A{AA, AB, AC}; "
-    " A a = AA;           "
-    " a = AB;             ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.rootNamespace().enums().size(), 1);
-
-  Enum A = s.rootNamespace().enums().front();
-  
-  s.run();
-
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), A.id());
-  Enumerator ev = a.toEnumerator();
-  ASSERT_EQ(ev.enumeration().getValue("AB"), ev.value());
 }
 
 TEST(CompilerTests, class1) {
@@ -257,6 +159,8 @@ TEST(CompilerTests, class1) {
 
 TEST(CompilerTests, var_decl_auto) {
   using namespace script;
+
+  // @TODO: this could be tested in a script if we had "decltype"
 
   const char *source =
     " auto a = 5; ";
@@ -316,133 +220,6 @@ TEST(CompilerTests, lambda) {
   Value a = s.globals().back();
   ASSERT_EQ(a.type(), Type::Int);
   ASSERT_EQ(a.toInt(), 42);
-}
-
-TEST(CompilerTests, lambda_with_capture) {
-  using namespace script;
-
-  const char *source =
-    " int x = 0;                     "
-    " auto f = [&x](){ ++x;       }; "
-    " f(); f();                      ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.globalNames().size(), 2);
-
-  ASSERT_EQ(s.globals().size(), 0);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-
-  Value x = s.globals().front();
-  ASSERT_EQ(x.type(), Type::Int);
-  ASSERT_EQ(x.toInt(), 2);
-}
-
-
-TEST(CompilerTests, lambda_capture_all_by_value) {
-  using namespace script;
-
-  const char *source =
-    " int x = 57;                    "
-    " auto f = [=](){ return x; };   "
-    " int y = f();                   ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.globalNames().size(), 3);
-
-  ASSERT_EQ(s.globals().size(), 0);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 3);
-
-  Value y = s.globals().back();
-  ASSERT_EQ(y.type(), Type::Int);
-  ASSERT_EQ(y.toInt(), 57);
-}
-
-TEST(CompilerTests, lambda_capture_all_by_ref) {
-  using namespace script;
-
-  const char *source =
-    " int x = 57;                    "
-    " auto f = [&](){ return x++; };   "
-    " int y = f();                   ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.globalNames().size(), 3);
-
-  ASSERT_EQ(s.globals().size(), 0);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 3);
-
-  Value x = s.globals().front();
-  ASSERT_EQ(x.type(), Type::Int);
-  ASSERT_EQ(x.toInt(), 58);
-
-  Value y = s.globals().back();
-  ASSERT_EQ(y.type(), Type::Int);
-  ASSERT_EQ(y.toInt(), 57);
-}
-
-TEST(CompilerTests, lambda_capture_all_by_value_and_one_by_ref) {
-  using namespace script;
-
-  const char *source =
-    " int x = 1;                                         "
-    " int y = 2;                                         "
-    " int z = 3;                                         "
-    " auto f = [=, &z](){ z = z + x + y; y = y + 1; };   "
-    " f();                                               ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.globalNames().size(), 4);
-
-  ASSERT_EQ(s.globals().size(), 0);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 4);
-
-  Value x = s.globals().front();
-  ASSERT_EQ(x.type(), Type::Int);
-  ASSERT_EQ(x.toInt(), 1);
-
-  Value y = s.globals().at(1);
-  ASSERT_EQ(y.type(), Type::Int);
-  ASSERT_EQ(y.toInt(), 2);
-
-  Value z = s.globals().at(2);
-  ASSERT_EQ(z.type(), Type::Int);
-  ASSERT_EQ(z.toInt(), 6);
 }
 
 TEST(CompilerTests, operator_overload) {
@@ -509,33 +286,6 @@ TEST(CompilerTests, operator_overload_2) {
   ASSERT_EQ(op.prototype().at(1), Type::Int);
   ASSERT_EQ(op.prototype().at(2), Type::Int);
   ASSERT_EQ(op.prototype().at(3), Type::Int);
-}
-
-TEST(CompilerTests, user_defined_literals) {
-  using namespace script;
-
-  const char *source =
-    " double operator\"\"km (double x) { return x; } "
-    " auto d = 3km;                                  ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  ASSERT_EQ(s.globalNames().size(), 1);
-
-  ASSERT_EQ(s.globals().size(), 0);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-
-  Value d = s.globals().front();
-  ASSERT_EQ(d.type(), Type::Double);
-  ASSERT_EQ(d.toDouble(), 3.0);
 }
 
 TEST(CompilerTests, class_with_destructor) {
@@ -655,81 +405,6 @@ TEST(CompilerTests, class2) {
   Cast to_int = A.casts().front();
   ASSERT_EQ(to_int.returnType(), Type::Int);
 }
-
-
-TEST(CompilerTests, member_function_and_cast) {
-  using namespace script;
-
-  const char *source =
-    "  class A                                 "
-    "  {                                       "
-    "  public:                                 "
-    "    int a;                                "
-    "    A() : a(0) { }                        "
-    "    ~A() { }                              "
-    "    void incr(int n) { a += n; }          "
-    "    operator int() const { return a; }    "
-    "  };                                      "
-    "                                          "
-    "  A a;                                    "
-    "  a.incr(2);                              "
-    "  int b = a;                              ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  
-  Class A = s.classes().front();
-
-  ASSERT_EQ(s.globalNames().size(), 2);
-  
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), A.id());
-
-  Value b = s.globals().back();
-  ASSERT_EQ(b.type(), Type::Int);
-  ASSERT_EQ(b.toInt(), 2);
-}
-
-
-TEST(CompilerTests, converting_constructor) {
-  using namespace script;
-
-  const char *source =
-    "  class A            \n"
-    "  {                  \n"
-    "    A(float x) { }   \n"
-    "    ~A() { }         \n"
-    "  };                 \n"
-    "  A a = 3.14f;       \n";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  Class A = s.classes().front();
-
-  ASSERT_EQ(s.globalNames().size(), 1);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), A.id());
-}
-
-
 
 TEST(CompilerTests, generated_default_ctor) {
   using namespace script;
@@ -1071,65 +746,11 @@ TEST(CompilerTests, function_variable_assignment) {
   ASSERT_EQ(func.toFunction(), bar);
 }
 
-
-TEST(CompilerTests, brace_initialization) {
-  using namespace script;
-
-  /// TODO : remove the need of a copy constructor
-  const char *source =
-    "  int a{5};                   "
-    "  int & ref{a};               "
-    "  class A {                   "
-    "    int n;                    "
-    "    A(const A &) = default;   "
-    "    A(int val) : n(val) { }   "
-    "    ~A() = default;           "
-    "  };                          "
-    "  A b{5};                     "
-    "  A c = A{5};                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  s.run();
-}
-
-TEST(CompilerTests, ctor_initialization) {
-  using namespace script;
-
-  /// TODO : remove the need of a copy constructor
-  const char *source =
-    "  int a(5);                   "
-    "  int & ref(a);               "
-    "  class A {                   "
-    "    int n;                    "
-    "    A(const A &) = default;   "
-    "    A(int val) : n(val) { }   "
-    "    ~A() = default;           "
-    "  };                          "
-    "  A b(5);                     "
-    "  A c = A(5);                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-  s.run();
-}
-
 TEST(CompilerTests, typedef_script_scope) {
   using namespace script;
 
   const char *source =
-    "  typedef double Distance;   "
-    "  Distance d = 3.0;          ";
+    "  typedef double Distance;   ";
 
   Engine engine;
   engine.setup();
@@ -1141,13 +762,6 @@ TEST(CompilerTests, typedef_script_scope) {
 
   ASSERT_EQ(s.rootNamespace().typedefs().size(), 1);
   ASSERT_EQ(s.rootNamespace().typedefs().front(), Typedef("Distance", Type::Double));
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value d = s.globals().front();
-  ASSERT_EQ(d.type(), Type::Double);
-  ASSERT_EQ(d.toDouble(), 3.0);
 }
 
 TEST(CompilerTests, static_data_member) {
@@ -1195,8 +809,7 @@ TEST(CompilerTests, static_member_function) {
     "  public:                             "
     "    static int foo() { return 66; }   "
     "  };                                  "
-    "                                      "
-    "  int n = A::foo();                   ";
+    "                                      ";
 
   Engine engine;
   engine.setup();
@@ -1214,70 +827,6 @@ TEST(CompilerTests, static_member_function) {
   ASSERT_TRUE(foo.isMemberFunction());
   ASSERT_EQ(foo.memberOf(), A);
   ASSERT_TRUE(foo.isStatic());
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value n = s.globals().back();
-  ASSERT_EQ(n.toInt(), 66);
-}
-
-
-TEST(CompilerTests, protected_static_member_function) {
-  using namespace script;
-
-  const char *source =
-    "  class A                             "
-    "  {                                   "
-    "  protected:                          "
-    "    static int foo() { return 66; }   "
-    "  };                                  "
-    "                                      "
-    "  int n = A::foo();                   ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-
-  // The error messages should refer to the 'protected' keyword.
-  bool found_error = false;
-  for (const auto & e : errors)
-    found_error = found_error || e.code() == CompilerError::InaccessibleMember;
-  ASSERT_TRUE(found_error);
-}
-
-TEST(CompilerTests, access_static_member_function_through_object) {
-  using namespace script;
-
-  const char *source =
-    "  class A                             "
-    "  {                                   "
-    "  public:                             "
-    "    A() = default;                    "
-    "    ~A() = default;                   "
-    "    static int foo() { return 66; }   "
-    "  };                                  "
-    "                                      "
-    "  A a;                                "
-    "  int n = a.foo();                   ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 2);
-  Value n = s.globals().back();
-  ASSERT_EQ(n.toInt(), 66);
 }
 
 TEST(CompilerTests, namespace_decl_with_function) {
@@ -1340,32 +889,6 @@ TEST(CompilerTests, namespace_decl_with_variable) {
   ASSERT_EQ(it->second.toInt(), 4);
 }
 
-TEST(CompilerTests, access_specifier_function_1) {
-  using namespace script;
-
-  const char *source =
-    "  class A                        "
-    "  {                              "
-    "  public:                        "
-    "    A() = default;               "
-    "    ~A() = default;              "
-    "                                 "
-    "  private:                       "
-    "    int bar() { return 57; }     "
-    "  };                             "
-    "                                 "
-    "  A a;                           "
-    "  int n = a.bar();               ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-}
-
 TEST(CompilerTests, access_specifier_data_member_1) {
   using namespace script;
 
@@ -1414,57 +937,6 @@ TEST(CompilerTests, access_specifier_data_member_1) {
   ASSERT_EQ(A.staticDataMembers().at("c").accessibility(), AccessSpecifier::Public);
 }
 
-TEST(CompilerTests, access_specifier_data_member_2) {
-  using namespace script;
-
-  const char *source =
-    "  class A                        "
-    "  {                              "
-    "  public:                        "
-    "    A() = default;               "
-    "    ~A() = default;              "
-    "                                 "
-    "  private:                       "
-    "    int n;                       "
-    "  };                             "
-    "                                 "
-    "  A a;                           "
-    "  int n = a.n;                   ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-}
-
-TEST(CompilerTests, access_specifier_data_member_3) {
-  using namespace script;
-
-  const char *source =
-    "  class A                        "
-    "  {                              "
-    "  public:                        "
-    "    A() = default;               "
-    "    ~A() = default;              "
-    "                                 "
-    "  private:                       "
-    "    static int a = 0;            "
-    "  };                             "
-    "                                 "
-    "  int n = A::a;                  ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_FALSE(success);
-}
-
 TEST(CompilerTests, friend_class) {
   using namespace script;
 
@@ -1494,84 +966,53 @@ TEST(CompilerTests, friend_class) {
   ASSERT_EQ(A.friends(Class{}).front().name(), "B");
 }
 
-TEST(CompilerTests, type_alias_1) {
+
+TEST(CompilerTests, function_template_full_spec) {
   using namespace script;
 
-  const char *source =
-    "  using Distance = double;  "
-    "  Distance d = 3.14;        ";
+  const char* source_1 =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo<int>(int a) { return 0; }   "
+    "                                      "
+    "  int a = foo<bool>(false);           "
+    "  int b = foo<int>(0);                ";
+
+  // template argument deduction for the win !
+  const char* source_2 =
+    "  template<typename T>                "
+    "  int foo(T a) { return 1; }          "
+    "                                      "
+    "  template<>                          "
+    "  int foo(int a) { return 0; }        "
+    "                                      "
+    "  int a = foo(false);                 "
+    "  int b = foo(0);                     ";
+
 
   Engine engine;
   engine.setup();
 
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
+  std::array<const char*, 2> sources = { source_1, source_2 };
 
-  ASSERT_EQ(s.globalNames().size(), 1);
+  for (const char* src : sources)
+  {
+    Script s = engine.newScript(SourceFile::fromString(src));
+    bool success = s.compile();
+    ASSERT_TRUE(success);
 
-  s.run();
+    ASSERT_EQ(s.rootNamespace().templates().size(), 1);
 
-  ASSERT_EQ(s.globals().size(), 1);
+    FunctionTemplate foo = s.rootNamespace().templates().front().asFunctionTemplate();
+    ASSERT_EQ(foo.instances().size(), 2);
 
-  Value d = s.globals().front();
-  ASSERT_EQ(d.type(), Type::Double);
-  ASSERT_EQ(d.toDouble(), 3.14);
-}
+    const auto& instances = foo.instances();
+    auto it = instances.begin();
+    ASSERT_EQ(it->first.at(0).type, script::Type::Boolean);
 
-TEST(CompilerTests, unknown_type) {
-  using namespace script;
-
-  const char *source =
-    "  size_t get_size() { return 42; } "
-    "  typedef int size_t;              "
-    "  size_t n = get_size();           ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-
-  // When processing get_size() the first time, size_t is not defined and the
-  // building process fails. The declaration is scheduled to be re-processed later.
-  // The second pass correctly resolves size_t.
-  // If a using declaration is made, it will not find get_size() because it does 
-  // not exist until the second pass : this is a known limitation of the compilation 
-  // process. Using declarations made inside function bodies do not suffer from 
-  // this limitation and are generaly considered a better alternative anyway.
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value n = s.globals().front();
-  ASSERT_EQ(n.type(), Type::Int);
-  ASSERT_EQ(n.toInt(), 42);
-}
-
-
-TEST(CompilerTests, func_arg_default_list_init) {
-  using namespace script;
-
-  const char *source =
-    "  int foo(int n) { return n; }     "
-    "  int a = foo({});                 ";
-
-  Engine engine;
-  engine.setup();
-
-  Script s = engine.newScript(SourceFile::fromString(source));
-  bool success = s.compile();
-  const auto & errors = s.messages();
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), Type::Int);
-  ASSERT_EQ(a.toInt(), 0);
+    ++it;
+    ASSERT_EQ(it->first.at(0).type, script::Type::Int);
+  }
 }

@@ -1,0 +1,4 @@
+
+int sum(int a = 0, int b) { return a + b; }
+
+//>2:5: error C28: cannot have a parameter without a default value after one was provided.

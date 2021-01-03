@@ -1,0 +1,13 @@
+
+class A
+{
+public:
+  int n = 0;
+public:
+  A(float x) : n(x) { }
+  ~A() { }
+};
+
+A a = 3.14f;    
+
+Assert(a.n == 3);

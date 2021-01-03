@@ -1,0 +1,4 @@
+
+class A { static int x; };
+
+//>2:22: error C24: a static variable must be initialized.

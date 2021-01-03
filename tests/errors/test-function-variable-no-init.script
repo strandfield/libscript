@@ -1,0 +1,4 @@
+
+int(int) func;;
+
+//>2:10: error C16: variables of function-type must be initialized

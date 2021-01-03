@@ -1,0 +1,4 @@
+
+auto a = [{1, 2}, 3];
+
+//>2:10: error C10: an initializer list cannot be used as the first element of an array

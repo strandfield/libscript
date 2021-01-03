@@ -1,0 +1,49 @@
+
+void main()
+{
+
+  {
+    auto f = [](){ return 42; };
+    int a = f();
+
+    Assert(a == 42);
+  }
+
+  {
+    int x = 0;
+    auto g = [&x](){ ++x; };
+    g(); g();
+    Assert(x == 2);
+  }
+
+  {
+    int x = 57;
+    auto h = [=](){ return --x; };
+    int y = h();
+    Assert(x == 57);
+    Assert(y == 56);
+  }
+
+  {
+    int x = 57;
+    int y = 57;
+    auto f = [&](){ x +=2; y -= 2; };
+    f();
+    Assert(x == 59);
+    Assert(y == 55);
+  }
+
+  {
+    int x = 1;
+    int y = 2;
+    int z = 3;
+    auto g = [=, &z](){ z = z + x + y; y = y + 1; };
+    g();
+    Assert(x == 1);
+    Assert(y == 2);
+    Assert(z == 6);
+  }
+
+}
+
+main();

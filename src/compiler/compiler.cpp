@@ -27,6 +27,7 @@
 #include "script/private/template_p.h"
 
 #include <exception>
+#include <limits>
 
 namespace script
 {
@@ -412,6 +413,9 @@ SourceLocation CompileSession::location() const
   SourceLocation loc;
 
   loc.m_source = current_script.source();
+  loc.m_pos.pos = std::numeric_limits<SourceFile::Offset>::max();
+  loc.m_pos.line = std::numeric_limits<uint16>::max();
+  loc.m_pos.col = std::numeric_limits<uint16>::max();
 
   if (current_node)
   {

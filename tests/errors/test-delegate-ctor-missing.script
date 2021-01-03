@@ -1,0 +1,10 @@
+
+class A
+{
+  int n;
+
+  A(int a) : n(a) { }
+  A() : A(2,3) { }
+};
+
+//>7:10: error C8: could not find a delegate constructor

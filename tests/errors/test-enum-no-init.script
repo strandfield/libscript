@@ -1,0 +1,5 @@
+
+enum A{};
+A a;
+
+//>3:3: error C15: variables of enumeration type must be initialized

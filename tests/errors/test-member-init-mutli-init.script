@@ -1,0 +1,8 @@
+
+class A
+{
+  int n;
+  A() : n(0), n(1) { }
+};
+
+//>5:15: error C7: data member n already has an intializer

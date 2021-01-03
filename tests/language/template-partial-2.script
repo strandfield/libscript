@@ -1,0 +1,12 @@
+
+template<typename T>
+class foo { public: static int n = 0; };
+
+template<typename T>
+class foo<Array<T>> { public: static int n = 1; };
+
+int a = foo<int>::n;
+int b = foo<Array<int>>::n;
+
+Assert(a == 0);
+Assert(b == 1);

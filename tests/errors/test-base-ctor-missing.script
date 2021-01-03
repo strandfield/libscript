@@ -1,0 +1,13 @@
+
+class A
+{
+  int n;
+  A() = default;
+};
+
+class B : A
+{
+  B() : A(1) { }
+};
+
+//>10:10: error C9: could not find valid base constructor

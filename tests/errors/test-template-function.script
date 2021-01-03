@@ -1,0 +1,9 @@
+
+template<typename T>
+T max(const T & a, const T & b)
+{
+  return a > b ? a : b;
+}
+int n = max(2, 3.14);
+
+//>7:12: error C39: could not find valid member function for call.

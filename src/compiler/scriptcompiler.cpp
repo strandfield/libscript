@@ -184,6 +184,8 @@ void ScriptCompiler::processNext()
     ScopeGuard guard{ mCurrentScope };
     mCurrentScope = task.scope;
 
+    TranslationTarget target{ this, task.scope.script(), task.declaration };
+
     if (task.declaration->is<ast::FriendDeclaration>())
     {
       processFriendDecl(std::static_pointer_cast<ast::FriendDeclaration>(task.declaration));

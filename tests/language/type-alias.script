@@ -1,0 +1,5 @@
+
+using Distance = double;
+Distance d = 3.14;
+
+Assert(d == 3.14);

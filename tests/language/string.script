@@ -1,0 +1,26 @@
+
+String a = "Hi!";
+a = "Hello World!";
+
+Assert(!a.empty());
+int size = a.size();
+char c = a.at(0);
+Assert(c == 'H');
+a.replace(0, 5, "Goodbye");    
+Assert(a != "Hello World!");
+Assert(a == "Goodbye World!");
+
+a = "Hello World!";
+a.erase(5, 6);
+Assert(a == "Hello!");
+a.insert(5, " Bob");
+Assert(a == "Hello Bob!");
+a.clear();
+Assert(a.empty());
+
+String str = "abc";
+char c = str[0];
+str[2] = 'a';
+Assert(str == "aba");
+str = str + "def";         
+Assert(str <= "abadef");

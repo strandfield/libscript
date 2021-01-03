@@ -1,0 +1,4 @@
+
+class A : B {};
+
+//>2:11: error C27: invalid base class.

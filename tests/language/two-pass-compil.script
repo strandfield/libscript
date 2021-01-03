@@ -1,0 +1,14 @@
+
+// When processing get_size() the first time, size_t is not defined and the
+// building process fails. The declaration is scheduled to be re-processed later.
+// The second pass correctly resolves size_t.
+// If a using declaration is made, it will not find get_size() because it does 
+// not exist until the second pass : this is a known limitation of the compilation 
+// process. Using declarations made inside function bodies do not suffer from 
+// this limitation and are generaly considered a better alternative anyway.
+
+size_t get_size() { return 42; }
+typedef int size_t;
+size_t n = get_size();
+
+Assert(n == 42);

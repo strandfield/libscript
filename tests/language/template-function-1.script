@@ -1,0 +1,10 @@
+
+template<typename T>
+T abs(const T & a)
+{
+  if(a < 0) return -a;
+  return a;
+}
+int a = abs(-1);
+
+Assert(a == 1);

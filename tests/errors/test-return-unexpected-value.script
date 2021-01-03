@@ -1,0 +1,4 @@
+
+void foo() { return 2; }
+
+//>2:14: error C12: a function returning void cannot return a value

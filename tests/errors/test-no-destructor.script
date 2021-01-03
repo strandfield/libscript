@@ -1,0 +1,12 @@
+
+class A
+{
+  A() = default;
+};
+
+void foo()
+{
+  A a;
+}
+
+//>8:1: error C3: object has no destructor

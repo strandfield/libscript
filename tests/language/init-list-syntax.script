@@ -1,0 +1,16 @@
+
+int a{5};
+int& ref{a};
+
+class A {
+public:
+  int n;
+  A(const A &) = default;
+  A(int val) : n(val) { }
+  ~A() = default;
+};
+
+A b{5};
+A c = A{5};
+
+Assert(a == 5 && ref == a && b.n == 5 && c.n = 5);

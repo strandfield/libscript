@@ -1,0 +1,4 @@
+
+auto x = 3 + this;
+
+//>2:14: error C2: illegal use of this

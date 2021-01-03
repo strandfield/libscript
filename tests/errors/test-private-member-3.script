@@ -1,0 +1,15 @@
+
+class A 
+{ 
+public: 
+  A() = default; 
+  ~A() = default;
+ 
+private: 
+  int n; 
+}; 
+ 
+A a; 
+int n = a.n;   
+
+//>13:10: error C87: n is private within this context
