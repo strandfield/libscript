@@ -799,15 +799,25 @@ std::shared_ptr<ast::ForLoop> ProgramParser::parseForLoop()
   }
 
   {
-    ExpressionParser exprParser{ context(), init_loop_incr_reader.next<Fragment::Statement>() };
-    forLoop->condition = exprParser.parse();
+    TokenReader reader = init_loop_incr_reader.next<Fragment::Statement>();
+
+    if (!reader.atEnd())
+    {
+      ExpressionParser exprParser{ context(), reader };
+      forLoop->condition = exprParser.parse();
+    }
+
     init_loop_incr_reader.read(Token::Semicolon);
   }
 
   {
+    TokenReader reader = init_loop_incr_reader.subfragment();
 
-    ExpressionParser exprParser{ context(), init_loop_incr_reader.subfragment() };
-    forLoop->loopIncrement = parse_and_seek(exprParser);
+    if (!reader.atEnd())
+    {
+      ExpressionParser exprParser{ context(), init_loop_incr_reader.subfragment() };
+      forLoop->loopIncrement = parse_and_seek(exprParser);
+    }
   }
 
   seek(init_loop_incr_reader.end() + 1);

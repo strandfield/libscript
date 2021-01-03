@@ -598,18 +598,43 @@ TEST(ParserTests, for_loop) {
   using namespace parser;
   using namespace ast;
 
-  const char *source = "for(int i = 0; i < 10; ++i) { }";
+  const char *source = 
+    "for(int i = 0; i < 10; ++i) { } "
+    "for(j = 0; j < 10; ) { } "
+    "for(; ; ) break; ";
 
   auto c = parser_context(source);
   ProgramParser parser{ c, TokenReader(c->source(), c->tokens()) };
 
-  auto actual = parser.parseStatement();
-  ASSERT_TRUE(actual->is<ForLoop>());
-  const ForLoop & fl = actual->as<ForLoop>();
-  ASSERT_TRUE(fl.initStatement->is<VariableDecl>());
-  ASSERT_TRUE(fl.condition->is<Operation>());
-  ASSERT_TRUE(fl.loopIncrement->is<Operation>());
-  ASSERT_TRUE(fl.body->is<CompoundStatement>());
+  {
+    auto actual = parser.parseStatement();
+    ASSERT_TRUE(actual->is<ForLoop>());
+    const ForLoop& fl = actual->as<ForLoop>();
+    ASSERT_TRUE(fl.initStatement->is<VariableDecl>());
+    ASSERT_TRUE(fl.condition->is<Operation>());
+    ASSERT_TRUE(fl.loopIncrement->is<Operation>());
+    ASSERT_TRUE(fl.body->is<CompoundStatement>());
+  }
+
+  {
+    auto  actual = parser.parseStatement();
+    ASSERT_TRUE(actual->is<ForLoop>());
+    const ForLoop& fl = actual->as<ForLoop>();
+    ASSERT_TRUE(fl.initStatement->is<ExpressionStatement>());
+    ASSERT_TRUE(fl.condition->is<Operation>());
+    ASSERT_TRUE(fl.loopIncrement == nullptr);
+    ASSERT_TRUE(fl.body->is<CompoundStatement>());
+  }
+
+  {
+    auto actual = parser.parseStatement();
+    ASSERT_TRUE(actual->is<ForLoop>());
+    const ForLoop& fl = actual->as<ForLoop>();
+    ASSERT_TRUE(fl.initStatement == nullptr);
+    ASSERT_TRUE(fl.condition == nullptr);
+    ASSERT_TRUE(fl.loopIncrement == nullptr);
+    ASSERT_TRUE(fl.body->is<BreakStatement>());
+  }
 }
 
 TEST(ParserTests, compound_statement) {
@@ -1209,7 +1234,7 @@ TEST(ParserTests, visitall) {
     "      using std::should_exit;                                       \n"
     "      using namespace std;                                          \n"
     "                                                                    \n"
-    "      for(;true;true) { if(should_exit()) terminate(); }                    \n"
+    "      for(;;) { if(should_exit()) terminate(); }                    \n"
     "    }                                                               \n"
     "                                                                    \n"
     "    Derived& operator=(const Derived& other) = default;             \n"
