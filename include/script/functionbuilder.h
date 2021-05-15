@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -89,6 +89,13 @@ public:
     return *(static_cast<Derived*>(this));
   }
 
+  Derived& setBody(const std::shared_ptr<FunctionBodyInterface>& fbi)
+  {
+    body.nativebody = fbi;
+    flags.set(ImplementationMethod::NativeFunction);
+    return *(static_cast<Derived*>(this));
+  }
+
   Derived & setData(const std::shared_ptr<UserData> & d)
   {
     data = d;
@@ -117,7 +124,8 @@ public:
 
   inline Derived & returns(const Type & t) { return static_cast<Derived*>(this)->setReturnType(t); }
 
-  inline Derived & params(const Type & arg) { return static_cast<Derived*>(this)->addParam(arg); }
+  inline Derived& params() { return *static_cast<Derived*>(this); }
+  inline Derived& params(const Type & arg) { return static_cast<Derived*>(this)->addParam(arg); }
 
   template<typename...Args>
   Derived & params(const Type & arg, const Args &... args)

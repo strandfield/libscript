@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -17,8 +17,17 @@ namespace program
 class Statement;
 } // namespace program
 
+class LIBSCRIPT_API FunctionBodyInterface
+{
+public:
+  virtual ~FunctionBodyInterface();
+
+  virtual script::Value invoke(script::FunctionCall* c) = 0;
+};
+
 struct LIBSCRIPT_API FunctionBody
 {
+  std::shared_ptr<FunctionBodyInterface> nativebody;
   NativeFunctionSignature callback;
   std::shared_ptr<program::Statement> program;
 

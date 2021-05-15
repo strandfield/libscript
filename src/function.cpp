@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -349,17 +349,13 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
 }
 
 /*!
- * \fun const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
+ * \fn const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
  * \brief Returns the function's default arguments.
  *
  * Note that you cannot concatenate this list to an existing list of arguments to make 
  * a valid call as the default arguments are stored in reverse order; i.e. \c{defaultArguments()[0]} 
  * is the default value for the last parameter, \c{defaultArguments()[1]} is the default value 
  * for the penultimate parameter and so on.
- *
- * Currently this function throws an std::runtime_error if there are no default arguments.
- *
- * \sa hasDefaultArguments()
  */
 const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
 {
@@ -541,6 +537,11 @@ const std::vector<TemplateArgument> & Function::arguments() const
 NativeFunctionSignature Function::native_callback() const
 {
   return d->implementation.callback;
+}
+
+std::shared_ptr<FunctionBodyInterface> Function::native_body() const
+{
+  return d->implementation.nativebody;
 }
 
 std::shared_ptr<program::Statement> Function::program() const

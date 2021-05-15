@@ -171,10 +171,18 @@ void Interpreter::setDebugHandler(std::shared_ptr<DebugHandler> h)
 void Interpreter::invoke(const Function & f)
 {
   auto impl = f.impl();
-  if (f.isNative()) {
-    interpreter::FunctionCall *fcall = mExecutionContext->callstack.top();
-    fcall->setReturnValue(impl->implementation.callback(fcall));
-  } else {
+
+  if (f.isNative()) 
+  {
+    interpreter::FunctionCall* fcall = mExecutionContext->callstack.top();
+
+    if (impl->implementation.callback)
+      fcall->setReturnValue(impl->implementation.callback(fcall));
+    else
+      fcall->setReturnValue(impl->implementation.nativebody->invoke(fcall));
+  } 
+  else 
+  {
     exec(impl->implementation.program);
   }
 }
