@@ -6,7 +6,7 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/accessspecifier.h"
-#include "script/functionbody.h"
+#include "script/callbacks.h"
 #include "script/functionflags.h"
 #include "script/prototypes.h"
 #include "script/symbol.h"
@@ -21,14 +21,22 @@ namespace script
 namespace program
 {
 class Expression;
+class Statement;
 } // namespace program
+
+namespace builders
+{
+
+std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl);
+
+} // namespace builders
 
 template<typename Derived>
 class GenericFunctionBuilder
 {
 public:
   Engine *engine;
-  FunctionBody body;
+  std::shared_ptr<program::Statement> body;
   FunctionFlags flags;
   Symbol symbol;
   std::shared_ptr<UserData> data;
@@ -77,22 +85,15 @@ public:
   
   Derived & setCallback(NativeFunctionSignature impl)
   {
-    body.callback = impl;
+    body = builders::make_body(impl);
     flags.set(ImplementationMethod::NativeFunction);
     return *(static_cast<Derived*>(this));
   }
 
   Derived & setProgram(const std::shared_ptr<program::Statement> & prog)
   {
-    body.program = prog;
+    body = prog;
     flags.set(ImplementationMethod::InterpretedFunction);
-    return *(static_cast<Derived*>(this));
-  }
-
-  Derived& setBody(const std::shared_ptr<FunctionBodyInterface>& fbi)
-  {
-    body.nativebody = fbi;
-    flags.set(ImplementationMethod::NativeFunction);
     return *(static_cast<Derived*>(this));
   }
 

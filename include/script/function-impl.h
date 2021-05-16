@@ -2,14 +2,9 @@
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
-#include "script/functionbody.h"
+#ifndef LIBSCRIPT_FUNCTIONIMPL_H
+#define LIBSCRIPT_FUNCTIONIMPL_H
 
-namespace script
-{
+#include "script/private/function_p.h"
 
-FunctionBodyInterface::~FunctionBodyInterface()
-{
-
-}
-
-} // namespace script
+#endif // LIBSCRIPT_FUNCTIONIMPL_H

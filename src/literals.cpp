@@ -28,6 +28,22 @@ const Prototype & LiteralOperatorImpl::prototype() const
   return this->proto_;
 }
 
+bool LiteralOperatorImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> LiteralOperatorImpl::body() const
+{
+  return program_;
+}
+
+void LiteralOperatorImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
+
 
 LiteralOperator::LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl)
   : Function(impl)

@@ -97,8 +97,6 @@ public:
   FunctionTemplate instanceOf() const;
   const std::vector<TemplateArgument> & arguments() const;
 
-  NativeFunctionSignature native_callback() const;
-  std::shared_ptr<FunctionBodyInterface> native_body() const;
   std::shared_ptr<program::Statement> program() const;
 
   const std::shared_ptr<UserData> & data() const;

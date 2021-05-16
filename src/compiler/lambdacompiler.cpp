@@ -198,7 +198,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
-  function.impl()->set_impl(body);
+  // @TODO: improve that, really ugly
+  dynamic_cast<FunctionCallOperatorImpl*>(function.impl().get())->program_ = body;
 
   removeUnusedCaptures();
 

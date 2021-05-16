@@ -54,7 +54,7 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   auto result = ft.backend()->instantiate(f);
   
   if(result.first)
-    f.impl()->implementation.callback = result.first;
+    f.impl()->set_body(builders::make_body(result.first));
 
   f.impl()->data = result.second;
 
@@ -73,6 +73,8 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   //}
 
   ft.impl()->instances[targs] = f;
+
+  f.impl()->complete_instantiation();
 }
 
 Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & ft, const std::vector<TemplateArgument> & args, const std::vector<Type> & types)

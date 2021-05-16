@@ -9,6 +9,8 @@
 #include "script/value.h"
 #include "script/typesystem.h"
 
+#include "script/functionbuilder.h"
+
 #include "script/interpreter/executioncontext.h"
 
 #include "script/private/class_p.h"
@@ -58,7 +60,7 @@ Enum EnumBuilder::get()
   {
     DynamicPrototype proto{ Type(result.id()), {Type::cref(Type::Int)} };
     auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
-    ctor->implementation.callback = this->from_int_callback != nullptr ? this->from_int_callback : callbacks::enum_from_int;
+    ctor->program_ = builders::make_body(this->from_int_callback != nullptr ? this->from_int_callback : callbacks::enum_from_int);
     impl->from_int = Function(ctor);
   }
 
@@ -66,7 +68,7 @@ Enum EnumBuilder::get()
   {
     DynamicPrototype proto{ Type(result.id()), {Type::cref(result.id())} };
     auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
-    ctor->implementation.callback = this->copy_callback != nullptr ? this->copy_callback : callbacks::enum_copy;
+    ctor->program_ = builders::make_body(this->copy_callback != nullptr ? this->copy_callback : callbacks::enum_copy);
     impl->copy = Function(ctor);
   }
 
@@ -74,7 +76,7 @@ Enum EnumBuilder::get()
   {
     BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
     auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine(), FunctionFlags{});
-    op->implementation.callback = this->assignment_callback != nullptr ? this->assignment_callback : callbacks::enum_assignment;
+    op->program_ = builders::make_body(this->assignment_callback != nullptr ? this->assignment_callback : callbacks::enum_assignment);
     impl->assignment = Operator{ op };
   }
 

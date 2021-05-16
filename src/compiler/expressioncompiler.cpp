@@ -21,6 +21,7 @@
 #include "script/datamember.h"
 #include "script/private/engine_p.h"
 #include "script/functiontype.h"
+#include "script/private/function_p.h"
 #include "script/initialization.h"
 #include "script/lambda.h"
 #include "script/literals.h"
@@ -371,8 +372,8 @@ std::shared_ptr<program::Expression> ExpressionCompiler::generateCall(const std:
     throw CompilationFailure{ CompilerError::CallToDeletedFunction };
   else if (!Accessibility::check(caller(), selected))
     throw CompilationFailure{ CompilerError::InaccessibleMember, errors::InaccessibleMember{dstr(callee), selected.accessibility()} };
-
-  if (selected.isTemplateInstance() && (selected.native_callback() == nullptr && selected.program() == nullptr))
+  
+  if (selected.isTemplateInstance() && !selected.impl()->is_instantiation_completed())
   {
     /// TODO: catch instantiation errors (e.g. TemplateInstantiationError)
     templates_.instantiate(selected);
