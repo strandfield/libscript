@@ -113,6 +113,7 @@ public:
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }
+  void addMethod(const Function& f);
 
   bool isAbstract() const;
   const std::vector<Function> & vtable() const;
