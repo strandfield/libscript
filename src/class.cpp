@@ -232,6 +232,11 @@ const std::vector<Function> & Class::memberFunctions() const
   return d->functions;
 }
 
+void Class::addMethod(const Function& f)
+{
+  d->functions.push_back(f);
+}
+
 bool Class::isAbstract() const
 {
   return d->isAbstract;

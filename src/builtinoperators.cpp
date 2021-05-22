@@ -905,7 +905,7 @@ void register_builtin_operators(Namespace root)
       else
         ret = std::make_shared<BinaryOperatorImpl>(operation, p, engine, FunctionFlags{});
 
-      ret->implementation.callback = impl;
+      ret->program_ = builders::make_body(impl);
       ret->enclosing_symbol = engine->rootNamespace().impl();
       engine->rootNamespace().impl()->operators.push_back(Operator{ ret });
     }

@@ -226,6 +226,11 @@ LiteralOperatorBuilder Namespace::newUserDefinedLiteral(std::string suffix, cons
   return newUserDefinedLiteral(std::move(suffix), func).returns(output).params(input);
 }
 
+void Namespace::addFunction(const Function& f)
+{
+  d->functions.push_back(f);
+}
+
 Engine * Namespace::engine() const
 {
   return d->engine;

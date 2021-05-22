@@ -27,6 +27,21 @@ const Prototype & CastImpl::prototype() const
   return this->proto_;
 }
 
+bool CastImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> CastImpl::body() const
+{
+  return program_;
+}
+
+void CastImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
 
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)
   : Function(impl)

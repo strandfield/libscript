@@ -99,6 +99,22 @@ Name OperatorImpl::get_name() const
   return operatorId;
 }
 
+bool OperatorImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> OperatorImpl::body() const
+{
+  return program_;
+}
+
+void OperatorImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
+
 
 UnaryOperatorImpl::UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags)
   : OperatorImpl(op, engine, flags)
@@ -163,7 +179,7 @@ const std::vector<DefaultArgument> & FunctionCallOperatorImpl::default_arguments
   return defaultargs_;
 }
 
-void FunctionCallOperatorImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+void FunctionCallOperatorImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
 {
   defaultargs_ = std::move(defaults);
 }

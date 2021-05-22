@@ -28,6 +28,25 @@
 namespace script
 {
 
+namespace builders
+{
+
+std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
+{
+  if (impl)
+  {
+    auto r = std::make_shared<program::CompoundStatement>();
+    r->statements.push_back(std::make_shared<program::CppReturnStatement>(impl));
+    return r;
+  }
+  else
+  {
+    return nullptr;
+  }
+}
+
+} // namespace builders
+
 /*!
  * \class GenericFunctionBuilder
  * \brief Template class providing common functionalities of builder classes.
@@ -242,10 +261,10 @@ namespace script
  * This method allows you to create the object without having its complete definition.
  */
 
-template<typename Builder>
-static void generic_fill(const std::shared_ptr<FunctionImpl> & impl, const Builder & opts)
+template<typename FT, typename Builder>
+static void generic_fill(const std::shared_ptr<FT>& impl, const Builder& opts)
 {
-  impl->implementation = opts.body;
+  impl->program_ = opts.body;
   impl->data = opts.data;
   impl->enclosing_symbol = opts.symbol.impl();
 }
@@ -675,19 +694,19 @@ ConstructorBuilder & ConstructorBuilder::compile()
 
   if (proto_.count() == 1)
   {
-    this->body.program = compiler::ConstructorCompiler::generateDefaultConstructor(symbol.toClass());
+    this->body = compiler::ConstructorCompiler::generateDefaultConstructor(symbol.toClass());
     this->flags.set(ImplementationMethod::InterpretedFunction);
   }
   else
   {
     if (proto_.at(1) == Type::cref(symbol.toClass().id()))
     {
-      this->body.program = compiler::ConstructorCompiler::generateCopyConstructor(symbol.toClass());
+      this->body = compiler::ConstructorCompiler::generateCopyConstructor(symbol.toClass());
       this->flags.set(ImplementationMethod::InterpretedFunction);
     }
     else if (proto_.at(1) == Type::rref(symbol.toClass().id()))
     {
-      this->body.program = compiler::ConstructorCompiler::generateMoveConstructor(symbol.toClass());
+      this->body = compiler::ConstructorCompiler::generateMoveConstructor(symbol.toClass());
       this->flags.set(ImplementationMethod::InterpretedFunction);
     }
     else
@@ -764,7 +783,7 @@ DestructorBuilder & DestructorBuilder::compile()
   if (!flags.test(FunctionSpecifier::Default))
     throw std::runtime_error{ "DestructorBuilder : only defaulted function can be compiled" };
 
-  this->body.program = compiler::DestructorCompiler::generateDestructor(symbol.toClass());
+  this->body = compiler::DestructorCompiler::generateDestructor(symbol.toClass());
   this->flags.set(ImplementationMethod::InterpretedFunction);
 
   return *this;

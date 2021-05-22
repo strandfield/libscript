@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,7 +6,7 @@
 #define LIBSCRIPT_FUNCTION_BUILDER_H
 
 #include "script/accessspecifier.h"
-#include "script/functionbody.h"
+#include "script/callbacks.h"
 #include "script/functionflags.h"
 #include "script/prototypes.h"
 #include "script/symbol.h"
@@ -21,14 +21,22 @@ namespace script
 namespace program
 {
 class Expression;
+class Statement;
 } // namespace program
+
+namespace builders
+{
+
+std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl);
+
+} // namespace builders
 
 template<typename Derived>
 class GenericFunctionBuilder
 {
 public:
   Engine *engine;
-  FunctionBody body;
+  std::shared_ptr<program::Statement> body;
   FunctionFlags flags;
   Symbol symbol;
   std::shared_ptr<UserData> data;
@@ -77,14 +85,14 @@ public:
   
   Derived & setCallback(NativeFunctionSignature impl)
   {
-    body.callback = impl;
+    body = builders::make_body(impl);
     flags.set(ImplementationMethod::NativeFunction);
     return *(static_cast<Derived*>(this));
   }
 
   Derived & setProgram(const std::shared_ptr<program::Statement> & prog)
   {
-    body.program = prog;
+    body = prog;
     flags.set(ImplementationMethod::InterpretedFunction);
     return *(static_cast<Derived*>(this));
   }
@@ -117,7 +125,8 @@ public:
 
   inline Derived & returns(const Type & t) { return static_cast<Derived*>(this)->setReturnType(t); }
 
-  inline Derived & params(const Type & arg) { return static_cast<Derived*>(this)->addParam(arg); }
+  inline Derived& params() { return *static_cast<Derived*>(this); }
+  inline Derived& params(const Type & arg) { return static_cast<Derived*>(this)->addParam(arg); }
 
   template<typename...Args>
   Derived & params(const Type & arg, const Args &... args)

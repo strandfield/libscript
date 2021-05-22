@@ -71,6 +71,11 @@ void ReturnStatement::accept(StatementVisitor & visitor)
   visitor.visit(*this);
 }
 
+void CppReturnStatement::accept(StatementVisitor& visitor)
+{
+  visitor.visit(*this);
+}
+
 void PushValue::accept(StatementVisitor & visitor)
 {
   visitor.visit(*this);
@@ -254,6 +259,14 @@ std::shared_ptr<ReturnStatement> ReturnStatement::New(const std::shared_ptr<Expr
 std::shared_ptr<ReturnStatement> ReturnStatement::New(const std::shared_ptr<Expression> & e, std::vector<std::shared_ptr<Statement>> && des)
 {
   return std::make_shared<ReturnStatement>(e, std::move(des));
+}
+
+
+
+CppReturnStatement::CppReturnStatement(NativeFunctionSignature natfun)
+  : native_fun(natfun)
+{
+
 }
 
 

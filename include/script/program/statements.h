@@ -186,6 +186,16 @@ public:
   void accept(StatementVisitor &) override;
 };
 
+class LIBSCRIPT_API CppReturnStatement : public Statement
+{
+public:
+  NativeFunctionSignature native_fun;
+
+  explicit CppReturnStatement(NativeFunctionSignature natfun);
+  ~CppReturnStatement() = default;
+
+  void accept(StatementVisitor&) override;
+};
 
 class LIBSCRIPT_API SelectionStatement : public Statement
 {
@@ -335,6 +345,7 @@ public:
   virtual void visit(const PushValue&) = 0;
   virtual void visit(const PushStaticValue&) = 0;
   virtual void visit(const ReturnStatement &) = 0;
+  virtual void visit(const CppReturnStatement&) = 0;
   virtual void visit(const PopValue &) = 0;
   virtual void visit(const WhileLoop&) = 0;
   virtual void visit(const Breakpoint&) = 0;

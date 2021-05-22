@@ -16,11 +16,17 @@ class OperatorImpl : public FunctionImpl
 {
 public:
   OperatorName operatorId;
+  std::shared_ptr<program::Statement> program_;
+
 public:
   OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags);
   ~OperatorImpl() = default;
 
   Name get_name() const override;
+
+  bool is_native() const override;
+  std::shared_ptr<program::Statement> body() const override;
+  void set_body(std::shared_ptr<program::Statement> b) override;
 };
 
 class UnaryOperatorImpl : public OperatorImpl
@@ -64,7 +70,7 @@ public:
   void set_return_type(const Type & t) override;
 
   const std::vector<DefaultArgument> & default_arguments() const override;
-  void set_default_arguments(std::vector<DefaultArgument> && defaults) override;
+  void set_default_arguments(std::vector<DefaultArgument> defaults) override;
   void add_default_argument(const DefaultArgument & da) override;
 };
 
