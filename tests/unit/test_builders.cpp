@@ -153,8 +153,6 @@ TEST(Builders, operators) {
 
   OperatorBuilder b{ s, OperatorName::AdditionOperator };
   
-  ASSERT_ANY_THROW(b.addDefaultArgument(nullptr));
-
   b.params(Type::cref(A.id()), Type::cref(A.id()));
   b.returns(A.id());
 

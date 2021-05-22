@@ -109,50 +109,6 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
 
 
 /*!
- * \fn Derived & setConst()
- * \brief Makes the function \c const.
- *
- * This only works for member functions, member operators and conversion functions 
- * and will throw if called for another target.
- */
-
-/*!
- * \fn Derived & setVirtual()
- * \brief Makes the function \c virtual.
- *
- * This only works for member functions and destructors
- * and will throw if called for another target.
- */
-
-/*!
- * \fn Derived & setPureVirtual()
- * \brief Makes the function a \c virtual pure function.
- *
- * This only works for member functions and will throw if called for another target.
- */
-
-/*!
- * \fn Derived & setDeleted()
- * \brief Marks the function with the \c delete specifier.
- *
- */
-
-/*!
- * \fn Derived & setDefaulted()
- * \brief Makes the function \c{= default}.
- *
- * This can only be used for default, copy & move constructors, for destructors 
- * and assignment operator.
- */
-
-/*!
- * \fn Derived & setExplicit()
- * \brief Makes the function \c explicit.
- *
- * This can only be used for single-parameter constructors and conversion functions.
- */
-
-/*!
  * \fn Derived & setCallback(NativeFunctionSignature impl)
  * \brief Sets the callback of the function.
  *
@@ -189,13 +145,6 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
  */
 
 /*!
- * \fn Derived & setStatic()
- * \brief Makes the function \c static.
- *
- * Only makes sense for member functions.
- */
-
-/*!
  * \fn Derived & returns(const Type & t)
  * \brief Sets the return type of the function.
  *
@@ -208,25 +157,6 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
  *
  * Note that this function does not set the parameter list but rather adds
  * parameters.
- */
-
-/*!
- * \fn Derived & addDefaultArgument(const std::shared_ptr<program::Expression> & value)
- * \brief Adds a default argument to the function.
- *
- * Default arguments must be provided in reverse order as the parameters; i.e., 
- * the last parameter gets a default first, than the penultimate parameter and so on.
- *
- * Currently this function does not perform any type checking, but will probably in the future.
- */
-
-/*!
- * \fn Derived & compile()
- * \brief Generates the body of a defaulted function.
- *
- * After calling \m setDefaulted, you may call this function to make the 
- * library generate the function body.
- * Currently this only works for destructors, default, copy & move constructors.
  */
 
 /*!
@@ -334,6 +264,12 @@ FunctionBuilder::FunctionBuilder(Symbol s, std::string name)
     this->proto_.push(Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
 }
 
+FunctionBuilder::FunctionBuilder(Symbol s)
+  : GenericFunctionBuilder<FunctionBuilder>(s)
+{
+
+}
+
 Value FunctionBuilder::throwing_body(FunctionCall*)
 {
   throw RuntimeError{ "Called undefined function" };
@@ -399,6 +335,20 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
 FunctionBuilder & FunctionBuilder::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
 {
   this->defaultargs_.push_back(value);
+  return *this;
+}
+
+FunctionBuilder& FunctionBuilder::operator()(std::string name)
+{
+  this->flags = FunctionFlags();
+  this->proto_.clear();
+  this->defaultargs_.clear();
+
+  if(symbol.isClass())
+      this->proto_.push(Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+
+  this->name_ = std::move(name);
+
   return *this;
 }
 

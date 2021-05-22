@@ -47,36 +47,6 @@ public:
   {
     engine = s.engine(); 
   }
-
-  Derived & setConst()
-  {
-    throw std::runtime_error{ "Builder does not support 'const' specifier" };
-  }
-
-  Derived & setVirtual()
-  {
-    throw std::runtime_error{ "Builder does not support 'virtual' specifier" };
-  }
-
-  Derived & setPureVirtual()
-  {
-    throw std::runtime_error{ "Builder does not support 'virtual' specifier" };
-  }
-
-  Derived & setDeleted()
-  {
-    throw std::runtime_error{ "Builder does not support 'delete' specifier" };
-  }
-
-  Derived & setDefaulted()
-  {
-    throw std::runtime_error{ "Builder does not support 'default' specifier" };
-  }
-
-  Derived & setExplicit()
-  {
-    throw std::runtime_error{ "Builder does not support 'explicit' specifier" };
-  }
   
   Derived & setCallback(NativeFunctionSignature impl)
   {
@@ -108,11 +78,6 @@ public:
   Derived & setProtected() { return setAccessibility(AccessSpecifier::Protected); }
   Derived & setPrivate() { return setAccessibility(AccessSpecifier::Private); }
 
-  Derived & setStatic()
-  {
-    throw std::runtime_error{ "Builder does not support 'static' specifier" };
-  }
-
   bool isStatic() const
   {
     return flags.test(FunctionSpecifier::Static);
@@ -128,16 +93,6 @@ public:
   {
     static_cast<Derived*>(this)->addParam(arg);
     return params(args...);
-  }
-
-  inline Derived & addDefaultArgument(const std::shared_ptr<program::Expression> & value)
-  {
-    throw std::runtime_error{ "Builder does not support default arguments" };
-  }
-
-  Derived & compile()
-  {
-    throw std::runtime_error{ "Builder does not support 'compile' method" };
   }
 
   template<typename Func>
@@ -160,6 +115,8 @@ public:
   FunctionBuilder(Namespace ns, std::string name);
   FunctionBuilder(Symbol s, std::string name);
 
+  explicit FunctionBuilder(Symbol s);
+
   static  Value throwing_body(FunctionCall*);
 
   FunctionBuilder & setConst();
@@ -173,6 +130,8 @@ public:
   FunctionBuilder & addParam(const Type & t);
 
   FunctionBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+
+  FunctionBuilder& operator()(std::string name);
 
   void create();
   script::Function get();
