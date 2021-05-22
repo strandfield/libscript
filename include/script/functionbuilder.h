@@ -73,11 +73,6 @@ public:
     throw std::runtime_error{ "Builder does not support 'default' specifier" };
   }
 
-  Derived & setConstExpr()
-  {
-    throw std::runtime_error{ "Builder does not support 'constexpr' specifier" };
-  }
-
   Derived & setExplicit()
   {
     throw std::runtime_error{ "Builder does not support 'explicit' specifier" };

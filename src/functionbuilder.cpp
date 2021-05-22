@@ -146,13 +146,6 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
  */
 
 /*!
- * \fn Derived & setConstExpr()
- * \brief Makes the function a \c constexpr function.
- *
- * Not implemented yet, will throw.
- */
-
-/*!
  * \fn Derived & setExplicit()
  * \brief Makes the function \c explicit.
  *
