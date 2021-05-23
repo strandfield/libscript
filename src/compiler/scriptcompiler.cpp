@@ -695,7 +695,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  auto builder = scp.symbol().toClass().newConversion(Type::Null);
+  CastBuilder builder{ scp.symbol() };
   function_processor_.generic_fill(builder, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();

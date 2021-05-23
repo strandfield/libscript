@@ -290,7 +290,7 @@ TEST(Conversions, user_defined_conv_cast) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Cast to_int = A.newConversion(Type::Int).setConst().get();
+  Cast to_int = CastBuilder(A).setReturnType(Type::Int).setConst().get();
 
   Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
   ASSERT_FALSE(conv == Conversion::NotConvertible());

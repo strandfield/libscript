@@ -16,7 +16,6 @@ namespace script
 {
 
 class Cast;
-class CastBuilder;
 class ClassBuilder;
 class ClassImpl;
 class ClassTemplate;
@@ -102,7 +101,6 @@ public:
   
   ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
   ClassBuilder newNestedClass(const std::string & name) const;
 

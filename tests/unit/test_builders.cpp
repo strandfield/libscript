@@ -97,7 +97,7 @@ TEST(Builders, functions) {
   ASSERT_EQ(assign.prototype().at(0), Type::cref(A.id()));
   ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
 
-  Cast to_int = A.newConversion(Type::Int).setConst().get();
+  Cast to_int = CastBuilder(A).setReturnType(Type::Int).setConst().get();
   ASSERT_EQ(to_int.destType(), Type::Int);
   ASSERT_EQ(to_int.sourceType(), Type::cref(A.id()));
   ASSERT_TRUE(to_int.isMemberFunction());
@@ -373,7 +373,7 @@ TEST(Builders, builder_functions) {
 
   /* Conversion functions */
 
-  Cast cast_1 = A.newConversion(Type::cref(Type::Int)).setConst().get();
+  Cast cast_1 = CastBuilder(A).setReturnType(Type::cref(Type::Int)).setConst().get();
   ASSERT_TRUE(cast_1.isMemberFunction());
   ASSERT_EQ(cast_1.memberOf(), A);
   ASSERT_TRUE(cast_1.isConst());
@@ -381,7 +381,7 @@ TEST(Builders, builder_functions) {
   ASSERT_EQ(cast_1.destType(), cast_1.returnType());
   ASSERT_FALSE(cast_1.isExplicit());
 
-  Cast cast_2 = A.newConversion(Type::ref(Type::Int)).setExplicit().get();
+  Cast cast_2 = CastBuilder(A).setReturnType(Type::ref(Type::Int)).setExplicit().get();
   ASSERT_TRUE(cast_2.isMemberFunction());
   ASSERT_EQ(cast_2.memberOf(), A);
   ASSERT_FALSE(cast_2.isConst());

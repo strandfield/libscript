@@ -539,6 +539,13 @@ script::Operator FunctionCallOperatorBuilder::get()
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
+CastBuilder::CastBuilder(const Class& cla)
+  : GenericFunctionBuilder<CastBuilder>(Symbol(cla))
+  , proto(Type::Null, Type::Null)
+{
+  proto.setParameter(0, Type::ref(cla.id()).withFlag(Type::ThisFlag));
+}
+
 CastBuilder::CastBuilder(const Symbol& s)
   : GenericFunctionBuilder<CastBuilder>(s)
   , proto(Type::Null, Type::Null)

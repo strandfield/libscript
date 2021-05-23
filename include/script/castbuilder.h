@@ -21,6 +21,7 @@ public:
   prototype_t proto;
 
 public:
+  explicit CastBuilder(const Class& cla);
   explicit CastBuilder(const Symbol& s);
   CastBuilder(const Symbol& s, const Type& dest);
 

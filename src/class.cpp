@@ -4,7 +4,6 @@
 
 #include "script/class.h"
 
-#include "script/castbuilder.h"
 #include "script/classbuilder.h"
 #include "script/constructorbuilder.h"
 #include "script/datamember.h"
@@ -409,11 +408,6 @@ ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
 OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const
 {
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
-}
-
-CastBuilder Class::newConversion(const Type & dest, NativeFunctionSignature func) const
-{
-  return CastBuilder{ Symbol{*this}, dest }.setCallback(func);
 }
 
 ClassBuilder Class::newNestedClass(const std::string & name) const
