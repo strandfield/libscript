@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -8,7 +8,6 @@
 #include "script/engine.h"
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
-#include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/operatorbuilder.h"
 #include "script/script.h"
@@ -205,11 +204,6 @@ EnumBuilder Namespace::newEnum(const std::string & name) const
   return EnumBuilder{ Symbol{*this}, name };
 }
 
-FunctionBuilder Namespace::newFunction(const std::string & name, NativeFunctionSignature func) const
-{
-  return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
-}
-
 OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature func) const
 {
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
@@ -217,7 +211,12 @@ OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature 
 
 void Namespace::addFunction(const Function& f)
 {
-  d->functions.push_back(f);
+  if (f.isOperator())
+    d->operators.push_back(f.toOperator());
+  else if (f.isLiteralOperator())
+    d->literal_operators.push_back(f.toLiteralOperator());
+  else
+    d->functions.push_back(f);
 }
 
 Engine * Namespace::engine() const

@@ -119,7 +119,7 @@ FunctionBuilder Symbol::newFunction(const std::string & name)
   if (isClass())
     return FunctionBuilder(toClass(), name);
   else if (isNamespace())
-    return toNamespace().newFunction(name);
+    return FunctionBuilder(toNamespace(), name);
   throw std::runtime_error{ "Cannot add function on null symbol" };
 }
 

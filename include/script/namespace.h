@@ -23,7 +23,6 @@ class Engine;
 class Enum;
 class EnumBuilder;
 class Function;
-class FunctionBuilder;
 class LiteralOperator;
 class Module;
 class Operator;
@@ -79,7 +78,6 @@ public:
 
   ClassBuilder newClass(const std::string & name) const;
   EnumBuilder newEnum(const std::string & name) const;
-  FunctionBuilder newFunction(const std::string & name, NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
 
   void addFunction(const Function& f);

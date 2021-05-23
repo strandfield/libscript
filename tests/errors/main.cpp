@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 
   Namespace ns = engine.rootNamespace();
 
-  ns.newFunction("print", nullptr).params(Type::cref(Type::String)).create();
+  FunctionBuilder(ns, "print").params(Type::cref(Type::String)).create();
 
   int total_tests = 0;
   int total_failures = 0;

@@ -205,13 +205,7 @@ static void add_to_parent(const Function & func, const Symbol & parent)
   else if (parent.isNamespace())
   {
     Namespace ns = parent.toNamespace();
-
-    if (func.isOperator())
-      ns.impl()->operators.push_back(func.toOperator());
-    else if (func.isLiteralOperator())
-      ns.impl()->literal_operators.push_back(func.toLiteralOperator());
-    else
-      ns.impl()->functions.push_back(func);
+    ns.addFunction(func);
   }
 }
 
