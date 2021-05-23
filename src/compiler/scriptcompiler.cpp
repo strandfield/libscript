@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -571,7 +571,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  auto b = current_class.newConstructor();
+  ConstructorBuilder b{ current_class };
   function_processor_.generic_fill(b, decl, scp);
   default_arguments_.generic_process(decl->params, b, scp);
   Function ctor = b.get();
@@ -584,7 +584,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  auto b = current_class.newDestructor();
+  DestructorBuilder b{ current_class };
   function_processor_.generic_fill(b, decl, scp);
 
   if (!current_class.parent().isNull())
@@ -609,7 +609,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  auto b = scp.asNamespace().newUserDefinedLiteral(suffix_name);
+  LiteralOperatorBuilder b{ scp.asNamespace(), std::move(suffix_name) };
   function_processor_.generic_fill(b, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
@@ -679,7 +679,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  auto builder = scp.symbol().toClass().newFunctionCallOperator();
+  FunctionCallOperatorBuilder builder{ scp.symbol() };
   function_processor_.generic_fill(builder, decl, scp);
   default_arguments_.generic_process(decl->params, builder, scp);
 
@@ -695,7 +695,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  auto builder = scp.symbol().toClass().newConversion(Type::Null);
+  CastBuilder builder{ scp.symbol() };
   function_processor_.generic_fill(builder, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();

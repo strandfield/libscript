@@ -16,23 +16,17 @@ namespace script
 {
 
 class Cast;
-class CastBuilder;
 class ClassBuilder;
 class ClassImpl;
 class ClassTemplate;
 class ClosureType;
-class ConstructorBuilder;
 class DataMember;
-class DestructorBuilder;
 class Engine;
 class Enum;
 class EnumBuilder;
 class Function;
-class FunctionCallOperatorBuilder;
-class FunctionBuilder;
 class Namespace;
 class Operator;
-class OperatorBuilder;
 class Script;
 class StaticDataMember;
 class Template;
@@ -102,18 +96,13 @@ public:
 
   Function destructor() const;
   
-  ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
-  DestructorBuilder newDestructor(NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder newMethod(const std::string & name, NativeFunctionSignature func = nullptr) const;
-  OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  FunctionCallOperatorBuilder newFunctionCallOperator(NativeFunctionSignature func = nullptr) const;
-  CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
-
   ClassBuilder newNestedClass(const std::string & name) const;
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }
   void addMethod(const Function& f);
+
+  void addFunction(const Function& f);
 
   bool isAbstract() const;
   const std::vector<Function> & vtable() const;

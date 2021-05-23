@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -12,6 +12,13 @@ namespace script
 
 class Function;
 
+/*!
+ * \class ConstructorBuilder
+ * \brief The ConstructorBuilder class is an utility class used to build constructors.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API ConstructorBuilder : public GenericFunctionBuilder<ConstructorBuilder>
 {
 public:
@@ -22,7 +29,8 @@ public:
   std::vector<std::shared_ptr<program::Expression>> defaultargs_;
 
 public:
-  ConstructorBuilder(const Symbol & s);
+  ConstructorBuilder(const Class& cla);
+  ConstructorBuilder(const Symbol& s);
 
   ConstructorBuilder & setDefaulted();
   ConstructorBuilder & setDeleted();
@@ -34,6 +42,8 @@ public:
   ConstructorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
   ConstructorBuilder & compile();
+
+  ConstructorBuilder& operator()();
 
   void create();
   script::Function get();
