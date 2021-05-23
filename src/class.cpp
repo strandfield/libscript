@@ -8,7 +8,6 @@
 #include "script/classbuilder.h"
 #include "script/constructorbuilder.h"
 #include "script/datamember.h"
-#include "script/destructorbuilder.h"
 #include "script/engine.h"
 #include "script/enumbuilder.h"
 #include "script/functionbuilder.h"
@@ -405,11 +404,6 @@ Function Class::destructor() const
 ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
 {
   return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
-}
-
-DestructorBuilder Class::newDestructor(NativeFunctionSignature func) const
-{
-  return DestructorBuilder{ Symbol{*this} }.setCallback(func);
 }
 
 OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const

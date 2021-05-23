@@ -158,7 +158,7 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
 
   array_class.newConstructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
 
-  array_class.newDestructor(callbacks::array::dtor).create();
+  DestructorBuilder(array_class).setCallback(callbacks::array::dtor).create();
 
   FunctionBuilder(array_class, "size").setCallback(callbacks::array::size)
     .setConst().returns(Type::Int).create();

@@ -584,7 +584,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  auto b = current_class.newDestructor();
+  DestructorBuilder b{ current_class };
   function_processor_.generic_fill(b, decl, scp);
 
   if (!current_class.parent().isNull())

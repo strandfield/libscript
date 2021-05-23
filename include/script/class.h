@@ -23,7 +23,6 @@ class ClassTemplate;
 class ClosureType;
 class ConstructorBuilder;
 class DataMember;
-class DestructorBuilder;
 class Engine;
 class Enum;
 class EnumBuilder;
@@ -103,7 +102,6 @@ public:
   Function destructor() const;
   
   ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
-  DestructorBuilder newDestructor(NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionCallOperatorBuilder newFunctionCallOperator(NativeFunctionSignature func = nullptr) const;
   CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;

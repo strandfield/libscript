@@ -291,7 +291,7 @@ TEST(Builders, defaultconstructor) {
     .get();
 
   A.newConstructor().setDefaulted().compile().get();
-  A.newDestructor().setDefaulted().compile().get();
+  DestructorBuilder(A).setDefaulted().compile().get();
 
   Value a = e.construct(A.id(), {});
   ASSERT_EQ(a.type(), A.id());

@@ -126,7 +126,7 @@ TEST(Scenarios, custom_type) {
   
   Class largeobject = engine.rootNamespace().newClass("LargeObject").get();
   largeobject.newConstructor(largeobject_default_ctor).create();
-  largeobject.newDestructor(largeobject_dtor).create();
+  DestructorBuilder(largeobject).setCallback(largeobject_dtor).create();
   large_object_id = largeobject.id();
 
   Value val = engine.construct(largeobject.id(), {});
@@ -135,7 +135,7 @@ TEST(Scenarios, custom_type) {
 
   Class smallobject = engine.rootNamespace().newClass("SmallObject").get();
   smallobject.newConstructor(smallobject_default_ctor).create();
-  smallobject.newDestructor(smallobject_dtor).create();
+  DestructorBuilder(smallobject).setCallback(smallobject_dtor).create();
   small_object_id = smallobject.id();
 
   val = engine.construct(smallobject.id(), {});

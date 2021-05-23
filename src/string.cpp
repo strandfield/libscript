@@ -269,7 +269,7 @@ void StringBackend::register_string_type(Class& string)
   string.newConstructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
   string.newConstructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
-  string.newDestructor(callbacks::string::dtor).create();
+  DestructorBuilder(string).setCallback(callbacks::string::dtor).create();
 
   FunctionBuilder(string, "at").setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
   FunctionBuilder(string, "capacity").setCallback(callbacks::string::capacity).setConst().returns(Type::Int).create();

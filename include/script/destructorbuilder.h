@@ -21,6 +21,7 @@ public:
   prototype_t proto_;
 
 public:
+  explicit DestructorBuilder(const Class& cla);
   DestructorBuilder(const Symbol & s);
   
   DestructorBuilder & setDefaulted();

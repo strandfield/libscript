@@ -743,6 +743,13 @@ script::Function ConstructorBuilder::get()
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
+DestructorBuilder::DestructorBuilder(const Class& cla)
+  : GenericFunctionBuilder<DestructorBuilder>(Symbol(cla))
+  , proto_(Type::Void, Type::Null)
+{
+  proto_.setParameter(0, Type::ref(cla.id()).withFlag(Type::ThisFlag));
+}
+
 DestructorBuilder::DestructorBuilder(const Symbol & s)
   : GenericFunctionBuilder<DestructorBuilder>(s)
   , proto_(Type::Void, Type::Null)
