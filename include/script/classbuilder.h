@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -78,13 +78,15 @@ private:
   typedef ClassBuilderBase<ClassBuilder> Base;
 
 public:
-  ClassBuilder(const Symbol & s, const std::string & n);
-  ClassBuilder(const Symbol & s, std::string && n);
+  explicit ClassBuilder(const Symbol& s);
+  ClassBuilder(const Symbol & s, std::string n);
 
   [[deprecated("Use setBase() instead")]] ClassBuilder & setParent(const Class & p);
 
   ClassBuilder & setBase(const Class & b);
   using Base::setBase;
+
+  ClassBuilder& operator()(std::string n);
 
   Class get();
   void create();

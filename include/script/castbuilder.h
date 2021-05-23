@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -21,7 +21,8 @@ public:
   prototype_t proto;
 
 public:
-  CastBuilder(const Symbol & s, const Type & dest);
+  explicit CastBuilder(const Symbol& s);
+  CastBuilder(const Symbol& s, const Type& dest);
 
   CastBuilder & setConst();
   CastBuilder & setDeleted();
@@ -29,6 +30,8 @@ public:
 
   CastBuilder & setReturnType(const Type & t);
   CastBuilder & addParam(const Type & t);
+
+  CastBuilder& operator()(const Type& dest);
 
   void create();
   script::Cast get();

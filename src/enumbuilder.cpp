@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -45,6 +45,18 @@ Value enum_assignment(interpreter::FunctionCall *c)
 }
 
 } // namespace callbacks
+
+EnumBuilder& EnumBuilder::operator()(std::string n)
+{
+  this->name = std::move(n);
+  this->is_enum_class = false;
+  this->id = 0;
+  this->from_int_callback = nullptr;
+  this->copy_callback = nullptr;
+  this->assignment_callback = nullptr;
+
+  return *this;
+}
 
 Enum EnumBuilder::get()
 {

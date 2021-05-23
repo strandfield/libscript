@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -34,6 +34,8 @@ public:
   ConstructorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
   ConstructorBuilder & compile();
+
+  ConstructorBuilder& operator()();
 
   void create();
   script::Function get();

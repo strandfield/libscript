@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -376,6 +376,14 @@ script::Function FunctionBuilder::get()
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
+OperatorBuilder::OperatorBuilder(const Symbol& s)
+  : GenericFunctionBuilder<OperatorBuilder>(s)
+  , operation(OperatorName::InvalidOperator)
+  , proto_{ Type::Void, Type::Null, Type::Null }
+{
+
+}
+
 OperatorBuilder::OperatorBuilder(const Symbol & s, OperatorName op)
   : GenericFunctionBuilder<OperatorBuilder>(s)
   , operation(op)
@@ -417,6 +425,21 @@ OperatorBuilder & OperatorBuilder::addParam(const Type & t)
     this->proto_.setParameter(1, t);
 
   return *(this);
+}
+
+OperatorBuilder& OperatorBuilder::operator()(OperatorName op)
+{
+  this->flags = FunctionFlags();
+  this->proto_.setReturnType(Type::Void);
+  this->proto_.setParameter(0, Type::Null);
+  this->proto_.setParameter(1, Type::Null);
+
+  if (symbol.isClass())
+    this->proto_.setParameter(0, Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+
+  this->operation = op;
+
+  return *this;
 }
 
 void OperatorBuilder::create()
@@ -489,6 +512,18 @@ FunctionCallOperatorBuilder & FunctionCallOperatorBuilder::addDefaultArgument(co
   return *this;
 }
 
+FunctionCallOperatorBuilder& FunctionCallOperatorBuilder::operator()()
+{
+  this->flags = FunctionFlags();
+  this->proto_.clear();
+  this->defaultargs_.clear();
+
+  if (symbol.isClass())
+    this->proto_.push(Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+
+  return *this;
+}
+
 void FunctionCallOperatorBuilder::create()
 {
   get();
@@ -513,6 +548,18 @@ script::Operator FunctionCallOperatorBuilder::get()
  *
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
+
+CastBuilder::CastBuilder(const Symbol& s)
+  : GenericFunctionBuilder<CastBuilder>(s)
+  , proto(Type::Null, Type::Null)
+{
+  if (!s.isClass())
+  {
+    throw std::runtime_error{ "Conversion functions can only be members" };
+  }
+
+  proto.setParameter(0, Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
+}
 
 CastBuilder::CastBuilder(const Symbol & s, const Type & dest)
   : GenericFunctionBuilder<CastBuilder>(s)
@@ -553,6 +600,15 @@ CastBuilder & CastBuilder::setReturnType(const Type & t)
 CastBuilder & CastBuilder::addParam(const Type & t)
 {
   throw std::runtime_error{ "Cannot add parameter to conversion function" };
+}
+
+CastBuilder& CastBuilder::operator()(const Type& dest)
+{
+  this->flags = FunctionFlags();
+  this->proto.setReturnType(dest);
+  this->proto.setParameter(0, Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+
+  return *this;
 }
 
 void CastBuilder::create()
@@ -661,6 +717,17 @@ ConstructorBuilder & ConstructorBuilder::compile()
   return *this;
 }
 
+ConstructorBuilder& ConstructorBuilder::operator()()
+{
+  this->flags = FunctionFlags();
+  this->proto_.clear();
+  this->defaultargs_.clear();
+
+  proto_.push(Type::ref(symbol.toClass().id()).withFlag(Type::ThisFlag));
+
+  return *this;
+}
+
 void ConstructorBuilder::create()
 {
   get();
@@ -755,6 +822,14 @@ script::Function DestructorBuilder::get()
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
+LiteralOperatorBuilder::LiteralOperatorBuilder(const Symbol& s)
+  : GenericFunctionBuilder<LiteralOperatorBuilder>(s)
+  , proto_(Type::Null, Type::Null)
+{
+
+}
+
+
 LiteralOperatorBuilder::LiteralOperatorBuilder(const Symbol & s, std::string && suffix)
   : GenericFunctionBuilder<LiteralOperatorBuilder>(s)
   , name_(std::move(suffix))
@@ -779,6 +854,17 @@ LiteralOperatorBuilder & LiteralOperatorBuilder::addParam(const Type & t)
 {
   this->proto_.setParameter(0, t);
   return *this;
+}
+
+LiteralOperatorBuilder& LiteralOperatorBuilder::operator()(std::string suffix)
+{
+  this->flags = FunctionFlags();
+  this->proto_.setReturnType(Type::Null);
+  this->proto_.setParameter(0, Type::Null);
+
+  name_ = std::move(suffix);
+
+  return *(this);
 }
 
 void LiteralOperatorBuilder::create()

@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -24,6 +24,7 @@ public:
   prototype_t proto_;
 
 public:
+  explicit OperatorBuilder(const Symbol& s);
   OperatorBuilder(const Symbol & s, OperatorName op);
 
   OperatorBuilder & setConst();
@@ -32,6 +33,8 @@ public:
 
   OperatorBuilder & setReturnType(const Type & t);
   OperatorBuilder & addParam(const Type & t);
+
+  OperatorBuilder& operator()(OperatorName op);
 
   void create();
   script::Operator get();
@@ -56,6 +59,8 @@ public:
   FunctionCallOperatorBuilder & addParam(const Type & t);
 
   FunctionCallOperatorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+
+  FunctionCallOperatorBuilder& operator()();
 
   void create();
   script::Operator get();

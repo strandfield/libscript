@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -24,12 +24,15 @@ public:
   prototype_t proto_;
 
 public:
+  explicit LiteralOperatorBuilder(const Symbol& s);
   LiteralOperatorBuilder(const Symbol & s, std::string && suffix);
 
   LiteralOperatorBuilder & setDeleted();
 
   LiteralOperatorBuilder & setReturnType(const Type & t);
   LiteralOperatorBuilder & addParam(const Type & t);
+
+  LiteralOperatorBuilder& operator()(std::string suffix);
 
   void create();
   script::LiteralOperator get();
