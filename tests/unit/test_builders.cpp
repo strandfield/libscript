@@ -76,7 +76,7 @@ TEST(Builders, functions) {
   ASSERT_EQ(foo.prototype().at(0), Type::Int);
   ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
 
-  Operator assign = A.newOperator(AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get();
+  Operator assign = OperatorBuilder(Symbol(A), AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get();
   ASSERT_EQ(assign.operatorId(), AssignmentOperator);
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.memberOf(), A);

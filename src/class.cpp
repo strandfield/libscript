@@ -12,7 +12,6 @@
 #include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/object.h"
-#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/userdata.h"
@@ -403,11 +402,6 @@ Function Class::destructor() const
 ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
 {
   return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
-}
-
-OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const
-{
-  return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
 ClassBuilder Class::newNestedClass(const std::string & name) const

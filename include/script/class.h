@@ -29,7 +29,6 @@ class Function;
 class FunctionBuilder;
 class Namespace;
 class Operator;
-class OperatorBuilder;
 class Script;
 class StaticDataMember;
 class Template;
@@ -100,7 +99,6 @@ public:
   Function destructor() const;
   
   ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
-  OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
 
   ClassBuilder newNestedClass(const std::string & name) const;
 

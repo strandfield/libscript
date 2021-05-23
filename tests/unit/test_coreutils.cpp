@@ -235,7 +235,7 @@ TEST(CoreUtilsTests, function_names) {
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
 
   Function foo = FunctionBuilder(A, "foo").get();
-  Function eq = A.newOperator(EqualOperator).params(Type::Int).get();
+  Function eq = OperatorBuilder(Symbol(A), EqualOperator).params(Type::Int).get();
   Function to_int = CastBuilder(A).setReturnType(Type::Int).get();
   Function ctor = A.newConstructor().get();
   Function a = FunctionBuilder(A, "A").get();

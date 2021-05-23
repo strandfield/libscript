@@ -175,25 +175,25 @@ static Class register_ilist_iterator(Class & ilist)
     .returns(Type::cref(ilist.arguments().at(0).type))
     .create();
 
-  iter.newOperator(AssignmentOperator, callbacks::initializer_list::iterator::assign)
+  OperatorBuilder(Symbol(iter), AssignmentOperator).setCallback(callbacks::initializer_list::iterator::assign)
     .returns(Type::ref(iter.id()))
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.newOperator(PreIncrementOperator, callbacks::initializer_list::iterator::pre_increment)
+  OperatorBuilder(Symbol(iter), PreIncrementOperator).setCallback(callbacks::initializer_list::iterator::pre_increment)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.newOperator(PreDecrementOperator, callbacks::initializer_list::iterator::pre_decrement)
+  OperatorBuilder(Symbol(iter), PreDecrementOperator).setCallback(callbacks::initializer_list::iterator::pre_decrement)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.newOperator(EqualOperator, callbacks::initializer_list::iterator::eq)
+  OperatorBuilder(Symbol(iter), EqualOperator).setCallback(callbacks::initializer_list::iterator::eq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.newOperator(InequalOperator, callbacks::initializer_list::iterator::neq)
+  OperatorBuilder(Symbol(iter), InequalOperator).setCallback(callbacks::initializer_list::iterator::neq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
@@ -239,10 +239,9 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
   FunctionBuilder(ilist_class, "end").setCallback(callbacks::initializer_list::end)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.newOperator(AssignmentOperator, callbacks::initializer_list::assign)
+  OperatorBuilder(Symbol(ilist_class), AssignmentOperator).setCallback(callbacks::initializer_list::assign)
     .returns(Type::ref(ilist_type))
     .params(Type::cref(ilist_type)).create();
-
 
   return ilist_class;
 }
