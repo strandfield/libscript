@@ -26,6 +26,7 @@ public:
 public:
   explicit LiteralOperatorBuilder(const Symbol& s);
   LiteralOperatorBuilder(const Symbol & s, std::string && suffix);
+  LiteralOperatorBuilder(const Namespace& ns, std::string suffix);
 
   LiteralOperatorBuilder & setDeleted();
 

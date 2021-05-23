@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -25,7 +25,6 @@ class EnumBuilder;
 class Function;
 class FunctionBuilder;
 class LiteralOperator;
-class LiteralOperatorBuilder;
 class Module;
 class Operator;
 class OperatorBuilder;
@@ -82,8 +81,6 @@ public:
   EnumBuilder newEnum(const std::string & name) const;
   FunctionBuilder newFunction(const std::string & name, NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder newUserDefinedLiteral(std::string suffix, NativeFunctionSignature func = nullptr) const;
-  LiteralOperatorBuilder newUserDefinedLiteral(std::string suffix, const Type & input, const Type & output, NativeFunctionSignature func = nullptr) const;
 
   void addFunction(const Function& f);
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -609,7 +609,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  auto b = scp.asNamespace().newUserDefinedLiteral(suffix_name);
+  LiteralOperatorBuilder b{ scp.asNamespace(), std::move(suffix_name) };
   function_processor_.generic_fill(b, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments

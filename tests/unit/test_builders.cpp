@@ -205,7 +205,7 @@ TEST(Builders, literaloperator) {
 
   Namespace ns = e.rootNamespace();
 
-  LiteralOperator op = ns.newUserDefinedLiteral("s", Type::Boolean, Type::Int).get();
+  LiteralOperator op = LiteralOperatorBuilder(ns, "s").returns(Type::Int).params(Type::Boolean).get();
 
   ASSERT_EQ(op.suffix(), "s");
   ASSERT_EQ(op.prototype().count(), 1);

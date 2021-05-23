@@ -849,6 +849,14 @@ LiteralOperatorBuilder::LiteralOperatorBuilder(const Symbol & s, std::string && 
 
 }
 
+LiteralOperatorBuilder::LiteralOperatorBuilder(const Namespace& ns, std::string suffix)
+  : GenericFunctionBuilder<LiteralOperatorBuilder>(Symbol(ns))
+  , name_(std::move(suffix))
+  , proto_(Type::Null, Type::Null)
+{
+
+}
+
 LiteralOperatorBuilder & LiteralOperatorBuilder::setDeleted()
 {
   this->flags.set(FunctionSpecifier::Delete);

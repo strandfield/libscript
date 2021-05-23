@@ -240,7 +240,7 @@ TEST(CoreUtilsTests, function_names) {
   Function ctor = ConstructorBuilder(A).get();
   Function a = FunctionBuilder(A, "A").get();
 
-  Function km = e.rootNamespace().newUserDefinedLiteral("km").get();
+  Function km = LiteralOperatorBuilder(e.rootNamespace(), "km").get();
 
   ASSERT_NE(foo.getName(), eq.getName());
   ASSERT_NE(eq.getName(), a.getName());

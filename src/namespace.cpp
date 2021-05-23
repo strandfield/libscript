@@ -9,7 +9,6 @@
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
 #include "script/functionbuilder.h"
-#include "script/literaloperatorbuilder.h"
 #include "script/name.h"
 #include "script/operatorbuilder.h"
 #include "script/script.h"
@@ -214,16 +213,6 @@ FunctionBuilder Namespace::newFunction(const std::string & name, NativeFunctionS
 OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature func) const
 {
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
-}
-
-LiteralOperatorBuilder Namespace::newUserDefinedLiteral(std::string suffix, NativeFunctionSignature func) const
-{
-  return LiteralOperatorBuilder{ Symbol{*this}, std::move(suffix) }.setCallback(func);
-}
-
-LiteralOperatorBuilder Namespace::newUserDefinedLiteral(std::string suffix, const Type & input, const Type & output, NativeFunctionSignature func) const
-{
-  return newUserDefinedLiteral(std::move(suffix), func).returns(output).params(input);
 }
 
 void Namespace::addFunction(const Function& f)
