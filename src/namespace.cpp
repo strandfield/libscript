@@ -9,7 +9,6 @@
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
 #include "script/name.h"
-#include "script/operatorbuilder.h"
 #include "script/script.h"
 
 #include "script/private/class_p.h"
@@ -202,11 +201,6 @@ ClassBuilder Namespace::newClass(const std::string & name) const
 EnumBuilder Namespace::newEnum(const std::string & name) const
 {
   return EnumBuilder{ Symbol{*this}, name };
-}
-
-OperatorBuilder Namespace::newOperator(OperatorName op, NativeFunctionSignature func) const
-{
-  return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
 void Namespace::addFunction(const Function& f)

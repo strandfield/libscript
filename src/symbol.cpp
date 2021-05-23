@@ -135,10 +135,8 @@ FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
 
 OperatorBuilder Symbol::newOperator(OperatorName op)
 {
-  if (isClass())
+  if (isClass() || isNamespace())
     return OperatorBuilder(*this, op);
-  else if (isNamespace())
-    return toNamespace().newOperator(op);
   throw std::runtime_error{ "Cannot add operator on null symbol" };
 }
 

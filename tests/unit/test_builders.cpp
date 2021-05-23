@@ -88,7 +88,7 @@ TEST(Builders, functions) {
   ASSERT_TRUE(assign.isDeleted());
 
   Namespace ops = root.newNamespace("ops");
-  assign = ops.newOperator(AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get();
+  assign = OperatorBuilder(Symbol(ops), AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get();
   ASSERT_EQ(assign.operatorId(), AdditionOperator);
   ASSERT_FALSE(assign.isMemberFunction());
   ASSERT_EQ(ops.operators().size(), 1);

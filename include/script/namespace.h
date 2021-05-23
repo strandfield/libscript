@@ -26,7 +26,6 @@ class Function;
 class LiteralOperator;
 class Module;
 class Operator;
-class OperatorBuilder;
 class Script;
 class Template;
 class Type;
@@ -78,7 +77,6 @@ public:
 
   ClassBuilder newClass(const std::string & name) const;
   EnumBuilder newEnum(const std::string & name) const;
-  OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
 
   void addFunction(const Function& f);
 
