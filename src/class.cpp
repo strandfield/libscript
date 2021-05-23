@@ -411,12 +411,6 @@ OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func
   return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
 }
 
-FunctionCallOperatorBuilder Class::newFunctionCallOperator(NativeFunctionSignature func) const
-{
-  return FunctionCallOperatorBuilder{ Symbol{ *this } }.setCallback(func);
-}
-
-
 CastBuilder Class::newConversion(const Type & dest, NativeFunctionSignature func) const
 {
   return CastBuilder{ Symbol{*this}, dest }.setCallback(func);

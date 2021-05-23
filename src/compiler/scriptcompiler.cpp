@@ -679,7 +679,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  auto builder = scp.symbol().toClass().newFunctionCallOperator();
+  FunctionCallOperatorBuilder builder{ scp.symbol() };
   function_processor_.generic_fill(builder, decl, scp);
   default_arguments_.generic_process(decl->params, builder, scp);
 

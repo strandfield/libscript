@@ -27,7 +27,6 @@ class Engine;
 class Enum;
 class EnumBuilder;
 class Function;
-class FunctionCallOperatorBuilder;
 class FunctionBuilder;
 class Namespace;
 class Operator;
@@ -103,7 +102,6 @@ public:
   
   ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
-  FunctionCallOperatorBuilder newFunctionCallOperator(NativeFunctionSignature func = nullptr) const;
   CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
 
   ClassBuilder newNestedClass(const std::string & name) const;
