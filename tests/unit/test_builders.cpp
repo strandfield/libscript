@@ -290,7 +290,7 @@ TEST(Builders, defaultconstructor) {
     .addMember(DataMember{Type::Int, "n"})
     .get();
 
-  A.newConstructor().setDefaulted().compile().get();
+  ConstructorBuilder(A).setDefaulted().compile().get();
   DestructorBuilder(A).setDefaulted().compile().get();
 
   Value a = e.construct(A.id(), {});
@@ -345,24 +345,24 @@ TEST(Builders, builder_functions) {
 
   /* Constructors */
 
-  Function default_ctor = A.newConstructor().get();
+  Function default_ctor = ConstructorBuilder(A).get();
   ASSERT_TRUE(default_ctor.isConstructor());
   ASSERT_EQ(default_ctor.memberOf(), A);
   ASSERT_EQ(default_ctor, A.defaultConstructor());
 
-  Function copy_ctor = A.newConstructor().params(Type::cref(A_type)).get();
+  Function copy_ctor = ConstructorBuilder(A).params(Type::cref(A_type)).get();
   ASSERT_TRUE(copy_ctor.isConstructor());
   ASSERT_EQ(copy_ctor.memberOf(), A);
   ASSERT_EQ(copy_ctor, A.copyConstructor());
 
-  Function ctor_1 = A.newConstructor().params(Type::Int).get();
+  Function ctor_1 = ConstructorBuilder(A).params(Type::Int).get();
   ASSERT_TRUE(ctor_1.isConstructor());
   ASSERT_EQ(ctor_1.memberOf(), A);
   ASSERT_EQ(ctor_1.prototype().count(), 2);
   ASSERT_EQ(ctor_1.parameter(1), Type::Int);
   ASSERT_FALSE(ctor_1.isExplicit());
 
-  Function ctor_2 = A.newConstructor().setExplicit().params(Type::Boolean).get();
+  Function ctor_2 = ConstructorBuilder(A).setExplicit().params(Type::Boolean).get();
   ASSERT_TRUE(ctor_2.isConstructor());
   ASSERT_EQ(ctor_2.memberOf(), A);
   ASSERT_EQ(ctor_2.prototype().count(), 2);

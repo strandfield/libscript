@@ -265,9 +265,9 @@ Value subscript(FunctionCall *c)
 
 void StringBackend::register_string_type(Class& string)
 {
-  string.newConstructor(callbacks::string::default_ctor).create();
-  string.newConstructor(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
-  string.newConstructor(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
+  ConstructorBuilder(string).setCallback(callbacks::string::default_ctor).create();
+  ConstructorBuilder(string).setCallback(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
+  ConstructorBuilder(string).setCallback(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
   DestructorBuilder(string).setCallback(callbacks::string::dtor).create();
 

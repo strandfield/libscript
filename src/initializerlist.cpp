@@ -165,8 +165,8 @@ static Class register_ilist_iterator(Class & ilist)
 {
   Class iter = ilist.newNestedClass("iterator").setFinal(true).get();
 
-  iter.newConstructor(callbacks::initializer_list::iterator::default_ctor).create();
-  iter.newConstructor(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
+  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::default_ctor).create();
+  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
 
   DestructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::dtor).create();
 
@@ -224,9 +224,9 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
 
   Class iter_type = register_ilist_iterator(ilist_class);
 
-  ilist_class.newConstructor(callbacks::initializer_list::default_ctor).create();
+  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::default_ctor).create();
 
-  ilist_class.newConstructor(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
+  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
 
   DestructorBuilder(ilist_class).setCallback(callbacks::initializer_list::dtor).create();
 

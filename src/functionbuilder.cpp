@@ -631,6 +631,13 @@ script::Cast CastBuilder::get()
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
+ConstructorBuilder::ConstructorBuilder(const Class& cla)
+  : GenericFunctionBuilder<ConstructorBuilder>(Symbol(cla))
+  , proto_(Type::Void, {})
+{
+  proto_.push(Type::ref(cla.id()).withFlag(Type::ThisFlag));
+}
+
 ConstructorBuilder::ConstructorBuilder(const Symbol & s)
   : GenericFunctionBuilder<ConstructorBuilder>(s)
   , proto_(Type::Void, {})

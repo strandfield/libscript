@@ -5,11 +5,9 @@
 #include "script/class.h"
 
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
 #include "script/datamember.h"
 #include "script/engine.h"
 #include "script/enumbuilder.h"
-#include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/object.h"
 #include "script/script.h"
@@ -397,11 +395,6 @@ bool Class::isMoveConstructible() const
 Function Class::destructor() const
 {
   return d->destructor;
-}
-
-ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
-{
-  return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
 }
 
 ClassBuilder Class::newNestedClass(const std::string & name) const

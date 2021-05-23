@@ -571,7 +571,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  auto b = current_class.newConstructor();
+  ConstructorBuilder b{ current_class };
   function_processor_.generic_fill(b, decl, scp);
   default_arguments_.generic_process(decl->params, b, scp);
   Function ctor = b.get();

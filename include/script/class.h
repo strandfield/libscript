@@ -20,13 +20,11 @@ class ClassBuilder;
 class ClassImpl;
 class ClassTemplate;
 class ClosureType;
-class ConstructorBuilder;
 class DataMember;
 class Engine;
 class Enum;
 class EnumBuilder;
 class Function;
-class FunctionBuilder;
 class Namespace;
 class Operator;
 class Script;
@@ -98,8 +96,6 @@ public:
 
   Function destructor() const;
   
-  ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
-
   ClassBuilder newNestedClass(const std::string & name) const;
 
   const std::vector<Function> & memberFunctions() const;

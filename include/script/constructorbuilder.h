@@ -22,7 +22,8 @@ public:
   std::vector<std::shared_ptr<program::Expression>> defaultargs_;
 
 public:
-  ConstructorBuilder(const Symbol & s);
+  ConstructorBuilder(const Class& cla);
+  ConstructorBuilder(const Symbol& s);
 
   ConstructorBuilder & setDefaulted();
   ConstructorBuilder & setDeleted();

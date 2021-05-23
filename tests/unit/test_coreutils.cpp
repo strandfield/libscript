@@ -237,7 +237,7 @@ TEST(CoreUtilsTests, function_names) {
   Function foo = FunctionBuilder(A, "foo").get();
   Function eq = OperatorBuilder(Symbol(A), EqualOperator).params(Type::Int).get();
   Function to_int = CastBuilder(A).setReturnType(Type::Int).get();
-  Function ctor = A.newConstructor().get();
+  Function ctor = ConstructorBuilder(A).get();
   Function a = FunctionBuilder(A, "A").get();
 
   Function km = e.rootNamespace().newUserDefinedLiteral("km").get();

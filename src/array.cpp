@@ -152,11 +152,11 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
   shared_data->data.typeId = array_class.id();
   Type array_type = array_class.id();
 
-  array_class.newConstructor(callbacks::array::default_ctor).create();
+  ConstructorBuilder(array_class).setCallback(callbacks::array::default_ctor).create();
 
-  array_class.newConstructor(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
+  ConstructorBuilder(array_class).setCallback(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
 
-  array_class.newConstructor(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
+  ConstructorBuilder(array_class).setCallback(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
 
   DestructorBuilder(array_class).setCallback(callbacks::array::dtor).create();
 
