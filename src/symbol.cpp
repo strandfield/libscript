@@ -117,7 +117,7 @@ EnumBuilder Symbol::newEnum(std::string && name)
 FunctionBuilder Symbol::newFunction(const std::string & name)
 {
   if (isClass())
-    return toClass().newMethod(name);
+    return FunctionBuilder(toClass(), name);
   else if (isNamespace())
     return toNamespace().newFunction(name);
   throw std::runtime_error{ "Cannot add function on null symbol" };

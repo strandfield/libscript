@@ -234,7 +234,21 @@ const std::vector<Function> & Class::memberFunctions() const
 
 void Class::addMethod(const Function& f)
 {
-  d->functions.push_back(f);
+  d->register_function(f);
+}
+
+void Class::addFunction(const Function& f)
+{
+  if (f.isOperator())
+    d->operators.push_back(f.toOperator());
+  else if (f.isCast())
+    d->casts.push_back(f.toCast());
+  else if (f.isConstructor())
+    d->registerConstructor(f);
+  else if (f.isDestructor())
+    d->destructor = f;
+  else
+    d->register_function(f);
 }
 
 bool Class::isAbstract() const
@@ -396,11 +410,6 @@ ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
 DestructorBuilder Class::newDestructor(NativeFunctionSignature func) const
 {
   return DestructorBuilder{ Symbol{*this} }.setCallback(func);
-}
-
-FunctionBuilder Class::newMethod(const std::string & name, NativeFunctionSignature func) const
-{
-  return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
 }
 
 OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const

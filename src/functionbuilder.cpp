@@ -200,17 +200,7 @@ static void add_to_parent(const Function & func, const Symbol & parent)
   if (parent.isClass())
   {
     Class cla = parent.toClass();
-
-    if (func.isOperator())
-      cla.impl()->operators.push_back(func.toOperator());
-    else if (func.isCast())
-      cla.impl()->casts.push_back(func.toCast());
-    else if (func.isConstructor())
-      cla.impl()->registerConstructor(func);
-    else if (func.isDestructor())
-      cla.impl()->destructor = func;
-    else
-      cla.impl()->register_function(func);
+    cla.addFunction(func);
   }
   else if (parent.isNamespace())
   {

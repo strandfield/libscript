@@ -170,7 +170,7 @@ static Class register_ilist_iterator(Class & ilist)
 
   iter.newDestructor(callbacks::initializer_list::iterator::dtor).create();
 
-  iter.newMethod("get", callbacks::initializer_list::iterator::get)
+  FunctionBuilder(iter, "get").setCallback(callbacks::initializer_list::iterator::get)
     .setConst()
     .returns(Type::cref(ilist.arguments().at(0).type))
     .create();
@@ -230,13 +230,13 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
 
   ilist_class.newDestructor(callbacks::initializer_list::dtor).create();
 
-  ilist_class.newMethod("size", callbacks::initializer_list::size)
+  FunctionBuilder(ilist_class, "size").setCallback(callbacks::initializer_list::size)
     .setConst().returns(Type::Int).create();
 
-  ilist_class.newMethod("begin", callbacks::initializer_list::begin)
+  FunctionBuilder(ilist_class, "begin").setCallback(callbacks::initializer_list::begin)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.newMethod("end", callbacks::initializer_list::end)
+  FunctionBuilder(ilist_class, "end").setCallback(callbacks::initializer_list::end)
     .setConst().returns(iter_type.id()).create();
 
   ilist_class.newOperator(AssignmentOperator, callbacks::initializer_list::assign)

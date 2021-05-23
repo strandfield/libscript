@@ -271,16 +271,16 @@ void StringBackend::register_string_type(Class& string)
 
   string.newDestructor(callbacks::string::dtor).create();
 
-  string.newMethod("at", callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
-  string.newMethod("capacity", callbacks::string::capacity).setConst().returns(Type::Int).create();
-  string.newMethod("clear", callbacks::string::clear).create();
-  string.newMethod("empty", callbacks::string::empty).setConst().returns(Type::Boolean).create();
-  string.newMethod("erase", callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
-  string.newMethod("insert", callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
-  string.newMethod("length", callbacks::string::length).setConst().returns(Type::Int).create();
-  string.newMethod("size", callbacks::string::length).setConst().returns(Type::Int).create();
-  string.newMethod("replace", callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
-  string.newMethod("swap", callbacks::string::swap).params(Type::ref(string.id())).create();
+  FunctionBuilder(string, "at").setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  FunctionBuilder(string, "capacity").setCallback(callbacks::string::capacity).setConst().returns(Type::Int).create();
+  FunctionBuilder(string, "clear").setCallback(callbacks::string::clear).create();
+  FunctionBuilder(string, "empty").setCallback(callbacks::string::empty).setConst().returns(Type::Boolean).create();
+  FunctionBuilder(string, "erase").setCallback(callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
+  FunctionBuilder(string, "insert").setCallback(callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
+  FunctionBuilder(string, "length").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
+  FunctionBuilder(string, "size").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
+  FunctionBuilder(string, "replace").setCallback(callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
+  FunctionBuilder(string, "swap").setCallback(callbacks::string::swap).params(Type::ref(string.id())).create();
 
   string.newOperator(EqualOperator, callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
   string.newOperator(InequalOperator, callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();

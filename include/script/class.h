@@ -104,7 +104,6 @@ public:
   
   ConstructorBuilder newConstructor(NativeFunctionSignature func = nullptr) const;
   DestructorBuilder newDestructor(NativeFunctionSignature func = nullptr) const;
-  FunctionBuilder newMethod(const std::string & name, NativeFunctionSignature func = nullptr) const;
   OperatorBuilder newOperator(OperatorName op, NativeFunctionSignature func = nullptr) const;
   FunctionCallOperatorBuilder newFunctionCallOperator(NativeFunctionSignature func = nullptr) const;
   CastBuilder newConversion(const Type & dest, NativeFunctionSignature func = nullptr) const;
@@ -114,6 +113,8 @@ public:
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }
   void addMethod(const Function& f);
+
+  void addFunction(const Function& f);
 
   bool isAbstract() const;
   const std::vector<Function> & vtable() const;

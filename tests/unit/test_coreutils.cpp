@@ -125,17 +125,17 @@ TEST(CoreUtilsTests, access_specifiers) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function foo = A.newMethod("foo").setProtected().get();
-  Function bar = A.newMethod("bar").setPrivate().get();
-  Function qux = A.newMethod("qux").get();
+  Function foo = FunctionBuilder(A, "foo").setProtected().get();
+  Function bar = FunctionBuilder(A, "bar").setPrivate().get();
+  Function qux = FunctionBuilder(A, "qux").get();
 
   ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
   Class B = Symbol{ e.rootNamespace() }.newClass("B").setBase(A).get();
-  Function slurm = B.newMethod("slurm").get();
-  Function bender = B.newMethod("bender").get();
+  Function slurm = FunctionBuilder(B, "slurm").get();
+  Function bender = FunctionBuilder(B, "bender").get();
 
   ASSERT_TRUE(Accessibility::check(slurm, qux));
   ASSERT_TRUE(Accessibility::check(slurm, foo));
@@ -234,11 +234,11 @@ TEST(CoreUtilsTests, function_names) {
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
 
-  Function foo = A.newMethod("foo").get();
+  Function foo = FunctionBuilder(A, "foo").get();
   Function eq = A.newOperator(EqualOperator).params(Type::Int).get();
   Function to_int = A.newConversion(Type::Int).get();
   Function ctor = A.newConstructor().get();
-  Function a = A.newMethod("A").get();
+  Function a = FunctionBuilder(A, "A").get();
 
   Function km = e.rootNamespace().newUserDefinedLiteral("km").get();
 

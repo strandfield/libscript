@@ -49,7 +49,9 @@ TEST(Builders, functions) {
   Namespace root = e.rootNamespace();
   Class A = Symbol{ root }.newClass("A").get();
 
-  Function foo = A.newMethod("foo").get();
+  FunctionBuilder fbuild{ Symbol(A) };
+
+  Function foo = fbuild("foo").get();
   ASSERT_EQ(foo.name(), "foo");
   ASSERT_TRUE(foo.isMemberFunction());
   ASSERT_EQ(foo.memberOf(), A);
@@ -58,12 +60,14 @@ TEST(Builders, functions) {
   ASSERT_EQ(foo.prototype().count(), 1);
   ASSERT_TRUE(foo.prototype().at(0).testFlag(Type::ThisFlag));
 
-  Function bar = A.newMethod("bar").setConst().get();
+  Function bar = fbuild("bar").setConst().get();
   ASSERT_EQ(bar.name(), "bar");
   ASSERT_EQ(A.memberFunctions().size(), 2);
   ASSERT_TRUE(bar.isConst());
 
-  foo = root.newFunction("foo").returns(Type::Int).params(Type::Int, Type::Boolean).get();
+  fbuild = FunctionBuilder(Symbol(root));
+
+  foo = fbuild("foo").returns(Type::Int).params(Type::Int, Type::Boolean).get();
   ASSERT_EQ(foo.name(), "foo");
   ASSERT_FALSE(foo.isMemberFunction());
   ASSERT_EQ(root.functions().size(), 1);
@@ -437,7 +441,7 @@ TEST(Builders, virtual_members) {
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
 
-  Function foo = A.newMethod("foo").setPureVirtual().get();
+  Function foo = FunctionBuilder(A, "foo").setPureVirtual().get();
 
   ASSERT_TRUE(foo.isVirtual());
   ASSERT_TRUE(foo.isPureVirtual());
@@ -455,7 +459,7 @@ TEST(Builders, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo);
 
-  Function foo_B = B.newMethod("foo").get();
+  Function foo_B = FunctionBuilder(B, "foo").get();
 
   ASSERT_TRUE(foo_B.isVirtual());
   ASSERT_FALSE(foo_B.isPureVirtual());
@@ -474,7 +478,7 @@ TEST(Builders, static_member_functions) {
 
   Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
 
-  Function foo = A.newMethod("foo")
+  Function foo = FunctionBuilder(A, "foo")
     .setStatic()
     .params(Type::Int).get();
 

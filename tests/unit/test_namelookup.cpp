@@ -189,10 +189,10 @@ TEST(NameLookup, member_lookup) {
   Symbol gns{ e.rootNamespace() };
 
   Class foo = gns.newClass("foo").get();
-  foo.newMethod("f").create();
+  FunctionBuilder(foo, "f").create();
 
   Class bar = gns.newClass("bar").setBase(foo).get();
-  bar.newMethod("g").create();
+  FunctionBuilder(bar, "g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);

@@ -160,10 +160,10 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
 
   array_class.newDestructor(callbacks::array::dtor).create();
 
-  array_class.newMethod("size", callbacks::array::size)
+  FunctionBuilder(array_class, "size").setCallback(callbacks::array::size)
     .setConst().returns(Type::Int).create();
 
-  array_class.newMethod("resize", callbacks::array::resize)
+  FunctionBuilder(array_class, "resize").setCallback(callbacks::array::resize)
     .params(Type::cref(Type::Int)).create();
 
   array_class.newOperator(AssignmentOperator, callbacks::array::assign)
