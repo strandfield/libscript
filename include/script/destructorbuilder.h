@@ -12,6 +12,13 @@ namespace script
 
 class Function;
 
+/*!
+ * \class DestructorBuilder
+ * \brief The DestructorBuilder class is an utility class used to build destructors.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API DestructorBuilder : public GenericFunctionBuilder<DestructorBuilder>
 {
 public:

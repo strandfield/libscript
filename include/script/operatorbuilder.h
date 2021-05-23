@@ -14,6 +14,13 @@ namespace script
 
 class Operator;
 
+/*!
+ * \class OperatorBuilder
+ * \brief The OperatorBuilder class is an utility class used to build \t{Operator}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API OperatorBuilder : public GenericFunctionBuilder<OperatorBuilder>
 {
 public:
@@ -39,6 +46,17 @@ public:
   void create();
   script::Operator get();
 };
+
+/*!
+ * \endclass
+ */
+
+ /*!
+  * \class FunctionCallOperatorBuilder
+  * \brief The FunctionCallOperatorBuilder class is an utility class used to build a function call \t{Operator}.
+  *
+  * See \t GenericFunctionBuilder for a description of builder classes.
+  */
 
 class LIBSCRIPT_API FunctionCallOperatorBuilder : public GenericFunctionBuilder<FunctionCallOperatorBuilder>
 {

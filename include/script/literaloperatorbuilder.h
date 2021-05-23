@@ -14,6 +14,13 @@ namespace script
 
 class LiteralOperator;
 
+/*!
+ * \class LiteralOperatorBuilder
+ * \brief The LiteralOperatorBuilder class is an utility class used to build \t{LiteralOperator}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API LiteralOperatorBuilder : public GenericFunctionBuilder<LiteralOperatorBuilder>
 {
 public:

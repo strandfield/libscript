@@ -12,6 +12,13 @@ namespace script
 
 class Cast;
 
+/*!
+ * \class CastBuilder
+ * \brief The CastBuilder class is an utility class used to build \t{Cast}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API CastBuilder : public GenericFunctionBuilder<CastBuilder>
 {
 public:

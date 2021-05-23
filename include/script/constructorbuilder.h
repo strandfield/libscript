@@ -12,6 +12,13 @@ namespace script
 
 class Function;
 
+/*!
+ * \class ConstructorBuilder
+ * \brief The ConstructorBuilder class is an utility class used to build constructors.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API ConstructorBuilder : public GenericFunctionBuilder<ConstructorBuilder>
 {
 public:
