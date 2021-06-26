@@ -1,9 +1,9 @@
 
 # `libscript` - A scripting library written in C++
 
-[![Build Status](https://api.travis-ci.org/bandicode/libscript.svg?branch=master)](https://travis-ci.org/bandicode/libscript)
-[![codecov](https://codecov.io/gh/bandicode/libscript/branch/master/graph/badge.svg)](https://codecov.io/gh/bandicode/libscript)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/7a090f609f8944a28d0103b11c9d2d92)](https://www.codacy.com/app/bandicode/libscript)
+[![Build Status](https://api.travis-ci.com/strandfield/libscript.svg?branch=master)](https://travis-ci.com/github/strandfield/libscript)
+[![codecov](https://codecov.io/gh/strandfield/libscript/branch/master/graph/badge.svg?token=ehzgo7KnfP)](https://codecov.io/gh/strandfield/libscript)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/6e36741a37dd41879591324ac8093f19)](https://www.codacy.com/gh/strandfield/libscript/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=strandfield/libscript&amp;utm_campaign=Badge_Grade)
 
 `libscript` is a scripting library written in C++. 
 It aims at providing all the building blocks necessary to create 
@@ -16,7 +16,7 @@ No binaries are provided. To use the library, you are invited to clone
 this repository and compile the code yourself. 
 
 ```bash
-git clone http://github.com/bandicode/libscript.git
+git clone http://github.com/strandfield/libscript.git
 ```
 
 You can then use CMake to generate project files for your favorite build system 
