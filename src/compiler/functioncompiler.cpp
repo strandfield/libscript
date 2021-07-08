@@ -330,7 +330,7 @@ void FunctionCompiler::compile(const CompileFunctionTask & task)
 
   std::shared_ptr<program::CompoundStatement> body = generateBody();
   /// TODO : add implicit return statement in void functions
-  mFunction.impl()->set_impl(body);
+  mFunction.impl()->set_body(body);
 }
 
 

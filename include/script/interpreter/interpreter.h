@@ -59,6 +59,7 @@ private:
   void visit(const program::PopDataMember &) override;
   void visit(const program::PopValue &) override;
   void visit(const program::ReturnStatement &) override;
+  void visit(const program::CppReturnStatement&) override;
   void visit(const program::WhileLoop&) override;
   void visit(const program::Breakpoint&) override;
 

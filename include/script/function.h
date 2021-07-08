@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -19,6 +19,7 @@ class Class;
 class Engine;
 namespace program { class Expression; class Statement; }
 class FunctionImpl;
+class FunctionBodyInterface;
 class FunctionTemplate;
 class LiteralOperator;
 class Locals;
@@ -96,7 +97,6 @@ public:
   FunctionTemplate instanceOf() const;
   const std::vector<TemplateArgument> & arguments() const;
 
-  NativeFunctionSignature native_callback() const;
   std::shared_ptr<program::Statement> program() const;
 
   const std::shared_ptr<UserData> & data() const;

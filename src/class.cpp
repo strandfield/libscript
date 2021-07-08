@@ -4,17 +4,12 @@
 
 #include "script/class.h"
 
-#include "script/castbuilder.h"
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
 #include "script/datamember.h"
-#include "script/destructorbuilder.h"
 #include "script/engine.h"
 #include "script/enumbuilder.h"
-#include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/object.h"
-#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/userdata.h"
@@ -232,6 +227,25 @@ const std::vector<Function> & Class::memberFunctions() const
   return d->functions;
 }
 
+void Class::addMethod(const Function& f)
+{
+  d->register_function(f);
+}
+
+void Class::addFunction(const Function& f)
+{
+  if (f.isOperator())
+    d->operators.push_back(f.toOperator());
+  else if (f.isCast())
+    d->casts.push_back(f.toCast());
+  else if (f.isConstructor())
+    d->registerConstructor(f);
+  else if (f.isDestructor())
+    d->destructor = f;
+  else
+    d->register_function(f);
+}
+
 bool Class::isAbstract() const
 {
   return d->isAbstract;
@@ -381,37 +395,6 @@ bool Class::isMoveConstructible() const
 Function Class::destructor() const
 {
   return d->destructor;
-}
-
-ConstructorBuilder Class::newConstructor(NativeFunctionSignature func) const
-{
-  return ConstructorBuilder{ Symbol{ *this } }.setCallback(func);
-}
-
-DestructorBuilder Class::newDestructor(NativeFunctionSignature func) const
-{
-  return DestructorBuilder{ Symbol{*this} }.setCallback(func);
-}
-
-FunctionBuilder Class::newMethod(const std::string & name, NativeFunctionSignature func) const
-{
-  return FunctionBuilder{ *this, std::string{name} }.setCallback(func);
-}
-
-OperatorBuilder Class::newOperator(OperatorName op, NativeFunctionSignature func) const
-{
-  return OperatorBuilder{ Symbol{*this}, op }.setCallback(func);
-}
-
-FunctionCallOperatorBuilder Class::newFunctionCallOperator(NativeFunctionSignature func) const
-{
-  return FunctionCallOperatorBuilder{ Symbol{ *this } }.setCallback(func);
-}
-
-
-CastBuilder Class::newConversion(const Type & dest, NativeFunctionSignature func) const
-{
-  return CastBuilder{ Symbol{*this}, dest }.setCallback(func);
 }
 
 ClassBuilder Class::newNestedClass(const std::string & name) const

@@ -55,6 +55,103 @@ public:
 public:
   using Component::Component;
 
+protected:
+
+  struct selector { };
+
+  template<typename Builder>
+  void set_explicit(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'explicit' specifier" };
+  }
+
+  template<typename Builder>
+  void set_explicit(Builder& builder, decltype(std::declval<Builder>().setExplicit(), selector()))
+  {
+    builder.setExplicit();
+  }
+
+  template<typename Builder>
+  void set_virtual(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'virtual' specifier" };
+  }
+
+  template<typename Builder>
+  void set_virtual(Builder& builder, decltype(std::declval<Builder>().setVirtual(), selector()))
+  {
+    builder.setVirtual();
+  }
+
+  template<typename Builder>
+  void set_virtual_pure(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'virtual' specifier" };
+  }
+
+  template<typename Builder>
+  void set_virtual_pure(Builder& builder, decltype(std::declval<Builder>().setPureVirtual(), selector()))
+  {
+    builder.setPureVirtual();
+  }
+
+  template<typename Builder>
+  void set_const(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'const' specifier" };
+  }
+
+  template<typename Builder>
+  void set_const(Builder& builder, decltype(std::declval<Builder>().setConst(), selector()))
+  {
+    builder.setConst();
+  }
+
+  template<typename Builder>
+  void set_default(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'default' specifier" };
+  }
+
+  template<typename Builder>
+  void set_default(Builder& builder, decltype(std::declval<Builder>().setDefaulted(), selector()))
+  {
+    builder.setDefaulted();
+  }
+
+  template<typename Builder>
+  void set_delete(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'default' specifier" };
+  }
+
+  template<typename Builder>
+  void set_delete(Builder& builder, decltype(std::declval<Builder>().setDeleted(), selector()))
+  {
+    builder.setDeleted();
+  }
+
+  template<typename Builder>
+  void set_static(Builder& builder, ...)
+  {
+    // @TODO: use CompilationFailure exception
+    throw std::runtime_error{ "Builder does not support 'static' specifier" };
+  }
+
+  template<typename Builder>
+  void set_static(Builder& builder, decltype(std::declval<Builder>().setStatic(), selector()))
+  {
+    builder.setStatic();
+  }
+
+public:
+
   template<typename Builder>
   void generic_fill(Builder & builder, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
@@ -64,9 +161,9 @@ public:
     prototype_.generic_fill(builder, fundecl, scp);
 
     if (fundecl->deleteKeyword.isValid())
-      builder.setDeleted();
+      set_delete(builder, selector());
     else if (fundecl->defaultKeyword.isValid())
-      builder.setDefaulted();
+      set_default(builder, selector());
 
     if (fundecl->explicitKeyword.isValid())
     {
@@ -75,7 +172,7 @@ public:
       if (!fundecl->is<ast::ConstructorDecl>())
         throw CompilationFailure{ CompilerError::InvalidUseOfExplicitKeyword };
 
-      builder.setExplicit();
+      set_explicit(builder, selector());
     }
     else if (fundecl->staticKeyword.isValid())
     {
@@ -87,7 +184,7 @@ public:
       /// TODO: is the following line needed ?
       builder.symbol = Symbol{ scp.asClass() };
 
-      builder.setStatic();
+      set_static(builder, selector());
     }
     else if (fundecl->virtualKeyword.isValid())
     {
@@ -95,9 +192,10 @@ public:
 
       try
       {
-        builder.setVirtual();
+        set_virtual(builder, selector());
+
         if (fundecl->virtualPure.isValid())
-          builder.setPureVirtual();
+          set_virtual_pure(builder, selector());
       }
       catch (...)
       {
@@ -112,7 +210,7 @@ public:
       if (!scp.isClass() || fundecl->is<ast::ConstructorDecl>() || fundecl->is<ast::DestructorDecl>() || fundecl->staticKeyword.isValid())
         throw CompilationFailure{ CompilerError::InvalidUseOfConstKeyword };
 
-      builder.setConst();
+      set_const(builder, selector());
     }
 
     builder.setAccessibility(scp.accessibility());

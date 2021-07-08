@@ -7,6 +7,7 @@
 
 #include "script/engine.h"
 #include "script/conversions.h"
+#include "script/functionbuilder.h"
 #include "script/namelookup.h"
 #include "script/scope.h"
 
@@ -400,7 +401,7 @@ FunctionType TypeSystem::getFunctionType(const Prototype& proto)
 
   BinaryOperatorPrototype assign_proto{ Type::ref(type), Type::ref(type), Type::cref(type) };
   auto assign_op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, assign_proto, engine(), FunctionFlags{});
-  assign_op->set_impl(callbacks::function_variable_assignment);
+  assign_op->set_body(builders::make_body(callbacks::function_variable_assignment));
 
   FunctionType ret{ type, proto, Operator{ assign_op } };
   d->prototypes.push_back(ret);

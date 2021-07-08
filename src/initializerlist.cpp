@@ -165,35 +165,35 @@ static Class register_ilist_iterator(Class & ilist)
 {
   Class iter = ilist.newNestedClass("iterator").setFinal(true).get();
 
-  iter.newConstructor(callbacks::initializer_list::iterator::default_ctor).create();
-  iter.newConstructor(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
+  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::default_ctor).create();
+  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
 
-  iter.newDestructor(callbacks::initializer_list::iterator::dtor).create();
+  DestructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::dtor).create();
 
-  iter.newMethod("get", callbacks::initializer_list::iterator::get)
+  FunctionBuilder(iter, "get").setCallback(callbacks::initializer_list::iterator::get)
     .setConst()
     .returns(Type::cref(ilist.arguments().at(0).type))
     .create();
 
-  iter.newOperator(AssignmentOperator, callbacks::initializer_list::iterator::assign)
+  OperatorBuilder(Symbol(iter), AssignmentOperator).setCallback(callbacks::initializer_list::iterator::assign)
     .returns(Type::ref(iter.id()))
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.newOperator(PreIncrementOperator, callbacks::initializer_list::iterator::pre_increment)
+  OperatorBuilder(Symbol(iter), PreIncrementOperator).setCallback(callbacks::initializer_list::iterator::pre_increment)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.newOperator(PreDecrementOperator, callbacks::initializer_list::iterator::pre_decrement)
+  OperatorBuilder(Symbol(iter), PreDecrementOperator).setCallback(callbacks::initializer_list::iterator::pre_decrement)
     .returns(Type::ref(iter.id()))
     .create();
 
-  iter.newOperator(EqualOperator, callbacks::initializer_list::iterator::eq)
+  OperatorBuilder(Symbol(iter), EqualOperator).setCallback(callbacks::initializer_list::iterator::eq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
 
-  iter.newOperator(InequalOperator, callbacks::initializer_list::iterator::neq)
+  OperatorBuilder(Symbol(iter), InequalOperator).setCallback(callbacks::initializer_list::iterator::neq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
@@ -224,25 +224,24 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
 
   Class iter_type = register_ilist_iterator(ilist_class);
 
-  ilist_class.newConstructor(callbacks::initializer_list::default_ctor).create();
+  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::default_ctor).create();
 
-  ilist_class.newConstructor(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
+  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
 
-  ilist_class.newDestructor(callbacks::initializer_list::dtor).create();
+  DestructorBuilder(ilist_class).setCallback(callbacks::initializer_list::dtor).create();
 
-  ilist_class.newMethod("size", callbacks::initializer_list::size)
+  FunctionBuilder(ilist_class, "size").setCallback(callbacks::initializer_list::size)
     .setConst().returns(Type::Int).create();
 
-  ilist_class.newMethod("begin", callbacks::initializer_list::begin)
+  FunctionBuilder(ilist_class, "begin").setCallback(callbacks::initializer_list::begin)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.newMethod("end", callbacks::initializer_list::end)
+  FunctionBuilder(ilist_class, "end").setCallback(callbacks::initializer_list::end)
     .setConst().returns(iter_type.id()).create();
 
-  ilist_class.newOperator(AssignmentOperator, callbacks::initializer_list::assign)
+  OperatorBuilder(Symbol(ilist_class), AssignmentOperator).setCallback(callbacks::initializer_list::assign)
     .returns(Type::ref(ilist_type))
     .params(Type::cref(ilist_type)).create();
-
 
   return ilist_class;
 }

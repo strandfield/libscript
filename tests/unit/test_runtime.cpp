@@ -40,7 +40,7 @@ TEST(TestRuntime, call_undefined_function) {
   Engine engine;
   engine.setup();
 
-  engine.rootNamespace().newFunction("throwing_function", FunctionBuilder::throwing_body).create();
+  FunctionBuilder(engine.rootNamespace(), "throwing_function").setCallback(FunctionBuilder::throwing_body).create();
 
   Script s = engine.newScript(SourceFile::fromString(source));
   bool success = s.compile();

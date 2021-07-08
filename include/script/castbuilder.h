@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -12,6 +12,13 @@ namespace script
 
 class Cast;
 
+/*!
+ * \class CastBuilder
+ * \brief The CastBuilder class is an utility class used to build \t{Cast}s.
+ *
+ * See \t GenericFunctionBuilder for a description of builder classes.
+ */
+
 class LIBSCRIPT_API CastBuilder : public GenericFunctionBuilder<CastBuilder>
 {
 public:
@@ -21,7 +28,9 @@ public:
   prototype_t proto;
 
 public:
-  CastBuilder(const Symbol & s, const Type & dest);
+  explicit CastBuilder(const Class& cla);
+  explicit CastBuilder(const Symbol& s);
+  CastBuilder(const Symbol& s, const Type& dest);
 
   CastBuilder & setConst();
   CastBuilder & setDeleted();
@@ -29,6 +38,8 @@ public:
 
   CastBuilder & setReturnType(const Type & t);
   CastBuilder & addParam(const Type & t);
+
+  CastBuilder& operator()(const Type& dest);
 
   void create();
   script::Cast get();

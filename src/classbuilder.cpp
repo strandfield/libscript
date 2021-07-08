@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -29,13 +29,13 @@ static void fill_class(std::shared_ptr<ClassImpl> impl, const ClassBuilderBase<D
   impl->enclosing_symbol = opts.symbol.impl();
 }
 
-ClassBuilder::ClassBuilder(const Symbol &s, const std::string & n)
-  : Base(s, n)
+ClassBuilder::ClassBuilder(const Symbol& s)
+  : Base(s, "")
 {
 
 }
 
-ClassBuilder::ClassBuilder(const Symbol &s, std::string && n)
+ClassBuilder::ClassBuilder(const Symbol &s, std::string n)
   : Base(s, std::move(n))
 {
 
@@ -49,6 +49,18 @@ ClassBuilder & ClassBuilder::setBase(const Class & b)
 {
   base = b.id();
   return (*this);
+}
+
+ClassBuilder& ClassBuilder::operator()(std::string n)
+{
+  this->base = Type::Null;
+  this->dataMembers.clear();
+  this->isFinal = false;
+  this->userdata = nullptr;
+
+  this->name = std::move(n);
+
+  return *this;
 }
 
 Class ClassBuilder::get()

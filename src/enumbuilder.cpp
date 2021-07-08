@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -8,6 +8,8 @@
 #include "script/enumerator.h"
 #include "script/value.h"
 #include "script/typesystem.h"
+
+#include "script/functionbuilder.h"
 
 #include "script/interpreter/executioncontext.h"
 
@@ -44,6 +46,18 @@ Value enum_assignment(interpreter::FunctionCall *c)
 
 } // namespace callbacks
 
+EnumBuilder& EnumBuilder::operator()(std::string n)
+{
+  this->name = std::move(n);
+  this->is_enum_class = false;
+  this->id = 0;
+  this->from_int_callback = nullptr;
+  this->copy_callback = nullptr;
+  this->assignment_callback = nullptr;
+
+  return *this;
+}
+
 Enum EnumBuilder::get()
 {
   auto impl = std::make_shared<EnumImpl>(0, std::move(name), symbol.engine());
@@ -58,7 +72,7 @@ Enum EnumBuilder::get()
   {
     DynamicPrototype proto{ Type(result.id()), {Type::cref(Type::Int)} };
     auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
-    ctor->implementation.callback = this->from_int_callback != nullptr ? this->from_int_callback : callbacks::enum_from_int;
+    ctor->program_ = builders::make_body(this->from_int_callback != nullptr ? this->from_int_callback : callbacks::enum_from_int);
     impl->from_int = Function(ctor);
   }
 
@@ -66,7 +80,7 @@ Enum EnumBuilder::get()
   {
     DynamicPrototype proto{ Type(result.id()), {Type::cref(result.id())} };
     auto ctor = std::make_shared<RegularFunctionImpl>(result.name(), std::move(proto), symbol.engine(), FunctionFlags{});
-    ctor->implementation.callback = this->copy_callback != nullptr ? this->copy_callback : callbacks::enum_copy;
+    ctor->program_ = builders::make_body(this->copy_callback != nullptr ? this->copy_callback : callbacks::enum_copy);
     impl->copy = Function(ctor);
   }
 
@@ -74,7 +88,7 @@ Enum EnumBuilder::get()
   {
     BinaryOperatorPrototype proto{ Type::ref(result.id()), Type::ref(result.id()), Type::cref(result.id()) };
     auto op = std::make_shared<BinaryOperatorImpl>(AssignmentOperator, proto, symbol.engine(), FunctionFlags{});
-    op->implementation.callback = this->assignment_callback != nullptr ? this->assignment_callback : callbacks::enum_assignment;
+    op->program_ = builders::make_body(this->assignment_callback != nullptr ? this->assignment_callback : callbacks::enum_assignment);
     impl->assignment = Operator{ op };
   }
 

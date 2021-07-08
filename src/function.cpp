@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -58,13 +58,48 @@ Name FunctionImpl::get_name() const
   throw std::runtime_error{ "This kind of function does not implement get_name()" };
 }
 
+//bool FunctionImpl::is_native() const
+//{
+//  return true;
+//}
+
+std::shared_ptr<program::Statement> FunctionImpl::body() const
+{
+  return nullptr;
+}
+
+void FunctionImpl::set_return_type(const Type& t)
+{
+  throw std::runtime_error{ "Bad call to FunctionImpl::set_return_type()" };
+}
+
+script::Value FunctionImpl::invoke(script::FunctionCall* c)
+{
+  throw std::runtime_error{ "Bad call to FunctionImpl::invoke()" };
+}
+
+bool FunctionImpl::is_template_instance() const
+{
+  return false;
+}
+
+bool FunctionImpl::is_instantiation_completed() const
+{
+  return true;
+}
+
+void FunctionImpl::complete_instantiation()
+{
+  throw std::runtime_error{ "Bad call to FunctionImpl::complete_instantiation()" };
+}
+
 const std::vector<DefaultArgument> & FunctionImpl::default_arguments() const
 {
   static const std::vector<DefaultArgument> defaults = {};
   return defaults;
 }
 
-void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
 {
   if (defaults.empty())
     return;
@@ -77,42 +112,32 @@ void FunctionImpl::add_default_argument(const DefaultArgument &)
   throw std::runtime_error{ "Function does not support default arguments" };
 }
 
-void FunctionImpl::set_return_type(const Type & t)
-{
-  throw std::runtime_error{ "Bad call to FunctionImpl::set_return_type()" };
-}
-
 void FunctionImpl::force_virtual()
 {
   this->flags.set(FunctionSpecifier::Virtual);
 }
 
-void FunctionImpl::set_impl(NativeFunctionSignature callback)
-{
-  this->implementation.callback = callback;
-  this->flags.set(ImplementationMethod::NativeFunction);
-}
 
-void FunctionImpl::set_impl(const std::shared_ptr<program::Statement> program)
-{
-  this->implementation.program = program;
-  this->flags.set(ImplementationMethod::InterpretedFunction);
-}
 
-RegularFunctionImpl::RegularFunctionImpl(const std::string & name, const Prototype &p, Engine *e, FunctionFlags f)
+RegularFunctionImpl::RegularFunctionImpl(std::string name, const Prototype& p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(p)
-  , mName(name)
+  , mName(std::move(name))
 {
 
 }
 
-RegularFunctionImpl::RegularFunctionImpl(const std::string & name, DynamicPrototype&& p, Engine *e, FunctionFlags f)
+RegularFunctionImpl::RegularFunctionImpl(std::string name, DynamicPrototype p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(std::move(p))
-  , mName(name)
+  , mName(std::move(name))
 {
 
+}
+
+const std::string& RegularFunctionImpl::name() const
+{
+  return mName;
 }
 
 Name RegularFunctionImpl::get_name() const
@@ -120,12 +145,27 @@ Name RegularFunctionImpl::get_name() const
   return mName;
 }
 
+bool RegularFunctionImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> RegularFunctionImpl::body() const
+{
+  return program_;
+}
+
+void RegularFunctionImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
 const Prototype & RegularFunctionImpl::prototype() const
 {
   return prototype_;
 }
 
-void RegularFunctionImpl::set_return_type(const Type & t)
+void RegularFunctionImpl::set_return_type(const Type& t)
 {
   prototype_.setReturnType(t);
 }
@@ -135,15 +175,16 @@ const std::vector<DefaultArgument> & RegularFunctionImpl::default_arguments() co
   return mDefaultArguments;
 }
 
-void RegularFunctionImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+void RegularFunctionImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
 {
   mDefaultArguments = std::move(defaults);
 }
 
-void RegularFunctionImpl::add_default_argument(const DefaultArgument & da)
+void RegularFunctionImpl::add_default_argument(const DefaultArgument& da)
 {
   mDefaultArguments.push_back(da);
 }
+
 
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
@@ -158,14 +199,29 @@ const std::string& ScriptFunctionImpl::name() const
   return static_name;
 }
 
-const Prototype & ScriptFunctionImpl::prototype() const
+bool ScriptFunctionImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> ScriptFunctionImpl::body() const
+{
+  return program_;
+}
+
+void ScriptFunctionImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
+const Prototype& ScriptFunctionImpl::prototype() const
 {
   return this->prototype_;
 }
 
 
 
-ConstructorImpl::ConstructorImpl(const Prototype &p, Engine *e, FunctionFlags f)
+ConstructorImpl::ConstructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , prototype_(p)
 {
@@ -182,7 +238,7 @@ const std::string & ConstructorImpl::name() const
   return getClass().name();
 }
 
-const Prototype & ConstructorImpl::prototype() const
+const Prototype& ConstructorImpl::prototype() const
 {
   return this->prototype_;
 }
@@ -192,17 +248,17 @@ Name ConstructorImpl::get_name() const
   return name();
 }
 
-const std::vector<DefaultArgument> & ConstructorImpl::default_arguments() const
+const std::vector<DefaultArgument>& ConstructorImpl::default_arguments() const
 {
   return mDefaultArguments;
 }
 
-void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> && defaults)
+void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
 {
   mDefaultArguments = std::move(defaults);
 }
 
-void ConstructorImpl::add_default_argument(const DefaultArgument & da)
+void ConstructorImpl::add_default_argument(const DefaultArgument& da)
 {
   mDefaultArguments.push_back(da);
 }
@@ -226,7 +282,24 @@ bool ConstructorImpl::is_move_ctor() const
   return this->prototype_.at(1) == Type::rref(getClass().id());
 }
 
-DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionFlags f)
+bool ConstructorImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> ConstructorImpl::body() const
+{
+  return program_;
+}
+
+void ConstructorImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
+
+
+DestructorImpl::DestructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
   : FunctionImpl(e, f)
   , proto_{p.returnType(), p.at(0)}
 {
@@ -236,6 +309,21 @@ DestructorImpl::DestructorImpl(const Prototype & p, Engine *e, FunctionFlags f)
 const Prototype & DestructorImpl::prototype() const
 {
   return this->proto_;
+}
+
+bool DestructorImpl::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> DestructorImpl::body() const
+{
+  return program_;
+}
+
+void DestructorImpl::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
 }
 
 
@@ -251,11 +339,28 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
 {
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name_, builder.proto_, ft.engine(), builder.flags);
-  impl->implementation = builder.body;
+  impl->program_ = builder.body;
   impl->data = builder.data;
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }
+
+bool FunctionTemplateInstance::is_template_instance() const
+{
+  return true;
+}
+
+bool FunctionTemplateInstance::is_instantiation_completed() const
+{
+  return program_ != nullptr;
+}
+
+void FunctionTemplateInstance::complete_instantiation()
+{
+  // no-op
+}
+
+
 
 Function::Function(const std::shared_ptr<FunctionImpl> & impl)
   : d(impl)
@@ -349,17 +454,13 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
 }
 
 /*!
- * \fun const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
+ * \fn const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
  * \brief Returns the function's default arguments.
  *
  * Note that you cannot concatenate this list to an existing list of arguments to make 
  * a valid call as the default arguments are stored in reverse order; i.e. \c{defaultArguments()[0]} 
  * is the default value for the last parameter, \c{defaultArguments()[1]} is the default value 
  * for the penultimate parameter and so on.
- *
- * Currently this function throws an std::runtime_error if there are no default arguments.
- *
- * \sa hasDefaultArguments()
  */
 const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
 {
@@ -420,7 +521,7 @@ bool Function::isMoveConstructor() const
 
 bool Function::isNative() const
 {
-  return d->flags.test(ImplementationMethod::NativeFunction);
+  return d->is_native();
 }
 
 bool Function::isExplicit() const
@@ -538,14 +639,9 @@ const std::vector<TemplateArgument> & Function::arguments() const
   return dynamic_cast<const FunctionTemplateInstance *>(d.get())->mArgs;
 }
 
-NativeFunctionSignature Function::native_callback() const
-{
-  return d->implementation.callback;
-}
-
 std::shared_ptr<program::Statement> Function::program() const
 {
-  return d->implementation.program;
+  return d->body();
 }
 
 const std::shared_ptr<UserData> & Function::data() const

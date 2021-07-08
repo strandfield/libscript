@@ -189,10 +189,10 @@ TEST(NameLookup, member_lookup) {
   Symbol gns{ e.rootNamespace() };
 
   Class foo = gns.newClass("foo").get();
-  foo.newMethod("f").create();
+  FunctionBuilder(foo, "f").create();
 
   Class bar = gns.newClass("bar").setBase(foo).get();
-  bar.newMethod("g").create();
+  FunctionBuilder(bar, "g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -325,11 +325,11 @@ TEST(NameLookup, scope_namespace_injection) {
   Namespace foo = e.rootNamespace().newNamespace("foo");
   Class foo_A = Symbol{ foo }.newClass("A").get();
   Class foo_B = Symbol{ foo }.newClass("B").get();
-  Function foo_max_int = foo.newFunction("max").returns(Type::Int).params(Type::Int, Type::Int).get();
-  Function foo_max_double = foo.newFunction("max").returns(Type::Double).params(Type::Double, Type::Double).get();
+  Function foo_max_int = FunctionBuilder(foo, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
+  Function foo_max_double = FunctionBuilder(foo, "max").returns(Type::Double).params(Type::Double, Type::Double).get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
-  Function bar_max_float = bar.newFunction("max").returns(Type::Float).params(Type::Float, Type::Float).get();
+  Function bar_max_float = FunctionBuilder(bar, "max").returns(Type::Float).params(Type::Float, Type::Float).get();
 
   Scope s{ e.rootNamespace() };
 
@@ -373,11 +373,11 @@ TEST(NameLookup, scope_merge) {
 
   Namespace anon_1 = e.rootNamespace().newNamespace("anon1");
   Namespace anon_1_bar = anon_1.newNamespace("bar");
-  Function anon_1_bar_func = anon_1_bar.newFunction("func").get();
+  Function anon_1_bar_func = FunctionBuilder(anon_1_bar, "func").get();
 
   Namespace anon_2 = e.rootNamespace().newNamespace("anon2");
   Namespace anon_2_bar = anon_2.newNamespace("bar");
-  Function anon_2_bar_func = anon_2_bar.newFunction("func").get();
+  Function anon_2_bar_func = FunctionBuilder(anon_2_bar, "func").get();
 
   Scope base{ anon_1 };
 
@@ -421,7 +421,7 @@ TEST(NameLookup, scope_namespace_alias) {
   Namespace bar = foo.newNamespace("bar");
   Namespace qux = bar.newNamespace("qux");
 
-  Function func = qux.newFunction("func").get();
+  Function func = FunctionBuilder(qux, "func").get();
 
   Scope base{ e.rootNamespace() };
   Scope s = base.child("foo");

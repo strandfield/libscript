@@ -117,9 +117,9 @@ EnumBuilder Symbol::newEnum(std::string && name)
 FunctionBuilder Symbol::newFunction(const std::string & name)
 {
   if (isClass())
-    return toClass().newMethod(name);
+    return FunctionBuilder(toClass(), name);
   else if (isNamespace())
-    return toNamespace().newFunction(name);
+    return FunctionBuilder(toNamespace(), name);
   throw std::runtime_error{ "Cannot add function on null symbol" };
 }
 
@@ -135,10 +135,8 @@ FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
 
 OperatorBuilder Symbol::newOperator(OperatorName op)
 {
-  if (isClass())
-    return toClass().newOperator(op);
-  else if (isNamespace())
-    return toNamespace().newOperator(op);
+  if (isClass() || isNamespace())
+    return OperatorBuilder(*this, op);
   throw std::runtime_error{ "Cannot add operator on null symbol" };
 }
 

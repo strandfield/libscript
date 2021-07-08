@@ -1,5 +1,4 @@
-
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -31,6 +30,12 @@ public:
   EnumBuilder(const EnumBuilder&) = default;
   ~EnumBuilder() = default;
 
+  explicit EnumBuilder(const Symbol& s)
+    : symbol(s), is_enum_class(false), id(0)
+  {
+
+  }
+
   EnumBuilder(const Symbol& s, std::string n)
     : symbol(s), name(std::move(n)), is_enum_class(false), id(0) { }
 
@@ -52,6 +57,8 @@ public:
     assignment_callback = assign;
     return *(this);
   }
+
+  EnumBuilder& operator()(std::string n);
 
   Enum get();
   void create();

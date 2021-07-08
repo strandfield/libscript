@@ -42,8 +42,8 @@ void load_math_module(script::Module math)
 
   Namespace ns = math.root();
 
-  ns.newFunction("max", callbacks::max).returns(Type::Double).params(Type::cref(Type::Double), Type::cref(Type::Double)).create();
-  ns.newFunction("cos", callbacks::cos).returns(Type::Double).params(Type::cref(Type::Double)).create();
+  FunctionBuilder(ns, "max").setCallback(callbacks::max).returns(Type::Double).params(Type::cref(Type::Double), Type::cref(Type::Double)).create();
+  FunctionBuilder(ns, "cos").setCallback(callbacks::cos).returns(Type::Double).params(Type::cref(Type::Double)).create();
 }
 
 void cleanup_module(script::Module)
@@ -105,7 +105,7 @@ void load_trig_module(script::Module trig)
 
   Namespace ns = trig.root();
 
-  ns.newFunction("cos", callbacks::cos).returns(Type::Double).params(Type::cref(Type::Double)).create();
+  FunctionBuilder(ns, "cos").setCallback(callbacks::cos).returns(Type::Double).params(Type::cref(Type::Double)).create();
 }
 
 void load_misc_module(script::Module misc)
@@ -114,7 +114,7 @@ void load_misc_module(script::Module misc)
 
   Namespace ns = misc.root();
 
-  ns.newFunction("max", callbacks::max).returns(Type::Double).params(Type::cref(Type::Double), Type::cref(Type::Double)).create();
+  FunctionBuilder(ns, "max").setCallback(callbacks::max).returns(Type::Double).params(Type::cref(Type::Double), Type::cref(Type::Double)).create();
 }
 
 TEST(ModuleTests, sub_module) {
