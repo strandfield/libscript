@@ -24,7 +24,7 @@ public:
 
   template<typename...Args>
   HybridCppValue(script::Engine* e, Args &&... args)
-    : IValue(script::Type::make<T>(), e),
+    : IValue(e->makeType<T>(), e),
       value(std::forward<Args>(args)...)
   {
 

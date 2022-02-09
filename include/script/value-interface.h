@@ -85,7 +85,7 @@ public:
 
   template<typename...Args>
   CppValue(script::Engine* e, Args &&... args)
-    : IValue(script::Type::make<T>(), e), 
+    : IValue(e->makeType<T>(), e),
       value(std::forward<Args>(args)...)
   {
 
@@ -112,7 +112,7 @@ public:
 
 public:
   CppReferenceValue(script::Engine* e, T& r)
-    : IValue(script::Type::make<T&>(), e), 
+    : IValue(e->makeType<T&>(), e), 
       reference(r)
   {
 
