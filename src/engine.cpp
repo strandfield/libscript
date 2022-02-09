@@ -251,6 +251,14 @@ void Engine::setup()
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
+  register_type(std::type_index(typeid(void)), Type(Type::Void));
+  register_type(std::type_index(typeid(bool)), Type(Type::Boolean));
+  register_type(std::type_index(typeid(char)), Type(Type::Char));
+  register_type(std::type_index(typeid(int)), Type(Type::Int));
+  register_type(std::type_index(typeid(float)), Type(Type::Float));
+  register_type(std::type_index(typeid(double)), Type(Type::Double));
+  register_type(std::type_index(typeid(String)), Type(Type::String));
+
   register_builtin_operators(d->rootNamespace);
 
   Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
@@ -939,8 +947,13 @@ Type Engine::register_type(std::type_index id, Type::TypeFlag what)
 {
   size_t offset = typeSystem()->reserve(what, 1);
   Type result{ static_cast<int>(offset), what };
-  typeSystem()->impl()->typemap[id] = result;
+  register_type(id, result);
   return result;
+}
+
+void Engine::register_type(std::type_index id, Type t)
+{
+  typeSystem()->impl()->typemap[id] = t;
 }
 
 Type Engine::find_type_or_throw(std::type_index id) const

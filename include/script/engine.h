@@ -224,6 +224,7 @@ public:
 
 protected:
   Type register_type(std::type_index id, Type::TypeFlag what);
+  void register_type(std::type_index id, Type t);
   Type find_type_or_throw(std::type_index id) const;
 
 protected:

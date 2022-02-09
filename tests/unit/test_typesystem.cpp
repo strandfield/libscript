@@ -97,6 +97,10 @@ TEST(TypeSystemTests, TypeRegistration) {
   Engine e;
   e.setup();
 
+  ASSERT_EQ(e.getType<void>(), Type::Void);
+  ASSERT_EQ(e.getType<bool>(), Type::Boolean);
+  ASSERT_EQ(e.getType<script::String>(), Type::String);
+
   Type t = e.registerType<MyTestStruct>("MyTestStruct");
   ASSERT_EQ(t, e.getType<MyTestStruct>());
 
