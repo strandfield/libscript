@@ -88,6 +88,20 @@ TEST(TypeSystemTests, Types) {
   ASSERT_TRUE(e.typeSystem()->exists(function_type));
 }
 
+TEST(TypeSystemTests, TypeRegistration) {
+  using namespace script;
+
+  struct MyTestStruct { };
+  struct NotExposedTest { };
+
+  Engine e;
+  e.setup();
+
+  Type t = e.registerType<MyTestStruct>("MyTestStruct");
+  ASSERT_EQ(t, e.getType<MyTestStruct>());
+
+  ASSERT_ANY_THROW(e.getType<NotExposedTest>());
+}
 
 TEST(Conversions, fundamentals) {
   using namespace script;

@@ -139,6 +139,12 @@ public:
 
   TypeSystem* typeSystem() const;
 
+  template<typename T>
+  Type registerType(std::string name);
+
+  template<typename T>
+  Type getType() const;
+
   Value newBool(bool bval);
   Value newChar(char cval);
   Value newInt(int ival);
@@ -217,8 +223,38 @@ public:
   Engine & operator=(const Engine & other) = delete;
 
 protected:
+  Type register_type(std::type_index id, Type::TypeFlag what);
+  Type find_type_or_throw(std::type_index id) const;
+
+protected:
   std::unique_ptr<EngineImpl> d;
 };
+
+/*!
+ * \fn template<typename T> Type registerType(std::string name)
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType(std::string name)
+{
+  static_assert(std::is_class<T>::value || std::is_enum<T>::value, "T must be enum or class");
+  Type::TypeFlag what = std::is_class<T>::value ? Type::ObjectFlag : Type::EnumFlag;
+  return register_type(std::type_index(typeid(T)), what);
+}
+
+/*!
+ * \fn template<typename T> Type getType() const
+ * \brief get a type
+ * 
+ * Throws \t UnknownTypeError if the type wasn't previously registered
+ * with \m registerType.
+ */
+template<typename T>
+inline Type Engine::getType() const
+{
+  static const script::Type cache = find_type_or_throw(std::type_index(typeid(T)));
+  return cache;
+}
 
 template<> inline Value Engine::construct<bool>(const bool& x) { return newBool(x); }
 template<> inline Value Engine::construct<bool>(bool&& x) { return newBool(x); }

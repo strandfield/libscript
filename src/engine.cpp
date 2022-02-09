@@ -935,4 +935,23 @@ EngineImpl * Engine::implementation() const
   return d.get();
 }
 
+Type Engine::register_type(std::type_index id, Type::TypeFlag what)
+{
+  size_t offset = typeSystem()->reserve(what, 1);
+  Type result{ static_cast<int>(offset), what };
+  typeSystem()->impl()->typemap[id] = result;
+  return result;
+}
+
+Type Engine::find_type_or_throw(std::type_index id) const
+{
+  auto& typemap = typeSystem()->impl()->typemap;
+  auto it = typemap.find(id);
+
+  if (it == typemap.end())
+    throw UnknownTypeError();
+
+  return it->second;
+}
+
 } // namespace script
