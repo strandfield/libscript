@@ -107,6 +107,21 @@ TEST(TypeSystemTests, TypeRegistration) {
   ASSERT_ANY_THROW(e.getType<NotExposedTest>());
 }
 
+TEST(TypeSystemTests, MakeType) {
+  using namespace script;
+
+  struct MyTestStruct { };
+  struct NotExposedTest { };
+
+  Engine e;
+  e.setup();
+
+  ASSERT_EQ(e.makeType<void>(), Type::Void);
+  ASSERT_EQ(e.makeType<bool&>(), Type::ref(Type::Boolean));
+  ASSERT_EQ(e.makeType<const int>(), Type(Type::Int).withConst());
+  ASSERT_EQ(e.makeType<const double&>(), Type::cref(Type::Double));
+}
+
 TEST(Conversions, fundamentals) {
   using namespace script;
 

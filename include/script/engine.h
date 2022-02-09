@@ -126,7 +126,6 @@ inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcep
   return std::error_code(static_cast<int>(e), script::errors::engine_category());
 }
 
-
 class LIBSCRIPT_API Engine
 {
 public:
@@ -144,6 +143,9 @@ public:
 
   template<typename T>
   Type getType() const;
+
+  template<typename T>
+  Type makeType() const;
 
   Value newBool(bool bval);
   Value newChar(char cval);
@@ -256,6 +258,83 @@ inline Type Engine::getType() const
   static const script::Type cache = find_type_or_throw(std::type_index(typeid(T)));
   return cache;
 }
+
+template<typename T>
+struct maketype_helper
+{
+  inline static Type get(const Engine& e)
+  {
+    return e.getType<T>();
+  }
+};
+
+template<typename T>
+struct maketype_helper<T&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::ref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<T&&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::rref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T>
+{
+  inline static Type get(const Engine& e)
+  {
+    return maketype_helper<T>::get(e).withFlag(Type::ConstFlag);
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::cref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T*>
+{
+  inline static Type get(const Engine& e)
+  {
+    return maketype_helper<T*>::get(e).withFlag(Type::ConstFlag);
+  }
+};
+
+template<> struct maketype_helper<void> { static Type get(const Engine&) { return Type::Void; } };
+template<> struct maketype_helper<bool> { static Type get(const Engine&) { return Type::Boolean; } };
+template<> struct maketype_helper<char> { static Type get(const Engine&) { return Type::Char; } };
+template<> struct maketype_helper<int> { static Type get(const Engine&) { return Type::Int; } };
+template<> struct maketype_helper<float> { static Type get(const Engine&) { return Type::Float; } };
+template<> struct maketype_helper<double> { static Type get(const Engine&) { return Type::Double; } };
+template<> struct maketype_helper<String> { static Type get(const Engine&) { return Type::String; } };
+
+/*!
+ * \fn template<typename T> Type makeType() const
+ * \brief constructs a Type from a C++ type
+ *
+ * This function may use \m getType and as such can raise 
+ * an \t UnknownTypeError.
+ */
+template<typename T>
+inline Type Engine::makeType() const
+{
+  static const script::Type cache = maketype_helper<T>::get(*this);
+  return cache;
+}
+
 
 template<> inline Value Engine::construct<bool>(const bool& x) { return newBool(x); }
 template<> inline Value Engine::construct<bool>(bool&& x) { return newBool(x); }
