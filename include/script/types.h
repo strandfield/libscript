@@ -86,12 +86,6 @@ public:
   static Type cref(const Type & base);
   static Type rref(const Type & base);
 
-  template<typename T>
-  static Type make()
-  {
-    return make_type_helper<T>::get();
-  }
-
   bool operator==(const Type & other) const;
   bool operator==(const BuiltInType & rhs) const;
   inline bool operator!=(const Type & other) const { return !operator==(other); }
