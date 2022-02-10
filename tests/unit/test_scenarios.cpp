@@ -108,7 +108,7 @@ TEST(Scenarios, custom_type) {
   engine.destroy(val);
 
   Class smallobject = engine.rootNamespace()
-    .newClass("SmallObject").setId(engine.registerType<SmallObject>("SmallObject").data()).get();
+    .newClass("SmallObject").setId(engine.registerType<SmallObject>().data()).get();
   ConstructorBuilder(smallobject).setCallback(smallobject_default_ctor).create();
   DestructorBuilder(smallobject).setCallback(smallobject_dtor).create();
 

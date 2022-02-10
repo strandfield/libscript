@@ -142,6 +142,12 @@ public:
   Type registerType(std::string name);
 
   template<typename T>
+  Type registerType(std::string name, Type::TypeFlag what);
+
+  template<typename T>
+  Type registerType();
+
+  template<typename T>
   Type getType() const;
 
   template<typename T>
@@ -242,7 +248,29 @@ inline Type Engine::registerType(std::string name)
 {
   static_assert(std::is_class<T>::value || std::is_enum<T>::value, "T must be enum or class");
   Type::TypeFlag what = std::is_class<T>::value ? Type::ObjectFlag : Type::EnumFlag;
+  return registerType<T>(std::move(name), what);
+}
+
+/*!
+ * \fn template<typename T> Type registerType(std::string name, Type::TypeFlag what)
+ * \param the name of the type
+ * \param whether the type is enum or class
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType(std::string name, Type::TypeFlag what)
+{
   return register_type(std::type_index(typeid(T)), what);
+}
+
+/*!
+ * \fn template<typename T> Type registerType()
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType()
+{
+  return registerType<T>(typeid(T).name());
 }
 
 /*!
