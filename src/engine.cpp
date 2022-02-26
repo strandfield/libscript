@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -318,7 +318,7 @@ TypeSystem* Engine::typeSystem() const
  */
 Value Engine::newBool(bool bval)
 {
-  return Value(new CppValue<bool>(this, bval));
+  return Value(new CppValue<bool>(this, script::Type::Boolean, bval));
 }
 
 /*!
@@ -327,7 +327,7 @@ Value Engine::newBool(bool bval)
  */
 Value Engine::newChar(char cval)
 {
-  return Value(new CppValue<char>(this, cval));
+  return Value(new CppValue<char>(this, script::Type::Char, cval));
 }
 
 /*!
@@ -336,7 +336,7 @@ Value Engine::newChar(char cval)
  */
 Value Engine::newInt(int ival)
 {
-  return Value(new CppValue<int>(this, ival));
+  return Value(new CppValue<int>(this, script::Type::Int, ival));
 }
 
 /*!
@@ -345,7 +345,7 @@ Value Engine::newInt(int ival)
  */
 Value Engine::newFloat(float fval)
 {
-  return Value(new CppValue<float>(this, fval));
+  return Value(new CppValue<float>(this, script::Type::Float, fval));
 }
 
 /*!
@@ -354,7 +354,7 @@ Value Engine::newFloat(float fval)
  */
 Value Engine::newDouble(double dval)
 {
-  return Value(new CppValue<double>(this, dval));
+  return Value(new CppValue<double>(this, script::Type::Double, dval));
 }
 
 /*!
@@ -363,7 +363,7 @@ Value Engine::newDouble(double dval)
  */
 Value Engine::newString(const String & sval)
 {
-  return Value(new CppValue<String>(this, sval));
+  return Value(new CppValue<String>(this, script::Type::String, sval));
 }
 
 /*!

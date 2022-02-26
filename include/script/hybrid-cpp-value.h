@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Vincent Chambrin
+// Copyright (C) 2020-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -23,8 +23,8 @@ public:
   ~HybridCppValue() = default;
 
   template<typename...Args>
-  HybridCppValue(script::Engine* e, Args &&... args)
-    : IValue(e->makeType<T>(), e),
+  HybridCppValue(script::Engine* e, script::Type t, Args &&... args)
+    : IValue(t, e),
       value(std::forward<Args>(args)...)
   {
 

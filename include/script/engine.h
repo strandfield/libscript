@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -173,7 +173,7 @@ public:
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    return Value(new CppValue<T>(this, std::forward<Args>(args)...));
+    return Value(new CppValue<T>(this, makeType<T>(), std::forward<Args>(args)...));
   }
 
   void destroy(Value val);
@@ -187,7 +187,7 @@ public:
   template<typename T>
   Value expose(T& val)
   {
-    return Value(new CppReferenceValue<T>(this, val));
+    return Value(new CppReferenceValue<T>(this, makeType<T&>(), val));
   }
 
   bool canCopy(const Type & t);
