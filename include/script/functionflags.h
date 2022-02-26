@@ -31,11 +31,6 @@ enum class FunctionSpecifier {
   Delete = 64,
 };
 
-enum ImplementationMethod {
-  NativeFunction = 0,
-  InterpretedFunction = 1
-};
-
 class LIBSCRIPT_API FunctionFlags
 {
 public:
@@ -48,9 +43,6 @@ public:
 
   bool test(FunctionSpecifier fs) const;
   void set(FunctionSpecifier fs);
-
-  bool test(ImplementationMethod im) const;
-  void set(ImplementationMethod im);
 
   AccessSpecifier getAccess() const;
   void set(AccessSpecifier as);

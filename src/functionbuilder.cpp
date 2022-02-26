@@ -559,19 +559,16 @@ ConstructorBuilder & ConstructorBuilder::compile()
   if (proto_.count() == 1)
   {
     this->body = compiler::ConstructorCompiler::generateDefaultConstructor(symbol.toClass());
-    this->flags.set(ImplementationMethod::InterpretedFunction);
   }
   else
   {
     if (proto_.at(1) == Type::cref(symbol.toClass().id()))
     {
       this->body = compiler::ConstructorCompiler::generateCopyConstructor(symbol.toClass());
-      this->flags.set(ImplementationMethod::InterpretedFunction);
     }
     else if (proto_.at(1) == Type::rref(symbol.toClass().id()))
     {
       this->body = compiler::ConstructorCompiler::generateMoveConstructor(symbol.toClass());
-      this->flags.set(ImplementationMethod::InterpretedFunction);
     }
     else
     {
@@ -664,7 +661,6 @@ DestructorBuilder & DestructorBuilder::compile()
     throw std::runtime_error{ "DestructorBuilder : only defaulted function can be compiled" };
 
   this->body = compiler::DestructorCompiler::generateDestructor(symbol.toClass());
-  this->flags.set(ImplementationMethod::InterpretedFunction);
 
   return *this;
 }

@@ -31,13 +31,16 @@ namespace script
  * The FunctionFlags is used to store flags describing a \t Function.
  * It is used to store both \t FunctionSpecifier (i.e. is the function static, or 
  * virtual, or deleted) and an \t AccessSpecifier (public, protected, private).
+ * 
+ * Internally, the access specifier is stored on the two first bits and 
+ * the FunctionSpecifier on the remaining bits.
  */
 
 /*!
  * \fn FunctionFlags(FunctionSpecifier val)
  */
 FunctionFlags::FunctionFlags(FunctionSpecifier val)
-  : d(static_cast<int>(val) << 3)
+  : d(static_cast<int>(val) << 2)
 {
 
 }
@@ -50,7 +53,7 @@ FunctionFlags::FunctionFlags(FunctionSpecifier val)
  */
 bool FunctionFlags::test(FunctionSpecifier fs) const
 {
-  return (d >> 3) & static_cast<int>(fs);
+  return (d >> 2) & static_cast<int>(fs);
 }
 
 /*!
@@ -61,31 +64,7 @@ bool FunctionFlags::test(FunctionSpecifier fs) const
  */
 void FunctionFlags::set(FunctionSpecifier fs)
 {
-  d |= (static_cast<int>(fs) << 3);
-}
-
-/*!
- * \fn bool test(ImplementationMethod im) const
- * \param implementation method
- * \brief Returns wether the function uses the given implementation method.
- * 
- */
-bool FunctionFlags::test(ImplementationMethod im) const
-{
-  return static_cast<ImplementationMethod>(d & 1) == im;
-}
-
-/*!
- * \fn void set(ImplementationMethod im)
- * \param implementation method
- * \brief Sets the implementation method.
- * 
- * The previous implementation method is erased.
- */
-void FunctionFlags::set(ImplementationMethod im)
-{
-  d >>= 1;
-  d = (d << 1) | static_cast<int>(im);
+  d |= (static_cast<int>(fs) << 2);
 }
 
 /*!
@@ -95,7 +74,7 @@ void FunctionFlags::set(ImplementationMethod im)
  */
 AccessSpecifier FunctionFlags::getAccess() const
 {
-  return static_cast<AccessSpecifier>((d >> 1) & 3);
+  return static_cast<AccessSpecifier>(d & 3);
 }
 
 /*!
@@ -107,9 +86,8 @@ AccessSpecifier FunctionFlags::getAccess() const
  */
 void FunctionFlags::set(AccessSpecifier as)
 {
-  const auto im = d & 1;
-  d >>= 3;
-  d = (d << 3) | (static_cast<int>(as) << 1) | im;
+  d >>= 2;
+  d = (d << 2) | static_cast<int>(as);
 }
 
 } // namespace script
