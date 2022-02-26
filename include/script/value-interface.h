@@ -1,4 +1,4 @@
-// Copyright (C) 2020 Vincent Chambrin
+// Copyright (C) 2020-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -84,8 +84,8 @@ public:
   ~CppValue() = default;
 
   template<typename...Args>
-  CppValue(script::Engine* e, Args &&... args)
-    : IValue(script::Type::make<T>(), e), 
+  CppValue(script::Engine* e, script::Type t, Args &&... args)
+    : IValue(t, e),
       value(std::forward<Args>(args)...)
   {
 
@@ -111,13 +111,6 @@ public:
   T& reference;
 
 public:
-  CppReferenceValue(script::Engine* e, T& r)
-    : IValue(script::Type::make<T&>(), e), 
-      reference(r)
-  {
-
-  }
-
   CppReferenceValue(script::Engine* e, script::Type t, T& r)
     : IValue(t, e),
       reference(r)

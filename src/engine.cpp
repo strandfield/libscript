@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -251,6 +251,14 @@ void Engine::setup()
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
+  register_type(std::type_index(typeid(void)), Type(Type::Void));
+  register_type(std::type_index(typeid(bool)), Type(Type::Boolean));
+  register_type(std::type_index(typeid(char)), Type(Type::Char));
+  register_type(std::type_index(typeid(int)), Type(Type::Int));
+  register_type(std::type_index(typeid(float)), Type(Type::Float));
+  register_type(std::type_index(typeid(double)), Type(Type::Double));
+  register_type(std::type_index(typeid(String)), Type(Type::String));
+
   register_builtin_operators(d->rootNamespace);
 
   Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
@@ -310,7 +318,7 @@ TypeSystem* Engine::typeSystem() const
  */
 Value Engine::newBool(bool bval)
 {
-  return Value(new CppValue<bool>(this, bval));
+  return Value(new CppValue<bool>(this, script::Type::Boolean, bval));
 }
 
 /*!
@@ -319,7 +327,7 @@ Value Engine::newBool(bool bval)
  */
 Value Engine::newChar(char cval)
 {
-  return Value(new CppValue<char>(this, cval));
+  return Value(new CppValue<char>(this, script::Type::Char, cval));
 }
 
 /*!
@@ -328,7 +336,7 @@ Value Engine::newChar(char cval)
  */
 Value Engine::newInt(int ival)
 {
-  return Value(new CppValue<int>(this, ival));
+  return Value(new CppValue<int>(this, script::Type::Int, ival));
 }
 
 /*!
@@ -337,7 +345,7 @@ Value Engine::newInt(int ival)
  */
 Value Engine::newFloat(float fval)
 {
-  return Value(new CppValue<float>(this, fval));
+  return Value(new CppValue<float>(this, script::Type::Float, fval));
 }
 
 /*!
@@ -346,7 +354,7 @@ Value Engine::newFloat(float fval)
  */
 Value Engine::newDouble(double dval)
 {
-  return Value(new CppValue<double>(this, dval));
+  return Value(new CppValue<double>(this, script::Type::Double, dval));
 }
 
 /*!
@@ -355,7 +363,7 @@ Value Engine::newDouble(double dval)
  */
 Value Engine::newString(const String & sval)
 {
-  return Value(new CppValue<String>(this, sval));
+  return Value(new CppValue<String>(this, script::Type::String, sval));
 }
 
 /*!
@@ -933,6 +941,30 @@ const std::vector<Script> & Engine::scripts() const
 EngineImpl * Engine::implementation() const
 {
   return d.get();
+}
+
+Type Engine::register_type(std::type_index id, Type::TypeFlag what)
+{
+  size_t offset = typeSystem()->reserve(what, 1);
+  Type result{ static_cast<int>(offset), what };
+  register_type(id, result);
+  return result;
+}
+
+void Engine::register_type(std::type_index id, Type t)
+{
+  typeSystem()->impl()->typemap[id] = t;
+}
+
+Type Engine::find_type_or_throw(std::type_index id) const
+{
+  auto& typemap = typeSystem()->impl()->typemap;
+  auto it = typemap.find(id);
+
+  if (it == typemap.end())
+    throw UnknownTypeError();
+
+  return it->second;
 }
 
 } // namespace script
