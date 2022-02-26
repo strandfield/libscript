@@ -10,16 +10,6 @@
 namespace script
 {
 
-enum class FunctionCategory {
-  StandardFunction = 0,
-  Constructor = 1,
-  Destructor = 2,
-  OperatorFunction = 3,
-  CastFunction = 4,
-  Root = 5,
-  LiteralOperatorFunction = 6,
-};
-
 enum class FunctionSpecifier {
   None = 0,
   Static = 1,
