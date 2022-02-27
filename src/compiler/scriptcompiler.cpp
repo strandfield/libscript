@@ -384,13 +384,31 @@ void ScriptCompiler::processPendingDeclarations()
   }
 }
 
+int ScriptCompiler::getIdAttribute(const std::shared_ptr<ast::AttributeDeclaration>& attrdecl) const
+{
+  if (!attrdecl || !attrdecl->attribute->is<ast::FunctionCall>())
+    return 0;
 
-void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & class_decl)
+  const auto& fcall = attrdecl->attribute->as<ast::FunctionCall>();
+
+  if (fcall.callee->source() != "id" || fcall.arguments.size() != 1 || !fcall.arguments.at(0)->is<ast::StringLiteral>())
+    return 0;
+
+  std::string name = fcall.arguments.at(0)->as<ast::StringLiteral>().toString();
+  name = std::string(name.begin() + 1, name.end() - 1);
+
+  Type t = engine()->getType(name);
+
+  return t != Type() ? t.data() : 0;
+}
+
+void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDecl>& class_decl)
 {
   assert(class_decl != nullptr);
 
   ClassBuilder builder = currentScope().symbol().newClass("");
   fill(builder, class_decl);
+  builder.setId(getIdAttribute(class_decl->attribute));
 
   Class cla = builder.get();
   mCurrentScope.invalidateCache(Scope::InvalidateClassCache);
@@ -435,7 +453,9 @@ void ScriptCompiler::readClassContent(Class & c, const std::shared_ptr<ast::Clas
   for (size_t i(0); i < decl->content.size(); ++i)
   {
     if (decl->content.at(i)->is<ast::Declaration>())
+    {
       processOrCollectDeclaration(std::static_pointer_cast<ast::Declaration>(decl->content.at(i)), class_scope);
+    }
     else if (decl->content.at(i)->is<ast::AccessSpecifier>())
     {
       // TODO: create error code for this
@@ -455,7 +475,11 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   Symbol symbol = scp.symbol();
 
-  Enum e = symbol.newEnum(enum_decl.name->getName()).get();
+  // Does "id" attribute makes sense for enums ?
+  //int id = getIdAttribute(decl->attribute);
+  Enum e = symbol.newEnum(enum_decl.name->getName())
+    //.setId(id)
+    .get();
 
   if (decl->attribute)
   {
