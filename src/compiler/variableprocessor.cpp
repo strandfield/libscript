@@ -215,7 +215,7 @@ void VariableProcessor::copy_initialization(Variable & var, const std::shared_pt
   }
   else if (t.isEnumType())
   {
-    script::get<Enumerator>(var.variable) = arg.toEnumerator();
+    *reinterpret_cast<EnumeratorValue::value_type*>(var.variable.ptr()) = arg.toEnumerator().value();
   }
   else if (t.isFunctionType())
   {

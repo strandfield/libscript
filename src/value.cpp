@@ -58,17 +58,12 @@ bool IValue::is_initializer_list() const
   return false;
 }
 
-bool IValue::is_enumerator() const
+bool IValue::is_enum() const
 {
   return false;
 }
 
-bool IValue::is_cpp_enum() const
-{
-  return false;
-}
-
-int IValue::get_cpp_enum_value() const
+int IValue::get_enum_value() const
 {
   return -1;
 }
@@ -244,10 +239,8 @@ Array Value::toArray() const
 
 Enumerator Value::toEnumerator() const
 {
-  if (d->is_enumerator())
-    return static_cast<EnumeratorValue*>(d)->value;
-  else if (d->is_cpp_enum())
-    return Enumerator(engine()->typeSystem()->getEnum(type()), d->get_cpp_enum_value());
+  if (d->is_enum())
+    return Enumerator(engine()->typeSystem()->getEnum(type()), d->get_enum_value());
   else
     return Enumerator();
 }
@@ -336,13 +329,6 @@ Array& get<Array>(const Value& val)
 {
   assert(val.impl()->is_array());
   return static_cast<ArrayValue*>(val.impl())->array;
-}
-
-template<>
-Enumerator& get<Enumerator>(const Value& val)
-{
-  assert(val.impl()->is_enumerator());
-  return static_cast<EnumeratorValue*>(val.impl())->value;
 }
 
 template<>

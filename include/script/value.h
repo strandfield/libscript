@@ -94,7 +94,7 @@ T& get(const Value& val)
 
 template<> LIBSCRIPT_API Function& get<Function>(const Value& val);
 template<> LIBSCRIPT_API Array& get<Array>(const Value& val);
-template<> LIBSCRIPT_API Enumerator& get<Enumerator>(const Value& val);
+template<> Enumerator& get<Enumerator>(const Value&) = delete;
 template<> LIBSCRIPT_API Lambda& get<Lambda>(const Value& val);
 template<> LIBSCRIPT_API InitializerList& get<InitializerList>(const Value& val);
 

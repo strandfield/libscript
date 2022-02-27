@@ -40,7 +40,7 @@ Value enum_copy(interpreter::FunctionCall* c)
 
 Value enum_assignment(interpreter::FunctionCall *c)
 {
-  script::get<Enumerator>(c->arg(0)) = c->arg(1).toEnumerator();
+  *reinterpret_cast<EnumeratorValue::value_type*>(c->arg(0).ptr()) = c->arg(1).toEnumerator().value();
   return c->arg(0);
 }
 

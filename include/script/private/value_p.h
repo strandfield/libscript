@@ -116,19 +116,21 @@ public:
 class EnumeratorValue : public IValue
 {
 public:
-  Enumerator value;
+  using value_type = int;
+  value_type value;
 
 public:
   EnumeratorValue(const Enumerator& enm)
     : IValue(enm.enumeration().id(), enm.enumeration().engine()),
-      value(enm)
+      value(enm.value())
   {
 
   }
 
   ~EnumeratorValue() = default;
 
-  bool is_enumerator() const override { return true; }
+  bool is_enum() const override { return true; }
+  int get_enum_value() const override { return value; }
   void* ptr() override { return &value; }
 };
 

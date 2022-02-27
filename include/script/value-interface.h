@@ -44,10 +44,9 @@ public:
   virtual bool is_lambda() const;
   virtual bool is_array() const;
   virtual bool is_initializer_list() const;
-  virtual bool is_enumerator() const;
 
-  virtual bool is_cpp_enum() const;
-  virtual int get_cpp_enum_value() const;
+  virtual bool is_enum() const;
+  virtual int get_enum_value() const;
 
   virtual size_t size() const; // numbers of members
   virtual void push(const Value& val);
@@ -100,8 +99,8 @@ public:
 
   void* ptr() override { return &value; }
 
-  bool is_cpp_enum() const override { return std::is_enum<T>::value; }
-  int get_cpp_enum_value() const override { return details::get_enum_value(value); }
+  bool is_enum() const override { return std::is_enum<T>::value; }
+  int get_enum_value() const override { return details::get_enum_value(value); }
 };
 
 template<typename T>
@@ -123,8 +122,8 @@ public:
   bool is_reference() const override { return true; }
   void* ptr() override { return &reference; }
 
-  bool is_cpp_enum() const override { return std::is_enum<T>::value; }
-  int get_cpp_enum_value() const override { return details::get_enum_value(reference); }
+  bool is_enum() const override { return std::is_enum<T>::value; }
+  int get_enum_value() const override { return details::get_enum_value(reference); }
 };
 
 } // namespace script
