@@ -30,12 +30,6 @@
 namespace script
 {
 
-/*!
- * \class Function
- * \brief The Function class represents a function.
- *
- */
-
 FunctionImpl::FunctionImpl(Engine *e, FunctionFlags f)
   : engine(e)
   , flags(f)
@@ -360,7 +354,9 @@ void FunctionTemplateInstance::complete_instantiation()
   // no-op
 }
 
-
+/*!
+ * \class Function
+ */
 
 Function::Function(const std::shared_ptr<FunctionImpl> & impl)
   : d(impl)
@@ -478,6 +474,10 @@ Script Function::script() const
   return Script{};
 }
 
+/*!
+ * \fn Attributes attributes() const
+ * \brief returns the attributes associated to this function
+ */
 Attributes Function::attributes() const
 {
   return script().getAttributes(*this);
@@ -721,5 +721,9 @@ bool Function::operator!=(const Function & other) const
 {
   return d != other.d;
 }
+
+/*!
+ * \endclass
+ */
 
 } // namespace script

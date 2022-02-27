@@ -31,6 +31,11 @@ class Script;
 class TemplateArgument;
 class UserData;
 
+/*!
+ * \class Function
+ * \brief represents a function
+ */
+
 class LIBSCRIPT_API Function
 {
 public:
@@ -122,6 +127,9 @@ protected:
   std::shared_ptr<FunctionImpl> d;
 };
 
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

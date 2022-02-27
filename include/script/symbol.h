@@ -27,6 +27,11 @@ class Script;
 class SymbolImpl;
 class TypedefBuilder;
 
+/*!
+ * \class Symbol
+ * \brief provides storage for any symbol (class, namespace, etc...)
+ */
+
 class LIBSCRIPT_API Symbol
 {
 public:
@@ -74,6 +79,10 @@ public:
 private:
   std::shared_ptr<SymbolImpl> d;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

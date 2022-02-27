@@ -14,12 +14,20 @@ static const AttributeVector gDefaultAttributeVector = {};
  * \class Attributes
  */
 
+/*!
+ * \fn Attributes()
+ * \brief constructs an empty list of attributes
+ */
 Attributes::Attributes()
   : Attributes(gDefaultAttributeVector.begin(), gDefaultAttributeVector.end())
 {
 
 }
 
+/*!
+ * \fn Attributes(iterator begin, iterator end)
+ * \brief constructs a list of attriutes from a pair of iterators
+ */
 Attributes::Attributes(iterator begin, iterator end)
   : m_begin(begin),
     m_end(end)
@@ -27,21 +35,37 @@ Attributes::Attributes(iterator begin, iterator end)
 
 }
 
+/*!
+ * \fn Attributes::iterator begin() const
+ * \brief returns the begin iterator
+ */
 Attributes::iterator Attributes::begin() const
 {
   return m_begin;
 }
 
+/*!
+ * \fn Attributes::iterator end() const
+ * \brief returns the end iterator
+ */
 Attributes::iterator Attributes::end() const
 {
   return m_end;
 }
 
+/*!
+ * \fn size_t size() const
+ * \brief returns number of attributes in the list
+ */
 size_t Attributes::size() const
 {
   return std::distance(begin(), end());
 }
 
+/*!
+ * \fn const Attribute& at(size_t index) const
+ * \brief returns the attribute at a given index
+ */
 const Attribute& Attributes::at(size_t index) const
 {
   return *(begin() + index);
