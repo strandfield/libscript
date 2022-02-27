@@ -116,6 +116,8 @@ static std::vector<std::string> build_token_type_strings()
     { parser::Token::Comma, "," },
     { parser::Token::LeftRightPar, "()" },
     { parser::Token::LeftRightBracket, "[]" },
+    { parser::Token::DblLeftBracket, "[[" },
+    { parser::Token::DblRightBracket, "]]" },
     });
 
   return result;

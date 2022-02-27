@@ -52,6 +52,7 @@ enum class LIBSCRIPT_API NodeType {
   ReturnStatement,
   ContinueStatement,
   BreakStatement,
+  AttributeDeclaration,
   EnumDeclaration,
   VariableDeclaration,
   ClassDeclaration,
@@ -725,6 +726,24 @@ public:
   bool isDeclaration() const override;
 };
 
+class LIBSCRIPT_API AttributeDeclaration : public Node
+{
+public:
+  parser::Token double_left_bracket;
+  std::shared_ptr<Node> attribute;
+  parser::Token double_right_bracket;
+
+public:
+  AttributeDeclaration(const parser::Token& dlb, const std::shared_ptr<Node>& attr, const parser::Token& drb);
+
+  static std::shared_ptr<AttributeDeclaration> New(const parser::Token& dlb, const std::shared_ptr<Node>& attr, const parser::Token& drb);
+
+  static const NodeType type_code = NodeType::AttributeDeclaration;
+  inline NodeType type() const override { return type_code; }
+  parser::Token base_token() const override { return double_left_bracket; }
+  utils::StringView source() const override;
+};
+
 struct LIBSCRIPT_API EnumValueDeclaration
 {
   std::shared_ptr<SimpleIdentifier> name;
@@ -736,6 +755,7 @@ class LIBSCRIPT_API EnumDeclaration : public Declaration
 public:
   parser::Token enumKeyword;
   parser::Token classKeyword;
+  std::shared_ptr<AttributeDeclaration> attribute;
   parser::Token leftBrace;
   std::shared_ptr<SimpleIdentifier> name;
   std::vector<EnumValueDeclaration> values;
@@ -902,6 +922,7 @@ class LIBSCRIPT_API ClassDecl : public Declaration
 {
 public:
   parser::Token classKeyword;
+  std::shared_ptr<AttributeDeclaration> attribute;
   std::shared_ptr<Identifier> name;
   parser::Token colon;
   std::shared_ptr<Identifier> parent;
@@ -973,6 +994,7 @@ struct LIBSCRIPT_API FunctionParameter
 class LIBSCRIPT_API FunctionDecl : public Declaration
 {
 public:
+  std::shared_ptr<AttributeDeclaration> attribute;
   QualifiedType returnType;
   std::shared_ptr<Identifier> name;
   std::vector<FunctionParameter> params;
