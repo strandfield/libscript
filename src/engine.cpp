@@ -251,13 +251,13 @@ void Engine::setup()
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
-  register_type(std::type_index(typeid(void)), Type(Type::Void));
-  register_type(std::type_index(typeid(bool)), Type(Type::Boolean));
-  register_type(std::type_index(typeid(char)), Type(Type::Char));
-  register_type(std::type_index(typeid(int)), Type(Type::Int));
-  register_type(std::type_index(typeid(float)), Type(Type::Float));
-  register_type(std::type_index(typeid(double)), Type(Type::Double));
-  register_type(std::type_index(typeid(String)), Type(Type::String));
+  register_type(std::type_index(typeid(void)), Type(Type::Void), "void");
+  register_type(std::type_index(typeid(bool)), Type(Type::Boolean), "bool");
+  register_type(std::type_index(typeid(char)), Type(Type::Char), "char");
+  register_type(std::type_index(typeid(int)), Type(Type::Int), "int");
+  register_type(std::type_index(typeid(float)), Type(Type::Float), "float");
+  register_type(std::type_index(typeid(double)), Type(Type::Double), "double");
+  register_type(std::type_index(typeid(String)), Type(Type::String), "String");
 
   register_builtin_operators(d->rootNamespace);
 
@@ -310,6 +310,20 @@ void Engine::tearDown()
 TypeSystem* Engine::typeSystem() const
 {
   return d->typesystem.get();
+}
+
+/*!
+ * \fn Type getType(const std::string& name)
+ * \brief retrieves a type by its name
+ * 
+ * Note that the type must have been previsouly registered with
+ * \m registerType().
+ */
+Type Engine::getType(const std::string& name) const
+{
+  const auto& map = typeSystem()->impl()->typemap_by_name;
+  auto it = map.find(name);
+  return it != map.end() ? it->second : Type();
 }
 
 /*!
@@ -943,17 +957,18 @@ EngineImpl * Engine::implementation() const
   return d.get();
 }
 
-Type Engine::register_type(std::type_index id, Type::TypeFlag what)
+Type Engine::register_type(std::type_index id, Type::TypeFlag what, const std::string& name)
 {
   size_t offset = typeSystem()->reserve(what, 1);
   Type result{ static_cast<int>(offset), what };
-  register_type(id, result);
+  register_type(id, result, name);
   return result;
 }
 
-void Engine::register_type(std::type_index id, Type t)
+void Engine::register_type(std::type_index id, Type t, const std::string& name)
 {
   typeSystem()->impl()->typemap[id] = t;
+  typeSystem()->impl()->typemap_by_name[name] = t;
 }
 
 Type Engine::find_type_or_throw(std::type_index id) const
