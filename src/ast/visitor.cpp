@@ -338,6 +338,15 @@ struct AstVisitorDispatcher
     visitor.visit(AstVisitor::Keyword, js.keyword);
   }
 
+  void visit(ast::AttributeDeclaration& adecl)
+  {
+    visitor.visit(AstVisitor::LeftBracket, adecl.double_left_bracket);
+
+    visitor.visit(AstVisitor::Expression, adecl.attribute);
+
+    visitor.visit(AstVisitor::RightBracket, adecl.double_right_bracket);
+  }
+
   void visit(ast::EnumDeclaration& ed)
   {
     visitor.visit(AstVisitor::Keyword, ed.enumKeyword);
@@ -345,6 +354,11 @@ struct AstVisitorDispatcher
     if (ed.classKeyword.isValid())
     {
       visitor.visit(AstVisitor::Keyword, ed.classKeyword);
+    }
+
+    if (ed.attribute)
+    {
+      visitor.visit(AstVisitor::Attribute, ed.attribute);
     }
 
     visitor.visit(AstVisitor::Name, ed.name);
@@ -379,6 +393,11 @@ struct AstVisitorDispatcher
   {
     visitor.visit(AstVisitor::Keyword, cd.classKeyword);
 
+    if (cd.attribute)
+    {
+      visitor.visit(AstVisitor::Attribute, cd.attribute);
+    }
+
     visitor.visit(AstVisitor::Name, cd.name);
 
     if (cd.colon.isValid())
@@ -399,6 +418,11 @@ struct AstVisitorDispatcher
 
   void visit(ast::FunctionDecl& fd)
   {
+    if (fd.attribute)
+    {
+      visitor.visit(AstVisitor::Attribute, fd.attribute);
+    }
+
     if (fd.explicitKeyword.isValid())
     {
       visitor.visit(AstVisitor::Type, fd.explicitKeyword);

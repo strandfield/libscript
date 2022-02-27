@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -98,6 +98,7 @@ protected:
   void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processFunctionCallOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
+  void processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl);
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);
   std::vector<TemplateParameter> processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl);

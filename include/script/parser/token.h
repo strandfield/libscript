@@ -145,6 +145,8 @@ public:
     SingleLineComment,
     LeftRightPar,
     LeftRightBracket,
+    DblLeftBracket,
+    DblRightBracket,
     MultiLineComment,
     LastTokenId,
     /* Alias */

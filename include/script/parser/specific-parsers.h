@@ -200,6 +200,7 @@ public:
 
 protected:
   // detectDecl() implementation
+  void readOptionalAttribute();
   void readOptionalDeclSpecifiers();
   bool detectBeforeReadingTypeSpecifier();
   bool readTypeSpecifier();
@@ -230,6 +231,7 @@ protected:
   bool isClassName(const std::shared_ptr<ast::Identifier> & name) const;
 
 protected:
+  std::shared_ptr<ast::AttributeDeclaration> mAttribute;
   std::shared_ptr<ast::Identifier> mClassName;
   Token mVirtualKw;
   Token mStaticKw;
@@ -241,6 +243,16 @@ protected:
   Decision mDecision;
   bool mParamsAlreadyRead;
   int mDeclaratorOptions;
+};
+
+class LIBSCRIPT_API AttributeParser : public ParserBase
+{
+public:
+  AttributeParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
+
+  bool ready() const;
+
+  std::shared_ptr<ast::AttributeDeclaration> parse();
 };
 
 class LIBSCRIPT_API EnumValueParser : public ParserBase
@@ -278,6 +290,7 @@ protected:
   void parseTemplate();
   void parseUsing();
   void parseTypedef();
+  std::shared_ptr<ast::AttributeDeclaration> readOptionalAttribute();
   std::shared_ptr<ast::Identifier> readClassName();
   void readOptionalParent();
   void readDecl();

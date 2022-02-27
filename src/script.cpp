@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -140,6 +140,16 @@ const std::vector<diagnostic::DiagnosticMessage> & Script::messages() const
 Scope Script::exports() const
 {
   return d->exports;
+}
+
+Attributes Script::getAttributes(const Symbol& sym) const
+{
+  return d->attributes.getAttributesFor(sym.impl().get());
+}
+
+Attributes Script::getAttributes(const Function& f) const
+{
+  return d->attributes.getAttributesFor(f.impl().get());
 }
 
 /*!

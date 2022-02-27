@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -14,6 +14,7 @@ namespace script
 {
 
 enum class AccessSpecifier;
+class Attributes;
 class Cast;
 class Class;
 class Engine;
@@ -29,6 +30,11 @@ class Operator;
 class Script;
 class TemplateArgument;
 class UserData;
+
+/*!
+ * \class Function
+ * \brief represents a function
+ */
 
 class LIBSCRIPT_API Function
 {
@@ -60,6 +66,8 @@ public:
   const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const;
 
   Script script() const;
+
+  Attributes attributes() const;
 
   bool isConstructor() const;
   bool isDefaultConstructor() const;
@@ -119,6 +127,9 @@ protected:
   std::shared_ptr<FunctionImpl> d;
 };
 
+/*!
+ * \endclass
+ */
 
 } // namespace script
 
