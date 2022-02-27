@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -87,6 +87,11 @@ Script Symbol::script() const
     return Script{ std::static_pointer_cast<ScriptImpl>(d) };
 
   return parent().script();
+}
+
+Attributes Symbol::attributes() const
+{
+  return script().getAttributes(*this);
 }
 
 ClassBuilder Symbol::newClass(const std::string & name)

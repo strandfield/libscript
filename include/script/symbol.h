@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -12,6 +12,7 @@
 namespace script
 {
 
+class Attributes;
 class Class;
 class ClassBuilder;
 class ClassTemplateBuilder;
@@ -51,6 +52,8 @@ public:
   Name name() const;
   Symbol parent() const;
   Script script() const;
+
+  Attributes attributes() const;
 
   ClassBuilder newClass(const std::string & name);
   ClassBuilder newClass(std::string && name);

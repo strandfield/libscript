@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -476,6 +476,11 @@ Script Function::script() const
   else if (dynamic_cast<ClassImpl*>(enclosing_symbol.get()) != nullptr)
     return Class{ std::dynamic_pointer_cast<ClassImpl>(enclosing_symbol) }.script();
   return Script{};
+}
+
+Attributes Function::attributes() const
+{
+  return script().getAttributes(*this);
 }
 
 bool Function::isConstructor() const

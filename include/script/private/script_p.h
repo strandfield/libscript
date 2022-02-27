@@ -1,10 +1,11 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #ifndef LIBSCRIPT_SCRIPT_P_H
 #define LIBSCRIPT_SCRIPT_P_H
 
+#include "script/attributes-map.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
 #include "script/scope.h"
@@ -42,6 +43,7 @@ public:
   bool astlock;
   std::shared_ptr<ast::AST> ast;
   Scope exports;
+  AttributesMap attributes;
 
   std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
 
