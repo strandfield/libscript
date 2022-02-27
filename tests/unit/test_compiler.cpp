@@ -1,9 +1,10 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include <gtest/gtest.h>
 
+#include "script/attributes.h"
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/datamember.h"
@@ -1014,5 +1015,37 @@ TEST(CompilerTests, function_template_full_spec) {
 
     ++it;
     ASSERT_EQ(it->first.at(0).type, script::Type::Int);
+  }
+}
+
+TEST(CompilerTests, attributes) {
+  using namespace script;
+
+  const char* source =
+    " [[no_discard]] int foo() { return 5; }         "
+    " class [[maybe_unused]] A { };                  ";
+
+  Engine engine;
+  engine.setup();
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto& errors = s.messages();
+  ASSERT_TRUE(success);
+  ASSERT_EQ(s.rootNamespace().classes().size(), 1);
+  ASSERT_EQ(s.rootNamespace().functions().size(), 1);
+
+  {
+    Class A = s.rootNamespace().classes().front();
+    Attributes attrs = Symbol(A).attributes();
+    ASSERT_EQ(attrs.size(), 1);
+    ASSERT_EQ(attrs.at(0)->source().toString(), "maybe_unused");
+  }
+
+  {
+    Function foo = s.rootNamespace().functions().front();
+    Attributes attrs = foo.attributes();
+    ASSERT_EQ(attrs.size(), 1);
+    ASSERT_EQ(attrs.at(0)->source().toString(), "no_discard");
   }
 }
