@@ -139,16 +139,18 @@ public:
   TypeSystem* typeSystem() const;
 
   template<typename T>
-  Type registerType(std::string name);
+  Type registerType(const std::string& name);
 
   template<typename T>
-  Type registerType(std::string name, Type::TypeFlag what);
+  Type registerType(const std::string& name, Type::TypeFlag what);
 
   template<typename T>
   Type registerType();
 
   template<typename T>
   Type getType() const;
+
+  Type getType(const std::string& name) const;
 
   template<typename T>
   Type makeType() const;
@@ -231,8 +233,8 @@ public:
   Engine & operator=(const Engine & other) = delete;
 
 protected:
-  Type register_type(std::type_index id, Type::TypeFlag what);
-  void register_type(std::type_index id, Type t);
+  Type register_type(std::type_index id, Type::TypeFlag what, const std::string& name);
+  void register_type(std::type_index id, Type t, const std::string& name);
   Type find_type_or_throw(std::type_index id) const;
 
 protected:
@@ -244,11 +246,11 @@ protected:
  * \brief register a new type
  */
 template<typename T>
-inline Type Engine::registerType(std::string name)
+inline Type Engine::registerType(const std::string& name)
 {
   static_assert(std::is_class<T>::value || std::is_enum<T>::value, "T must be enum or class");
   Type::TypeFlag what = std::is_class<T>::value ? Type::ObjectFlag : Type::EnumFlag;
-  return registerType<T>(std::move(name), what);
+  return registerType<T>(name, what);
 }
 
 /*!
@@ -258,9 +260,9 @@ inline Type Engine::registerType(std::string name)
  * \brief register a new type
  */
 template<typename T>
-inline Type Engine::registerType(std::string name, Type::TypeFlag what)
+inline Type Engine::registerType(const std::string& name, Type::TypeFlag what)
 {
-  return register_type(std::type_index(typeid(T)), what);
+  return register_type(std::type_index(typeid(T)), what, name);
 }
 
 /*!

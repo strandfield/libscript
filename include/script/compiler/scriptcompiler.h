@@ -80,6 +80,8 @@ protected:
   void processFriendDecl(const std::shared_ptr<ast::FriendDeclaration> & decl);
   void processPendingDeclarations();
 
+  int getIdAttribute(const std::shared_ptr<ast::AttributeDeclaration>& attrdecl) const;
+
   void processClassDeclaration(const std::shared_ptr<ast::ClassDecl> & decl);
   void fill(ClassBuilder & builder, const std::shared_ptr<ast::ClassDecl> & decl);
   std::string readClassName(const std::shared_ptr<ast::ClassDecl> & decl);

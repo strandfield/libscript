@@ -51,6 +51,7 @@ public:
   } reservations;
 
   std::map<std::type_index, Type> typemap;
+  std::map<std::string, Type> typemap_by_name;
 
   std::vector<std::unique_ptr<TypeSystemListener>> listeners;
 

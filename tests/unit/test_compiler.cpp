@@ -1049,3 +1049,33 @@ TEST(CompilerTests, attributes) {
     ASSERT_EQ(attrs.at(0)->source().toString(), "no_discard");
   }
 }
+
+TEST(CompilerTests, idattribute) {
+  using namespace script;
+
+  const char* source =
+    " class [[id(\"ghi\")]] A { }; ";
+
+  struct abc { };
+  struct def { };
+  struct ghi { };
+
+  Engine engine;
+  engine.setup();
+
+  engine.registerType<abc>("abc");
+  engine.registerType<def>("def");
+  engine.registerType<ghi>("ghi");
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile();
+  const auto& errors = s.messages();
+  ASSERT_TRUE(success);
+  ASSERT_EQ(s.rootNamespace().classes().size(), 1);
+
+  {
+    Class A = s.rootNamespace().classes().front();
+    Type t = engine.getType<ghi>();
+    ASSERT_EQ(A.id(), t.data());
+  }
+}
