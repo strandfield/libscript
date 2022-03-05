@@ -1783,7 +1783,7 @@ bool DeclParser::readOptionalConst()
   return true;
 }
 
-bool DeclParser::readOptionalDeleteSpecifier()
+bool DeclParser::readOptionalSpecifier(Token::Id id, Token& tok)
 {
   if (mDecision == ParsingVariable)
     return false;
@@ -1797,15 +1797,15 @@ bool DeclParser::readOptionalDeleteSpecifier()
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
-  if (peek() != Token::Delete)
+  if (peek() != id)
   {
     seek(p);
     return false;
   }
 
-  const Token delSpec = read();
+  const Token spec = read();
   mFuncDecl->equalSign = eq_token;
-  mFuncDecl->deleteKeyword = delSpec;
+  tok = spec;
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -1816,69 +1816,29 @@ bool DeclParser::readOptionalDeleteSpecifier()
   read(Token::Semicolon);
 
   return true;
+}
+
+bool DeclParser::readOptionalDeleteSpecifier()
+{
+  return mFuncDecl && readOptionalSpecifier(Token::Delete, mFuncDecl->deleteKeyword);
 }
 
 bool DeclParser::readOptionalDefaultSpecifier()
 {
-  if (mDecision == ParsingVariable)
-    return false;
-
-  if (peek() != Token::Eq)
-    return false;
-
-  auto p = iterator();
-  const Token eqSign = read();
-
-  if (atEnd())
-    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
-
-  if (peek() != Token::Default)
-  {
-    seek(p);
-    return false;
-  }
-
-  const Token defspec = read();
-  mFuncDecl->equalSign = eqSign;
-  mFuncDecl->defaultKeyword = defspec;
-
-  mDecision = ParsingFunction;
-  mVarDecl = nullptr;
-
-  read(Token::Semicolon);
-
-  return true;
+  return mFuncDecl && readOptionalSpecifier(Token::Default, mFuncDecl->defaultKeyword);
 }
 
 bool DeclParser::readOptionalVirtualPureSpecifier()
 {
-  if (mDecision == ParsingVariable)
-    return false;
+  bool success = mFuncDecl && readOptionalSpecifier(Token::OctalLiteral, mFuncDecl->virtualPure);
 
-  if (peek() != Token::Eq)
-    return false;
-
-  auto p = iterator();
-  Token eq_sign = unsafe_read();
-
-  if (peek() != Token::OctalLiteral)
+  if(success)
   {
-    seek(p);
-    return false;
+    if (!mFuncDecl->virtualPure.isZero())
+      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ mFuncDecl->virtualPure, Token::OctalLiteral });
   }
 
-  mFuncDecl->equalSign = eq_sign;
-  mFuncDecl->virtualPure = read();
-
-  if (!mFuncDecl->virtualPure.isZero())
-    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral});
-
-  mDecision = ParsingFunction;
-  mVarDecl = nullptr;
-
-  read(Token::Semicolon);
-
-  return true;
+  return success;
 }
 
 

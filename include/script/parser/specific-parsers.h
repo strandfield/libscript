@@ -215,6 +215,7 @@ protected:
   void readParams();
   void readArgsOrParams();
   bool readOptionalConst();
+  bool readOptionalSpecifier(Token::Id id, Token& tok);
   bool readOptionalDeleteSpecifier();
   bool readOptionalDefaultSpecifier();
   bool readOptionalVirtualPureSpecifier();
