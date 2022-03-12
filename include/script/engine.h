@@ -16,8 +16,7 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
-
-#include "script/modulecallbacks.h"
+#include "script/module.h"
 
 namespace script
 {
