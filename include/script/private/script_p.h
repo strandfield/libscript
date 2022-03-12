@@ -25,6 +25,8 @@ namespace program
 struct Breakpoint;
 } // namespace program
 
+class ModuleInterface;
+
 class ScriptImpl : public NamespaceImpl
 {
 public:

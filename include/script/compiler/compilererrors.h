@@ -94,6 +94,7 @@ struct InaccessibleMember
 
 struct ModuleImportationFailed
 {
+  std::string name;
   std::string message;
 };
 

@@ -1,9 +1,13 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2021 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #include "script/module.h"
-#include "script/private/module_p.h"
+
+#include "script/module-interface.h"
+#include "script/group-module.h"
+#include "script/script-module.h"
+#include "script/legacy-module.h"
 
 #include "script/engine.h"
 #include "script/scope.h"
@@ -13,59 +17,325 @@
 
 #include "script/private/engine_p.h"
 #include "script/private/namespace_p.h"
+#include "script/private/script_p.h"
+
+#include <algorithm>
 
 namespace script
 {
 
-static void module_default_load(Module m)
-{
-  for (Module child : m.submodules())
-    child.load();
-}
+/*! 
+ * \class ModuleInterface
+ */
 
-static void module_default_cleanup(Module)
-{
-
-}
-
-NativeModule::NativeModule(Engine *e, const std::string & str)
-  : NamespaceImpl(str, e)
-  , load(module_default_load)
-  , cleanup(module_default_cleanup)
-  , loaded(false)
+/*!
+ * \fn ModuleInterface(Engine* e, std::string name)
+ * \brief constructs a module with the given name
+ */
+ModuleInterface::ModuleInterface(Engine* e, std::string name)
+  : m_engine(e),
+    m_name(std::move(name))
 {
 
 }
 
-NativeModule::NativeModule(Engine *e, const std::string & module_name, ModuleLoadFunction load_callback, ModuleCleanupFunction cleanup_callback)
-  : NamespaceImpl(module_name, e)
-  , load(load_callback)
-  , cleanup(cleanup_callback)
-  , loaded(false)
+/*! 
+ * \fn ~ModuleInterface()
+ * \brief destroys the module
+ */
+ModuleInterface::~ModuleInterface()
 {
 
 }
 
-bool NativeModule::is_module() const
+/*!
+ * \fn virtual void unload()
+ * \brief unloads the module
+ * 
+ * This function should be reimplemented in a subclass if necessary.
+ * The default implementation does nothing.
+ */
+void ModuleInterface::unload()
 {
-  return true;
+
 }
 
-bool NativeModule::is_native_module() const
+/*!
+ * \fn virtual Script get_script() const
+ * \brief returns the script associated with this module
+ *
+ * The default implementation returns an invalid script.
+ */
+Script ModuleInterface::get_script() const
 {
-  return true;
+  return {};
 }
 
-ScriptModule::ScriptModule(int id, Engine *e, const SourceFile & src, const std::string & module_name)
-  : ScriptImpl(id, e, src)
+/*!
+ * \fn virtual const std::vector<Module>& child_modules() const
+ * \brief returns the module's child
+ *
+ * The default implementation returns an empty vector.
+ */
+const std::vector<Module>& ModuleInterface::child_modules() const
 {
-  this->name = module_name;
+  static const std::vector<Module> static_child_modules = {};
+  return static_child_modules;
 }
 
-bool ScriptModule::is_module() const
+/*!
+ * \fn virtual void add_child(Module m)
+ * \brief adds a child module to this module
+ *
+ * The default implementation does nothing.
+ */
+void ModuleInterface::add_child(Module m)
 {
-  return true;
+
 }
+
+/*!
+ * \fn void attach(Namespace& ns)
+ * \brief attach a namespace to this module
+ *
+ * This will make the module easily retrievable from the namespace.
+ * This function must not be called from the constructor.
+ */
+void ModuleInterface::attach(Namespace& ns)
+{
+  ns.impl()->the_module = shared_from_this();
+}
+
+/*!
+ * \fn void attach(Script& s)
+ * \brief attach a script to this module
+ *
+ * This will make the module easily retrievable from the script.
+ * This function must not be called from the constructor.
+ */
+void ModuleInterface::attach(Script& s)
+{
+  s.impl()->the_module = shared_from_this();
+}
+
+/*!
+ * \fn Namespace createRootNamespace()
+ * \brief creates a root namespace for this module
+ *
+ * A namespace created with this function is in no significant way different from 
+ * any other namespace; the difference is that it is linked to this module so that 
+ * the module can be retrieved from the namespace.
+ * 
+ * This function must not be called from the constructor.
+ */
+Namespace ModuleInterface::createRootNamespace()
+{
+  Namespace ns{ std::make_shared<NamespaceImpl>("", engine()) };
+  attach(ns);
+  return Namespace(ns);
+}
+
+
+/*!
+ * \fn Script createScript(const SourceFile& src)
+ * \brief creates a script for this module
+ * 
+ * This function must not be called from the constructor.
+ */
+Script ModuleInterface::createScript(const SourceFile& src)
+{
+  Script s = engine()->newScript(src);
+  attach(s);
+  return s;
+}
+
+/*!
+ * \fn void compile(Script& s)
+ * \brief compiles the script
+ * 
+ * Depending on whether a script is currently being compiled, this 
+ * function will either compile the script immediately or add it to 
+ * the current compile session.
+ */
+void ModuleInterface::compile(Script& s)
+{
+  if (!engine()->compiler()->hasActiveSession())
+  {
+    bool result = s.compile();
+
+    if (!result)
+      throw ModuleLoadingError{ "script compilation failed" };
+
+    try
+    {
+      s.run();
+    }
+    catch (const RuntimeError&)
+    {
+      // @TODO: reproduce the error message
+      throw ModuleLoadingError{ "script execution failed" };
+    }
+  }
+  else
+  {
+    engine()->compiler()->addToSession(s);
+  }
+}
+
+/*!
+ * \endclass
+ */
+
+ /*!
+  * \class GroupModule
+  */
+
+GroupModule::GroupModule(Engine* e, std::string name)
+  : ModuleInterface(e, std::move(name))
+{
+
+}
+
+bool GroupModule::is_loaded() const
+{
+  return std::all_of(m_modules.begin(), m_modules.end(), [](const Module& m) -> bool {
+    return m.isLoaded();
+    });
+}
+
+void GroupModule::load()
+{
+  m_namespace = createRootNamespace();
+
+  for (Module m : child_modules())
+    m.load();
+}
+
+void GroupModule::unload()
+{
+  // @TODO: there is no unload() in the Module class
+  /*for (Module m : child_modules())
+    m.unload();*/
+}
+
+Namespace GroupModule::get_global_namespace() const
+{
+  return m_namespace;
+}
+
+const std::vector<Module>& GroupModule::child_modules() const
+{
+  return m_modules;
+}
+
+void GroupModule::add_child(Module m)
+{
+  m_modules.push_back(m);
+}
+
+/*!
+ * \endclass
+ */
+
+ /*!
+  * \class ScriptModule
+  */
+
+ScriptModule::ScriptModule(Engine* e, std::string name, const Script& s)
+  : ModuleInterface(e, std::move(name))
+{
+  m_script = s;
+}
+
+bool ScriptModule::is_loaded() const
+{
+  return m_loaded;
+}
+
+void ScriptModule::load()
+{
+  attach(m_script);
+  compile(m_script);
+  m_loaded = true;
+}
+
+void ScriptModule::unload()
+{
+  // @TODO: correctly clear when the method is implemented
+  //m_script.clear();
+}
+
+Script ScriptModule::get_script() const
+{
+  return m_script;
+}
+
+Namespace ScriptModule::get_global_namespace() const
+{
+  return get_script().rootNamespace();
+}
+
+/*!
+ * \endclass
+ */
+
+ /*!
+  * \class LegacyModule
+  */
+
+LegacyModule::LegacyModule(Engine* e, std::string name, ModuleLoadFunction loadfunc, ModuleCleanupFunction cleanfunc)
+  : ModuleInterface(e, std::move(name)),
+    m_load(loadfunc),
+    m_cleanup(cleanfunc)
+{
+
+}
+
+bool LegacyModule::is_loaded() const
+{
+  return m_loaded;
+}
+
+void LegacyModule::load()
+{
+  m_namespace = createRootNamespace();
+
+  for (Module m : child_modules())
+    m.load();
+
+  if (m_load)
+    m_load(Module(shared_from_this()));
+
+  m_loaded = true;
+}
+
+void LegacyModule::unload()
+{
+  if (m_cleanup)
+    m_cleanup(Module(shared_from_this()));
+
+  m_namespace = Namespace();
+  m_loaded = false;
+}
+
+Namespace LegacyModule::get_global_namespace() const
+{
+  return m_namespace;
+}
+
+const std::vector<Module>& LegacyModule::child_modules() const
+{
+  return m_modules;
+}
+
+void LegacyModule::add_child(Module m)
+{
+  m_modules.push_back(m);
+}
+
+/*!
+ * \endclass
+ */
 
 
 ModuleLoadingError::ModuleLoadingError(std::string mssg)
@@ -76,7 +346,7 @@ ModuleLoadingError::ModuleLoadingError(std::string mssg)
 
 const char* ModuleLoadingError::what() const noexcept
 {
-  return "module-loading-error";
+  return message.c_str();
 }
 
 /*!
@@ -84,8 +354,8 @@ const char* ModuleLoadingError::what() const noexcept
  * \brief Provides module features
  */
 
-Module::Module(const std::shared_ptr<NamespaceImpl> & impl)
-  : d(impl) 
+Module::Module(std::shared_ptr<ModuleInterface> impl)
+  : d(std::move(impl)) 
 {
 
 }
@@ -96,7 +366,7 @@ Module::Module(const std::shared_ptr<NamespaceImpl> & impl)
  */
 Engine* Module::engine() const
 {
-  return d->engine;
+  return d->engine();
 }
 
 /*!
@@ -105,37 +375,33 @@ Engine* Module::engine() const
  */
 const std::string & Module::name() const
 {
-  return d->name;
+  return d->name();
 }
 
 /*!
  * \fn bool isNative() const
  * \brief Returns whether this module is a "native" module.
  * 
- * Unlike a "script" module, a native module has a C++ backend.
+ * A "native" module is not implemented by a script.
  */
 bool Module::isNative() const
 {
-  return d->is_native_module();
+  return d->get_script().isNull();
 }
 
 /*!
  * \fn Module newSubModule(const std::string& name)
  * \brief Adds a submodule to this module.
  * 
- * This function creates a native submodule that defines no symbol but 
+ * This function creates a submodule that defines no symbol but 
  * in which submodule can be added.
  * Use this function if you want to group modules in a common parent module.
  */
 Module Module::newSubModule(const std::string & name)
 {
-  if (!isNative())
-    throw std::runtime_error{ "Only native modules can have submodules" };
-
-  NativeModule *nm = static_cast<NativeModule*>(impl());
-
-  Module m{ std::make_shared<NativeModule>(engine(), name) };
-  nm->modules.push_back(m);
+  auto mimpl = std::make_shared<GroupModule>(engine(), name);
+  Module m{ mimpl };
+  addSubModule(m);
   return m;
 }
 
@@ -148,13 +414,9 @@ Module Module::newSubModule(const std::string & name)
  */
 Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  if (!isNative())
-    throw std::runtime_error{ "Only native modules can have submodules" };
-
-  NativeModule *nm = static_cast<NativeModule*>(impl());
-
-  Module m{ std::make_shared<NativeModule>(engine(), name, load, cleanup) };
-  nm->modules.push_back(m);
+  auto mimpl = std::make_shared<LegacyModule>(engine(), name, load, cleanup);
+  Module m{ mimpl };
+  addSubModule(m);
   return m;
 }
 
@@ -167,16 +429,9 @@ Module Module::newSubModule(const std::string & name, ModuleLoadFunction load, M
  */
 Module Module::newSubModule(const std::string& name, const SourceFile& src)
 {
-  if (!isNative())
-    throw std::runtime_error{ "Only native modules can have submodules" };
-
-  NativeModule* nm = static_cast<NativeModule*>(impl());
-
-  auto mimpl = std::make_shared<ScriptModule>(static_cast<int>(engine()->implementation()->scripts.size()), engine(), src, name);
-  engine()->implementation()->scripts.push_back(Script(mimpl));
-
+  auto mimpl = std::make_shared<ScriptModule>(engine(), name, engine()->newScript(src));
   Module m{ mimpl };
-  nm->modules.push_back(m);
+  addSubModule(m);
   return m;
 }
 
@@ -186,12 +441,7 @@ Module Module::newSubModule(const std::string& name, const SourceFile& src)
  */
 Module Module::getSubModule(const std::string & name) const
 {
-  if (!isNative())
-    return Module{};
-
-  const NativeModule *nm = static_cast<const NativeModule*>(impl());
-
-  for (const auto & child : nm->modules)
+  for (const auto & child : submodules())
   {
     if (child.name() == name)
       return child;
@@ -200,18 +450,18 @@ Module Module::getSubModule(const std::string & name) const
   return Module{};
 }
 
+void Module::addSubModule(Module submodule)
+{
+  d->add_child(submodule);
+}
+
 /*!
  * \fn const std::vector<Module>& submodules() const
  * \brief Returns the module' submodules.
  */
 const std::vector<Module> & Module::submodules() const
 {
-  static std::vector<Module> static_default = {};
-
-  if (!isNative())
-    return static_default;
-
-  return static_cast<const NativeModule*>(impl())->modules;
+  return d->child_modules();
 }
 
 /*!
@@ -220,10 +470,7 @@ const std::vector<Module> & Module::submodules() const
  */
 bool Module::isLoaded() const
 {
-  if(isNative())
-    return static_cast<const NativeModule*>(impl())->loaded;
-  else
-    return static_cast<const ScriptModule*>(impl())->loaded;
+  return d && d->is_loaded();
 }
 
 /*!
@@ -237,31 +484,7 @@ void Module::load()
   if (isLoaded())
     return;
 
-  if (isNative())
-  {
-    auto nm = static_cast<NativeModule*>(impl());
-    nm->loaded = true;
-    nm->load(*this);
-  }
-  else
-  {
-    Script s = asScript();
-
-    const bool success = s.compile();
-
-    if(!success)
-      throw ModuleLoadingError{ "script compilation failed" };
-
-    try
-    {
-      s.run();
-    }
-    catch (const RuntimeError&)
-    {
-      // @TODO: reproduce the error message
-      throw ModuleLoadingError{ "script execution failed" };
-    }
-  }
+  d->load();
 }
 
 /*!
@@ -270,7 +493,7 @@ void Module::load()
  */
 Namespace Module::root() const
 {
-  return Namespace{ d };
+  return d->get_global_namespace();
 }
 
 /*!
@@ -284,24 +507,20 @@ Namespace Module::root() const
  */
 Scope Module::scope() const
 {
-  Scope scp{ Namespace{ d } };
+  Scope scp{ Namespace{ d->get_global_namespace() } };
 
-  if (isNative())
-  {
-    for (const auto & child : submodules())
-    {
-      if (!child.isLoaded())
-        continue;
+  Script s = d->get_script();
 
-      Scope submodule_scope = child.scope();
-      scp.merge(submodule_scope);
-    }
-  }
-  else
+  if (!s.isNull() && !s.exports().isNull())
+    scp.merge(s.exports());
+
+  for (const auto& child : submodules())
   {
-    Script s = asScript();
-    if (!s.exports().isNull())
-      scp.merge(s.exports());
+    if (!child.isLoaded())
+      continue;
+
+    Scope submodule_scope = child.scope();
+    scp.merge(submodule_scope);
   }
 
   return scp;
@@ -315,38 +534,16 @@ Scope Module::scope() const
  */
 Script Module::asScript() const
 {
-  if (isNative())
-    return Script{};
-
-  return Script{ std::static_pointer_cast<ScriptImpl>(d) };
+  return d->get_script();
 }
 
 void Module::destroy()
 {
-  if (isNative())
-  {
-    auto nm = static_cast<NativeModule*>(impl());
-
-    if(isLoaded())
-      nm->cleanup(*this);
-
-    for (auto child : nm->modules)
-    {
-      child.destroy();
-    }
-
-    nm->modules.clear();
-
-    nm->functions.clear();
-    nm->classes.clear();
-    nm->enums.clear();
-    nm->namespaces.clear();
-    nm->operators.clear();
-    nm->templates.clear();
-    nm->variables.clear();
-    nm->typedefs.clear();
-  }
+  d->unload();
 }
 
+/*!
+ * \endclass
+ */
 
 } // namespace script

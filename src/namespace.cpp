@@ -8,12 +8,12 @@
 #include "script/engine.h"
 #include "script/enumbuilder.h"
 #include "script/classbuilder.h"
+#include "script/module.h"
 #include "script/name.h"
 #include "script/script.h"
 
 #include "script/private/class_p.h"
 #include "script/private/enum_p.h"
-#include "script/private/module_p.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 
@@ -23,16 +23,6 @@ namespace script
 Name NamespaceImpl::get_name() const
 {
   return Name{ this->name };
-}
-
-bool NamespaceImpl::is_module() const
-{
-  return false;
-}
-
-bool NamespaceImpl::is_native_module() const
-{
-  return false;
 }
 
 Namespace::Namespace(const std::shared_ptr<NamespaceImpl> & impl)
@@ -73,12 +63,12 @@ Script Namespace::script() const
 
 bool Namespace::isModuleNamespace() const
 {
-  return d->is_module();
+  return d->the_module.lock() != nullptr;
 }
 
 Module Namespace::asModule() const
 {
-  return Module{ d->is_module() ? d : nullptr };
+  return Module(d->the_module.lock());
 }
 
 const std::string & Namespace::name() const

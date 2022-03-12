@@ -16,8 +16,7 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
-
-#include "script/modulecallbacks.h"
+#include "script/module.h"
 
 namespace script
 {
@@ -32,6 +31,7 @@ class EngineImpl;
 class Enum;
 class FunctionBuilder;
 class FunctionType;
+class ModuleInterface;
 class Namespace;
 class Prototype;
 class Script;
@@ -205,10 +205,14 @@ public:
   void destroy(Script s);
 
   Module newModule(const std::string & name);
-  Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
-  Module newModule(const std::string & name, const SourceFile & src);
+  Module newModule(const std::string& name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
+  Module newModule(std::string name, const SourceFile& src);
   const std::vector<Module> & modules() const;
   Module getModule(const std::string & name);
+  void addModule(std::shared_ptr<ModuleInterface> module_impl);
+
+  template<typename T, typename...Args>
+  Module newModule(Args&&... args);
 
   Type typeId(const std::string & typeName, Scope scope = Scope()) const;
 
@@ -378,6 +382,14 @@ template<> inline Value Engine::construct<double>(const double& n) { return newD
 template<> inline Value Engine::construct<double>(double&& n) { return newDouble(n); }
 template<> inline Value Engine::construct<String>(const String& s) { return newString(s); }
 template<> inline Value Engine::construct<String>(String&& s) { return newString(s); }
+
+template<typename T, typename...Args>
+inline Module Engine::newModule(Args&&... args)
+{
+  auto module_impl = std::make_shared<T>(std::forward<Args>(args)...);
+  addModule(module_impl);
+  return Module(module_impl);
+}
 
 } // namespace script
 
