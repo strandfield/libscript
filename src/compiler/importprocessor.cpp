@@ -48,7 +48,7 @@ Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & dec
   }
   catch (ModuleLoadingError& ex)
   {
-    throw CompilationFailure{ CompilerError::ModuleImportationFailed, errors::ModuleImportationFailed{ex.message} };
+    throw CompilationFailure{ CompilerError::ModuleImportationFailed, errors::ModuleImportationFailed{ m.name(), ex.message } };
   }
 
   return m.scope();
