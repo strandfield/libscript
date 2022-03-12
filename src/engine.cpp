@@ -30,6 +30,10 @@
 #include "script/typesystem.h"
 #include "script/value.h"
 
+#include "script/script-module.h"
+#include "script/group-module.h"
+#include "script/legacy-module.h"
+
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 
@@ -40,7 +44,6 @@
 #include "script/private/enum_p.h"
 #include "script/private/function_p.h"
 #include "script/private/lambda_p.h"
-#include "script/private/module_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/scope_p.h"
@@ -735,7 +738,7 @@ void Engine::destroy(Script s)
  */
 Module Engine::newModule(const std::string & name)
 {
-  Module m{ std::make_shared<NativeModule>(this, name) };
+  Module m{ std::make_shared<GroupModule>(this, name) };
   d->modules.push_back(m);
   return m;
 }
@@ -750,23 +753,23 @@ Module Engine::newModule(const std::string & name)
  */
 Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Module m{ std::make_shared<NativeModule>(this, name, load, cleanup) };
+  Module m{ std::make_shared<LegacyModule>(this, name, load, cleanup) };
   d->modules.push_back(m);
   return m;
 }
 
 /*!
- * \fn Module newModule(const std::string & name, const SourceFile & src)
+ * \fn Module newModule(std::string name, const SourceFile& src)
  * \param module name
  * \param load function
  * \param cleanup function
  * \brief Creates a new script module.
  *
  */
-Module Engine::newModule(const std::string & name, const SourceFile & src)
+Module Engine::newModule(std::string name, const SourceFile& src)
 {
-  auto mimpl = std::make_shared<ScriptModule>(static_cast<int>(d->scripts.size()), this, src, name);
-  d->scripts.push_back(Script{ mimpl });
+  Script s = newScript(src);
+  auto mimpl = std::make_shared<ScriptModule>(this, std::move(name), s);
   Module m{ mimpl };
   d->modules.push_back(m);
   return m;
@@ -797,6 +800,11 @@ Module Engine::getModule(const std::string & name)
   }
 
   return Module{};
+}
+
+void Engine::addModule(std::shared_ptr<ModuleInterface> module_impl)
+{
+  d->modules.push_back(Module(module_impl));
 }
 
 /*!

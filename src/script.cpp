@@ -108,6 +108,7 @@ void Script::run()
 
 void Script::clear()
 {
+  // @TODO: WTF ?!?
   throw std::runtime_error{ "Not implemented" };
 
 }

@@ -59,14 +59,7 @@ void ImportProcessor::load_module(Module& m)
   if (m.isLoaded())
     return;
 
-  if (m.isNative())
-  {
-    m.load();
-  }
-  else
-  {
-    compiler()->addToSession(m.asScript());
-  }
+  m.load();
 }
 
 } // namespace compiler
