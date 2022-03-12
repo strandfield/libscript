@@ -36,8 +36,8 @@ public:
   void unload() override;
   Namespace get_global_namespace() const override;
 
-  const std::vector<Module>& child_modules() const;
-  void add_child(Module m);
+  const std::vector<Module>& child_modules() const override;
+  void add_child(Module m) override;
 };
 
 /*!
