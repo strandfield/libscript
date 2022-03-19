@@ -32,7 +32,7 @@ TemplateImpl::TemplateImpl(std::vector<TemplateParameter>&& params, const Scope&
 
 Name TemplateImpl::get_name() const
 {
-  return Name{ this->name() };
+  return Name(SymbolKind::Template, this->name());
 }
 
 

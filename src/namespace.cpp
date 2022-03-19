@@ -22,7 +22,7 @@ namespace script
 
 Name NamespaceImpl::get_name() const
 {
-  return Name{ this->name };
+  return Name(SymbolKind::Namespace, this->name);
 }
 
 Namespace::Namespace(const std::shared_ptr<NamespaceImpl> & impl)

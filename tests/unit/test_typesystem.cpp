@@ -608,11 +608,11 @@ TEST(TypeSystemTests, symbolname) {
   e.setup();
 
   Symbol s{ e.rootNamespace().getNamespace("bar") };
-  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().kind(), SymbolKind::Namespace);
   ASSERT_EQ(s.name().string(), "bar");
 
   s = Symbol{ e.typeSystem()->getClass(Type::String) };
-  ASSERT_EQ(s.name().kind(), Name::StringName);
+  ASSERT_EQ(s.name().kind(), SymbolKind::Class);
   ASSERT_EQ(s.name().string(), "String");
 
 }

@@ -7,6 +7,7 @@
 
 #include "libscriptdefs.h"
 #include "script/operators.h"
+#include "script/symbol-kind.h"
 #include "script/types.h"
 
 namespace script
@@ -43,6 +44,8 @@ public:
   explicit Symbol(const Namespace & n);
 
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
+
+  typedef SymbolKind Kind;
 
   inline bool isNull() const { return d == nullptr; }
 

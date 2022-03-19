@@ -136,7 +136,7 @@ const std::string& RegularFunctionImpl::name() const
 
 Name RegularFunctionImpl::get_name() const
 {
-  return mName;
+  return Name(SymbolKind::Function, name());
 }
 
 bool RegularFunctionImpl::is_native() const
@@ -239,7 +239,7 @@ const Prototype& ConstructorImpl::prototype() const
 
 Name ConstructorImpl::get_name() const 
 {
-  return name();
+  return Name(SymbolKind::Constructor, prototype().at(0));
 }
 
 const std::vector<DefaultArgument>& ConstructorImpl::default_arguments() const

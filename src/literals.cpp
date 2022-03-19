@@ -20,7 +20,7 @@ LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype 
 
 Name LiteralOperatorImpl::get_name() const
 {
-  return Name{ Name::LiteralOperatorTag{}, suffix };
+  return Name(SymbolKind::LiteralOperator, suffix);
 }
 
 const Prototype & LiteralOperatorImpl::prototype() const

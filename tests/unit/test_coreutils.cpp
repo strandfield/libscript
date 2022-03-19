@@ -187,42 +187,42 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
 TEST(CoreUtilsTests, test_names) {
   using namespace script;
 
-  Name a{ "foo" };
-  Name b{ "bar" };
+  Name a{ SymbolKind::Function, "foo" };
+  Name b{ SymbolKind::Function, "bar" };
 
-  ASSERT_EQ(a.kind(), Name::StringName);
+  ASSERT_EQ(a.kind(), SymbolKind::Function);
   ASSERT_FALSE(a == b);
 
   a = AssignmentOperator; // operator=
-  ASSERT_EQ(a.kind(), Name::OperatorName);
+  ASSERT_EQ(a.kind(), SymbolKind::Operator);
   ASSERT_FALSE(a == b);
 
   ASSERT_TRUE(a == AssignmentOperator);
 
-  a = "foo";
-  b = Name{ Name::LiteralOperatorTag{}, "foo" }; // operator"" foo;
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::LiteralOperator, "foo"); // operator"" foo;
   ASSERT_FALSE(a == b);
 
   a = Name{};
   b = Name{};
   ASSERT_TRUE(a == b);
 
-  a = Name{ Name::CastTag{}, Type::Int }; // operator int
-  b = Name{ Name::CastTag{}, Type::Int };
-  ASSERT_EQ(a.kind(), Name::CastName);
+  a = Name(SymbolKind::Cast, Type::Int); // operator int
+  b = Name(SymbolKind::Cast, Type::Int);
+  ASSERT_EQ(a.kind(), SymbolKind::Cast);
   ASSERT_TRUE(a == b);
 
-  a = "foo";
-  b = "foo";
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::Function, "foo");
   ASSERT_TRUE(a == b);
 
   a = b;
-  ASSERT_TRUE(b.kind() != Name::InvalidName);
+  ASSERT_TRUE(b.kind() != SymbolKind::NotASymbol);
   a = std::move(b);
-  ASSERT_EQ(b.kind(), Name::InvalidName);
+  ASSERT_EQ(b.kind(), SymbolKind::NotASymbol);
 
-  Name c{std::move(a)}; // operator""km
-  ASSERT_EQ(a.kind(), Name::InvalidName);
+  Name c{ std::move(a) };
+  ASSERT_EQ(a.kind(), SymbolKind::NotASymbol);
 };
 
 
@@ -247,8 +247,8 @@ TEST(CoreUtilsTests, function_names) {
   ASSERT_NE(km.getName(), to_int.getName());
   ASSERT_NE(to_int.getName(), eq.getName());
 
-  // Still some limitations ?
-  ASSERT_EQ(a.getName(), ctor.getName());
+  // Class name & function name can be distinguished
+  ASSERT_NE(a.getName(), ctor.getName());
   
   /// TODO : make this work !
   Function dtor = e.typeSystem()->getClass(Type::String).destructor();
