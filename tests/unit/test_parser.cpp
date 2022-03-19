@@ -1143,6 +1143,52 @@ TEST(ParserTests, template_specialization) {
   }
 }
 
+TEST(ParserTests, attributes) {
+
+  const char* source =
+    "  class [[id(44)]] A { };                 "
+    "  enum class [[native]] B { };            "
+    "  [[native(\"toto\")]] int foo() { }      "
+  ;
+
+  using namespace script;
+
+  parser::Parser parser{ source };
+
+  auto actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::ClassDeclaration);
+  {
+    const auto& decl = actual->as<ast::ClassDecl>();
+    ASSERT_TRUE(decl.attribute);
+    auto attr = decl.attribute->attribute;
+    ASSERT_TRUE(attr->is<ast::FunctionCall>());
+    const ast::FunctionCall& fcall = attr->as<ast::FunctionCall>();
+    ASSERT_TRUE(fcall.callee->source().toString() == "id");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::EnumDeclaration);
+  {
+    const auto& decl = actual->as<ast::EnumDeclaration>();
+    ASSERT_TRUE(decl.attribute);
+    std::shared_ptr<ast::Node> attr = decl.attribute->attribute;
+    ASSERT_TRUE(attr->is<ast::SimpleIdentifier>());
+    const auto& simpleid = attr->as<ast::SimpleIdentifier>();
+    ASSERT_TRUE(simpleid.source().toString() == "native");
+  }
+
+  actual = parser.parseStatement();
+  ASSERT_EQ(actual->type(), ast::NodeType::FunctionDeclaration);
+  {
+    const auto& decl = actual->as<ast::FunctionDecl>();
+    ASSERT_TRUE(decl.attribute);
+    std::shared_ptr<ast::Node> attr = decl.attribute->attribute;
+    ASSERT_TRUE(attr->is<ast::FunctionCall>());
+    const auto& fcall = attr->as<ast::FunctionCall>();
+    ASSERT_TRUE(fcall.callee->source().toString() == "native");
+  }
+}
+
 
 class AstVisitorTestVisitor : public script::ast::AstVisitor
 {
@@ -1198,7 +1244,7 @@ TEST(ParserTests, visitall) {
     "    }                                                               \n"
     "  }                                                                 \n"
     "                                                                    \n"
-    "  class Foo{};                                                      \n"
+    "  class [[maybe_unused]] Foo{};                                     \n"
     "                                                                    \n"
     "  bool operator==(const Foo& lhs, const Foo& rhs) { return true; }  \n"
     "                                                                    \n"
@@ -1229,7 +1275,7 @@ TEST(ParserTests, visitall) {
     "                                                                    \n"
     "    const String& str() const { return m_str; }                     \n"
     "                                                                    \n"
-    "    static void loop()                                              \n"
+    "    [[no_return]] static void loop()                                \n"
     "    {                                                               \n"
     "      using std::should_exit;                                       \n"
     "      using namespace std;                                          \n"
@@ -1250,7 +1296,7 @@ TEST(ParserTests, visitall) {
     "  template<typename T, int N> bool positive()                       \n"
     "  { return T<N>::value < N ? true : false; }                        \n"
     "                                                                    \n"
-    "  enum class Result { Success = 0, Failure };                       \n"
+    "  enum class [[no_discard]] Result { Success = 0, Failure };        \n"
     "                                                                    \n"
     "  int main()                                                        \n"
     "  {                                                                 \n"

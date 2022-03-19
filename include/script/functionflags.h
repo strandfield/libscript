@@ -10,16 +10,6 @@
 namespace script
 {
 
-enum class FunctionCategory {
-  StandardFunction = 0,
-  Constructor = 1,
-  Destructor = 2,
-  OperatorFunction = 3,
-  CastFunction = 4,
-  Root = 5,
-  LiteralOperatorFunction = 6,
-};
-
 enum class FunctionSpecifier {
   None = 0,
   Static = 1,
@@ -29,11 +19,6 @@ enum class FunctionSpecifier {
   ConstExpr = 16,
   Default = 32,
   Delete = 64,
-};
-
-enum ImplementationMethod {
-  NativeFunction = 0,
-  InterpretedFunction = 1
 };
 
 class LIBSCRIPT_API FunctionFlags
@@ -48,9 +33,6 @@ public:
 
   bool test(FunctionSpecifier fs) const;
   void set(FunctionSpecifier fs);
-
-  bool test(ImplementationMethod im) const;
-  void set(ImplementationMethod im);
 
   AccessSpecifier getAccess() const;
   void set(AccessSpecifier as);

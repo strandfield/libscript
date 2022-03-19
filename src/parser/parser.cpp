@@ -1246,6 +1246,13 @@ DeclParser::~DeclParser()
 
 }
 
+void DeclParser::readOptionalAttribute()
+{
+  AttributeParser parser{ context(), subfragment() };
+ 
+  if (parser.ready())
+    mAttribute = parse_and_seek(parser);
+}
 
 void DeclParser::readOptionalDeclSpecifiers()
 {
@@ -1358,6 +1365,7 @@ bool DeclParser::detectFromDeclarator()
     auto overload = ast::OperatorOverloadDecl::New(mName);
     overload->returnType = mType;
     mFuncDecl = overload;
+    mFuncDecl->attribute = mAttribute;
     return true;
   }
   else if (mName->is<ast::LiteralOperatorName>())
@@ -1366,6 +1374,7 @@ bool DeclParser::detectFromDeclarator()
     auto lon = ast::OperatorOverloadDecl::New(mName);
     lon->returnType = mType;
     mFuncDecl = lon;
+    mFuncDecl->attribute = mAttribute;
     return true;
   }
   else if (mVirtualKw.isValid())
@@ -1374,6 +1383,7 @@ bool DeclParser::detectFromDeclarator()
     // some code duplication
     mDecision = ParsingFunction;
     mFuncDecl = ast::FunctionDecl::New(mName);
+    mFuncDecl->attribute = mAttribute;
     mFuncDecl->returnType = mType;
     mFuncDecl->virtualKeyword = mVirtualKw;
     return true;
@@ -1382,15 +1392,10 @@ bool DeclParser::detectFromDeclarator()
   return false;
 }
 
-// TODO : restructure this function as follow :
-// - readOptionalDeclSpecifiers()
-// - detectBeforeReadingTypeSpecifier()
-// - readTypeSpecifier()
-// - detectBeforeReadingDeclarator() // also used to correct ctor misinterpreted as typespecifier
-// - readDeclarator()
-// - detectFromDeclarator()
 bool DeclParser::detectDecl()
 {
+  readOptionalAttribute();
+
   readOptionalDeclSpecifiers();
 
   if (detectBeforeReadingTypeSpecifier())
@@ -1444,6 +1449,7 @@ std::shared_ptr<ast::Declaration> DeclParser::parse()
   else if (peek() == Token::LeftPar)
   {
     mFuncDecl = ast::FunctionDecl::New(mName);
+    mFuncDecl->attribute = mAttribute;
     mFuncDecl->returnType = mType;
     mFuncDecl->staticKeyword = mStaticKw;
     mFuncDecl->virtualKeyword = mVirtualKw;
@@ -1777,7 +1783,7 @@ bool DeclParser::readOptionalConst()
   return true;
 }
 
-bool DeclParser::readOptionalDeleteSpecifier()
+bool DeclParser::readOptionalSpecifier(Token::Id id, Token& tok)
 {
   if (mDecision == ParsingVariable)
     return false;
@@ -1791,15 +1797,15 @@ bool DeclParser::readOptionalDeleteSpecifier()
   if (atEnd())
     throw SyntaxErr(ParserError::UnexpectedEndOfInput);
 
-  if (peek() != Token::Delete)
+  if (peek() != id)
   {
     seek(p);
     return false;
   }
 
-  const Token delSpec = read();
+  const Token spec = read();
   mFuncDecl->equalSign = eq_token;
-  mFuncDecl->deleteKeyword = delSpec;
+  tok = spec;
 
   mDecision = ParsingFunction;
   mVarDecl = nullptr;
@@ -1810,69 +1816,29 @@ bool DeclParser::readOptionalDeleteSpecifier()
   read(Token::Semicolon);
 
   return true;
+}
+
+bool DeclParser::readOptionalDeleteSpecifier()
+{
+  return mFuncDecl && readOptionalSpecifier(Token::Delete, mFuncDecl->deleteKeyword);
 }
 
 bool DeclParser::readOptionalDefaultSpecifier()
 {
-  if (mDecision == ParsingVariable)
-    return false;
-
-  if (peek() != Token::Eq)
-    return false;
-
-  auto p = iterator();
-  const Token eqSign = read();
-
-  if (atEnd())
-    throw SyntaxErr(ParserError::UnexpectedEndOfInput);
-
-  if (peek() != Token::Default)
-  {
-    seek(p);
-    return false;
-  }
-
-  const Token defspec = read();
-  mFuncDecl->equalSign = eqSign;
-  mFuncDecl->defaultKeyword = defspec;
-
-  mDecision = ParsingFunction;
-  mVarDecl = nullptr;
-
-  read(Token::Semicolon);
-
-  return true;
+  return mFuncDecl && readOptionalSpecifier(Token::Default, mFuncDecl->defaultKeyword);
 }
 
 bool DeclParser::readOptionalVirtualPureSpecifier()
 {
-  if (mDecision == ParsingVariable)
-    return false;
+  bool success = mFuncDecl && readOptionalSpecifier(Token::OctalLiteral, mFuncDecl->virtualPure);
 
-  if (peek() != Token::Eq)
-    return false;
-
-  auto p = iterator();
-  Token eq_sign = unsafe_read();
-
-  if (peek() != Token::OctalLiteral)
+  if(success)
   {
-    seek(p);
-    return false;
+    if (!mFuncDecl->virtualPure.isZero())
+      throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{ mFuncDecl->virtualPure, Token::OctalLiteral });
   }
 
-  mFuncDecl->equalSign = eq_sign;
-  mFuncDecl->virtualPure = read();
-
-  if (!mFuncDecl->virtualPure.isZero())
-    throw SyntaxErr(ParserError::UnexpectedToken, errors::UnexpectedToken{mFuncDecl->virtualPure, Token::OctalLiteral});
-
-  mDecision = ParsingFunction;
-  mVarDecl = nullptr;
-
-  read(Token::Semicolon);
-
-  return true;
+  return success;
 }
 
 
@@ -1998,6 +1964,36 @@ bool DeclParser::isClassName(const std::shared_ptr<ast::Identifier> & name) cons
 }
 
 
+AttributeParser::AttributeParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
+  : ParserBase(shared_context, reader)
+{
+
+}
+
+bool AttributeParser::ready() const
+{
+  return peek() == Token::LeftBracket && peek(1) == Token::LeftBracket;
+}
+
+std::shared_ptr<ast::AttributeDeclaration> AttributeParser::parse()
+{
+  TokenReader subreader = subfragment<Fragment::DelimiterPair>();
+  subreader = subreader.subfragment<Fragment::DelimiterPair>();
+
+  Token lb1 = read(Token::LeftBracket);
+  Token lb2 = read(Token::LeftBracket);
+  Token dblb{ Token::DblLeftBracket, 0, StringView(lb1.text().data(), 2) };
+
+  ExpressionParser subparser{ context(), subreader };
+  std::shared_ptr<ast::Node> attr = parse_and_seek(subparser);
+
+  Token rb1 = read(Token::RightBracket);
+  Token rb2 = read(Token::RightBracket);
+  Token dbrb{ Token::DblRightBracket, 0, StringView(rb1.text().data(), 2) };
+
+  return ast::AttributeDeclaration::New(dblb, attr, dbrb);
+}
+
 
 EnumValueParser::EnumValueParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader)
   : ParserBase(shared_context, reader)
@@ -2051,6 +2047,14 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
   if (peek() == Token::Class)
     ctok = read();
 
+  std::shared_ptr<ast::AttributeDeclaration> attr = nullptr;
+  {
+    AttributeParser attrparser{ context(), subfragment() };
+
+    if (attrparser.ready())
+      attr = parse_and_seek(attrparser);
+  }
+
   std::shared_ptr<ast::SimpleIdentifier> enum_name;
   {
     IdentifierParser idparser{ context(), subfragment(), IdentifierParser::ParseOnlySimpleId };
@@ -2068,7 +2072,9 @@ std::shared_ptr<ast::EnumDeclaration> EnumParser::parse()
   parser::Token rb = read(Token::RightBrace);
   read(Token::Semicolon);
 
-  return ast::EnumDeclaration::New(etok, ctok, lb, enum_name, std::move(value_parser.values), rb);
+  auto result = ast::EnumDeclaration::New(etok, ctok, lb, enum_name, std::move(value_parser.values), rb);
+  result->attribute = attr;
+  return result;
 }
 
 
@@ -2093,9 +2099,14 @@ void ClassParser::setTemplateSpecialization(bool on)
 std::shared_ptr<ast::ClassDecl> ClassParser::parse()
 {
   const Token classKeyword = read();
+
+  std::shared_ptr<ast::AttributeDeclaration> attr = readOptionalAttribute();
+
   auto name = readClassName();
 
   mClass = ast::ClassDecl::New(classKeyword, name);
+
+  mClass->attribute = attr;
 
   readOptionalParent();
 
@@ -2142,6 +2153,12 @@ void ClassParser::parseTypedef()
   TypedefParser tp{ context(), subfragment() };
   auto decl = parse_and_seek(tp);
   mClass->content.push_back(decl);
+}
+
+std::shared_ptr<ast::AttributeDeclaration> ClassParser::readOptionalAttribute()
+{
+  AttributeParser parser{ context(), subfragment() };
+  return parser.ready() ? parse_and_seek(parser) : nullptr;
 }
 
 std::shared_ptr<ast::Identifier> ClassParser::readClassName()

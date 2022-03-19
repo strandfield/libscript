@@ -5,7 +5,9 @@
 #ifndef LIBSCRIPT_TYPESYSTEM_P_H
 #define LIBSCRIPT_TYPESYSTEM_P_H
 
+#include <map>
 #include <memory>
+#include <typeindex>
 #include <vector>
 
 #include "script/enum.h"
@@ -47,6 +49,9 @@ public:
     Enum enum_type;
     Class class_type;
   } reservations;
+
+  std::map<std::type_index, Type> typemap;
+  std::map<std::string, Type> typemap_by_name;
 
   std::vector<std::unique_ptr<TypeSystemListener>> listeners;
 

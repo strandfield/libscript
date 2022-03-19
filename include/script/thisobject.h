@@ -1,10 +1,11 @@
-// Copyright (C) 2019-2020 Vincent Chambrin
+// Copyright (C) 2019-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
 #ifndef LIBSCRIPT_THISOBJECT_H
 #define LIBSCRIPT_THISOBJECT_H
 
+#include "script/engine.h"
 #include "script/value.h"
 #include "script/hybrid-cpp-value.h"
 
@@ -33,9 +34,9 @@ public:
   void init(Args&& ... args)
   {
     if(std::is_class<T>::value)
-      m_value = Value(new HybridCppValue<T>(m_engine, std::forward<Args>(args)...));
+      m_value = Value(new HybridCppValue<T>(m_engine, m_engine->makeType<T>(), std::forward<Args>(args)...));
     else
-      m_value = Value(new CppValue<T>(m_engine, std::forward<Args>(args)...));
+      m_value = Value(new CppValue<T>(m_engine, m_engine->makeType<T>(), std::forward<Args>(args)...));
   }
 
   template<typename T>

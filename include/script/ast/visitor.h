@@ -91,6 +91,8 @@ typename Visitor::return_type dispatch(Visitor & v, const std::shared_ptr<ast::N
     return v.visit(std::static_pointer_cast<ast::ContinueStatement>(n));
   case NodeType::BreakStatement:
     return v.visit(std::static_pointer_cast<ast::BreakStatement>(n));
+  case NodeType::AttributeDeclaration:
+    return v.visit(std::static_pointer_cast<ast::AttributeDeclaration>(n));
   case NodeType::EnumDeclaration:
     return v.visit(std::static_pointer_cast<ast::EnumDeclaration>(n));
   case NodeType::VariableDeclaration:
@@ -208,6 +210,8 @@ typename Visitor::return_type dispatch(Visitor & v, ast::Node & n)
     return v.visit(n.as<ast::ContinueStatement>());
   case NodeType::BreakStatement:
     return v.visit(n.as<ast::BreakStatement>());
+  case NodeType::AttributeDeclaration:
+    return v.visit(n.as<ast::AttributeDeclaration>());
   case NodeType::EnumDeclaration:
     return v.visit(n.as<ast::EnumDeclaration>());
   case NodeType::VariableDeclaration:
@@ -306,6 +310,7 @@ public:
     InitStatement,
     LoopIncrement,
     VarInit,
+    Attribute,
   };
 
   /*!

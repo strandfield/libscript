@@ -177,6 +177,9 @@ utils::StringView FunctionDecl::source() const
   if(name)
     src = compute_source_complex(src, name->source());
 
+  if (attribute)
+    src = compute_source_complex(attribute->source(), src);
+
   return src;
 }
 
@@ -668,6 +671,24 @@ utils::StringView ReturnStatement::source() const
 bool Declaration::isDeclaration() const
 {
   return true;
+}
+
+AttributeDeclaration::AttributeDeclaration(const parser::Token& dlb, const std::shared_ptr<Node>& attr, const parser::Token& drb)
+  : double_left_bracket(dlb),
+    attribute(attr),
+    double_right_bracket(drb)
+{
+
+}
+
+std::shared_ptr<AttributeDeclaration> AttributeDeclaration::New(const parser::Token& dlb, const std::shared_ptr<Node>& attr, const parser::Token& drb)
+{
+  return std::make_shared<AttributeDeclaration>(dlb, attr, drb);
+}
+
+utils::StringView AttributeDeclaration::source() const
+{
+  return compute_source(double_left_bracket, double_right_bracket);
 }
 
 EnumDeclaration::EnumDeclaration(const parser::Token& ek, const parser::Token& ck, const parser::Token& lb, const std::shared_ptr<SimpleIdentifier>& n, std::vector<EnumValueDeclaration> vals, const parser::Token& rb)

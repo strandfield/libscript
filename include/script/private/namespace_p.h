@@ -22,6 +22,8 @@
 namespace script
 {
 
+class ModuleInterface;
+
 class NamespaceImpl : public SymbolImpl
 {
 public:
@@ -36,6 +38,7 @@ public:
   std::vector<LiteralOperator> literal_operators;
   std::vector<Template> templates;
   std::vector<Typedef> typedefs;
+  std::weak_ptr<ModuleInterface> the_module;
 
 public:
   NamespaceImpl(const std::string & n, Engine *e)
@@ -48,9 +51,6 @@ public:
   virtual ~NamespaceImpl() = default;
 
   Name get_name() const override;
-  
-  virtual bool is_module() const;
-  virtual bool is_native_module() const;
 };
 
 } // namespace script

@@ -472,7 +472,7 @@ void MessageBuilder::build(DiagnosticMessage& mssg, const compiler::CompilationF
     case CompilerError::ModuleImportationFailed:
     {
       auto& data = ex.data()->get<compiler::errors::ModuleImportationFailed>();
-      std::string text = format(fmt, data.message);
+      std::string text = format(fmt, data.name, data.message);
       mssg.setContent(std::move(text));
     }
     break;

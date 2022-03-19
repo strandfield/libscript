@@ -48,7 +48,7 @@ Scope ImportProcessor::process(const std::shared_ptr<ast::ImportDirective> & dec
   }
   catch (ModuleLoadingError& ex)
   {
-    throw CompilationFailure{ CompilerError::ModuleImportationFailed, errors::ModuleImportationFailed{ex.message} };
+    throw CompilationFailure{ CompilerError::ModuleImportationFailed, errors::ModuleImportationFailed{ m.name(), ex.message } };
   }
 
   return m.scope();
@@ -59,14 +59,7 @@ void ImportProcessor::load_module(Module& m)
   if (m.isLoaded())
     return;
 
-  if (m.isNative())
-  {
-    m.load();
-  }
-  else
-  {
-    compiler()->addToSession(m.asScript());
-  }
+  m.load();
 }
 
 } // namespace compiler

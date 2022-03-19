@@ -67,32 +67,6 @@ struct LargeObject
   int data[1024];
 };
 
-int small_object_id = 0;
-int large_object_id = 0;
-
-namespace script
-{
-
-template<>
-struct make_type_helper<SmallObject>
-{
-  inline static Type get()
-  {
-    return Type(small_object_id);
-  }
-};
-
-template<>
-struct make_type_helper<LargeObject>
-{
-  inline static Type get()
-  {
-    return Type(large_object_id);
-  }
-};
-
-} // namespace script
-
 script::Value smallobject_default_ctor(script::FunctionCall* c)
 {
   c->thisObject().init<SmallObject>();
@@ -124,19 +98,19 @@ TEST(Scenarios, custom_type) {
   Engine engine;
   engine.setup();
   
-  Class largeobject = engine.rootNamespace().newClass("LargeObject").get();
+  Class largeobject = engine.rootNamespace()
+    .newClass("LargeObject").setId(engine.registerType<LargeObject>("LargeObject").data()).get();
   ConstructorBuilder(largeobject).setCallback(largeobject_default_ctor).create();
   DestructorBuilder(largeobject).setCallback(largeobject_dtor).create();
-  large_object_id = largeobject.id();
 
   Value val = engine.construct(largeobject.id(), {});
   ASSERT_EQ(val.type(), largeobject.id());
   engine.destroy(val);
 
-  Class smallobject = engine.rootNamespace().newClass("SmallObject").get();
+  Class smallobject = engine.rootNamespace()
+    .newClass("SmallObject").setId(engine.registerType<SmallObject>().data()).get();
   ConstructorBuilder(smallobject).setCallback(smallobject_default_ctor).create();
   DestructorBuilder(smallobject).setCallback(smallobject_dtor).create();
-  small_object_id = smallobject.id();
 
   val = engine.construct(smallobject.id(), {});
   ASSERT_EQ(val.type(), smallobject.id());

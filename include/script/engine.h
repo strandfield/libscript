@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -16,8 +16,7 @@
 #include "script/string.h"
 #include "script/types.h"
 #include "script/value.h"
-
-#include "script/modulecallbacks.h"
+#include "script/module.h"
 
 namespace script
 {
@@ -32,6 +31,7 @@ class EngineImpl;
 class Enum;
 class FunctionBuilder;
 class FunctionType;
+class ModuleInterface;
 class Namespace;
 class Prototype;
 class Script;
@@ -126,7 +126,6 @@ inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcep
   return std::error_code(static_cast<int>(e), script::errors::engine_category());
 }
 
-
 class LIBSCRIPT_API Engine
 {
 public:
@@ -138,6 +137,23 @@ public:
   void tearDown();
 
   TypeSystem* typeSystem() const;
+
+  template<typename T>
+  Type registerType(const std::string& name);
+
+  template<typename T>
+  Type registerType(const std::string& name, Type::TypeFlag what);
+
+  template<typename T>
+  Type registerType();
+
+  template<typename T>
+  Type getType() const;
+
+  Type getType(const std::string& name) const;
+
+  template<typename T>
+  Type makeType() const;
 
   Value newBool(bool bval);
   Value newChar(char cval);
@@ -159,7 +175,7 @@ public:
   template<typename T, typename...Args>
   Value construct(Args&& ... args)
   {
-    return Value(new CppValue<T>(this, std::forward<Args>(args)...));
+    return Value(new CppValue<T>(this, makeType<T>(), std::forward<Args>(args)...));
   }
 
   void destroy(Value val);
@@ -173,7 +189,7 @@ public:
   template<typename T>
   Value expose(T& val)
   {
-    return Value(new CppReferenceValue<T>(this, val));
+    return Value(new CppReferenceValue<T>(this, makeType<T&>(), val));
   }
 
   bool canCopy(const Type & t);
@@ -189,10 +205,14 @@ public:
   void destroy(Script s);
 
   Module newModule(const std::string & name);
-  Module newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
-  Module newModule(const std::string & name, const SourceFile & src);
+  Module newModule(const std::string& name, ModuleLoadFunction load, ModuleCleanupFunction cleanup);
+  Module newModule(std::string name, const SourceFile& src);
   const std::vector<Module> & modules() const;
   Module getModule(const std::string & name);
+  void addModule(std::shared_ptr<ModuleInterface> module_impl);
+
+  template<typename T, typename...Args>
+  Module newModule(Args&&... args);
 
   Type typeId(const std::string & typeName, Scope scope = Scope()) const;
 
@@ -217,8 +237,138 @@ public:
   Engine & operator=(const Engine & other) = delete;
 
 protected:
+  Type register_type(std::type_index id, Type::TypeFlag what, const std::string& name);
+  void register_type(std::type_index id, Type t, const std::string& name);
+  Type find_type_or_throw(std::type_index id) const;
+
+protected:
   std::unique_ptr<EngineImpl> d;
 };
+
+/*!
+ * \fn template<typename T> Type registerType(std::string name)
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType(const std::string& name)
+{
+  static_assert(std::is_class<T>::value || std::is_enum<T>::value, "T must be enum or class");
+  Type::TypeFlag what = std::is_class<T>::value ? Type::ObjectFlag : Type::EnumFlag;
+  return registerType<T>(name, what);
+}
+
+/*!
+ * \fn template<typename T> Type registerType(std::string name, Type::TypeFlag what)
+ * \param the name of the type
+ * \param whether the type is enum or class
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType(const std::string& name, Type::TypeFlag what)
+{
+  return register_type(std::type_index(typeid(T)), what, name);
+}
+
+/*!
+ * \fn template<typename T> Type registerType()
+ * \brief register a new type
+ */
+template<typename T>
+inline Type Engine::registerType()
+{
+  return registerType<T>(typeid(T).name());
+}
+
+/*!
+ * \fn template<typename T> Type getType() const
+ * \brief get a type
+ * 
+ * Throws \t UnknownTypeError if the type wasn't previously registered
+ * with \m registerType.
+ */
+template<typename T>
+inline Type Engine::getType() const
+{
+  static const script::Type cache = find_type_or_throw(std::type_index(typeid(T)));
+  return cache;
+}
+
+template<typename T>
+struct maketype_helper
+{
+  inline static Type get(const Engine& e)
+  {
+    return e.getType<T>();
+  }
+};
+
+template<typename T>
+struct maketype_helper<T&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::ref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<T&&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::rref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T>
+{
+  inline static Type get(const Engine& e)
+  {
+    return maketype_helper<T>::get(e).withFlag(Type::ConstFlag);
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T&>
+{
+  inline static Type get(const Engine& e)
+  {
+    return Type::cref(maketype_helper<T>::get(e));
+  }
+};
+
+template<typename T>
+struct maketype_helper<const T*>
+{
+  inline static Type get(const Engine& e)
+  {
+    return maketype_helper<T*>::get(e).withFlag(Type::ConstFlag);
+  }
+};
+
+template<> struct maketype_helper<void> { static Type get(const Engine&) { return Type::Void; } };
+template<> struct maketype_helper<bool> { static Type get(const Engine&) { return Type::Boolean; } };
+template<> struct maketype_helper<char> { static Type get(const Engine&) { return Type::Char; } };
+template<> struct maketype_helper<int> { static Type get(const Engine&) { return Type::Int; } };
+template<> struct maketype_helper<float> { static Type get(const Engine&) { return Type::Float; } };
+template<> struct maketype_helper<double> { static Type get(const Engine&) { return Type::Double; } };
+template<> struct maketype_helper<String> { static Type get(const Engine&) { return Type::String; } };
+
+/*!
+ * \fn template<typename T> Type makeType() const
+ * \brief constructs a Type from a C++ type
+ *
+ * This function may use \m getType and as such can raise 
+ * an \t UnknownTypeError.
+ */
+template<typename T>
+inline Type Engine::makeType() const
+{
+  static const script::Type cache = maketype_helper<T>::get(*this);
+  return cache;
+}
+
 
 template<> inline Value Engine::construct<bool>(const bool& x) { return newBool(x); }
 template<> inline Value Engine::construct<bool>(bool&& x) { return newBool(x); }
@@ -232,6 +382,14 @@ template<> inline Value Engine::construct<double>(const double& n) { return newD
 template<> inline Value Engine::construct<double>(double&& n) { return newDouble(n); }
 template<> inline Value Engine::construct<String>(const String& s) { return newString(s); }
 template<> inline Value Engine::construct<String>(String&& s) { return newString(s); }
+
+template<typename T, typename...Args>
+inline Module Engine::newModule(Args&&... args)
+{
+  auto module_impl = std::make_shared<T>(std::forward<Args>(args)...);
+  addModule(module_impl);
+  return Module(module_impl);
+}
 
 } // namespace script
 

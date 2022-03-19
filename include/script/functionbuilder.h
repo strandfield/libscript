@@ -92,14 +92,12 @@ public:
   Derived & setCallback(NativeFunctionSignature impl)
   {
     body = builders::make_body(impl);
-    flags.set(ImplementationMethod::NativeFunction);
     return *(static_cast<Derived*>(this));
   }
 
   Derived & setProgram(const std::shared_ptr<program::Statement> & prog)
   {
     body = prog;
-    flags.set(ImplementationMethod::InterpretedFunction);
     return *(static_cast<Derived*>(this));
   }
 

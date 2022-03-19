@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -30,6 +30,10 @@
 #include "script/typesystem.h"
 #include "script/value.h"
 
+#include "script/script-module.h"
+#include "script/group-module.h"
+#include "script/legacy-module.h"
+
 #include "script/compiler/compiler.h"
 #include "script/compiler/compilererrors.h"
 
@@ -40,7 +44,6 @@
 #include "script/private/enum_p.h"
 #include "script/private/function_p.h"
 #include "script/private/lambda_p.h"
-#include "script/private/module_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/operator_p.h"
 #include "script/private/scope_p.h"
@@ -251,6 +254,14 @@ void Engine::setup()
   d->rootNamespace = Namespace{ std::make_shared<NamespaceImpl>("", this) };
   d->context = Context{ std::make_shared<ContextImpl>(this, 0, "default_context") };
 
+  register_type(std::type_index(typeid(void)), Type(Type::Void), "void");
+  register_type(std::type_index(typeid(bool)), Type(Type::Boolean), "bool");
+  register_type(std::type_index(typeid(char)), Type(Type::Char), "char");
+  register_type(std::type_index(typeid(int)), Type(Type::Int), "int");
+  register_type(std::type_index(typeid(float)), Type(Type::Float), "float");
+  register_type(std::type_index(typeid(double)), Type(Type::Double), "double");
+  register_type(std::type_index(typeid(String)), Type(Type::String), "String");
+
   register_builtin_operators(d->rootNamespace);
 
   Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
@@ -305,12 +316,26 @@ TypeSystem* Engine::typeSystem() const
 }
 
 /*!
+ * \fn Type getType(const std::string& name)
+ * \brief retrieves a type by its name
+ * 
+ * Note that the type must have been previsouly registered with
+ * \m registerType().
+ */
+Type Engine::getType(const std::string& name) const
+{
+  const auto& map = typeSystem()->impl()->typemap_by_name;
+  auto it = map.find(name);
+  return it != map.end() ? it->second : Type();
+}
+
+/*!
  * \fn Value newBool(bool bval)
  * \brief Constructs a new value of type bool
  */
 Value Engine::newBool(bool bval)
 {
-  return Value(new CppValue<bool>(this, bval));
+  return Value(new CppValue<bool>(this, script::Type::Boolean, bval));
 }
 
 /*!
@@ -319,7 +344,7 @@ Value Engine::newBool(bool bval)
  */
 Value Engine::newChar(char cval)
 {
-  return Value(new CppValue<char>(this, cval));
+  return Value(new CppValue<char>(this, script::Type::Char, cval));
 }
 
 /*!
@@ -328,7 +353,7 @@ Value Engine::newChar(char cval)
  */
 Value Engine::newInt(int ival)
 {
-  return Value(new CppValue<int>(this, ival));
+  return Value(new CppValue<int>(this, script::Type::Int, ival));
 }
 
 /*!
@@ -337,7 +362,7 @@ Value Engine::newInt(int ival)
  */
 Value Engine::newFloat(float fval)
 {
-  return Value(new CppValue<float>(this, fval));
+  return Value(new CppValue<float>(this, script::Type::Float, fval));
 }
 
 /*!
@@ -346,7 +371,7 @@ Value Engine::newFloat(float fval)
  */
 Value Engine::newDouble(double dval)
 {
-  return Value(new CppValue<double>(this, dval));
+  return Value(new CppValue<double>(this, script::Type::Double, dval));
 }
 
 /*!
@@ -355,7 +380,7 @@ Value Engine::newDouble(double dval)
  */
 Value Engine::newString(const String & sval)
 {
-  return Value(new CppValue<String>(this, sval));
+  return Value(new CppValue<String>(this, script::Type::String, sval));
 }
 
 /*!
@@ -713,7 +738,7 @@ void Engine::destroy(Script s)
  */
 Module Engine::newModule(const std::string & name)
 {
-  Module m{ std::make_shared<NativeModule>(this, name) };
+  Module m{ std::make_shared<GroupModule>(this, name) };
   d->modules.push_back(m);
   return m;
 }
@@ -728,23 +753,23 @@ Module Engine::newModule(const std::string & name)
  */
 Module Engine::newModule(const std::string & name, ModuleLoadFunction load, ModuleCleanupFunction cleanup)
 {
-  Module m{ std::make_shared<NativeModule>(this, name, load, cleanup) };
+  Module m{ std::make_shared<LegacyModule>(this, name, load, cleanup) };
   d->modules.push_back(m);
   return m;
 }
 
 /*!
- * \fn Module newModule(const std::string & name, const SourceFile & src)
+ * \fn Module newModule(std::string name, const SourceFile& src)
  * \param module name
  * \param load function
  * \param cleanup function
  * \brief Creates a new script module.
  *
  */
-Module Engine::newModule(const std::string & name, const SourceFile & src)
+Module Engine::newModule(std::string name, const SourceFile& src)
 {
-  auto mimpl = std::make_shared<ScriptModule>(static_cast<int>(d->scripts.size()), this, src, name);
-  d->scripts.push_back(Script{ mimpl });
+  Script s = newScript(src);
+  auto mimpl = std::make_shared<ScriptModule>(this, std::move(name), s);
   Module m{ mimpl };
   d->modules.push_back(m);
   return m;
@@ -775,6 +800,11 @@ Module Engine::getModule(const std::string & name)
   }
 
   return Module{};
+}
+
+void Engine::addModule(std::shared_ptr<ModuleInterface> module_impl)
+{
+  d->modules.push_back(Module(module_impl));
 }
 
 /*!
@@ -933,6 +963,31 @@ const std::vector<Script> & Engine::scripts() const
 EngineImpl * Engine::implementation() const
 {
   return d.get();
+}
+
+Type Engine::register_type(std::type_index id, Type::TypeFlag what, const std::string& name)
+{
+  size_t offset = typeSystem()->reserve(what, 1);
+  Type result{ static_cast<int>(offset), what };
+  register_type(id, result, name);
+  return result;
+}
+
+void Engine::register_type(std::type_index id, Type t, const std::string& name)
+{
+  typeSystem()->impl()->typemap[id] = t;
+  typeSystem()->impl()->typemap_by_name[name] = t;
+}
+
+Type Engine::find_type_or_throw(std::type_index id) const
+{
+  auto& typemap = typeSystem()->impl()->typemap;
+  auto it = typemap.find(id);
+
+  if (it == typemap.end())
+    throw UnknownTypeError();
+
+  return it->second;
 }
 
 } // namespace script
