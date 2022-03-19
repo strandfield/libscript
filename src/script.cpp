@@ -108,9 +108,18 @@ void Script::run()
 
 void Script::clear()
 {
-  // @TODO: WTF ?!?
-  throw std::runtime_error{ "Not implemented" };
-
+  // @TODO: unregister types
+  d->typedefs.clear();
+  d->static_variables.clear();
+  d->variables.clear();
+  d->templates.clear();
+  d->classes.clear();
+  d->enums.clear();
+  d->functions.clear();
+  d->operators.clear();
+  d->literal_operators.clear();
+  d->namespaces.clear();
+  d->attributes.clear();
 }
 
 const SourceFile & Script::source() const
