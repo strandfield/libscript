@@ -8,14 +8,11 @@
 #include "script/compiler/component.h"
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/compilesession.h"
-#include "script/compiler/nameresolver.h"
-#include "script/compiler/typeresolver.h"
 
-#include "script/class.h"
+#include "script/ast/node.h"
+
 #include "script/functionbuilder.h"
-#include "script/symbol.h"
-
-#include <vector>
+#include "script/scope.h"
 
 namespace script
 {
@@ -23,36 +20,11 @@ namespace script
 namespace compiler
 {
 
-class PrototypeResolver
-{
-public:
-
-  inline Class getClass(const Scope & scp)
-  {
-    return scp.isClass() ? scp.asClass() : (scp.type() == Scope::TemplateArgumentScope ? getClass(scp.parent()) : Class{});
-  }
-
-  void generic_fill(FunctionBuilder& builder, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
-  {
-    const Class class_scope = getClass(scp);
-
-    if (!fundecl->is<ast::ConstructorDecl>() && !fundecl->is<ast::DestructorDecl>())
-      builder.returns(script::compiler::resolve_type(fundecl->returnType, scp));
-
-    for (size_t i(0); i < fundecl->params.size(); ++i)
-    {
-      Type argtype = script::compiler::resolve_type(fundecl->params.at(i).type, scp);
-      builder.params(argtype);
-    }
-  }
-};
+LIBSCRIPT_API void fill_prototype(FunctionBuilder& builder, const std::shared_ptr<ast::FunctionDecl>& fundecl, const Scope& scp);
 
 // @TODO: does this really need to be a Component ?
 class FunctionProcessor : public Component
 {
-public:
-  PrototypeResolver prototype_;
-
 public:
   using Component::Component;
 
@@ -60,7 +32,7 @@ public:
 
   void generic_fill(FunctionBuilder& builder, const std::shared_ptr<ast::FunctionDecl> & fundecl, const Scope & scp)
   {
-    prototype_.generic_fill(builder, fundecl, scp);
+    script::compiler::fill_prototype(builder, fundecl, scp);
 
     if (fundecl->deleteKeyword.isValid())
       builder.setDeleted();
