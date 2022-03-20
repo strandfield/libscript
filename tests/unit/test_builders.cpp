@@ -76,7 +76,7 @@ TEST(Builders, functions) {
   ASSERT_EQ(foo.prototype().at(0), Type::Int);
   ASSERT_EQ(foo.prototype().at(1), Type::Boolean);
 
-  Operator assign = OperatorBuilder(Symbol(A), AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get();
+  Operator assign = FunctionBuilder::Op(A, AssignmentOperator).returns(Type::ref(A.id())).params(Type::cref(A.id())).setDeleted().get().toOperator();
   ASSERT_EQ(assign.operatorId(), AssignmentOperator);
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.memberOf(), A);
@@ -88,7 +88,7 @@ TEST(Builders, functions) {
   ASSERT_TRUE(assign.isDeleted());
 
   Namespace ops = root.newNamespace("ops");
-  assign = OperatorBuilder(Symbol(ops), AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get();
+  assign = FunctionBuilder::Op(ops, AdditionOperator).returns(A.id()).params(Type::cref(A.id()), Type::cref(A.id())).get().toOperator();
   ASSERT_EQ(assign.operatorId(), AdditionOperator);
   ASSERT_FALSE(assign.isMemberFunction());
   ASSERT_EQ(ops.operators().size(), 1);
@@ -97,7 +97,7 @@ TEST(Builders, functions) {
   ASSERT_EQ(assign.prototype().at(0), Type::cref(A.id()));
   ASSERT_EQ(assign.prototype().at(1), Type::cref(A.id()));
 
-  Cast to_int = CastBuilder(A).setReturnType(Type::Int).setConst().get();
+  Cast to_int = FunctionBuilder::Cast(A).setReturnType(Type::Int).setConst().get().toCast();
   ASSERT_EQ(to_int.destType(), Type::Int);
   ASSERT_EQ(to_int.sourceType(), Type::cref(A.id()));
   ASSERT_TRUE(to_int.isMemberFunction());
@@ -151,16 +151,14 @@ TEST(Builders, operators) {
   Engine e;
   e.setup();
 
-  Symbol s{ e.rootNamespace() };
-
   Class A = e.rootNamespace().newClass("A").get();
 
-  OperatorBuilder b{ s, OperatorName::AdditionOperator };
+  FunctionBuilder b = FunctionBuilder::Op(e.rootNamespace(), OperatorName::AdditionOperator);
   
   b.params(Type::cref(A.id()), Type::cref(A.id()));
   b.returns(A.id());
 
-  Operator op = b.get();
+  Operator op = b.get().toOperator();
 
   ASSERT_EQ(op.operatorId(), OperatorName::AdditionOperator);
   ASSERT_EQ(op.firstOperand(), Type::cref(A.id()));
@@ -184,12 +182,14 @@ TEST(Builders, functioncalloperator) {
 
   Class A = e.rootNamespace().newClass("A").get();
 
-  FunctionCallOperatorBuilder b{ Symbol{A} };
+  FunctionBuilder b = FunctionBuilder::Op(A, OperatorName::FunctionCallOperator);
 
   Operator op = b.setConst()
    .returns(Type::Int)
    .params(Type::Int, Type::Boolean)
-   .addDefaultArgument(create_default_arg(e.newBool(true))).get();
+   .addDefaultArgument(create_default_arg(e.newBool(true)))
+   .get()
+   .toOperator();
 
   ASSERT_EQ(op.prototype().count(), 3);
   ASSERT_EQ(op.returnType(), Type::Int);
@@ -205,7 +205,8 @@ TEST(Builders, literaloperator) {
 
   Namespace ns = e.rootNamespace();
 
-  LiteralOperator op = LiteralOperatorBuilder(ns, "s").returns(Type::Int).params(Type::Boolean).get();
+  LiteralOperator op = FunctionBuilder::LiteralOp(ns, "s").returns(Type::Int).params(Type::Boolean)
+    .get().toLiteralOperator();
 
   ASSERT_EQ(op.suffix(), "s");
   ASSERT_EQ(op.prototype().count(), 1);
@@ -221,22 +222,11 @@ TEST(Builders, conversionfunction) {
   Engine e;
   e.setup();
 
-  Symbol s{ e.rootNamespace() };
-
-  try
-  {
-    CastBuilder builder{ s, Type::Int };
-  }
-  catch (...)
-  {
-    ASSERT_TRUE(true);
-  }
-
   Class A = e.rootNamespace().newClass("A").get();
 
-  CastBuilder b{ Symbol{ A }, Type::Int };
+  FunctionBuilder b = FunctionBuilder::Cast(A).returns(Type::Int);
 
-  Cast cast = b.setConst().get();
+  Cast cast = b.setConst().get().toCast();
 
   ASSERT_EQ(cast.prototype().count(), 1);
   ASSERT_EQ(cast.returnType(), Type::Int);
@@ -252,22 +242,9 @@ TEST(Builders, constructor) {
   Engine e;
   e.setup();
 
-  Symbol s{ e.rootNamespace() };
-
-  try
-  {
-    ConstructorBuilder builder{ s };
-  }
-  catch (...)
-  {
-    ASSERT_TRUE(true);
-  }
-
   Class A = e.rootNamespace().newClass("A").get();
 
-  ConstructorBuilder b{ Symbol{ A } };
-
-  ASSERT_ANY_THROW(b.returns(Type::Int));
+  FunctionBuilder b = FunctionBuilder::Constructor(A);
 
   b.params(Type::Int, Type::Int)
     .addDefaultArgument(create_default_arg(e.newInt(0)));
@@ -279,50 +256,15 @@ TEST(Builders, constructor) {
   ASSERT_EQ(ctor.memberOf(), A);
 }
 
-
-TEST(Builders, defaultconstructor) {
-  using namespace script;
-
-  Engine e;
-  e.setup();
-
-  Class A = e.rootNamespace().newClass("A")
-    .addMember(DataMember{Type::Int, "n"})
-    .get();
-
-  ConstructorBuilder(A).setDefaulted().compile().get();
-  DestructorBuilder(A).setDefaulted().compile().get();
-
-  Value a = e.construct(A.id(), {});
-  ASSERT_EQ(a.type(), A.id());
-
-  e.destroy(a);
-}
-
-
 TEST(Builders, destructors) {
   using namespace script;
 
   Engine e;
   e.setup();
 
-  Symbol s{ e.rootNamespace() };
-
-  try
-  {
-    DestructorBuilder builder{ s };
-  }
-  catch (...)
-  {
-    ASSERT_TRUE(true);
-  }
-
   Class A = e.rootNamespace().newClass("A").get();
 
-  DestructorBuilder b{ Symbol{ A } };
-
-  ASSERT_ANY_THROW(b.params(Type::Int));
-  ASSERT_ANY_THROW(b.returns(Type::Int));
+  FunctionBuilder b = FunctionBuilder::Destructor(A);
 
   b.setVirtual();
 
@@ -345,24 +287,24 @@ TEST(Builders, builder_functions) {
 
   /* Constructors */
 
-  Function default_ctor = ConstructorBuilder(A).get();
+  Function default_ctor = FunctionBuilder::Constructor(A).get();
   ASSERT_TRUE(default_ctor.isConstructor());
   ASSERT_EQ(default_ctor.memberOf(), A);
   ASSERT_EQ(default_ctor, A.defaultConstructor());
 
-  Function copy_ctor = ConstructorBuilder(A).params(Type::cref(A_type)).get();
+  Function copy_ctor = FunctionBuilder::Constructor(A).params(Type::cref(A_type)).get();
   ASSERT_TRUE(copy_ctor.isConstructor());
   ASSERT_EQ(copy_ctor.memberOf(), A);
   ASSERT_EQ(copy_ctor, A.copyConstructor());
 
-  Function ctor_1 = ConstructorBuilder(A).params(Type::Int).get();
+  Function ctor_1 = FunctionBuilder::Constructor(A).params(Type::Int).get();
   ASSERT_TRUE(ctor_1.isConstructor());
   ASSERT_EQ(ctor_1.memberOf(), A);
   ASSERT_EQ(ctor_1.prototype().count(), 2);
   ASSERT_EQ(ctor_1.parameter(1), Type::Int);
   ASSERT_FALSE(ctor_1.isExplicit());
 
-  Function ctor_2 = ConstructorBuilder(A).setExplicit().params(Type::Boolean).get();
+  Function ctor_2 = FunctionBuilder::Constructor(A).setExplicit().params(Type::Boolean).get();
   ASSERT_TRUE(ctor_2.isConstructor());
   ASSERT_EQ(ctor_2.memberOf(), A);
   ASSERT_EQ(ctor_2.prototype().count(), 2);
@@ -373,7 +315,7 @@ TEST(Builders, builder_functions) {
 
   /* Conversion functions */
 
-  Cast cast_1 = CastBuilder(A).setReturnType(Type::cref(Type::Int)).setConst().get();
+  Cast cast_1 = FunctionBuilder::Cast(A).setReturnType(Type::cref(Type::Int)).setConst().get().toCast();
   ASSERT_TRUE(cast_1.isMemberFunction());
   ASSERT_EQ(cast_1.memberOf(), A);
   ASSERT_TRUE(cast_1.isConst());
@@ -381,7 +323,7 @@ TEST(Builders, builder_functions) {
   ASSERT_EQ(cast_1.destType(), cast_1.returnType());
   ASSERT_FALSE(cast_1.isExplicit());
 
-  Cast cast_2 = CastBuilder(A).setReturnType(Type::ref(Type::Int)).setExplicit().get();
+  Cast cast_2 = FunctionBuilder::Cast(A).setReturnType(Type::ref(Type::Int)).setExplicit().get().toCast();
   ASSERT_TRUE(cast_2.isMemberFunction());
   ASSERT_EQ(cast_2.memberOf(), A);
   ASSERT_FALSE(cast_2.isConst());
@@ -441,7 +383,7 @@ TEST(Builders, virtual_members) {
   ASSERT_FALSE(A.isAbstract());
   ASSERT_EQ(A.vtable().size(), 0);
 
-  Function foo = FunctionBuilder(A, "foo").setPureVirtual().get();
+  Function foo = FunctionBuilder::Fun(A, "foo").setPureVirtual().get();
 
   ASSERT_TRUE(foo.isVirtual());
   ASSERT_TRUE(foo.isPureVirtual());
@@ -459,7 +401,7 @@ TEST(Builders, virtual_members) {
   ASSERT_EQ(B.vtable().size(), 1);
   ASSERT_EQ(B.vtable().front(), foo);
 
-  Function foo_B = FunctionBuilder(B, "foo").get();
+  Function foo_B = FunctionBuilder::Fun(B, "foo").get();
 
   ASSERT_TRUE(foo_B.isVirtual());
   ASSERT_FALSE(foo_B.isPureVirtual());
@@ -478,7 +420,7 @@ TEST(Builders, static_member_functions) {
 
   Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
 
-  Function foo = FunctionBuilder(A, "foo")
+  Function foo = FunctionBuilder::Fun(A, "foo")
     .setStatic()
     .params(Type::Int).get();
 

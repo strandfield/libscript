@@ -182,7 +182,7 @@ public:
         throw CompilationFailure{ CompilerError::InvalidUseOfStaticKeyword };
 
       /// TODO: is the following line needed ?
-      builder.symbol = Symbol{ scp.asClass() };
+      builder.blueprint_.parent_ = Symbol{ scp.asClass() };
 
       set_static(builder, selector());
     }

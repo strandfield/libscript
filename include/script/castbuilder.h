@@ -19,31 +19,31 @@ class Cast;
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
-class LIBSCRIPT_API CastBuilder : public GenericFunctionBuilder<CastBuilder>
-{
-public:
-  typedef CastPrototype prototype_t;
-
-public:
-  prototype_t proto;
-
-public:
-  explicit CastBuilder(const Class& cla);
-  explicit CastBuilder(const Symbol& s);
-  CastBuilder(const Symbol& s, const Type& dest);
-
-  CastBuilder & setConst();
-  CastBuilder & setDeleted();
-  CastBuilder & setExplicit();
-
-  CastBuilder & setReturnType(const Type & t);
-  CastBuilder & addParam(const Type & t);
-
-  CastBuilder& operator()(const Type& dest);
-
-  void create();
-  script::Cast get();
-};
+//class LIBSCRIPT_API CastBuilder : public GenericFunctionBuilder<CastBuilder>
+//{
+//public:
+//  typedef CastPrototype prototype_t;
+//
+//public:
+//  prototype_t proto;
+//
+//public:
+//  explicit CastBuilder(const Class& cla);
+//  explicit CastBuilder(const Symbol& s);
+//  CastBuilder(const Symbol& s, const Type& dest);
+//
+//  CastBuilder & setConst();
+//  CastBuilder & setDeleted();
+//  CastBuilder & setExplicit();
+//
+//  CastBuilder & setReturnType(const Type & t);
+//  CastBuilder & addParam(const Type & t);
+//
+//  CastBuilder& operator()(const Type& dest);
+//
+//  void create();
+//  script::Cast get();
+//};
 
 } // namespace script
 

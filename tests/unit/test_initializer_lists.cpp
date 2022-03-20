@@ -126,8 +126,8 @@ TEST(InitializerLists, initializer_list_conversion) {
     });
 
   Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
-  Function ctor = ConstructorBuilder(A).params(Type::Int, Type::String).get();
-  ctor = ConstructorBuilder(A).params(ilist_int.id()).get();
+  Function ctor = FunctionBuilder::Constructor(A).params(Type::Int, Type::String).get();
+  ctor = FunctionBuilder::Constructor(A).params(ilist_int.id()).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &engine);
   ASSERT_EQ(init.kind(), Initialization::ListInitialization);

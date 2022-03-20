@@ -71,7 +71,7 @@ public:
   FunctionBuilder newFunction(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(std::string && name);
-  OperatorBuilder newOperator(OperatorName op);
+  FunctionBuilder newOperator(OperatorName op);
   TypedefBuilder newTypedef(const Type & t, const std::string & name);
   TypedefBuilder newTypedef(const Type & t, std::string && name);
 

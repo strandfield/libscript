@@ -38,6 +38,7 @@ public:
 
   std::shared_ptr<program::CompoundStatement> generateHeader();
 
+  // @TODO: with the refactor of FunctionBuilder, maybe these no longer need to be static
   static std::shared_ptr<program::CompoundStatement> generateDefaultConstructor(const Class & cla);
   static std::shared_ptr<program::CompoundStatement> generateCopyConstructor(const Class & cla);
   static std::shared_ptr<program::CompoundStatement> generateMoveConstructor(const Class & cla);

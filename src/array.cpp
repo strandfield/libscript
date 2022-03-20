@@ -152,29 +152,29 @@ Class ArrayTemplate::instantiate(ClassTemplateInstanceBuilder& builder)
   shared_data->data.typeId = array_class.id();
   Type array_type = array_class.id();
 
-  ConstructorBuilder(array_class).setCallback(callbacks::array::default_ctor).create();
+  FunctionBuilder::Constructor(array_class).setCallback(callbacks::array::default_ctor).create();
 
-  ConstructorBuilder(array_class).setCallback(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
+  FunctionBuilder::Constructor(array_class).setCallback(callbacks::array::copy_ctor).params(Type::cref(array_type)).create();
 
-  ConstructorBuilder(array_class).setCallback(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
+  FunctionBuilder::Constructor(array_class).setCallback(callbacks::array::size_ctor).setExplicit().params(Type::cref(Type::Int)).create();
 
-  DestructorBuilder(array_class).setCallback(callbacks::array::dtor).create();
+  FunctionBuilder::Destructor(array_class).setCallback(callbacks::array::dtor).create();
 
-  FunctionBuilder(array_class, "size").setCallback(callbacks::array::size)
+  FunctionBuilder::Fun(array_class, "size").setCallback(callbacks::array::size)
     .setConst().returns(Type::Int).create();
 
-  FunctionBuilder(array_class, "resize").setCallback(callbacks::array::resize)
+  FunctionBuilder::Fun(array_class, "resize").setCallback(callbacks::array::resize)
     .params(Type::cref(Type::Int)).create();
 
-  OperatorBuilder(Symbol(array_class), AssignmentOperator).setCallback(callbacks::array::assign)
+  FunctionBuilder::Op(array_class, AssignmentOperator).setCallback(callbacks::array::assign)
     .returns(Type::ref(array_type))
     .params(Type::cref(array_type)).create();
 
-  OperatorBuilder(Symbol(array_class), SubscriptOperator).setCallback(callbacks::array::subscript)
+  FunctionBuilder::Op(array_class, SubscriptOperator).setCallback(callbacks::array::subscript)
     .returns(Type::ref(element_type))
     .params(Type::cref(Type::Int)).create();
 
-  OperatorBuilder(Symbol(array_class), SubscriptOperator).setCallback(callbacks::array::subscript)
+  FunctionBuilder::Op(array_class, SubscriptOperator).setCallback(callbacks::array::subscript)
     .setConst()
     .returns(Type::cref(element_type))
     .params(Type::cref(Type::Int)).create();

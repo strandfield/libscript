@@ -19,35 +19,35 @@ class Function;
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
-class LIBSCRIPT_API ConstructorBuilder : public GenericFunctionBuilder<ConstructorBuilder>
-{
-public:
-  typedef DynamicPrototype prototype_t;
-
-public:
-  prototype_t proto_;
-  std::vector<std::shared_ptr<program::Expression>> defaultargs_;
-
-public:
-  ConstructorBuilder(const Class& cla);
-  ConstructorBuilder(const Symbol& s);
-
-  ConstructorBuilder & setDefaulted();
-  ConstructorBuilder & setDeleted();
-  ConstructorBuilder & setExplicit();
-
-  ConstructorBuilder & setReturnType(const Type & t);
-  ConstructorBuilder & addParam(const Type & t);
-
-  ConstructorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
-
-  ConstructorBuilder & compile();
-
-  ConstructorBuilder& operator()();
-
-  void create();
-  script::Function get();
-};
+//class LIBSCRIPT_API ConstructorBuilder : public GenericFunctionBuilder<ConstructorBuilder>
+//{
+//public:
+//  typedef DynamicPrototype prototype_t;
+//
+//public:
+//  prototype_t proto_;
+//  std::vector<std::shared_ptr<program::Expression>> defaultargs_;
+//
+//public:
+//  ConstructorBuilder(const Class& cla);
+//  ConstructorBuilder(const Symbol& s);
+//
+//  ConstructorBuilder & setDefaulted();
+//  ConstructorBuilder & setDeleted();
+//  ConstructorBuilder & setExplicit();
+//
+//  ConstructorBuilder & setReturnType(const Type & t);
+//  ConstructorBuilder & addParam(const Type & t);
+//
+//  ConstructorBuilder & addDefaultArgument(const std::shared_ptr<program::Expression> & value);
+//
+//  ConstructorBuilder & compile();
+//
+//  ConstructorBuilder& operator()();
+//
+//  void create();
+//  script::Function get();
+//};
 
 } // namespace script
 

@@ -265,37 +265,37 @@ Value subscript(FunctionCall *c)
 
 void StringBackend::register_string_type(Class& string)
 {
-  ConstructorBuilder(string).setCallback(callbacks::string::default_ctor).create();
-  ConstructorBuilder(string).setCallback(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
-  ConstructorBuilder(string).setCallback(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
+  FunctionBuilder::Constructor(string).setCallback(callbacks::string::default_ctor).create();
+  FunctionBuilder::Constructor(string).setCallback(callbacks::string::copy_ctor).params(Type::cref(string.id())).create();
+  FunctionBuilder::Constructor(string).setCallback(callbacks::string::char_ctor).setExplicit().params(Type::Char).create();
 
-  DestructorBuilder(string).setCallback(callbacks::string::dtor).create();
+  FunctionBuilder::Destructor(string).setCallback(callbacks::string::dtor).create();
 
-  FunctionBuilder(string, "at").setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
-  FunctionBuilder(string, "capacity").setCallback(callbacks::string::capacity).setConst().returns(Type::Int).create();
-  FunctionBuilder(string, "clear").setCallback(callbacks::string::clear).create();
-  FunctionBuilder(string, "empty").setCallback(callbacks::string::empty).setConst().returns(Type::Boolean).create();
-  FunctionBuilder(string, "erase").setCallback(callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
-  FunctionBuilder(string, "insert").setCallback(callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
-  FunctionBuilder(string, "length").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
-  FunctionBuilder(string, "size").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
-  FunctionBuilder(string, "replace").setCallback(callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
-  FunctionBuilder(string, "swap").setCallback(callbacks::string::swap).params(Type::ref(string.id())).create();
+  FunctionBuilder::Fun(string, "at").setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  FunctionBuilder::Fun(string, "capacity").setCallback(callbacks::string::capacity).setConst().returns(Type::Int).create();
+  FunctionBuilder::Fun(string, "clear").setCallback(callbacks::string::clear).create();
+  FunctionBuilder::Fun(string, "empty").setCallback(callbacks::string::empty).setConst().returns(Type::Boolean).create();
+  FunctionBuilder::Fun(string, "erase").setCallback(callbacks::string::erase).returns(Type::ref(string.id())).params(Type::Int, Type::Int).create();
+  FunctionBuilder::Fun(string, "insert").setCallback(callbacks::string::insert).returns(Type::ref(string.id())).params(Type::Int, Type::cref(string.id())).create();
+  FunctionBuilder::Fun(string, "length").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
+  FunctionBuilder::Fun(string, "size").setCallback(callbacks::string::length).setConst().returns(Type::Int).create();
+  FunctionBuilder::Fun(string, "replace").setCallback(callbacks::string::replace).returns(Type::ref(string.id())).params(Type::Int, Type::Int, Type::cref(string.id())).create();
+  FunctionBuilder::Fun(string, "swap").setCallback(callbacks::string::swap).params(Type::ref(string.id())).create();
 
-  OperatorBuilder(Symbol(string), EqualOperator).setCallback(callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  OperatorBuilder(Symbol(string), InequalOperator).setCallback(callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  OperatorBuilder(Symbol(string), GreaterOperator).setCallback(callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  OperatorBuilder(Symbol(string), GreaterEqualOperator).setCallback(callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  OperatorBuilder(Symbol(string), LessOperator).setCallback(callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
-  OperatorBuilder(Symbol(string), LessEqualOperator).setCallback(callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, EqualOperator).setCallback(callbacks::string::operators::eq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, InequalOperator).setCallback(callbacks::string::operators::neq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, GreaterOperator).setCallback(callbacks::string::operators::greater).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, GreaterEqualOperator).setCallback(callbacks::string::operators::geq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, LessOperator).setCallback(callbacks::string::operators::less).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, LessEqualOperator).setCallback(callbacks::string::operators::leq).setConst().returns(Type::Boolean).params(Type::cref(string.id())).create();
 
-  OperatorBuilder(Symbol(string), AssignmentOperator).setCallback(callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, AssignmentOperator).setCallback(callbacks::string::operators::assign).returns(Type::ref(string.id())).params(Type::cref(string.id())).create();
 
-  OperatorBuilder(Symbol(string), AdditionOperator).setCallback(callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
+  FunctionBuilder::Op(string, AdditionOperator).setCallback(callbacks::string::operators::add).setConst().returns(string.id()).params(Type::cref(string.id())).create();
 
-  OperatorBuilder(Symbol(string), SubscriptOperator).setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
+  FunctionBuilder::Op(string, SubscriptOperator).setCallback(callbacks::string::at).setConst().returns(Type::Char).params(Type::Int).create();
 
-  OperatorBuilder(Symbol(string), SubscriptOperator).setCallback(callbacks::string::operators::subscript).returns(Type::ref(Type::Char)).params(Type::Int).create();
+  FunctionBuilder::Op(string, SubscriptOperator).setCallback(callbacks::string::operators::subscript).returns(Type::ref(Type::Char)).params(Type::Int).create();
 }
 
 } // namespace script

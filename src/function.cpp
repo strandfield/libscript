@@ -332,9 +332,9 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 /// TODO: maybe move this to functionbuilder.cpp
 std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
 {
-  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name_, builder.proto_, ft.engine(), builder.flags);
-  impl->program_ = builder.body;
-  impl->data = builder.data;
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.blueprint_.name_.string(), builder.blueprint_.prototype(), ft.engine(), builder.blueprint_.flags());
+  impl->program_ = builder.blueprint_.body();
+  impl->data = builder.blueprint_.data();
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }

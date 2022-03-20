@@ -19,29 +19,29 @@ class Function;
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
-class LIBSCRIPT_API DestructorBuilder : public GenericFunctionBuilder<DestructorBuilder>
-{
-public:
-  typedef DestructorPrototype prototype_t;
-
-public:
-  prototype_t proto_;
-
-public:
-  explicit DestructorBuilder(const Class& cla);
-  DestructorBuilder(const Symbol & s);
-  
-  DestructorBuilder & setDefaulted();
-  DestructorBuilder & setVirtual();
-
-  DestructorBuilder & setReturnType(const Type & t);
-  DestructorBuilder & addParam(const Type & t);
-
-  DestructorBuilder & compile();
-
-  void create();
-  script::Function get();
-};
+//class LIBSCRIPT_API DestructorBuilder : public GenericFunctionBuilder<DestructorBuilder>
+//{
+//public:
+//  typedef DestructorPrototype prototype_t;
+//
+//public:
+//  prototype_t proto_;
+//
+//public:
+//  explicit DestructorBuilder(const Class& cla);
+//  DestructorBuilder(const Symbol & s);
+//  
+//  DestructorBuilder & setDefaulted();
+//  DestructorBuilder & setVirtual();
+//
+//  DestructorBuilder & setReturnType(const Type & t);
+//  DestructorBuilder & addParam(const Type & t);
+//
+//  DestructorBuilder & compile();
+//
+//  void create();
+//  script::Function get();
+//};
 
 } // namespace script
 

@@ -21,30 +21,30 @@ class LiteralOperator;
  * See \t GenericFunctionBuilder for a description of builder classes.
  */
 
-class LIBSCRIPT_API LiteralOperatorBuilder : public GenericFunctionBuilder<LiteralOperatorBuilder>
-{
-public:
-  typedef UnaryOperatorPrototype prototype_t;
-
-public:
-  std::string name_;
-  prototype_t proto_;
-
-public:
-  explicit LiteralOperatorBuilder(const Symbol& s);
-  LiteralOperatorBuilder(const Symbol & s, std::string && suffix);
-  LiteralOperatorBuilder(const Namespace& ns, std::string suffix);
-
-  LiteralOperatorBuilder & setDeleted();
-
-  LiteralOperatorBuilder & setReturnType(const Type & t);
-  LiteralOperatorBuilder & addParam(const Type & t);
-
-  LiteralOperatorBuilder& operator()(std::string suffix);
-
-  void create();
-  script::LiteralOperator get();
-};
+//class LIBSCRIPT_API LiteralOperatorBuilder : public GenericFunctionBuilder<LiteralOperatorBuilder>
+//{
+//public:
+//  typedef UnaryOperatorPrototype prototype_t;
+//
+//public:
+//  std::string name_;
+//  prototype_t proto_;
+//
+//public:
+//  explicit LiteralOperatorBuilder(const Symbol& s);
+//  LiteralOperatorBuilder(const Symbol & s, std::string && suffix);
+//  LiteralOperatorBuilder(const Namespace& ns, std::string suffix);
+//
+//  LiteralOperatorBuilder & setDeleted();
+//
+//  LiteralOperatorBuilder & setReturnType(const Type & t);
+//  LiteralOperatorBuilder & addParam(const Type & t);
+//
+//  LiteralOperatorBuilder& operator()(std::string suffix);
+//
+//  void create();
+//  script::LiteralOperator get();
+//};
 
 } // namespace script
 

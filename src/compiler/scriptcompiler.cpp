@@ -607,7 +607,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  ConstructorBuilder b{ current_class };
+  FunctionBuilder b = FunctionBuilder::Constructor(current_class);
   function_processor_.generic_fill(b, decl, scp);
   default_arguments_.generic_process(decl->params, b, scp);
   Function ctor = b.get();
@@ -622,7 +622,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  DestructorBuilder b{ current_class };
+  FunctionBuilder b = FunctionBuilder::Destructor(current_class);
   function_processor_.generic_fill(b, decl, scp);
 
   if (!current_class.parent().isNull())
@@ -649,7 +649,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  LiteralOperatorBuilder b{ scp.asNamespace(), std::move(suffix_name) };
+  FunctionBuilder b = FunctionBuilder::LiteralOp(scp.asNamespace(), std::move(suffix_name));
   function_processor_.generic_fill(b, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
@@ -699,13 +699,14 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   function_processor_.generic_fill(builder, decl, scp);
   
   const bool is_member = currentScope().isClass();
+  OperatorName operation = builder.blueprint_.name_.operatorName();
 
-  if (Operator::isBinary(builder.operation) && arity != 2)
+  if (Operator::isBinary(operation) && arity != 2)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 2} };
-  else if (Operator::isUnary(builder.operation) && builder.proto_.count() != 1)
+  else if (Operator::isUnary(operation) && builder.blueprint_.prototype().count() != 1)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 1} };
 
-  if (Operator::onlyAsMember(builder.operation) && !is_member)
+  if (Operator::onlyAsMember(operation) && !is_member)
     throw CompilationFailure{ CompilerError::OpOverloadMustBeDeclaredAsMember };
 
   /// TODO: check that the user does not declare any default arguments
@@ -723,7 +724,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  FunctionCallOperatorBuilder builder{ scp.symbol() };
+  FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
   function_processor_.generic_fill(builder, decl, scp);
   default_arguments_.generic_process(decl->params, builder, scp);
 
@@ -740,7 +741,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  CastBuilder builder{ scp.symbol() };
+  FunctionBuilder builder = FunctionBuilder::Cast(scp.symbol().toClass());
   function_processor_.generic_fill(builder, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();
@@ -931,22 +932,22 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
   }
 
-  FunctionBuilder builder{ scp.symbol(), std::string{} };
+  FunctionBuilder builder{ scp.symbol(), SymbolKind::Function, std::string{} };
   function_processor_.generic_fill(builder, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
-  auto selection = selector.select(tmplts, args, builder.proto_);
+  auto selection = selector.select(tmplts, args, builder.blueprint_.prototype_);
 
   if(selection.first.isNull())
     throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
-  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name_, builder.proto_, engine(), builder.flags);
-  impl->program_ = builder.body;
-  impl->data = builder.data;
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.blueprint_.name_.string(), builder.blueprint_.prototype_, engine(), builder.blueprint_.flags_);
+  impl->program_ = builder.blueprint_.body_;
+  impl->data = builder.blueprint_.data_;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };
 

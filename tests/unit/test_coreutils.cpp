@@ -125,17 +125,17 @@ TEST(CoreUtilsTests, access_specifiers) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function foo = FunctionBuilder(A, "foo").setProtected().get();
-  Function bar = FunctionBuilder(A, "bar").setPrivate().get();
-  Function qux = FunctionBuilder(A, "qux").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").setProtected().get();
+  Function bar = FunctionBuilder::Fun(A, "bar").setPrivate().get();
+  Function qux = FunctionBuilder::Fun(A, "qux").get();
 
   ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
   Class B = Symbol{ e.rootNamespace() }.newClass("B").setBase(A).get();
-  Function slurm = FunctionBuilder(B, "slurm").get();
-  Function bender = FunctionBuilder(B, "bender").get();
+  Function slurm = FunctionBuilder::Fun(B, "slurm").get();
+  Function bender = FunctionBuilder::Fun(B, "bender").get();
 
   ASSERT_TRUE(Accessibility::check(slurm, qux));
   ASSERT_TRUE(Accessibility::check(slurm, foo));
@@ -234,13 +234,13 @@ TEST(CoreUtilsTests, function_names) {
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
 
-  Function foo = FunctionBuilder(A, "foo").get();
-  Function eq = OperatorBuilder(Symbol(A), EqualOperator).params(Type::Int).get();
-  Function to_int = CastBuilder(A).setReturnType(Type::Int).get();
-  Function ctor = ConstructorBuilder(A).get();
-  Function a = FunctionBuilder(A, "A").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").get();
+  Function eq = FunctionBuilder::Op(A, EqualOperator).params(Type::Int).get();
+  Function to_int = FunctionBuilder::Cast(A).setReturnType(Type::Int).get();
+  Function ctor = FunctionBuilder::Constructor(A).get();
+  Function a = FunctionBuilder::Fun(A, "A").get();
 
-  Function km = LiteralOperatorBuilder(e.rootNamespace(), "km").get();
+  Function km = FunctionBuilder::LiteralOp(e.rootNamespace(), "km").get();
 
   ASSERT_NE(foo.getName(), eq.getName());
   ASSERT_NE(eq.getName(), a.getName());
