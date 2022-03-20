@@ -4,19 +4,14 @@
 
 #include "script/functionbuilder.h"
 
+#include "script/attributes.h"
 #include "script/class.h"
 #include "script/private/class_p.h"
 #include "script/engine.h"
-#include "script/private/cast_p.h"
-#include "script/private/function_p.h"
-#include "script/private/operator_p.h"
-#include "script/private/literals_p.h"
+#include "script/functioncreator.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
-#include "script/operator.h"
 
-#include "script/compiler/constructorcompiler.h"
-#include "script/compiler/destructorcompiler.h"
 #include "script/program/statements.h"
 
 namespace script
@@ -40,38 +35,6 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
 }
 
 } // namespace builders
-
-
-template<typename FT>
-static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBuilder& opts)
-{
-  impl->program_ = opts.blueprint_.body();
-  impl->data = opts.blueprint_.data();
-  impl->enclosing_symbol = opts.blueprint_.parent().impl();
-}
-
-static void add_to_parent(const Function & func, const Symbol & parent)
-{
-  /// The following is done in generic_fill
-  //func.impl()->enclosing_symbol = parent.impl();
-
-  if (parent.isClass())
-  {
-    Class cla = parent.toClass();
-    cla.addFunction(func);
-  }
-  else if (parent.isNamespace())
-  {
-    Namespace ns = parent.toNamespace();
-    ns.addFunction(func);
-  }
-}
-
-inline static void set_default_args(Function & fun, std::vector<DefaultArgument> && dargs)
-{
-  fun.impl()->set_default_arguments(std::move(dargs));
-}
-
 
 /*!
  * \class FunctionBuilder
@@ -266,7 +229,6 @@ FunctionBuilder& FunctionBuilder::operator()(std::string name)
  * This simply calls \m get.
  * This method allows you to create the object without having its complete definition.
  */
-
 void FunctionBuilder::create()
 {
   get();
@@ -276,81 +238,10 @@ void FunctionBuilder::create()
  * \fn Function get()
  * \brief Creates and return the function object.
  */
-
 script::Function FunctionBuilder::get()
 {
-  if (blueprint_.name_.kind() == SymbolKind::Function)
-  {
-    auto impl = std::make_shared<RegularFunctionImpl>(blueprint_.name_.string(), std::move(blueprint_.prototype_), blueprint_.engine(), blueprint_.flags_);
-    generic_fill(impl, *this);
-    Function ret{ impl };
-    set_default_args(ret, std::move(blueprint_.defaultargs_));
-    add_to_parent(ret, blueprint_.parent_);
-    return ret;
-  }
-  else if (blueprint_.name_.kind() == SymbolKind::Operator)
-  {
-    OperatorName operation = blueprint_.name_.operatorName();
-
-    if (operation == OperatorName::FunctionCallOperator)
-    {
-      auto impl = std::make_shared<FunctionCallOperatorImpl>(OperatorName::FunctionCallOperator, std::move(blueprint_.prototype_), blueprint_.engine(), blueprint_.flags_);
-      generic_fill(impl, *this);
-      Operator ret{ impl };
-      set_default_args(ret, std::move(blueprint_.defaultargs_));
-      add_to_parent(ret, blueprint_.parent_);
-      return ret;
-    }
-    else
-    {
-      std::shared_ptr<OperatorImpl> impl;
-
-      if (Operator::isBinary(operation))
-        impl = std::make_shared<BinaryOperatorImpl>(operation, blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-      else
-        impl = std::make_shared<UnaryOperatorImpl>(operation, blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-
-      generic_fill(impl, *this);
-      add_to_parent(Function(impl), blueprint_.parent_);
-      return Operator{ impl };
-    }
-  }
-  else if (blueprint_.name_.kind() == SymbolKind::Cast)
-  {
-    auto impl = std::make_shared<CastImpl>(blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-    generic_fill(impl, *this);
-    add_to_parent(Function(impl), blueprint_.parent_);
-    return script::Cast(impl);
-  }
-  else if (blueprint_.name_.kind() == SymbolKind::Constructor)
-  {
-    auto impl = std::make_shared<ConstructorImpl>(blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-    generic_fill(impl, *this);
-    Function ret{ impl };
-    set_default_args(ret, std::move(blueprint_.defaultargs_));
-    add_to_parent(ret, blueprint_.parent_);
-    return ret;
-  }
-  else if (blueprint_.name_.kind() == SymbolKind::Destructor)
-  {
-    auto impl = std::make_shared<DestructorImpl>(blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-    generic_fill(impl, *this);
-    Function ret{ impl };
-    add_to_parent(ret, blueprint_.parent_);
-    return ret;
-  }
-  else if (blueprint_.name_.kind() == SymbolKind::LiteralOperator)
-  {
-    auto impl = std::make_shared<LiteralOperatorImpl>(blueprint_.name_.string(), blueprint_.prototype_, blueprint_.engine(), blueprint_.flags_);
-    generic_fill(impl, *this);
-    add_to_parent(Function(impl), blueprint_.parent_);
-    return LiteralOperator(impl);
-  }
-  else
-  {
-    assert(false);
-    return {};
-  }
+  FunctionCreator creator;
+  return creator.create(blueprint_, nullptr, std::vector<Attribute>());
 }
 
 /*!

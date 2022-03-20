@@ -94,6 +94,8 @@ public:
 
   FunctionBuilder& addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
+  // @TODO: remove
+  [[deprecated("could be removed at any time")]]
   FunctionBuilder& operator()(std::string name);
 
   void create();
