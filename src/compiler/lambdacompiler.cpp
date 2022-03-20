@@ -16,7 +16,6 @@
 
 #include "script/engine.h"
 #include "script/functionbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
 

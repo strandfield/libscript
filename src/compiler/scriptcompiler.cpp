@@ -20,12 +20,9 @@
 
 #include "script/program/expression.h"
 
-#include "script/castbuilder.h"
 #include "script/classbuilder.h"
 #include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/errors.h"
 #include "script/functionbuilder.h"
@@ -35,8 +32,6 @@
 #include "script/private/function_p.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
-#include "script/literaloperatorbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 #include "script/symbol.h"

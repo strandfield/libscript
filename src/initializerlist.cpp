@@ -6,10 +6,7 @@
 
 #include "script/engine.h"
 #include "script/classtemplateinstancebuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
 #include "script/functionbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/template.h"
 #include "script/templatebuilder.h"
 #include "script/typesystem.h"

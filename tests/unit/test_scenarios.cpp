@@ -53,8 +53,7 @@ TEST(Scenarios, accessing_ast) {
 }
 
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
+#include "script/functionbuilder.h"
 #include "script/interpreter/executioncontext.h"
 
 struct SmallObject

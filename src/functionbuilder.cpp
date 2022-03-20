@@ -19,12 +19,6 @@
 #include "script/compiler/destructorcompiler.h"
 #include "script/program/statements.h"
 
-#include "script/castbuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
-#include "script/literaloperatorbuilder.h"
-#include "script/operatorbuilder.h"
-
 namespace script
 {
 

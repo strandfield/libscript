@@ -5,15 +5,14 @@
 #include <gtest/gtest.h>
 
 #include "script/cast.h"
-#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
-#include "script/constructorbuilder.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/enum.h"
 #include "script/enumbuilder.h"
+#include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/initializerlist.h"
 #include "script/name.h"
