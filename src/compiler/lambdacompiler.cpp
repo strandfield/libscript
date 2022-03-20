@@ -16,9 +16,9 @@
 
 #include "script/engine.h"
 #include "script/functionbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
+#include "script/typesystem.h"
 
 #include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
@@ -176,8 +176,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
-  FunctionCallOperatorBuilder builder{ Symbol(Class(mLambda.impl())) };
-  builder.proto_ = computePrototype();
+  FunctionBuilder builder{ Symbol(Class(mLambda.impl())), SymbolKind::Operator, OperatorName::FunctionCallOperator };
+  builder.blueprint_.prototype_ = computePrototype();
   DefaultArgumentProcessor default_arguments{ compiler() };
   default_arguments.generic_process(task.lexpr->params, builder, task.scope);
 
@@ -325,7 +325,7 @@ DynamicPrototype LambdaCompiler::computePrototype()
 
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
-    Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
+    Type paramtype = script::compiler::resolve_type(lexpr->params.at(i).type, mCurrentScope);
     result.push(paramtype);
   }
 

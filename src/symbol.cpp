@@ -10,7 +10,6 @@
 #include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/namespace.h"
-#include "script/operatorbuilder.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
@@ -162,9 +161,9 @@ EnumBuilder Symbol::newEnum(std::string && name)
 FunctionBuilder Symbol::newFunction(const std::string & name)
 {
   if (isClass())
-    return FunctionBuilder(toClass(), name);
+    return FunctionBuilder::Fun(toClass(), name);
   else if (isNamespace())
-    return FunctionBuilder(toNamespace(), name);
+    return FunctionBuilder::Fun(toNamespace(), name);
   throw std::runtime_error{ "Cannot add function on null symbol" };
 }
 
@@ -178,10 +177,10 @@ FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
   return FunctionTemplateBuilder{ *this, std::move(name) };
 }
 
-OperatorBuilder Symbol::newOperator(OperatorName op)
+FunctionBuilder Symbol::newOperator(OperatorName op)
 {
   if (isClass() || isNamespace())
-    return OperatorBuilder(*this, op);
+    return FunctionBuilder(*this, SymbolKind::Operator, op);
   throw std::runtime_error{ "Cannot add operator on null symbol" };
 }
 

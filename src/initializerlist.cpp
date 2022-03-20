@@ -6,10 +6,7 @@
 
 #include "script/engine.h"
 #include "script/classtemplateinstancebuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
 #include "script/functionbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/template.h"
 #include "script/templatebuilder.h"
 #include "script/typesystem.h"
@@ -165,35 +162,35 @@ static Class register_ilist_iterator(Class & ilist)
 {
   Class iter = ilist.newNestedClass("iterator").setFinal(true).get();
 
-  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::default_ctor).create();
-  ConstructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
+  FunctionBuilder::Constructor(iter).setCallback(callbacks::initializer_list::iterator::default_ctor).create();
+  FunctionBuilder::Constructor(iter).setCallback(callbacks::initializer_list::iterator::copy_ctor).params(Type::cref(iter.id())).create();
 
-  DestructorBuilder(iter).setCallback(callbacks::initializer_list::iterator::dtor).create();
+  FunctionBuilder::Destructor(iter).setCallback(callbacks::initializer_list::iterator::dtor).create();
 
-  FunctionBuilder(iter, "get").setCallback(callbacks::initializer_list::iterator::get)
+  FunctionBuilder::Fun(iter, "get").setCallback(callbacks::initializer_list::iterator::get)
     .setConst()
     .returns(Type::cref(ilist.arguments().at(0).type))
     .create();
 
-  OperatorBuilder(Symbol(iter), AssignmentOperator).setCallback(callbacks::initializer_list::iterator::assign)
+  FunctionBuilder::Op(iter, AssignmentOperator).setCallback(callbacks::initializer_list::iterator::assign)
     .returns(Type::ref(iter.id()))
     .params(Type::cref(iter.id()))
     .create();
 
-  OperatorBuilder(Symbol(iter), PreIncrementOperator).setCallback(callbacks::initializer_list::iterator::pre_increment)
+  FunctionBuilder::Op(iter, PreIncrementOperator).setCallback(callbacks::initializer_list::iterator::pre_increment)
     .returns(Type::ref(iter.id()))
     .create();
 
-  OperatorBuilder(Symbol(iter), PreDecrementOperator).setCallback(callbacks::initializer_list::iterator::pre_decrement)
+  FunctionBuilder::Op(iter, PreDecrementOperator).setCallback(callbacks::initializer_list::iterator::pre_decrement)
     .returns(Type::ref(iter.id()))
     .create();
 
-  OperatorBuilder(Symbol(iter), EqualOperator).setCallback(callbacks::initializer_list::iterator::eq)
+  FunctionBuilder::Op(iter, EqualOperator).setCallback(callbacks::initializer_list::iterator::eq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
 
-  OperatorBuilder(Symbol(iter), InequalOperator).setCallback(callbacks::initializer_list::iterator::neq)
+  FunctionBuilder::Op(iter, InequalOperator).setCallback(callbacks::initializer_list::iterator::neq)
     .returns(Type::Boolean)
     .params(Type::cref(iter.id()))
     .create();
@@ -224,22 +221,22 @@ Class InitializerListTemplate::instantiate(ClassTemplateInstanceBuilder& builder
 
   Class iter_type = register_ilist_iterator(ilist_class);
 
-  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::default_ctor).create();
+  FunctionBuilder::Constructor(ilist_class).setCallback(callbacks::initializer_list::default_ctor).create();
 
-  ConstructorBuilder(ilist_class).setCallback(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
+  FunctionBuilder::Constructor(ilist_class).setCallback(callbacks::initializer_list::copy_ctor).params(Type::cref(ilist_type)).create();
 
-  DestructorBuilder(ilist_class).setCallback(callbacks::initializer_list::dtor).create();
+  FunctionBuilder::Destructor(ilist_class).setCallback(callbacks::initializer_list::dtor).create();
 
-  FunctionBuilder(ilist_class, "size").setCallback(callbacks::initializer_list::size)
+  FunctionBuilder::Fun(ilist_class, "size").setCallback(callbacks::initializer_list::size)
     .setConst().returns(Type::Int).create();
 
-  FunctionBuilder(ilist_class, "begin").setCallback(callbacks::initializer_list::begin)
+  FunctionBuilder::Fun(ilist_class, "begin").setCallback(callbacks::initializer_list::begin)
     .setConst().returns(iter_type.id()).create();
 
-  FunctionBuilder(ilist_class, "end").setCallback(callbacks::initializer_list::end)
+  FunctionBuilder::Fun(ilist_class, "end").setCallback(callbacks::initializer_list::end)
     .setConst().returns(iter_type.id()).create();
 
-  OperatorBuilder(Symbol(ilist_class), AssignmentOperator).setCallback(callbacks::initializer_list::assign)
+  FunctionBuilder::Op(ilist_class, AssignmentOperator).setCallback(callbacks::initializer_list::assign)
     .returns(Type::ref(ilist_type))
     .params(Type::cref(ilist_type)).create();
 

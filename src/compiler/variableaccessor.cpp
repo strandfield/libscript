@@ -5,6 +5,7 @@
 #include "script/compiler/variableaccessor.h"
 
 #include "script/compiler/diagnostichelper.h"
+#include "script/compiler/compilererrors.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/stack.h"
 
@@ -12,8 +13,10 @@
 
 #include "script/class.h"
 #include "script/datamember.h"
+#include "script/engine.h"
 #include "script/lambda.h"
 #include "script/script.h"
+#include "script/typesystem.h"
 
 #include "script/private/script_p.h"
 

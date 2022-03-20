@@ -148,8 +148,8 @@ int main(int argc, char **argv)
 
   Namespace ns = engine.rootNamespace();
 
-  FunctionBuilder(ns, "print").setCallback(print_callback).params(Type::cref(Type::String)).create();
-  FunctionBuilder(ns, "Assert").setCallback(assert_callback).params(Type(Type::Boolean)).create();
+  FunctionBuilder::Fun(ns, "print").setCallback(print_callback).params(Type::cref(Type::String)).create();
+  FunctionBuilder::Fun(ns, "Assert").setCallback(assert_callback).params(Type(Type::Boolean)).create();
 
   int nb_failed_compilations = 0;
   int nb_failed_assertions = 0;

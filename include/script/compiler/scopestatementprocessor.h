@@ -26,7 +26,6 @@ class ScopeStatementProcessor
 {
 public:
   Scope *scope_;
-  NameResolver name_;
 
 public:
   ScopeStatementProcessor() :

@@ -28,7 +28,7 @@ namespace script
 
 Name ClassImpl::get_name() const
 {
-  return Name{ this->name };
+  return Name(SymbolKind::Class, this->name);
 }
 
 Value ClassImpl::add_default_constructed_static_data_member(const std::string & name, const Type & t, AccessSpecifier aspec)

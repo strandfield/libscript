@@ -7,6 +7,7 @@
 
 #include "libscriptdefs.h"
 #include "script/operators.h"
+#include "script/symbol-kind.h"
 #include "script/types.h"
 
 namespace script
@@ -44,6 +45,8 @@ public:
 
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
 
+  typedef SymbolKind Kind;
+
   inline bool isNull() const { return d == nullptr; }
 
   Engine* engine() const;
@@ -68,7 +71,7 @@ public:
   FunctionBuilder newFunction(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(std::string && name);
-  OperatorBuilder newOperator(OperatorName op);
+  FunctionBuilder newOperator(OperatorName op);
   TypedefBuilder newTypedef(const Type & t, const std::string & name);
   TypedefBuilder newTypedef(const Type & t, std::string && name);
 

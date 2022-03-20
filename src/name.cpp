@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -7,6 +7,9 @@
 namespace script
 {
 
+/*!
+ * \class Name
+ */
 
 Name::Storage::Storage()
 {
@@ -19,7 +22,7 @@ Name::Storage::~Storage()
 }
 
 Name::Name()
-  : kind_(InvalidName)
+  : kind_(SymbolKind::NotASymbol)
 {
 
 }
@@ -29,91 +32,111 @@ Name::Name(const Name & other)
 {
   switch (kind_)
   {
-  case Name::InvalidName:
+  case SymbolKind::NotASymbol:
     break;
-  case Name::StringName:
-  case Name::LiteralOperatorName:
+  case SymbolKind::Namespace:
+  case SymbolKind::Class:
+  case SymbolKind::Function:
+  case SymbolKind::LiteralOperator:
+  case SymbolKind::Template:
     new (&data_.string) std::string{ other.data_.string };
     break;
-  case Name::OperatorName:
+  case SymbolKind::Operator:
     data_.operation = other.data_.operation;
     break;
-  case Name::CastName:
+  case SymbolKind::Cast:
+  case SymbolKind::Constructor:
+  case SymbolKind::Destructor:
     data_.type = other.data_.type;
     break;
   }
 }
 
-Name::Name(Name && other)
+Name::Name(Name&& other) noexcept
   : kind_(other.kind())
 {
   switch (kind_)
   {
-  case Name::InvalidName:
+  case SymbolKind::NotASymbol:
     break;
-  case Name::StringName:
-  case Name::LiteralOperatorName:
+  case SymbolKind::Namespace:
+  case SymbolKind::Class:
+  case SymbolKind::Function:
+  case SymbolKind::LiteralOperator:
+  case SymbolKind::Template:
     new (&data_.string) std::string{ std::move(other.data_.string) };
     other.data_.string.~basic_string();
     break;
-  case Name::OperatorName:
+  case SymbolKind::Operator:
     data_.operation = other.data_.operation;
     break;
-  case Name::CastName:
+  case SymbolKind::Cast:
+  case SymbolKind::Constructor:
+  case SymbolKind::Destructor:
     data_.type = other.data_.type;
     break;
   }
 
-  other.kind_ = Name::InvalidName;
+  other.kind_ = SymbolKind::NotASymbol;
 }
 
 Name::~Name()
 {
   switch (kind_)
   {
-  case Name::InvalidName:
-  case Name::OperatorName:
-  case Name::CastName:
-    break;
-  case Name::StringName:
-  case Name::LiteralOperatorName:
+  case SymbolKind::Namespace:
+  case SymbolKind::Class:
+  case SymbolKind::Function:
+  case SymbolKind::LiteralOperator:
+  case SymbolKind::Template:
     data_.string.~basic_string();
+    break;
+  default:
     break;
   }
 
-  kind_ = InvalidName;
-}
-
-Name::Name(const std::string & str)
-  : kind_(Name::StringName)
-{
-  new (&data_.string) std::string{ str };
+  kind_ = SymbolKind::NotASymbol;
 }
 
 Name::Name(script::OperatorName op)
-  : kind_(Name::OperatorName)
+  : kind_(SymbolKind::Operator)
 {
   data_.operation = op;
 }
 
 
-Name::Name(LiteralOperatorTag, const std::string & suffix)
-  : kind_(Name::LiteralOperatorName)
+Name::Name(SymbolKind k, const std::string& str)
+  : kind_(k)
 {
-  new (&data_.string) std::string{ suffix };
+  new (&data_.string) std::string{ str };
 }
 
-Name::Name(CastTag, const Type & t)
-  : kind_(Name::CastName)
+Name::Name(SymbolKind k, const Type & t)
+  : kind_(k)
 {
   data_.type = t;
 }
 
-Name & Name::operator=(const Name & other)
+bool Name::holdsString() const
 {
-  if (kind_ == Name::StringName || kind_ == Name::LiteralOperatorName)
+  switch (kind_)
   {
-    if (other.kind_ == Name::StringName || other.kind_ == Name::LiteralOperatorName)
+  case SymbolKind::Namespace:
+  case SymbolKind::Class:
+  case SymbolKind::Function:
+  case SymbolKind::LiteralOperator:
+  case SymbolKind::Template:
+    return true;
+  default:
+    return false;
+  }
+}
+
+Name & Name::operator=(const Name& other)
+{
+  if (holdsString())
+  {
+    if (other.holdsString())
     {
       data_.string = other.data_.string;
     }
@@ -121,7 +144,7 @@ Name & Name::operator=(const Name & other)
     {
       data_.string.~basic_string();
 
-      if (other.kind_ == Name::OperatorName)
+      if (other.kind_ == SymbolKind::Operator)
         data_.operation = other.data_.operation;
       else
         data_.type = other.data_.type;
@@ -129,13 +152,13 @@ Name & Name::operator=(const Name & other)
   }
   else
   {
-    if (other.kind_ == Name::StringName || other.kind_ == Name::LiteralOperatorName)
+    if (other.holdsString())
     {
       new (&data_.string) std::string{ other.data_.string };
     }
     else
     {
-      if (other.kind_ == Name::OperatorName)
+      if (other.kind_ == SymbolKind::Operator)
         data_.operation = other.data_.operation;
       else
         data_.type = other.data_.type;
@@ -147,11 +170,11 @@ Name & Name::operator=(const Name & other)
   return (*this);
 }
 
-Name & Name::operator=(Name && other)
+Name & Name::operator=(Name&& other) noexcept
 {
-  if (kind_ == Name::StringName || kind_ == Name::LiteralOperatorName)
+  if (holdsString())
   {
-    if (other.kind_ == Name::StringName || other.kind_ == Name::LiteralOperatorName)
+    if (other.holdsString())
     {
       data_.string = std::move(other.data_.string);
       other.data_.string.~basic_string();
@@ -160,7 +183,7 @@ Name & Name::operator=(Name && other)
     {
       data_.string.~basic_string();
 
-      if (other.kind_ == Name::OperatorName)
+      if (other.kind_ == SymbolKind::Operator)
         data_.operation = other.data_.operation;
       else
         data_.type = other.data_.type;
@@ -168,14 +191,14 @@ Name & Name::operator=(Name && other)
   }
   else
   {
-    if (other.kind_ == Name::StringName || other.kind_ == Name::LiteralOperatorName)
+    if (other.holdsString())
     {
       new (&data_.string) std::string{ std::move(other.data_.string) };
       other.data_.string.~basic_string();
     }
     else
     {
-      if (other.kind_ == Name::OperatorName)
+      if (other.kind_ == SymbolKind::Operator)
         data_.operation = other.data_.operation;
       else
         data_.type = other.data_.type;
@@ -183,38 +206,30 @@ Name & Name::operator=(Name && other)
   }
 
   kind_ = other.kind_;
-  other.kind_ = Name::InvalidName;
+  other.kind_ = SymbolKind::NotASymbol;
 
   return (*this);
 }
-
-Name & Name::operator=(std::string && str)
-{
-  if (kind_ == Name::StringName || kind_ == Name::LiteralOperatorName)
-    data_.string = std::move(str);
-  else
-    new (&data_.string) std::string{ str };
-
-  kind_ = Name::StringName;
-
-  return (*this);
-}
-
 
 bool operator==(const Name & lhs, const Name & rhs)
 {
   if (lhs.kind() != rhs.kind())
     return false;
 
-  if (lhs.kind() == Name::InvalidName)
+  if (lhs.kind() == SymbolKind::NotASymbol)
     return true;
 
-  if (lhs.kind() == Name::OperatorName)
+  if(lhs.holdsString())
+    return lhs.data_.string == rhs.data_.string;
+  else if (lhs.kind() == SymbolKind::Operator)
     return lhs.data_.operation == rhs.data_.operation;
-  else if (lhs.kind() == Name::CastName)
+  else 
     return lhs.data_.type == rhs.data_.type;
-
-  return lhs.data_.string == rhs.data_.string;
 }
+
+
+/*!
+ * \endclass
+ */
 
 } // namespace script

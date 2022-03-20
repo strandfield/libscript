@@ -64,8 +64,6 @@ private:
   Stack* stack_ = nullptr;
 
 private:
-  TypeResolver type_resolver;
-
   VariableAccessor variables_;
 
   FunctionTemplateProcessor templates_;

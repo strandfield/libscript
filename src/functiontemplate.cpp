@@ -29,7 +29,7 @@ void ScriptFunctionTemplateBackend::deduce(TemplateArgumentDeduction& deduction,
 
 void ScriptFunctionTemplateBackend::substitute(FunctionBuilder& builder, const std::vector<TemplateArgument>& targs)
 {
-  compiler::FunctionProcessor fp{ builder.engine->compiler() };
+  compiler::FunctionProcessor fp{ builder.blueprint_.engine()->compiler() };
 
   auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(this->definition.decl_->declaration);
 

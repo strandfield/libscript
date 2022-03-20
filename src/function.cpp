@@ -136,7 +136,7 @@ const std::string& RegularFunctionImpl::name() const
 
 Name RegularFunctionImpl::get_name() const
 {
-  return mName;
+  return Name(SymbolKind::Function, name());
 }
 
 bool RegularFunctionImpl::is_native() const
@@ -239,7 +239,7 @@ const Prototype& ConstructorImpl::prototype() const
 
 Name ConstructorImpl::get_name() const 
 {
-  return name();
+  return Name(SymbolKind::Constructor, prototype().at(0));
 }
 
 const std::vector<DefaultArgument>& ConstructorImpl::default_arguments() const
@@ -332,9 +332,9 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 /// TODO: maybe move this to functionbuilder.cpp
 std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
 {
-  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.name_, builder.proto_, ft.engine(), builder.flags);
-  impl->program_ = builder.body;
-  impl->data = builder.data;
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.blueprint_.name_.string(), builder.blueprint_.prototype(), ft.engine(), builder.blueprint_.flags());
+  impl->program_ = builder.blueprint_.body();
+  impl->data = builder.blueprint_.data();
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }

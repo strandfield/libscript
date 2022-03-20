@@ -10,7 +10,7 @@
 namespace script
 {
 
-LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionFlags flags)
+LiteralOperatorImpl::LiteralOperatorImpl(std::string suffix, const Prototype & proto, Engine *engine, FunctionFlags flags)
   : FunctionImpl(engine, flags)
   , suffix(std::move(suffix))
   , proto_(proto)
@@ -20,7 +20,7 @@ LiteralOperatorImpl::LiteralOperatorImpl(std::string && suffix, const Prototype 
 
 Name LiteralOperatorImpl::get_name() const
 {
-  return Name{ Name::LiteralOperatorTag{}, suffix };
+  return Name(SymbolKind::LiteralOperator, suffix);
 }
 
 const Prototype & LiteralOperatorImpl::prototype() const

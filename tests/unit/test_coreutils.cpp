@@ -11,10 +11,8 @@
 
 #include "script/array.h"
 #include "script/cast.h"
-#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
 #include "script/datamember.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
@@ -24,12 +22,10 @@
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
-#include "script/literaloperatorbuilder.h"
 #include "script/name.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/namespacealias.h"
-#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/sourcefile.h"
 #include "script/staticdatamember.h"
@@ -125,17 +121,17 @@ TEST(CoreUtilsTests, access_specifiers) {
   e.setup();
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function foo = FunctionBuilder(A, "foo").setProtected().get();
-  Function bar = FunctionBuilder(A, "bar").setPrivate().get();
-  Function qux = FunctionBuilder(A, "qux").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").setProtected().get();
+  Function bar = FunctionBuilder::Fun(A, "bar").setPrivate().get();
+  Function qux = FunctionBuilder::Fun(A, "qux").get();
 
   ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
   Class B = Symbol{ e.rootNamespace() }.newClass("B").setBase(A).get();
-  Function slurm = FunctionBuilder(B, "slurm").get();
-  Function bender = FunctionBuilder(B, "bender").get();
+  Function slurm = FunctionBuilder::Fun(B, "slurm").get();
+  Function bender = FunctionBuilder::Fun(B, "bender").get();
 
   ASSERT_TRUE(Accessibility::check(slurm, qux));
   ASSERT_TRUE(Accessibility::check(slurm, foo));
@@ -187,42 +183,42 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
 TEST(CoreUtilsTests, test_names) {
   using namespace script;
 
-  Name a{ "foo" };
-  Name b{ "bar" };
+  Name a{ SymbolKind::Function, "foo" };
+  Name b{ SymbolKind::Function, "bar" };
 
-  ASSERT_EQ(a.kind(), Name::StringName);
+  ASSERT_EQ(a.kind(), SymbolKind::Function);
   ASSERT_FALSE(a == b);
 
   a = AssignmentOperator; // operator=
-  ASSERT_EQ(a.kind(), Name::OperatorName);
+  ASSERT_EQ(a.kind(), SymbolKind::Operator);
   ASSERT_FALSE(a == b);
 
   ASSERT_TRUE(a == AssignmentOperator);
 
-  a = "foo";
-  b = Name{ Name::LiteralOperatorTag{}, "foo" }; // operator"" foo;
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::LiteralOperator, "foo"); // operator"" foo;
   ASSERT_FALSE(a == b);
 
   a = Name{};
   b = Name{};
   ASSERT_TRUE(a == b);
 
-  a = Name{ Name::CastTag{}, Type::Int }; // operator int
-  b = Name{ Name::CastTag{}, Type::Int };
-  ASSERT_EQ(a.kind(), Name::CastName);
+  a = Name(SymbolKind::Cast, Type::Int); // operator int
+  b = Name(SymbolKind::Cast, Type::Int);
+  ASSERT_EQ(a.kind(), SymbolKind::Cast);
   ASSERT_TRUE(a == b);
 
-  a = "foo";
-  b = "foo";
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::Function, "foo");
   ASSERT_TRUE(a == b);
 
   a = b;
-  ASSERT_TRUE(b.kind() != Name::InvalidName);
+  ASSERT_TRUE(b.kind() != SymbolKind::NotASymbol);
   a = std::move(b);
-  ASSERT_EQ(b.kind(), Name::InvalidName);
+  ASSERT_EQ(b.kind(), SymbolKind::NotASymbol);
 
-  Name c{std::move(a)}; // operator""km
-  ASSERT_EQ(a.kind(), Name::InvalidName);
+  Name c{ std::move(a) };
+  ASSERT_EQ(a.kind(), SymbolKind::NotASymbol);
 };
 
 
@@ -234,21 +230,21 @@ TEST(CoreUtilsTests, function_names) {
 
   Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
 
-  Function foo = FunctionBuilder(A, "foo").get();
-  Function eq = OperatorBuilder(Symbol(A), EqualOperator).params(Type::Int).get();
-  Function to_int = CastBuilder(A).setReturnType(Type::Int).get();
-  Function ctor = ConstructorBuilder(A).get();
-  Function a = FunctionBuilder(A, "A").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").get();
+  Function eq = FunctionBuilder::Op(A, EqualOperator).params(Type::Int).get();
+  Function to_int = FunctionBuilder::Cast(A).setReturnType(Type::Int).get();
+  Function ctor = FunctionBuilder::Constructor(A).get();
+  Function a = FunctionBuilder::Fun(A, "A").get();
 
-  Function km = LiteralOperatorBuilder(e.rootNamespace(), "km").get();
+  Function km = FunctionBuilder::LiteralOp(e.rootNamespace(), "km").get();
 
   ASSERT_NE(foo.getName(), eq.getName());
   ASSERT_NE(eq.getName(), a.getName());
   ASSERT_NE(km.getName(), to_int.getName());
   ASSERT_NE(to_int.getName(), eq.getName());
 
-  // Still some limitations ?
-  ASSERT_EQ(a.getName(), ctor.getName());
+  // Class name & function name can be distinguished
+  ASSERT_NE(a.getName(), ctor.getName());
   
   /// TODO : make this work !
   Function dtor = e.typeSystem()->getClass(Type::String).destructor();
