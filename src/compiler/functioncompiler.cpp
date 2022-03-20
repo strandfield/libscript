@@ -9,6 +9,7 @@
 #include "script/compiler/compilererrors.h"
 #include "script/compiler/compilesession.h"
 #include "script/compiler/debug-info.h"
+#include "script/compiler/diagnostichelper.h"
 
 #include "script/compiler/assignmentcompiler.h"
 #include "script/compiler/constructorcompiler.h"
@@ -26,6 +27,7 @@
 #include "script/functiontype.h"
 #include "script/namelookup.h"
 #include "script/templateargumentprocessor.h"
+#include "script/typesystem.h"
 
 #include "script/private/function_p.h"
 #include "script/private/namelookup_p.h"
@@ -834,7 +836,7 @@ void FunctionCompiler::processReturnStatement(const std::shared_ptr<ast::ReturnS
 
 void FunctionCompiler::processVariableDeclaration(const std::shared_ptr<ast::VariableDecl> & var_decl)
 {
-  const Type var_type = type_.resolve(var_decl->variable_type, mCurrentScope);
+  const Type var_type = script::compiler::resolve_type(var_decl->variable_type, mCurrentScope);
 
   if (var_decl->init == nullptr)
     return processVariableDeclaration(var_decl, var_type, nullptr);

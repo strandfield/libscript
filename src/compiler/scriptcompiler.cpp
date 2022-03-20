@@ -37,6 +37,7 @@
 #include "script/symbol.h"
 #include "script/templatebuilder.h"
 #include "script/templateargumentprocessor.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -196,7 +197,7 @@ void ScriptCompiler::processNext()
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
-  return type_resolver.resolve(qt, mCurrentScope);
+  return script::compiler::resolve_type(qt, mCurrentScope);
 }
 
 NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)

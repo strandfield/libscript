@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,6 +6,7 @@
 #define LIBSCRIPT_COMPILER_FUNCTION_PROCESSOR_H
 
 #include "script/compiler/component.h"
+#include "script/compiler/compilererrors.h"
 #include "script/compiler/compilesession.h"
 #include "script/compiler/nameresolver.h"
 #include "script/compiler/typeresolver.h"
@@ -25,7 +26,6 @@ namespace compiler
 class PrototypeResolver
 {
 public:
-  TypeResolver type_;
 
   inline Class getClass(const Scope & scp)
   {
@@ -37,11 +37,11 @@ public:
     const Class class_scope = getClass(scp);
 
     if (!fundecl->is<ast::ConstructorDecl>() && !fundecl->is<ast::DestructorDecl>())
-      builder.returns(type_.resolve(fundecl->returnType, scp));
+      builder.returns(script::compiler::resolve_type(fundecl->returnType, scp));
 
     for (size_t i(0); i < fundecl->params.size(); ++i)
     {
-      Type argtype = type_.resolve(fundecl->params.at(i).type, scp);
+      Type argtype = script::compiler::resolve_type(fundecl->params.at(i).type, scp);
       builder.params(argtype);
     }
   }

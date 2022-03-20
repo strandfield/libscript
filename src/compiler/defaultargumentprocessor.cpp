@@ -11,6 +11,8 @@
 
 #include "script/ast/node.h"
 
+#include "script/engine.h"
+
 namespace script
 {
 

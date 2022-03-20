@@ -5,6 +5,7 @@
 #include "script/compiler/variableprocessor.h"
 
 #include "script/compiler/diagnostichelper.h"
+#include "script/compiler/compilererrors.h"
 
 #include "script/array.h"
 #include "script/class.h"
@@ -12,6 +13,7 @@
 #include "script/enumerator.h"
 #include "script/namespace.h"
 #include "script/object.h"
+#include "script/typesystem.h"
 
 #include "script/private/array_p.h"
 #include "script/private/class_p.h"
@@ -64,7 +66,7 @@ void VariableProcessor::process_namespace_variable(const std::shared_ptr<ast::Va
   if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
     throw CompilationFailure{ CompilerError::GlobalVariablesCannotBeAuto };
 
-  Type var_type = type_.resolve(decl->variable_type, scp);
+  Type var_type = script::compiler::resolve_type(decl->variable_type, scp);
 
   if (decl->init == nullptr)
     throw CompilationFailure{ CompilerError::GlobalVariablesMustBeInitialized };
@@ -98,7 +100,7 @@ void VariableProcessor::process_data_member(const std::shared_ptr<ast::VariableD
   if (decl->variable_type.type->is<ast::SimpleIdentifier>() && decl->variable_type.type->as<ast::SimpleIdentifier>().name == parser::Token::Auto)
     throw CompilationFailure{ CompilerError::DataMemberCannotBeAuto };
 
-  Type var_type = type_.resolve(decl->variable_type, scp);
+  Type var_type = script::compiler::resolve_type(decl->variable_type, scp);
 
   if (decl->staticSpecifier.isValid())
   {

@@ -18,6 +18,7 @@
 #include "script/functionbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
+#include "script/typesystem.h"
 
 #include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
@@ -324,7 +325,7 @@ DynamicPrototype LambdaCompiler::computePrototype()
 
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
-    Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
+    Type paramtype = script::compiler::resolve_type(lexpr->params.at(i).type, mCurrentScope);
     result.push(paramtype);
   }
 

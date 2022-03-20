@@ -13,6 +13,7 @@
 
 #include "script/class.h"
 #include "script/datamember.h"
+#include "script/engine.h"
 #include "script/namelookup.h"
 #include "script/overloadresolution.h"
 #include "script/typesystem.h"

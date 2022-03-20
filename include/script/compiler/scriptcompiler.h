@@ -151,8 +151,6 @@ protected:
   /// TODO: maybe merge this with 'mProcessingQueue'
   std::queue<ScopedDeclaration> mIncompleteFunctionDeclarations;
 
-  TypeResolver type_resolver;
-
   FunctionProcessor function_processor_;
 
   ScopeStatementProcessor scope_statements_;

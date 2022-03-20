@@ -172,7 +172,6 @@ protected:
 
   std::vector<std::shared_ptr<program::Statement>> mBuffer;
 
-  TypeResolver type_;
   ExpressionCompiler expr_;
   ScopeStatementProcessor scope_statements_;
   ImportProcessor modules_;

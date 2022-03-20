@@ -47,8 +47,7 @@ TemplateArgument TemplateArgumentProcessor::argument(const Scope & scp, const st
   else if (arg->is<ast::TypeNode>())
   {
     auto type = std::static_pointer_cast<ast::TypeNode>(arg);
-    compiler::TypeResolver r;
-    return TemplateArgument{ r.resolve(type->value, scp) };
+    return TemplateArgument{ script::compiler::resolve_type(type->value, scp) };
   }
 
   throw compiler::CompilationFailure{ CompilerError::InvalidTemplateArgument };
