@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -12,12 +12,7 @@
 namespace script
 {
 
-class NameResolver
-{
-public:
-
-  NameLookup resolve(const std::shared_ptr<ast::Identifier>& name, const Scope& scp);
-};
+LIBSCRIPT_API NameLookup resolve_name(const std::shared_ptr<ast::Identifier>& name, const Scope& scp);
 
 } // namespace script
 

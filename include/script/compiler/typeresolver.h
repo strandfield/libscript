@@ -25,14 +25,10 @@ namespace compiler
 
 class LIBSCRIPT_API TypeResolver
 {
-private:
-  NameResolver name_;
 public:
   TypeResolver() = default;
   TypeResolver(const TypeResolver&) = default;
   ~TypeResolver() = default;
-
-  inline NameResolver& name_resolver() { return name_; }
 
   Type resolve(const ast::QualifiedType& qt, const Scope& scp);
 

@@ -15,7 +15,7 @@ Type TypeResolver::resolve(const ast::QualifiedType& qt, const Scope& scp)
   if (qt.isFunctionType())
     return complete(handle_function(qt.functionType, scp), qt);
 
-  NameLookup lookup = name_.resolve(qt.type, scp);
+  NameLookup lookup = script::resolve_name(qt.type, scp);
   if (lookup.resultType() != NameLookup::TypeName)
     throw CompilationFailure{ CompilerError::InvalidTypeName, errors::InvalidName{dstr(qt.type)} };
 

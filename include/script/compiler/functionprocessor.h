@@ -47,6 +47,7 @@ public:
   }
 };
 
+// @TODO: does this really need to be a Component ?
 class FunctionProcessor : public Component
 {
 public:
