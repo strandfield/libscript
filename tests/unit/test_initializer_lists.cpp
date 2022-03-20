@@ -7,7 +7,6 @@
 #include "script/class.h"
 #include "script/classbuilder.h"
 #include "script/classtemplate.h"
-#include "script/constructorbuilder.h"
 #include "script/conversions.h"
 #include "script/engine.h"
 #include "script/function.h"

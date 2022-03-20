@@ -42,8 +42,8 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
 } // namespace builders
 
 
-template<typename FT, typename Builder>
-static void generic_fill(const std::shared_ptr<FT>& impl, const Builder& opts)
+template<typename FT>
+static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBuilder& opts)
 {
   impl->program_ = opts.blueprint_.body();
   impl->data = opts.blueprint_.data();
