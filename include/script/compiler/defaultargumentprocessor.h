@@ -12,7 +12,7 @@
 #include "script/compiler/compilesession.h"
 #include "script/compiler/diagnostichelper.h"
 
-#include "script/functionbuilder.h"
+#include "script/function-blueprint.h"
 #include "script/scope.h"
 
 namespace script
@@ -21,16 +21,16 @@ namespace script
 namespace compiler
 {
 
+// @TODO: does this need to be a Component ?
 class LIBSCRIPT_API DefaultArgumentProcessor : Component
 {
 public:
 
   using Component::Component;
 
-  template<typename Builder>
-  void generic_process(const std::vector<ast::FunctionParameter> & params, Builder & builder, const Scope & scp)
+  void generic_process(const std::vector<ast::FunctionParameter> & params, FunctionBlueprint& blueprint, const Scope & scp)
   {
-    const size_t param_offset = (builder.blueprint_.parent().isClass() && !builder.isStatic()) ? 1 : 0;
+    const size_t param_offset = (blueprint.parent().isClass() && !blueprint.flags_.test(FunctionSpecifier::Static)) ? 1 : 0;
 
     size_t first_default_index = 0;
     while (first_default_index < params.size() && params.at(first_default_index).defaultValue == nullptr)
@@ -47,14 +47,12 @@ public:
       if (params.at(i).defaultValue == nullptr)
         throw CompilationFailure{ CompilerError::InvalidUseOfDefaultArgument };
 
-      builder.addDefaultArgument(generateDefaultArgument(scp, params.at(i), builder.blueprint_.prototype_.parameter(i + param_offset)));
+      blueprint.defaultargs_.push_back(generateDefaultArgument(scp, params.at(i), blueprint.prototype_.parameter(i + param_offset)));
     }
   }
 
 protected:
   std::shared_ptr<program::Expression> generateDefaultArgument(const Scope & scp, const ast::FunctionParameter & param, const Type & t);
-
-
 };
 
 } // namespace compiler

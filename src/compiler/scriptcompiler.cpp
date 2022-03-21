@@ -582,7 +582,7 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
   Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
   function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
-  default_arguments_.generic_process(fundecl->params, builder, scp);
+  default_arguments_.generic_process(fundecl->params, builder.blueprint_, scp);
   Function function = builder.get();
 
   processAttribute(function, fundecl);
@@ -605,7 +605,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   FunctionBuilder b = FunctionBuilder::Constructor(current_class);
   function_processor_.generic_fill(b.blueprint_, decl, scp);
-  default_arguments_.generic_process(decl->params, b, scp);
+  default_arguments_.generic_process(decl->params, b.blueprint_, scp);
   Function ctor = b.get();
 
   processAttribute(ctor, decl);
@@ -722,7 +722,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 
   FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
   function_processor_.generic_fill(builder.blueprint_, decl, scp);
-  default_arguments_.generic_process(decl->params, builder, scp);
+  default_arguments_.generic_process(decl->params, builder.blueprint_, scp);
 
   Function function = builder.get();
   scp.invalidateCache(Scope::InvalidateOperatorCache);
