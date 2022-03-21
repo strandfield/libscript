@@ -17,7 +17,7 @@ namespace script
 
 namespace ast
 {
-class FunctionDeclaration;
+class FunctionDecl;
 } // namespace ast
 
 /*!
@@ -31,7 +31,9 @@ public:
   FunctionCreator() = default;
   virtual ~FunctionCreator();
 
-  virtual Function create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDeclaration>& fdecl, std::vector<Attribute>& attrs);
+  virtual Function create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDecl>& fdecl, std::vector<Attribute>& attrs);
+
+  static std::shared_ptr<program::Statement> compile_later();
 };
 
 /*!

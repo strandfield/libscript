@@ -9,6 +9,8 @@
 #include "script/private/operator_p.h"
 #include "script/private/literals_p.h"
 
+#include "script/program/statements.h"
+
 #include "script/ast/node.h"
 
 #include "script/class.h"
@@ -65,8 +67,14 @@ FunctionCreator::~FunctionCreator()
  * \param the function declaration
  * \param the attributes
  */
-Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDeclaration>& fdecl, std::vector<Attribute>& attrs)
+Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDecl>& fdecl, std::vector<Attribute>& /* attrs */)
 {
+  if (fdecl && (fdecl->body || fdecl->defaultKeyword.isValid()))
+  {
+    if (!blueprint.body_)
+      blueprint.body_ = compile_later();
+  }
+
   if (blueprint.name_.kind() == SymbolKind::Function)
   {
     auto impl = std::make_shared<RegularFunctionImpl>(blueprint.name_.string(), std::move(blueprint.prototype_), blueprint.engine(), blueprint.flags_);
@@ -141,6 +149,12 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     assert(false);
     return {};
   }
+}
+
+std::shared_ptr<program::Statement> FunctionCreator::compile_later()
+{
+  static const std::shared_ptr<program::Statement> static_instance = std::make_shared<program::CompoundStatement>();
+  return static_instance;
 }
 
 /*!

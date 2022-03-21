@@ -209,6 +209,7 @@ Function ScriptCompiler::registerRootFunction()
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
   scriptfunc->enclosing_symbol = mCurrentScript.impl();
+  scriptfunc->set_body(FunctionCreator::compile_later());
 
   // @TODO: remove this fake decl, it causes a crash when using compile mode debug
   auto fakedecl = ast::FunctionDecl::New();
@@ -546,6 +547,11 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(imported);
 }
 
+FunctionCreator& ScriptCompiler::getFunctionCreator(const Script& /* s */)
+{
+  return function_creator_;
+}
+
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & declaration)
 {
   try
@@ -580,12 +586,16 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
-  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
-  function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
-  default_arguments_.generic_process(fundecl->params, builder.blueprint_, scp);
-  Function function = builder.get();
+  std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, name };
+  function_processor_.generic_fill(blueprint, fundecl, scp);
+  default_arguments_.generic_process(fundecl->params, blueprint, scp);
 
-  processAttribute(function, fundecl);
+  std::vector<Attribute> attrs = computeAttributes(fundecl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, fundecl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
@@ -604,6 +614,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   Class current_class = scp.asClass();
 
   FunctionBuilder b = FunctionBuilder::Constructor(current_class);
+  b.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(b.blueprint_, decl, scp);
   default_arguments_.generic_process(decl->params, b.blueprint_, scp);
   Function ctor = b.get();
@@ -619,6 +630,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   Class current_class = scp.asClass();
 
   FunctionBuilder b = FunctionBuilder::Destructor(current_class);
+  b.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(b.blueprint_, decl, scp);
 
   if (!current_class.parent().isNull())
@@ -646,6 +658,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
   FunctionBuilder b = FunctionBuilder::LiteralOp(scp.asNamespace(), std::move(suffix_name));
+  b.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(b.blueprint_, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
@@ -692,6 +705,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     return processFunctionCallOperatorDecl(decl);
 
   auto builder = scp.symbol().newOperator(opname);
+  builder.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(builder.blueprint_, decl, scp);
   
   const bool is_member = currentScope().isClass();
@@ -721,6 +735,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
   Scope scp = currentScope();
 
   FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
+  builder.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(builder.blueprint_, decl, scp);
   default_arguments_.generic_process(decl->params, builder.blueprint_, scp);
 
@@ -738,6 +753,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
   FunctionBuilder builder = FunctionBuilder::Cast(scp.symbol().toClass());
+  builder.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(builder.blueprint_, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();
@@ -745,13 +761,24 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   schedule(cast, decl, scp);
 }
 
+std::vector<Attribute> ScriptCompiler::computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl)
+{
+  return decl->attribute ? std::vector<Attribute>{ decl->attribute->attribute } : std::vector<Attribute>{ };
+}
+
 void ScriptCompiler::processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
 {
-  if (decl->attribute)
-  {
-    mCurrentScript.impl()->attributes.add(f.impl().get(), { decl->attribute->attribute });
-  }
+  processAttribute(f, computeAttributes(decl));
 }
+
+void ScriptCompiler::processAttribute(Function& f, const std::vector<Attribute>& attributes)
+{
+  if (attributes.empty())
+    return;
+
+  mCurrentScript.impl()->attributes.add(f.impl().get(), attributes);
+}
+
 
 void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
@@ -929,6 +956,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   }
 
   FunctionBuilder builder{ scp.symbol(), SymbolKind::Function, std::string{} };
+  builder.blueprint_.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
@@ -967,6 +995,10 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 {
   if (f.isDeleted() || f.isPureVirtual())
     return;
+
+  if (f.impl()->body() != FunctionCreator::compile_later())
+    return;
+
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
 }
 
