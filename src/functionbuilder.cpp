@@ -41,44 +41,21 @@ std::shared_ptr<program::Statement> make_body(NativeFunctionSignature impl)
  */
 
 FunctionBuilder::FunctionBuilder(Symbol s, SymbolKind k, std::string name)
-  : blueprint_(s)
+  : blueprint_(s, k, std::move(name))
 {
-  blueprint_.name_ = Name(k, name);
 
-  blueprint_.prototype_.setReturnType(Type::Void);
-
-  if (s.isClass())
-    blueprint_.prototype_.push(Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Symbol s, SymbolKind k, Type t)
-  : blueprint_(s)
+  : blueprint_(s, k, t)
 {
-  blueprint_.name_ = Name(k, t);
 
-  if (k == SymbolKind::Cast)
-  {
-    blueprint_.prototype_.setReturnType(t);
-  }
-  else if (k == SymbolKind::Constructor || k == SymbolKind::Destructor)
-  {
-    blueprint_.prototype_.setReturnType(Type::Void);
-  }
-
-  // @TODO: assert(s.isClass()) ?
-  if (s.isClass())
-    blueprint_.prototype_.push(Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Symbol s, SymbolKind k, OperatorName n)
-  : blueprint_(s)
+  : blueprint_(s, k, n)
 {
-  blueprint_.name_ = Name(k, n);
 
-  blueprint_.prototype_.setReturnType(Type::Void);
-
-  if(s.isClass())
-    blueprint_.prototype_.push(Type::ref(s.toClass().id()).withFlag(Type::ThisFlag));
 }
 
 FunctionBuilder::FunctionBuilder(Symbol s)
@@ -87,44 +64,50 @@ FunctionBuilder::FunctionBuilder(Symbol s)
 
 }
 
+FunctionBuilder::FunctionBuilder(FunctionBlueprint blueprint)
+  : blueprint_(std::move(blueprint))
+{
+
+}
+
 FunctionBuilder FunctionBuilder::Fun(Class c, std::string name)
 {
-  return FunctionBuilder(Symbol(c), SymbolKind::Function, std::move(name));
+  return FunctionBuilder(FunctionBlueprint::Fun(c, std::move(name)));
 }
 
 FunctionBuilder FunctionBuilder::Fun(Namespace ns, std::string name)
 {
-  return FunctionBuilder(Symbol(ns), SymbolKind::Function, std::move(name));
+  return FunctionBuilder(FunctionBlueprint::Fun(ns, std::move(name)));
 }
 
 FunctionBuilder FunctionBuilder::Constructor(Class c)
 {
-  return FunctionBuilder(Symbol(c), SymbolKind::Constructor, Type(c.id()));
+  return FunctionBuilder(FunctionBlueprint::Constructor(c));
 }
 
 FunctionBuilder FunctionBuilder::Destructor(Class c)
 {
-  return FunctionBuilder(Symbol(c), SymbolKind::Destructor, Type(c.id()));
+  return FunctionBuilder(FunctionBlueprint::Destructor(c));
 }
 
 FunctionBuilder FunctionBuilder::Op(Class c, OperatorName op)
 {
-  return FunctionBuilder(Symbol(c), SymbolKind::Operator, op);
+  return FunctionBuilder(FunctionBlueprint::Op(c, op));
 }
 
 FunctionBuilder FunctionBuilder::Op(Namespace ns, OperatorName op)
 {
-  return FunctionBuilder(Symbol(ns), SymbolKind::Operator, op);
+  return FunctionBuilder(FunctionBlueprint::Op(ns, op));
 }
 
 FunctionBuilder FunctionBuilder::LiteralOp(Namespace ns, std::string suffix)
 {
-  return FunctionBuilder(Symbol(ns), SymbolKind::LiteralOperator, std::move(suffix));
+  return FunctionBuilder(FunctionBlueprint::LiteralOp(ns, std::move(suffix)));
 }
 
 FunctionBuilder FunctionBuilder::Cast(Class c)
 {
-  return FunctionBuilder(Symbol(c), SymbolKind::Cast, Type::Null);
+  return FunctionBuilder(FunctionBlueprint::Cast(c));
 }
 
 Value FunctionBuilder::throwing_body(FunctionCall*)

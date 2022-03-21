@@ -25,6 +25,9 @@ class Expression;
 class Statement;
 } // namespace program
 
+class Class;
+class Namespace;
+
 /*!
  * \class FunctionBlueprint
  * \brief describe everything needed to build a function
@@ -41,10 +44,20 @@ public:
   std::shared_ptr<UserData> data_;
 
 public:
-  FunctionBlueprint(const Symbol& s)
-    : parent_(s) 
-  {
-  }
+  FunctionBlueprint(Symbol s, SymbolKind k, std::string name);
+  FunctionBlueprint(Symbol s, SymbolKind k, Type t);
+  FunctionBlueprint(Symbol s, SymbolKind k, OperatorName n);
+
+  explicit FunctionBlueprint(Symbol s);
+
+  static FunctionBlueprint Fun(Class c, std::string name);
+  static FunctionBlueprint Fun(Namespace ns, std::string name);
+  static FunctionBlueprint Constructor(Class c);
+  static FunctionBlueprint Destructor(Class c);
+  static FunctionBlueprint Op(Class c, OperatorName op);
+  static FunctionBlueprint Op(Namespace ns, OperatorName op);
+  static FunctionBlueprint LiteralOp(Namespace ns, std::string suffix);
+  static FunctionBlueprint Cast(Class c);
   
   Engine* engine() const;
   Symbol parent() const;

@@ -44,6 +44,7 @@ public:
   FunctionBuilder(Symbol s, SymbolKind k, OperatorName n);
 
   explicit FunctionBuilder(Symbol s);
+  explicit FunctionBuilder(FunctionBlueprint blueprint);
 
   static FunctionBuilder Fun(Class c, std::string name);
   static FunctionBuilder Fun(Namespace ns, std::string name);
