@@ -216,7 +216,8 @@ void FunctionBuilder::create()
 script::Function FunctionBuilder::get()
 {
   FunctionCreator creator;
-  return creator.create(blueprint_, nullptr, std::vector<Attribute>());
+  std::vector<Attribute> attrs;
+  return creator.create(blueprint_, nullptr, attrs);
 }
 
 /*!
