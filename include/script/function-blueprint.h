@@ -53,6 +53,9 @@ public:
   const std::shared_ptr<program::Statement>& body() const;
   FunctionFlags flags() const;
   const std::shared_ptr<UserData>& data() const;
+
+  // @TODO: find a better place for this function
+  void setStatic();
 };
 
 inline Engine* FunctionBlueprint::engine() const
@@ -88,6 +91,18 @@ inline FunctionFlags FunctionBlueprint::flags() const
 inline const std::shared_ptr<UserData>& FunctionBlueprint::data() const
 {
   return data_;
+}
+
+inline void FunctionBlueprint::setStatic()
+{
+  flags_.set(FunctionSpecifier::Static);
+
+  if (prototype_.count() == 0 || !prototype_.at(0).testFlag(Type::ThisFlag))
+    return;
+
+  for (int i(0); i < prototype_.count() - 1; ++i)
+    prototype_.setParameter(i, prototype_.at(i + 1));
+  prototype_.pop();
 }
 
 /*!

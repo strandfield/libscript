@@ -34,7 +34,7 @@ void ScriptFunctionTemplateBackend::substitute(FunctionBuilder& builder, const s
   auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(this->definition.decl_->declaration);
 
   auto tparamscope = functionTemplate().argumentScope(targs);
-  fp.generic_fill(builder, fundecl, tparamscope);
+  fp.generic_fill(builder.blueprint_, fundecl, tparamscope);
 }
 
 std::pair<NativeFunctionSignature, std::shared_ptr<UserData>> ScriptFunctionTemplateBackend::instantiate(Function& function)

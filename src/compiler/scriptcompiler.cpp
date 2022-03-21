@@ -581,7 +581,7 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
   FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
-  function_processor_.generic_fill(builder, fundecl, scp);
+  function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
   default_arguments_.generic_process(fundecl->params, builder, scp);
   Function function = builder.get();
 
@@ -604,7 +604,7 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   Class current_class = scp.asClass();
 
   FunctionBuilder b = FunctionBuilder::Constructor(current_class);
-  function_processor_.generic_fill(b, decl, scp);
+  function_processor_.generic_fill(b.blueprint_, decl, scp);
   default_arguments_.generic_process(decl->params, b, scp);
   Function ctor = b.get();
 
@@ -619,7 +619,7 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   Class current_class = scp.asClass();
 
   FunctionBuilder b = FunctionBuilder::Destructor(current_class);
-  function_processor_.generic_fill(b, decl, scp);
+  function_processor_.generic_fill(b.blueprint_, decl, scp);
 
   if (!current_class.parent().isNull())
   {
@@ -646,7 +646,7 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
   FunctionBuilder b = FunctionBuilder::LiteralOp(scp.asNamespace(), std::move(suffix_name));
-  function_processor_.generic_fill(b, decl, currentScope());
+  function_processor_.generic_fill(b.blueprint_, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
 
@@ -692,7 +692,7 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     return processFunctionCallOperatorDecl(decl);
 
   auto builder = scp.symbol().newOperator(opname);
-  function_processor_.generic_fill(builder, decl, scp);
+  function_processor_.generic_fill(builder.blueprint_, decl, scp);
   
   const bool is_member = currentScope().isClass();
   OperatorName operation = builder.blueprint_.name_.operatorName();
@@ -721,7 +721,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
   Scope scp = currentScope();
 
   FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
-  function_processor_.generic_fill(builder, decl, scp);
+  function_processor_.generic_fill(builder.blueprint_, decl, scp);
   default_arguments_.generic_process(decl->params, builder, scp);
 
   Function function = builder.get();
@@ -738,7 +738,7 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
   FunctionBuilder builder = FunctionBuilder::Cast(scp.symbol().toClass());
-  function_processor_.generic_fill(builder, decl, scp);
+  function_processor_.generic_fill(builder.blueprint_, decl, scp);
   /// TODO: check that the user does not declare any default arguments
   Function cast = builder.get();
   
@@ -929,7 +929,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   }
 
   FunctionBuilder builder{ scp.symbol(), SymbolKind::Function, std::string{} };
-  function_processor_.generic_fill(builder, fundecl, scp);
+  function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 

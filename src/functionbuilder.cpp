@@ -177,15 +177,7 @@ FunctionBuilder & FunctionBuilder::setPrototype(const Prototype & proto)
 
 FunctionBuilder & FunctionBuilder::setStatic()
 {
-  blueprint_.flags_.set(FunctionSpecifier::Static);
-
-  if (blueprint_.prototype_.count() == 0 || !blueprint_.prototype_.at(0).testFlag(Type::ThisFlag))
-    return *this;
-
-  for (int i(0); i < blueprint_.prototype_.count() - 1; ++i)
-    blueprint_.prototype_.setParameter(i, blueprint_.prototype_.at(i+1));
-  blueprint_.prototype_.pop();
-
+  blueprint_.setStatic();
   return *this;
 }
 
