@@ -104,7 +104,6 @@ protected:
   void processFunctionCallOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
   std::vector<Attribute> computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl);
-  void processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl);
   void processAttribute(Function& f, const std::vector<Attribute>& attributes);
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);

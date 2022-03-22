@@ -752,7 +752,7 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
   processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-  processAttribute(function, decl);
+
   schedule(function, decl, scp);
 }
 
@@ -781,11 +781,6 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
 std::vector<Attribute> ScriptCompiler::computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl)
 {
   return decl->attribute ? std::vector<Attribute>{ decl->attribute->attribute } : std::vector<Attribute>{ };
-}
-
-void ScriptCompiler::processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
-{
-  processAttribute(f, computeAttributes(decl));
 }
 
 void ScriptCompiler::processAttribute(Function& f, const std::vector<Attribute>& attributes)
