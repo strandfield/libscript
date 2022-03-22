@@ -66,6 +66,9 @@ FunctionCreator::~FunctionCreator()
  * \param the blueprint
  * \param the function declaration
  * \param the attributes
+ * 
+ * The default implementation does not use the attributes and supports a null function declaration.
+ * The default implementation adds the function to its parent (this may change in the future).
  */
 Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDecl>& fdecl, std::vector<Attribute>& /* attrs */)
 {
