@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -282,22 +282,20 @@ TEST(CoreUtilsTests, symbols) {
 
   /* Testing builder functions */
 
-  s = Symbol{ string };
-  Function length = s.newFunction("length").returns(Type::Int).setConst().get();
+  Function length = FunctionBuilder::Fun(string, "length").returns(Type::Int).setConst().get();
   ASSERT_TRUE(length.isMemberFunction());
   ASSERT_EQ(length.memberOf(), string);
 
-  Function assign = s.newOperator(AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).get();
+  Function assign = FunctionBuilder::Op(string, AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).get();
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.prototype().count(), 2);
   ASSERT_EQ(assign.memberOf(), string);
 
-  s = Symbol{ ns };
-  Function max = s.newFunction("max").returns(Type::Int).params(Type::Int, Type::Int).get();
+  Function max = FunctionBuilder::Fun(ns, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
   ASSERT_FALSE(max.isMemberFunction());
   ASSERT_EQ(max.enclosingNamespace(), ns);
 
-  Function eq = s.newOperator(EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).get();
+  Function eq = FunctionBuilder::Op(ns, EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).get();
   ASSERT_FALSE(eq.isMemberFunction());
   ASSERT_EQ(eq.enclosingNamespace(), ns);
   ASSERT_EQ(eq.prototype().count(), 2);
@@ -321,7 +319,7 @@ TEST(CoreUtilsTests, default_arguments) {
 
   Value default_arg = e.newInt(1);
 
-  Function incr = Symbol{ e.rootNamespace() }.newFunction("incr")
+  Function incr = FunctionBuilder::Fun(e.rootNamespace(), "incr")
     .returns(Type::ref(Type::Int))
     .params(Type::ref(Type::Int), Type::cref(Type::Int))
     .addDefaultArgument(program::VariableAccess::New(default_arg))

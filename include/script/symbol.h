@@ -68,10 +68,8 @@ public:
   ClassTemplateBuilder newClassTemplate(const std::string & name);
   ClassTemplateBuilder newClassTemplate(std::string && name);
   EnumBuilder newEnum(std::string && name);
-  FunctionBuilder newFunction(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(std::string && name);
-  FunctionBuilder newOperator(OperatorName op);
   TypedefBuilder newTypedef(const Type & t, const std::string & name);
   TypedefBuilder newTypedef(const Type & t, std::string && name);
 

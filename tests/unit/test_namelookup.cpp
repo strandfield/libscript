@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -25,7 +25,7 @@ TEST(NameLookup, simple_function) {
   Engine e;
   e.setup();
 
-  Symbol{ e.rootNamespace() }.newFunction("foo").create();
+  FunctionBuilder::Fun(e.rootNamespace(), "foo").create();
 
   NameLookup lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -34,7 +34,7 @@ TEST(NameLookup, simple_function) {
   lookup = NameLookup::resolve("bar", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::UnknownName);
 
-  Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).create();
+  FunctionBuilder::Fun(e.rootNamespace(), "foo").params(Type::Int).create();
 
   lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
