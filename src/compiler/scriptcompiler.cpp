@@ -708,16 +708,16 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (opname == OperatorName::FunctionCallOperator)
     return processFunctionCallOperatorDecl(decl);
 
-  auto builder = scp.symbol().newOperator(opname);
-  builder.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(builder.blueprint_, decl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Operator, opname };
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
   
   const bool is_member = currentScope().isClass();
-  OperatorName operation = builder.blueprint_.name_.operatorName();
+  OperatorName operation = blueprint.name_.operatorName();
 
   if (Operator::isBinary(operation) && arity != 2)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 2} };
-  else if (Operator::isUnary(operation) && builder.blueprint_.prototype().count() != 1)
+  else if (Operator::isUnary(operation) && blueprint.prototype().count() != 1)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 1} };
 
   if (Operator::onlyAsMember(operation) && !is_member)
@@ -725,11 +725,13 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
@@ -738,12 +740,17 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
-  builder.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(builder.blueprint_, decl, scp);
-  default_arguments_.generic_process(decl->params, builder.blueprint_, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
+  default_arguments_.generic_process(decl->params, blueprint, scp);
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
   scp.invalidateCache(Scope::InvalidateOperatorCache);
   processAttribute(function, decl);
   schedule(function, decl, scp);
@@ -756,13 +763,19 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  FunctionBuilder builder = FunctionBuilder::Cast(scp.symbol().toClass());
-  builder.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(builder.blueprint_, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Cast(scp.symbol().toClass());
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
+
   /// TODO: check that the user does not declare any default arguments
-  Function cast = builder.get();
+
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
   
-  schedule(cast, decl, scp);
+  schedule(function, decl, scp);
 }
 
 std::vector<Attribute> ScriptCompiler::computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl)
