@@ -78,7 +78,7 @@ public:
   ~ScriptFunctionTemplateBackend() = default;
 
   void deduce(TemplateArgumentDeduction& deduction, const std::vector<TemplateArgument>& targs, const std::vector<Type>& itypes) override;
-  void substitute(FunctionBuilder& builder, const std::vector<TemplateArgument>& targs) override;
+  void substitute(FunctionBlueprint& blueprint, const std::vector<TemplateArgument>& targs) override;
   std::pair<NativeFunctionSignature, std::shared_ptr<UserData>> instantiate(Function& function) override;
 };
 

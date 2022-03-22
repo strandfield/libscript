@@ -6,7 +6,7 @@
 #include "script/private/template_p.h"
 
 #include "script/private/function_p.h"
-#include "script/functionbuilder.h"
+#include "script/function-blueprint.h"
 #include "script/functiontemplatenativebackend.h"
 #include "script/functiontemplateprocessor.h"
 #include "script/templateargumentdeduction.h"
@@ -27,14 +27,14 @@ void ScriptFunctionTemplateBackend::deduce(TemplateArgumentDeduction& deduction,
   deduction.fill(functionTemplate(), targs, itypes, this->definition.decl_);
 }
 
-void ScriptFunctionTemplateBackend::substitute(FunctionBuilder& builder, const std::vector<TemplateArgument>& targs)
+void ScriptFunctionTemplateBackend::substitute(FunctionBlueprint& blueprint, const std::vector<TemplateArgument>& targs)
 {
-  compiler::FunctionProcessor fp{ builder.blueprint_.engine()->compiler() };
+  compiler::FunctionProcessor fp{ blueprint.engine()->compiler() };
 
   auto fundecl = std::static_pointer_cast<ast::FunctionDecl>(this->definition.decl_->declaration);
 
   auto tparamscope = functionTemplate().argumentScope(targs);
-  fp.generic_fill(builder, fundecl, tparamscope);
+  fp.generic_fill(blueprint, fundecl, tparamscope);
 }
 
 std::pair<NativeFunctionSignature, std::shared_ptr<UserData>> ScriptFunctionTemplateBackend::instantiate(Function& function)
@@ -85,7 +85,7 @@ Function FunctionTemplate::getInstance(const std::vector<TemplateArgument> & arg
   return ret;
 }
 
-Function FunctionTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBuilder & opts)
+Function FunctionTemplate::addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBlueprint& opts)
 {
   auto d = impl();
   auto impl = FunctionTemplateInstance::create(*this, args, opts);

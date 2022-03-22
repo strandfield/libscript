@@ -29,7 +29,6 @@ class Context;
 class Conversion;
 class EngineImpl;
 class Enum;
-class FunctionBuilder;
 class FunctionType;
 class ModuleInterface;
 class Namespace;

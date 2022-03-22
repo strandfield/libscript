@@ -44,6 +44,7 @@ public:
   FunctionBuilder(Symbol s, SymbolKind k, OperatorName n);
 
   explicit FunctionBuilder(Symbol s);
+  explicit FunctionBuilder(FunctionBlueprint blueprint);
 
   static FunctionBuilder Fun(Class c, std::string name);
   static FunctionBuilder Fun(Namespace ns, std::string name);
@@ -94,6 +95,8 @@ public:
 
   FunctionBuilder& addDefaultArgument(const std::shared_ptr<program::Expression> & value);
 
+  // @TODO: remove
+  [[deprecated("could be removed at any time")]]
   FunctionBuilder& operator()(std::string name);
 
   void create();

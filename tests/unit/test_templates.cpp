@@ -101,17 +101,17 @@ class MaxFunctionTemplate : public script::FunctionTemplateNativeBackend
     return deduction.set_success(true);
   }
 
-  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
+  void substitute(script::FunctionBlueprint& blueprint, const std::vector<script::TemplateArgument>& targs) override
   {
     using namespace script;
 
     Type T = functionTemplate().get("T", targs).type;
     int N = functionTemplate().get("N", targs).integer;
 
-    builder.setReturnType(T);
+    blueprint.prototype_.setReturnType(T);
 
     for (size_t i(0); i < size_t(N); ++i)
-      builder.addParam(Type::cref(T));
+      blueprint.prototype_.push(Type::cref(T));
   }
 
   std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function& function) override
@@ -272,7 +272,7 @@ class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBacken
     throw std::runtime_error{ "dummy" };
   }
 
-  void substitute(script::FunctionBuilder & builder, const std::vector<script::TemplateArgument> & targs) override
+  void substitute(script::FunctionBlueprint& blueprint, const std::vector<script::TemplateArgument> & targs) override
   {
     throw std::runtime_error{ "dummy" };
   }

@@ -179,7 +179,7 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
   FunctionBuilder builder{ Symbol(Class(mLambda.impl())), SymbolKind::Operator, OperatorName::FunctionCallOperator };
   builder.blueprint_.prototype_ = computePrototype();
   DefaultArgumentProcessor default_arguments{ compiler() };
-  default_arguments.generic_process(task.lexpr->params, builder, task.scope);
+  default_arguments.generic_process(task.lexpr->params, builder.blueprint_, task.scope);
 
   Function function = builder.get();
 

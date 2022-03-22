@@ -209,6 +209,7 @@ Function ScriptCompiler::registerRootFunction()
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
   scriptfunc->enclosing_symbol = mCurrentScript.impl();
+  scriptfunc->set_body(FunctionCreator::compile_later());
 
   // @TODO: remove this fake decl, it causes a crash when using compile mode debug
   auto fakedecl = ast::FunctionDecl::New();
@@ -546,6 +547,11 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(imported);
 }
 
+FunctionCreator& ScriptCompiler::getFunctionCreator(const Script& /* s */)
+{
+  return function_creator_;
+}
+
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & declaration)
 {
   try
@@ -580,12 +586,16 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
-  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
-  function_processor_.generic_fill(builder, fundecl, scp);
-  default_arguments_.generic_process(fundecl->params, builder, scp);
-  Function function = builder.get();
+  std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, name };
+  function_processor_.generic_fill(blueprint, fundecl, scp);
+  default_arguments_.generic_process(fundecl->params, blueprint, scp);
 
-  processAttribute(function, fundecl);
+  std::vector<Attribute> attrs = computeAttributes(fundecl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, fundecl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
@@ -603,14 +613,17 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Constructor(current_class);
-  function_processor_.generic_fill(b, decl, scp);
-  default_arguments_.generic_process(decl->params, b, scp);
-  Function ctor = b.get();
+  FunctionBlueprint blueprint = FunctionBlueprint::Constructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
+  default_arguments_.generic_process(decl->params, blueprint, scp);
 
-  processAttribute(ctor, decl);
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  schedule(ctor, decl, scp);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
@@ -618,22 +631,24 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Destructor(current_class);
-  function_processor_.generic_fill(b, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Destructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
 
   if (!current_class.parent().isNull())
   {
     Function parent_dtor = current_class.parent().destructor();
     if (!parent_dtor.isNull() && parent_dtor.isVirtual())
-      b.setVirtual();
+      blueprint.flags_.set(FunctionSpecifier::Virtual);
   }
 
   /// TODO : check if a destructor already exists
-  Function dtor = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  processAttribute(dtor, decl);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
   
-  schedule(dtor, decl, scp);
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -645,16 +660,18 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  FunctionBuilder b = FunctionBuilder::LiteralOp(scp.asNamespace(), std::move(suffix_name));
-  function_processor_.generic_fill(b, decl, currentScope());
+  FunctionBlueprint blueprint = FunctionBlueprint::LiteralOp(scp.asNamespace(), std::move(suffix_name));
+  function_processor_.generic_fill(blueprint, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
@@ -691,15 +708,16 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (opname == OperatorName::FunctionCallOperator)
     return processFunctionCallOperatorDecl(decl);
 
-  auto builder = scp.symbol().newOperator(opname);
-  function_processor_.generic_fill(builder, decl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Operator, opname };
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
   
   const bool is_member = currentScope().isClass();
-  OperatorName operation = builder.blueprint_.name_.operatorName();
+  OperatorName operation = blueprint.name_.operatorName();
 
   if (Operator::isBinary(operation) && arity != 2)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 2} };
-  else if (Operator::isUnary(operation) && builder.blueprint_.prototype().count() != 1)
+  else if (Operator::isUnary(operation) && blueprint.prototype().count() != 1)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 1} };
 
   if (Operator::onlyAsMember(operation) && !is_member)
@@ -707,11 +725,13 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
@@ -720,13 +740,19 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  FunctionBuilder builder = FunctionBuilder::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
-  function_processor_.generic_fill(builder, decl, scp);
-  default_arguments_.generic_process(decl->params, builder, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
+  default_arguments_.generic_process(decl->params, blueprint, scp);
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-  processAttribute(function, decl);
+
   schedule(function, decl, scp);
 }
 
@@ -737,21 +763,34 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  FunctionBuilder builder = FunctionBuilder::Cast(scp.symbol().toClass());
-  function_processor_.generic_fill(builder, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Cast(scp.symbol().toClass());
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, decl, scp);
+
   /// TODO: check that the user does not declare any default arguments
-  Function cast = builder.get();
+
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
   
-  schedule(cast, decl, scp);
+  schedule(function, decl, scp);
 }
 
-void ScriptCompiler::processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
+std::vector<Attribute> ScriptCompiler::computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl)
 {
-  if (decl->attribute)
-  {
-    mCurrentScript.impl()->attributes.add(f.impl().get(), { decl->attribute->attribute });
-  }
+  return decl->attribute ? std::vector<Attribute>{ decl->attribute->attribute } : std::vector<Attribute>{ };
 }
+
+void ScriptCompiler::processAttribute(Function& f, const std::vector<Attribute>& attributes)
+{
+  if (attributes.empty())
+    return;
+
+  mCurrentScript.impl()->attributes.add(f.impl().get(), attributes);
+}
+
 
 void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
@@ -928,22 +967,23 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
   }
 
-  FunctionBuilder builder{ scp.symbol(), SymbolKind::Function, std::string{} };
-  function_processor_.generic_fill(builder, fundecl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, std::string{} };
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
-  auto selection = selector.select(tmplts, args, builder.blueprint_.prototype_);
+  auto selection = selector.select(tmplts, args, blueprint.prototype_);
 
   if(selection.first.isNull())
     throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
-  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.blueprint_.name_.string(), builder.blueprint_.prototype_, engine(), builder.blueprint_.flags_);
-  impl->program_ = builder.blueprint_.body_;
-  impl->data = builder.blueprint_.data_;
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, blueprint.name_.string(), blueprint.prototype_, engine(), blueprint.flags_);
+  impl->program_ = blueprint.body_;
+  impl->data = blueprint.data_;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };
 
@@ -967,6 +1007,10 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 {
   if (f.isDeleted() || f.isPureVirtual())
     return;
+
+  if (f.impl()->body() != FunctionCreator::compile_later())
+    return;
+
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
 }
 

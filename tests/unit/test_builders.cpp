@@ -525,7 +525,7 @@ class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBacken
     throw std::runtime_error{ "dummy" };
   }
 
-  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
+  void substitute(script::FunctionBlueprint& blueprint, const std::vector<script::TemplateArgument>& targs) override
   {
     throw std::runtime_error{ "dummy" };
   }
