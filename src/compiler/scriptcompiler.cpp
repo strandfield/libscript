@@ -613,15 +613,17 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Constructor(current_class);
-  b.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(b.blueprint_, decl, scp);
-  default_arguments_.generic_process(decl->params, b.blueprint_, scp);
-  Function ctor = b.get();
+  FunctionBlueprint blueprint = FunctionBlueprint::Constructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
+  default_arguments_.generic_process(decl->params, blueprint, scp);
 
-  processAttribute(ctor, decl);
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  schedule(ctor, decl, scp);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
@@ -629,23 +631,24 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  FunctionBuilder b = FunctionBuilder::Destructor(current_class);
-  b.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(b.blueprint_, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Destructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
 
   if (!current_class.parent().isNull())
   {
     Function parent_dtor = current_class.parent().destructor();
     if (!parent_dtor.isNull() && parent_dtor.isVirtual())
-      b.setVirtual();
+      blueprint.flags_.set(FunctionSpecifier::Virtual);
   }
 
   /// TODO : check if a destructor already exists
-  Function dtor = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  processAttribute(dtor, decl);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
   
-  schedule(dtor, decl, scp);
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -657,17 +660,18 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  FunctionBuilder b = FunctionBuilder::LiteralOp(scp.asNamespace(), std::move(suffix_name));
-  b.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(b.blueprint_, decl, currentScope());
+  FunctionBlueprint blueprint = FunctionBlueprint::LiteralOp(scp.asNamespace(), std::move(suffix_name));
+  function_processor_.generic_fill(blueprint, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
 
   scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
