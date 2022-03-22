@@ -159,7 +159,7 @@ public:
   FunctionTemplate mTemplate;
   std::vector<TemplateArgument> mArgs;
 
-  static std::shared_ptr<FunctionTemplateInstance> create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder);
+  static std::shared_ptr<FunctionTemplateInstance> create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBlueprint& blueprint);
 
   bool is_template_instance() const override;
   bool is_instantiation_completed() const override;

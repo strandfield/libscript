@@ -330,11 +330,11 @@ FunctionTemplateInstance::FunctionTemplateInstance(const FunctionTemplate & ft, 
 }
 
 /// TODO: maybe move this to functionbuilder.cpp
-std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBuilder & builder)
+std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBlueprint& blueprint)
 {
-  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, builder.blueprint_.name_.string(), builder.blueprint_.prototype(), ft.engine(), builder.blueprint_.flags());
-  impl->program_ = builder.blueprint_.body();
-  impl->data = builder.blueprint_.data();
+  auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, blueprint.name_.string(), blueprint.prototype(), ft.engine(), blueprint.flags());
+  impl->program_ = blueprint.body();
+  impl->data = blueprint.data();
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }

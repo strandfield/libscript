@@ -14,7 +14,7 @@
 namespace script
 {
 
-class FunctionBuilder;
+class FunctionBlueprint;
 class FunctionTemplateImpl;
 class FunctionTemplateNativeBackend;
 struct TemplateArgumentComparison;
@@ -38,7 +38,7 @@ public:
   bool hasInstance(const std::vector<TemplateArgument> & args, Function *value = nullptr) const;
   Function getInstance(const std::vector<TemplateArgument> & args);
 
-  Function addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBuilder & opts);
+  Function addSpecialization(const std::vector<TemplateArgument> & args, const FunctionBlueprint& opts);
 
   const std::map<std::vector<TemplateArgument>, Function, TemplateArgumentComparison> & instances() const;
 

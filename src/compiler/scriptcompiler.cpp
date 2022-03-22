@@ -967,23 +967,23 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
   }
 
-  FunctionBuilder builder{ scp.symbol(), SymbolKind::Function, std::string{} };
-  builder.blueprint_.body_ = FunctionCreator::compile_later();
-  function_processor_.generic_fill(builder.blueprint_, fundecl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, std::string{} };
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
-  auto selection = selector.select(tmplts, args, builder.blueprint_.prototype_);
+  auto selection = selector.select(tmplts, args, blueprint.prototype_);
 
   if(selection.first.isNull())
     throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
-  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.blueprint_.name_.string(), builder.blueprint_.prototype_, engine(), builder.blueprint_.flags_);
-  impl->program_ = builder.blueprint_.body_;
-  impl->data = builder.blueprint_.data_;
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, blueprint.name_.string(), blueprint.prototype_, engine(), blueprint.flags_);
+  impl->program_ = blueprint.body_;
+  impl->data = blueprint.data_;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };
 
