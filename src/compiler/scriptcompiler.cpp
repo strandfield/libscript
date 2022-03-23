@@ -123,6 +123,7 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
+    mCurrentScript = mCurrentScope.script();
 
     readClassContent(result, class_decl);
 
@@ -140,6 +141,7 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
+    mCurrentScript = mCurrentScope.script();
 
     readClassContent(result, class_decl);
 
@@ -547,9 +549,9 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(imported);
 }
 
-FunctionCreator& ScriptCompiler::getFunctionCreator(const Script& /* s */)
+FunctionCreator& ScriptCompiler::getFunctionCreator(const Script& s)
 {
-  return function_creator_;
+  return s.impl() && s.impl()->function_creator ? *s.impl()->function_creator : function_creator_;
 }
 
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & declaration)
@@ -586,8 +588,9 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
+  Symbol symbol{ scp.symbol() };
   std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
-  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, name };
+  FunctionBlueprint blueprint{ symbol, SymbolKind::Function, name };
   function_processor_.generic_fill(blueprint, fundecl, scp);
   default_arguments_.generic_process(fundecl->params, blueprint, scp);
 
@@ -596,6 +599,8 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, fundecl, attrs);
 
   processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, symbol);
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
@@ -623,6 +628,8 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   processAttribute(function, attrs);
 
+  script::add_function_to_symbol(function, blueprint.parent_);
+
   schedule(function, decl, scp);
 }
 
@@ -647,6 +654,8 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
   
   schedule(function, decl, scp);
 }
@@ -670,6 +679,8 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
 
   scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
 
@@ -731,6 +742,8 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
 
   processAttribute(function, attrs);
 
+  script::add_function_to_symbol(function, blueprint.parent_);
+
   scp.invalidateCache(Scope::InvalidateOperatorCache);
 
   schedule(function, decl, scp);
@@ -750,6 +763,8 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
 
@@ -774,6 +789,8 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
   
   schedule(function, decl, scp);
 }

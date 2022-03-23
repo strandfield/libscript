@@ -10,16 +10,21 @@
 #include "script/datamember.h"
 #include "script/engine.h"
 #include "script/enumerator.h"
+#include "script/function-impl.h"
 #include "script/functionbuilder.h"
+#include "script/functioncreator.h"
 #include "script/functiontype.h"
 #include "script/functiontemplate.h"
 #include "script/lambda.h"
 #include "script/locals.h"
+#include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/script.h"
 #include "script/staticdatamember.h"
 #include "script/typedefs.h"
 #include "script/typesystem.h"
+
+#include "script/interpreter/executioncontext.h"
 
 #include "script/compiler/compiler.h"
 #include "script/compiler/errors.h"
@@ -1078,4 +1083,95 @@ TEST(CompilerTests, idattribute) {
     Type t = engine.getType<ghi>();
     ASSERT_EQ(A.id(), t.data());
   }
+}
+
+class MyFunction : public script::FunctionImpl
+{
+public:
+  std::string m_name;
+  script::DynamicPrototype proto;
+
+public:
+  explicit MyFunction(script::Symbol sym, std::string name)
+    : FunctionImpl(sym.engine()),
+    m_name(std::move(name))
+  {
+    script::Engine* e = sym.engine();
+    enclosing_symbol = sym.impl();
+    proto.setReturnType(script::Type::Int);
+  }
+
+  const std::string& name() const override
+  {
+    return m_name;
+  }
+
+  script::Name get_name() const override
+  {
+    return script::Name(script::SymbolKind::Function, name());
+  }
+
+  bool is_native() const override
+  {
+    return true;
+  }
+
+  void set_body(std::shared_ptr<script::program::Statement>) override
+  {
+
+  }
+
+  const script::Prototype& prototype() const override
+  {
+    return proto;
+  }
+
+  script::Value invoke(script::FunctionCall* c) override
+  {
+    return c->engine()->newInt(6);
+  }
+};
+
+class MyNativeFunctionCompiler : public script::FunctionCreator
+{
+public:
+
+  script::Function create(script::FunctionBlueprint& blueprint, const std::shared_ptr<script::ast::FunctionDecl>& fdecl, std::vector<script::Attribute>& attrs) override
+  {
+    if (!attrs.empty() && attrs.front()->source() == "the_native_func")
+    {
+      return script::Function(std::make_shared<MyFunction>(blueprint.parent(), blueprint.name_.string()));
+    }
+    else
+    {
+      return FunctionCreator::create(blueprint, fdecl, attrs);
+    }
+  }
+};
+
+TEST(CompilerTests, nativefunction) {
+  using namespace script;
+
+  const char* source =
+    " [[the_native_func]] int foo() = default; \n"
+    " int bar() { return foo(); }               ";
+
+  Engine engine;
+  engine.setup();
+
+  MyNativeFunctionCompiler funcompiler;
+
+  Script s = engine.newScript(SourceFile::fromString(source));
+  bool success = s.compile(CompileMode::Release, &funcompiler);
+  const auto& errors = s.messages();
+  ASSERT_TRUE(success);
+  ASSERT_EQ(s.rootNamespace().functions().size(), 2);
+
+  auto lookup = NameLookup::resolve("bar", s);
+  ASSERT_EQ(lookup.functions().size(), 1);
+
+  Function bar = lookup.functions().front();
+  Value x = bar.call(Locals());
+  ASSERT_EQ(x.type(), Type::Int);
+  ASSERT_EQ(x.toInt(), 6);
 }

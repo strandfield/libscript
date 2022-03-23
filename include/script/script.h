@@ -20,6 +20,7 @@ class ScriptImpl;
 class Ast;
 class Attributes;
 class Engine;
+class FunctionCreator;
 class Scope;
 class Symbol;
 
@@ -41,7 +42,7 @@ public:
 
   int id() const;
 
-  bool compile(CompileMode mode = CompileMode::Release);
+  bool compile(CompileMode mode = CompileMode::Release, FunctionCreator* fcreator = nullptr);
   bool isReady() const;
   inline bool isCompiled() const { return isReady(); }
   void run();
