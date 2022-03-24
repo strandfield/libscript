@@ -1171,7 +1171,8 @@ TEST(CompilerTests, nativefunction) {
   ASSERT_EQ(lookup.functions().size(), 1);
 
   Function bar = lookup.functions().front();
-  Value x = bar.call(Locals());
+  Locals locals;
+  Value x = bar.call(locals);
   ASSERT_EQ(x.type(), Type::Int);
   ASSERT_EQ(x.toInt(), 6);
 }

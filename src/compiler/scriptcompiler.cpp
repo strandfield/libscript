@@ -720,7 +720,6 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
     return processFunctionCallOperatorDecl(decl);
 
   FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Operator, opname };
-  blueprint.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(blueprint, decl, scp);
   
   const bool is_member = currentScope().isClass();
@@ -754,7 +753,6 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
   Scope scp = currentScope();
 
   FunctionBlueprint blueprint = FunctionBlueprint::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
-  blueprint.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(blueprint, decl, scp);
   default_arguments_.generic_process(decl->params, blueprint, scp);
 
@@ -779,7 +777,6 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
   FunctionBlueprint blueprint = FunctionBlueprint::Cast(scp.symbol().toClass());
-  blueprint.body_ = FunctionCreator::compile_later();
   function_processor_.generic_fill(blueprint, decl, scp);
 
   /// TODO: check that the user does not declare any default arguments
