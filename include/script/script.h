@@ -42,6 +42,7 @@ public:
 
   int id() const;
 
+  void attach(FunctionCreator& fcreator);
   bool compile(CompileMode mode = CompileMode::Release, FunctionCreator* fcreator = nullptr);
   bool isReady() const;
   inline bool isCompiled() const { return isReady(); }
