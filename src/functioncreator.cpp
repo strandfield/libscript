@@ -28,28 +28,10 @@ static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBlueprin
   impl->enclosing_symbol = opts.parent().impl();
 }
 
-static void add_to_parent(const Function& func, const Symbol& parent)
-{
-  /// The following is done in generic_fill
-  //func.impl()->enclosing_symbol = parent.impl();
-
-  if (parent.isClass())
-  {
-    Class cla = parent.toClass();
-    cla.addFunction(func);
-  }
-  else if (parent.isNamespace())
-  {
-    Namespace ns = parent.toNamespace();
-    ns.addFunction(func);
-  }
-}
-
 inline static void set_default_args(Function& fun, std::vector<DefaultArgument>&& dargs)
 {
   fun.impl()->set_default_arguments(std::move(dargs));
 }
-
 
 /*!
  * \class FunctionBuilder
@@ -67,8 +49,10 @@ FunctionCreator::~FunctionCreator()
  * \param the function declaration
  * \param the attributes
  * 
+ * This function creates a function from the blueprint.
+ * The function should not be added to its future parent.
+ * 
  * The default implementation does not use the attributes and supports a null function declaration.
- * The default implementation adds the function to its parent (this may change in the future).
  */
 Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared_ptr<ast::FunctionDecl>& fdecl, std::vector<Attribute>& /* attrs */)
 {
@@ -84,7 +68,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     generic_fill(impl, blueprint);
     Function ret{ impl };
     set_default_args(ret, std::move(blueprint.defaultargs_));
-    add_to_parent(ret, blueprint.parent_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Operator)
@@ -97,7 +80,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
       generic_fill(impl, blueprint);
       Operator ret{ impl };
       set_default_args(ret, std::move(blueprint.defaultargs_));
-      add_to_parent(ret, blueprint.parent_);
       return ret;
     }
     else
@@ -110,7 +92,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
         impl = std::make_shared<UnaryOperatorImpl>(operation, blueprint.prototype_, blueprint.engine(), blueprint.flags_);
 
       generic_fill(impl, blueprint);
-      add_to_parent(Function(impl), blueprint.parent_);
       return Operator{ impl };
     }
   }
@@ -119,7 +100,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<CastImpl>(blueprint.prototype_, blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    add_to_parent(ret, blueprint.parent_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Constructor)
@@ -128,7 +108,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     generic_fill(impl, blueprint);
     Function ret{ impl };
     set_default_args(ret, std::move(blueprint.defaultargs_));
-    add_to_parent(ret, blueprint.parent_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Destructor)
@@ -136,7 +115,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<DestructorImpl>(blueprint.prototype_, blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    add_to_parent(ret, blueprint.parent_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::LiteralOperator)
@@ -144,7 +122,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<LiteralOperatorImpl>(blueprint.name_.string(), blueprint.prototype_, blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    add_to_parent(ret, blueprint.parent_);
     return ret;
   }
   else

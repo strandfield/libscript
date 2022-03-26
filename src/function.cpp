@@ -492,6 +492,7 @@ bool Function::isConstructor() const
   //   & d->prototype_.returnType().baseType() == d->prototype_.at(0).baseType();
   
   // correct implementation
+  // @TODO: not good... add virtual functions in FunctionImpl
   return dynamic_cast<ConstructorImpl *>(d.get()) != nullptr;
 }
 

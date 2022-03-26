@@ -78,16 +78,30 @@ const std::string & Script::path() const
   return d->source.filepath();
 }
 
+/**
+ * \fn void attach(FunctionCreator& fcreator)
+ * \brief attach a function creator to this script
+ * 
+ * This creator will be used while compiling the script.
+ * The creator does not need to outlive the Script but must be alive 
+ * when \m compile() is called.
+ */
+void Script::attach(FunctionCreator& fcreator)
+{
+  d->function_creator = &fcreator;
+}
+
 /*!
- * \fn bool compile(CompileMode mode)
+ * \fn bool compile(CompileMode mode, FunctionCreator* fcreator = nullptr)
  * \brief Compiles the script
  * Returns true on success, false otherwise. 
  * If the compilation failed, use messages() to retrieve the error messages.
  * Warning: Calling this function while a script is compiling is undefined behavior.
  */
-bool Script::compile(CompileMode mode)
+bool Script::compile(CompileMode mode, FunctionCreator* fcreator)
 {
   Engine *e = d->engine;
+  d->function_creator = fcreator ? fcreator : d->function_creator;
   return e->compile(*this, mode);
 }
 

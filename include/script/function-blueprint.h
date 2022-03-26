@@ -61,6 +61,7 @@ public:
   
   Engine* engine() const;
   Symbol parent() const;
+  const Name& name() const;
   const DynamicPrototype& prototype() const;
   const std::vector<std::shared_ptr<program::Expression>>& defaultargs() const;
   const std::shared_ptr<program::Statement>& body() const;
@@ -79,6 +80,11 @@ inline Engine* FunctionBlueprint::engine() const
 inline Symbol FunctionBlueprint::parent() const
 {
   return parent_;
+}
+
+inline const Name& FunctionBlueprint::name() const
+{
+  return name_;
 }
 
 inline const DynamicPrototype& FunctionBlueprint::prototype() const

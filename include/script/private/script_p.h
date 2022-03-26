@@ -25,6 +25,7 @@ namespace program
 struct Breakpoint;
 } // namespace program
 
+class FunctionCreator;
 class ModuleInterface;
 
 class ScriptImpl : public NamespaceImpl
@@ -46,6 +47,7 @@ public:
   std::shared_ptr<ast::AST> ast;
   Scope exports;
   AttributesMap attributes;
+  FunctionCreator* function_creator = nullptr;
 
   std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
 

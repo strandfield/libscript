@@ -12,8 +12,10 @@
 namespace script
 {
 
+class Function;
 class Name;
 class Script;
+class Symbol;
 
 class SymbolImpl
 {
@@ -27,6 +29,8 @@ public:
 
   virtual Name get_name() const = 0;
 };
+
+void add_function_to_symbol(const Function& func, Symbol& parent);
 
 } // namespace script
 

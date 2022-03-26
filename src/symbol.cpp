@@ -20,6 +20,24 @@
 namespace script
 {
 
+void add_function_to_symbol(const Function& func, Symbol& parent)
+{
+  /// The following could be done here just in case 
+  /// but is currently not necessary.
+  //func.impl()->enclosing_symbol = parent.impl();
+
+  if (parent.isClass())
+  {
+    Class cla = parent.toClass();
+    cla.addFunction(func);
+  }
+  else if (parent.isNamespace())
+  {
+    Namespace ns = parent.toNamespace();
+    ns.addFunction(func);
+  }
+}
+
 /*!
  * \class Symbol
  */

@@ -1310,6 +1310,7 @@ bool DeclParser::detectBeforeReadingDeclarator()
       mDecision = ParsingConstructor;
       auto ctorDecl = ast::ConstructorDecl::New(mType.functionType->returnType.type);
       mFuncDecl = ctorDecl;
+      mFuncDecl->attribute = mAttribute;
       for (const auto & p : mType.functionType->params)
       {
         ast::FunctionParameter param;
@@ -1328,6 +1329,7 @@ bool DeclParser::detectBeforeReadingDeclarator()
       mDecision = ParsingConstructor;
       auto ctorDecl = ast::ConstructorDecl::New(mType.type);
       mFuncDecl = ctorDecl;
+      mFuncDecl->attribute = mAttribute;
       mType = ast::QualifiedType{};
       return true;
     }
