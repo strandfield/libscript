@@ -102,7 +102,8 @@ public:
   const Prototype& prototype() const override;
 };
 
-class ConstructorImpl : public FunctionImpl
+// @TODO: remove dllexport
+class LIBSCRIPT_API ConstructorImpl : public FunctionImpl
 {
 public:
   ConstructorImpl(const Prototype& p, Engine *e, FunctionFlags f = FunctionFlags{});

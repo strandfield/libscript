@@ -262,6 +262,8 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const Script & task)
 
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
+  TranslationTarget target{ this, mCurrentScript, currentAst()->root };
+
   for (const auto & decl : currentAst()->root->as<ast::ScriptRootNode>().declarations)
     processOrCollectDeclaration(decl);
 
