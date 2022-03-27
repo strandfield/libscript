@@ -94,6 +94,9 @@ public:
   void setOptions(int opts) { mOptions = opts; }
   inline bool testOption(int opt) const { return (mOptions & opt) != 0; }
 
+  // Quickly look ahead to see if the next tokens are possibly an identifier 
+  bool lookAhead() const;
+
   /// TODO : add support for things like ::foo
   std::shared_ptr<ast::Identifier> parse();
 

@@ -867,6 +867,28 @@ IdentifierParser::IdentifierParser(std::shared_ptr<ParserContext> shared_context
 
 }
 
+bool IdentifierParser::lookAhead() const
+{
+  Token t = peek();
+
+  switch (t.id)
+  {
+  case Token::Void:
+  case Token::Bool:
+  case Token::Char:
+  case Token::Int:
+  case Token::Float:
+  case Token::Double:
+  case Token::Auto:
+  case Token::This:
+  case Token::Operator:
+  case Token::UserDefinedName:
+    return true;
+  default:
+    return false;
+  }
+}
+
 std::shared_ptr<ast::Identifier> IdentifierParser::parse()
 {
   Token t = peek();
@@ -1343,16 +1365,27 @@ bool DeclParser::readDeclarator()
   IdentifierParser ip{ context(), subfragment() };
   ip.setOptions(mDeclaratorOptions);
 
-  try
+  if (mDecision != Undecided)
   {
     mName = parse_and_seek(ip);
   }
-  catch (const SyntaxError&)
+  else
   {
-    if (mDecision != Undecided)
-      throw;
-    mDecision = NotADecl;
-    return false;
+    if (!ip.lookAhead())
+    {
+      mDecision = NotADecl;
+      return false;
+    }
+
+    try
+    {
+      mName = parse_and_seek(ip);
+    }
+    catch (const SyntaxError&)
+    {
+      mDecision = NotADecl;
+      return false;
+    }
   }
 
   return true;
