@@ -131,6 +131,7 @@ public:
 
 protected:
   bool mReadFunctionSignature;
+  bool lookAheadFunctionSignature();
   ast::QualifiedType tryReadFunctionSignature(const ast::QualifiedType & rt);
 };
 

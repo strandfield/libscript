@@ -1130,7 +1130,7 @@ ast::QualifiedType TypeParser::parse()
   if (atEnd())
     return ret;
 
-  if (unsafe_peek() == Token::LeftPar && mReadFunctionSignature) {
+  if (mReadFunctionSignature && lookAheadFunctionSignature()) {
     auto save_point = iterator();
     try
     {
@@ -1153,6 +1153,29 @@ bool TypeParser::detect()
   return peek().isIdentifier();
 }
 
+bool TypeParser::lookAheadFunctionSignature()
+{
+  if (unsafe_peek() != Token::LeftPar)
+    return false;
+
+  TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
+
+  while (!params_reader.atEnd())
+  {
+    TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
+
+    if (!tp.detect(FullFragmentDetection))
+      return false;
+   
+    params_reader.seek(tp.end());
+
+    if (!params_reader.atEnd())
+      params_reader.read(Token::Comma);
+  }
+
+  return true;
+}
+
 ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType & rt)
 {
   ast::QualifiedType ret;
@@ -1161,7 +1184,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
   
   TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
 
-  unsafe_read();
+  unsafe_read(); // @TODO: is this read() required as we do a seek() after the loop ?
   while (!params_reader.atEnd())
   {
     TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
