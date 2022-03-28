@@ -210,6 +210,7 @@ public:
 
 protected:
   // detectDecl() implementation
+  bool obviouslyNotADecl();
   void readOptionalAttribute();
   void readOptionalDeclSpecifiers();
   bool detectBeforeReadingTypeSpecifier();

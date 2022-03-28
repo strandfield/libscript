@@ -636,6 +636,10 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     break;
   }
 
+  // @TODO: the above switch could be improved as there are other cases 
+  // which are not ambiguous.
+  // e.g. ++d , "hello", true, etc...
+
   return parseAmbiguous();
 }
 
@@ -1360,6 +1364,21 @@ DeclParser::~DeclParser()
 
 }
 
+bool DeclParser::obviouslyNotADecl()
+{
+  // @Note: could be moved outside of this class as such cases
+  // should be detected before creating a DeclParser.
+
+  if (peek().isLiteral())
+    return true;
+
+  // Warning: ~A(); can be a destructor declaration
+  if (unsafe_peek().isOperator() && unsafe_peek() != Token::Tilde)
+    return true;
+
+  return false;
+}
+
 void DeclParser::readOptionalAttribute()
 {
   AttributeParser parser{ context(), subfragment() };
@@ -1521,6 +1540,12 @@ bool DeclParser::detectFromDeclarator()
 
 bool DeclParser::detectDecl()
 {
+  if (obviouslyNotADecl())
+  {
+    mDecision = NotADecl;
+    return false;
+  }
+
   readOptionalAttribute();
 
   readOptionalDeclSpecifiers();
