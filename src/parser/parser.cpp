@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,6 +6,8 @@
 #include "script/parser/specific-parsers.h"
 
 #include "script/parser/lexer.h"
+
+#include "script/parser/delimiters-counter.h"
 
 namespace script
 {
@@ -1166,8 +1168,12 @@ bool TypeParser::detect(Detection opt)
     //    Note that 'const T' is valid so we need to take that into account.
     // 2. Check that after an identifier, there is either a '<' or a '::'
     //    or a reference sign.
+    // 3. Check that '&' or '&&' are at the end.
+    // 4. Check the proper nesting of '<' and '>'.
 
     bool prev_was_identifier = false;
+    DelimitersCounter counter;
+    int template_delimiters = 0;
 
     for (size_t i(0); i < n; ++i)
     {
@@ -1181,6 +1187,22 @@ bool TypeParser::detect(Detection opt)
       {
         if (prev_was_identifier && t != Token::LeftAngle && t != Token::ScopeResolution && t != Token::Ampersand && t != Token::LogicalAnd)
           return false;
+
+        if (t == Token::Ampersand || t == Token::LogicalAnd)
+        {
+          if (i != n - 1)
+            return false;
+        }
+        
+        if (counter.balanced() && (t == Token::LeftAngle || t == Token::RightAngle || t == Token::RightShift))
+        {
+          if (t == Token::LeftAngle)
+            template_delimiters += 1;
+          else if (t == Token::RightAngle)
+            template_delimiters -= 1;
+          else if (t == Token::RightShift)
+            template_delimiters -= 2;
+        }
 
         if (t.isIdentifier())
         {
@@ -1196,7 +1218,7 @@ bool TypeParser::detect(Detection opt)
       }
     }
 
-    return true;
+    return template_delimiters == 0;
   }
 }
 
