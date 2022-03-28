@@ -124,7 +124,13 @@ public:
 
   ast::QualifiedType parse();
 
-  bool detect();
+  enum Detection
+  {
+    LookAheadDetection, // check that the next tokens can be a type
+    FullFragmentDetection, // check that the whole fragment can be a type
+  };
+
+  bool detect(Detection opt = LookAheadDetection);
 
   inline bool readFunctionSignature() const { return mReadFunctionSignature;  }
   inline void setReadFunctionSignature(bool on) { mReadFunctionSignature = on; }

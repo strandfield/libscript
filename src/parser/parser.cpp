@@ -1146,11 +1146,58 @@ ast::QualifiedType TypeParser::parse()
 }
 
 
-bool TypeParser::detect()
+bool TypeParser::detect(Detection opt)
 {
-  if (peek() == Token::Const)
+  if (opt == LookAheadDetection)
+  {
+    if (peek() == Token::Const)
+      return true;
+    return peek().isIdentifier();
+  }
+  else
+  {
+    if (!detect(LookAheadDetection))
+      return false;
+
+    size_t n = std::distance(iterator(), end());
+
+    // 1. Check that there is not two consecutive identifier, 
+    //    as in 'int v'.
+    //    Note that 'const T' is valid so we need to take that into account.
+    // 2. Check that after an identifier, there is either a '<' or a '::'
+    //    or a reference sign.
+
+    bool prev_was_identifier = false;
+
+    for (size_t i(0); i < n; ++i)
+    {
+      Token t = peek(i);
+
+      if (t == Token::Const)
+      {
+        prev_was_identifier = false;
+      }
+      else
+      {
+        if (prev_was_identifier && t != Token::LeftAngle && t != Token::ScopeResolution && t != Token::Ampersand && t != Token::LogicalAnd)
+          return false;
+
+        if (t.isIdentifier())
+        {
+          if (prev_was_identifier)
+            return false;
+
+          prev_was_identifier = true;
+        }
+        else
+        {
+          prev_was_identifier = false;
+        }
+      }
+    }
+
     return true;
-  return peek().isIdentifier();
+  }
 }
 
 bool TypeParser::lookAheadFunctionSignature()
