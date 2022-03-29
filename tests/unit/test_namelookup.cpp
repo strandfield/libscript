@@ -188,10 +188,10 @@ TEST(NameLookup, member_lookup) {
 
   Symbol gns{ e.rootNamespace() };
 
-  Class foo = gns.newClass("foo").get();
+  Class foo = ClassBuilder(gns, "foo").get();
   FunctionBuilder::Fun(foo, "f").create();
 
-  Class bar = gns.newClass("bar").setBase(foo).get();
+  Class bar = ClassBuilder(gns, "bar").setBase(foo).get();
   FunctionBuilder::Fun(bar, "g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);
@@ -213,7 +213,7 @@ TEST(NameLookup, scopes) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Enum E = e.rootNamespace().newEnum("E").get();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
@@ -284,7 +284,7 @@ TEST(NameLookup, scope_class_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_C = Symbol{ foo }.newClass("C").get();
+  Class foo_C = ClassBuilder(Symbol(foo), "C").get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
 
@@ -323,8 +323,8 @@ TEST(NameLookup, scope_namespace_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_A = Symbol{ foo }.newClass("A").get();
-  Class foo_B = Symbol{ foo }.newClass("B").get();
+  Class foo_A = ClassBuilder(Symbol(foo), "A").get();
+  Class foo_B = ClassBuilder(Symbol(foo), "B").get();
   Function foo_max_int = FunctionBuilder::Fun(foo, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
   Function foo_max_double = FunctionBuilder::Fun(foo, "max").returns(Type::Double).params(Type::Double, Type::Double).get();
 

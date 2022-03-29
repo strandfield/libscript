@@ -124,7 +124,7 @@ TEST(InitializerLists, initializer_list_conversion) {
     TemplateArgument{ Type{ Type::Int } }
     });
 
-  Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(engine.rootNamespace()), "A").get();
   Function ctor = FunctionBuilder::Constructor(A).params(Type::Int, Type::String).get();
   ctor = FunctionBuilder::Constructor(A).params(ilist_int.id()).get();
 

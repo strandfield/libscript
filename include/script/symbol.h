@@ -6,7 +6,6 @@
 #define LIBSCRIPT_SYMBOL_H
 
 #include "libscriptdefs.h"
-#include "script/operators.h"
 #include "script/symbol-kind.h"
 #include "script/types.h"
 
@@ -15,8 +14,6 @@ namespace script
 
 class Attributes;
 class Class;
-class ClassBuilder;
-class ClassTemplateBuilder;
 class Engine;
 class Name;
 class Namespace;
@@ -57,11 +54,6 @@ public:
   Script script() const;
 
   Attributes attributes() const;
-
-  ClassBuilder newClass(const std::string & name);
-  ClassBuilder newClass(std::string && name);
-  ClassTemplateBuilder newClassTemplate(const std::string & name);
-  ClassTemplateBuilder newClassTemplate(std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

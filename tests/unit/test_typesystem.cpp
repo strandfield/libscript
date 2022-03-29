@@ -231,7 +231,7 @@ TEST(Conversions, comparisons) {
   };
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::Conversion);
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   FunctionBuilder::Constructor(A).params(Type::Float).create();
   convs.push_back(Conversion::compute(Type::Float, A.id(), &e));
   ASSERT_EQ(ranking::worstRank(convs), ConversionRank::UserDefinedConversion);
@@ -321,7 +321,7 @@ TEST(Conversions, user_defined_conv_cast) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Cast to_int = FunctionBuilder::Cast(A).setReturnType(Type::Int).setConst().get().toCast();
 
   Conversion conv = Conversion::compute(A.id(), Type::Int, &e);
@@ -339,7 +339,7 @@ TEST(Conversions, user_defined_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Function ctor = FunctionBuilder::Constructor(A).params(Type::Float).get();
 
   Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
@@ -356,7 +356,7 @@ TEST(Conversions, converting_constructor_selection) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   FunctionBuilder::Constructor(A).params(Type::Int).create();
   Function ctor_bool = FunctionBuilder::Constructor(A).params(Type::Boolean).get();
 
@@ -399,7 +399,7 @@ TEST(Conversions, no_converting_constructor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
 
   Conversion conv = Conversion::compute(Type::Float, A.id(), &e);
   ASSERT_TRUE(conv == Conversion::NotConvertible());
@@ -411,7 +411,7 @@ TEST(Conversions, explicit_ctor) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Function ctor_int = FunctionBuilder::Constructor(A).setExplicit().params(Type::Int).get();
 
   Conversion conv = Conversion::compute(Type::Int, A.id(), &e);
@@ -496,7 +496,7 @@ TEST(Initializations, list_initialization_ctor) {
   auto listexpr = parse_list_expr(&e, "{1, \"Hello\", 3.14}");
   ASSERT_TRUE(listexpr->is<program::InitializerList>());
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Function ctor = FunctionBuilder::Constructor(A).params(Type::Int, Type::String, Type::Double).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);
@@ -546,7 +546,7 @@ TEST(Initializations, list_initialization_initializer_list_ctor) {
   Type initializer_list_int = ClassTemplate::get<InitializerListTemplate>(&e)
     .getInstance({ TemplateArgument{ Type::Int } }).id();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Function ctor = FunctionBuilder::Constructor(A).params(initializer_list_int).get();
 
   Initialization init = Initialization::compute(A.id(), listexpr, &e);

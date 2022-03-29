@@ -251,7 +251,7 @@ ClassTemplate register_initialize_list_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate ilist_template = Symbol{ root }.newClassTemplate("InitializerList")
+  ClassTemplate ilist_template = ClassTemplateBuilder(Symbol(root), "InitializerList")
     .setParams(std::move(params))
     .setScope(Scope{ root })
     .withBackend<InitializerListTemplate>()

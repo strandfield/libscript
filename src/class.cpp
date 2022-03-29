@@ -414,9 +414,9 @@ Function Class::destructor() const
   return d->destructor;
 }
 
-ClassBuilder Class::newNestedClass(const std::string & name) const
+ClassBuilder Class::newNestedClass(std::string name) const
 {
-  return Symbol{ *this }.newClass(name);
+  return ClassBuilder(Symbol(*this), name);
 }
 
 void Class::addStaticDataMember(const std::string & name, const Value & value, AccessSpecifier aspec)

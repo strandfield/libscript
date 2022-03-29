@@ -5,16 +5,12 @@
 #include "script/symbol.h"
 
 #include "script/class.h"
-#include "script/classbuilder.h"
-#include "script/enumbuilder.h"
-#include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
 #include "script/script.h"
-#include "script/templatebuilder.h"
 #include "script/typedefs.h"
 
 namespace script
@@ -68,6 +64,10 @@ Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
 
 }
 
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script engine
+ */
 Engine* Symbol::engine() const
 {
   if (isClass())
@@ -113,6 +113,10 @@ Namespace Symbol::toNamespace() const
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
 }
 
+/*!
+ * \fn Name name() const
+ * \brief returns the symbol's name
+ */
 Name Symbol::name() const
 {
   return d->get_name();
@@ -149,26 +153,6 @@ Script Symbol::script() const
 Attributes Symbol::attributes() const
 {
   return script().getAttributes(*this);
-}
-
-ClassBuilder Symbol::newClass(const std::string & name)
-{
-  return ClassBuilder{ *this, name };
-}
-
-ClassBuilder Symbol::newClass(std::string && name)
-{
-  return ClassBuilder{ *this, std::move(name) };
-}
-
-ClassTemplateBuilder Symbol::newClassTemplate(const std::string & name)
-{
-  return ClassTemplateBuilder{ *this, name };
-}
-
-ClassTemplateBuilder Symbol::newClassTemplate(std::string && name)
-{
-  return ClassTemplateBuilder{ *this, std::move(name) };
 }
 
 /*!
