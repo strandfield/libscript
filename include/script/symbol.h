@@ -15,8 +15,6 @@ namespace script
 
 class Attributes;
 class Class;
-class ClassBuilder;
-class ClassTemplateBuilder;
 class Engine;
 class Name;
 class Namespace;
@@ -57,11 +55,6 @@ public:
   Script script() const;
 
   Attributes attributes() const;
-
-  ClassBuilder newClass(const std::string & name);
-  ClassBuilder newClass(std::string && name);
-  ClassTemplateBuilder newClassTemplate(const std::string & name);
-  ClassTemplateBuilder newClassTemplate(std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

@@ -98,7 +98,7 @@ public:
 
   Function destructor() const;
   
-  ClassBuilder newNestedClass(const std::string & name) const;
+  ClassBuilder newNestedClass(std::string name) const;
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }

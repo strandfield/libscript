@@ -120,7 +120,7 @@ TEST(CoreUtilsTests, access_specifiers) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Function foo = FunctionBuilder::Fun(A, "foo").setProtected().get();
   Function bar = FunctionBuilder::Fun(A, "bar").setPrivate().get();
   Function qux = FunctionBuilder::Fun(A, "qux").get();
@@ -129,7 +129,7 @@ TEST(CoreUtilsTests, access_specifiers) {
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
-  Class B = Symbol{ e.rootNamespace() }.newClass("B").setBase(A).get();
+  Class B = ClassBuilder(Symbol(e.rootNamespace()), "B").setBase(A).get();
   Function slurm = FunctionBuilder::Fun(B, "slurm").get();
   Function bender = FunctionBuilder::Fun(B, "bender").get();
 
@@ -153,7 +153,7 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
   Engine e;
   e.setup();
 
-  ClassBuilder builder = Symbol{e.rootNamespace()}.newClass("A")
+  ClassBuilder builder = ClassBuilder(Symbol(e.rootNamespace()), "A")
     .addMember(Class::DataMember{ Type::Double, "x" })
     .addMember(Class::DataMember{ Type::Double, "y", AccessSpecifier::Protected })
     .addMember(Class::DataMember{ Type::Double, "z", AccessSpecifier::Private });
@@ -228,7 +228,7 @@ TEST(CoreUtilsTests, function_names) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
 
   Function foo = FunctionBuilder::Fun(A, "foo").get();
   Function eq = FunctionBuilder::Op(A, EqualOperator).params(Type::Int).get();

@@ -26,6 +26,8 @@ public:
   Symbol symbol;
   std::string name;
   Type base;
+  // @TODO: data members could be add later, after the Class was constructed 
+  // (already the case while compiling)
   std::vector<DataMember> dataMembers;
   bool isFinal;
   std::shared_ptr<UserData> userdata;

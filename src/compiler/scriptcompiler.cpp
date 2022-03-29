@@ -407,7 +407,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 {
   assert(class_decl != nullptr);
 
-  ClassBuilder builder = currentScope().symbol().newClass("");
+  ClassBuilder builder = ClassBuilder(currentScope().symbol(), "");
   fill(builder, class_decl);
   builder.setId(getIdAttribute(class_decl->attribute));
 
@@ -872,7 +872,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   std::string name = classdecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
+  ClassTemplate ct = ClassTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptClassTemplateBackend>()
