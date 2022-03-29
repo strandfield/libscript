@@ -75,8 +75,7 @@ public:
   FunctionTemplateBuilder(FunctionTemplateBuilder &&) = default;
   ~FunctionTemplateBuilder() = default;
 
-  FunctionTemplateBuilder(const Symbol & s, const std::string & name);
-  FunctionTemplateBuilder(const Symbol & s, std::string && name);
+  FunctionTemplateBuilder(const Symbol& s, std::string name);
 
   template<typename T>
   FunctionTemplateBuilder& withBackend()

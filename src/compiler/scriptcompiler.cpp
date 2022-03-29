@@ -890,7 +890,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
+  FunctionTemplate ft = FunctionTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptFunctionTemplateBackend>()

@@ -67,8 +67,6 @@ public:
   ClassTemplateBuilder newClassTemplate(const std::string & name);
   ClassTemplateBuilder newClassTemplate(std::string && name);
   EnumBuilder newEnum(std::string && name);
-  FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
-  FunctionTemplateBuilder newFunctionTemplate(std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

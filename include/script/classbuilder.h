@@ -86,8 +86,6 @@ public:
   ClassBuilder & setBase(const Class & b);
   using Base::setBase;
 
-  ClassBuilder& operator()(std::string n);
-
   Class get();
   void create();
 };

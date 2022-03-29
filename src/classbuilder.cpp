@@ -51,18 +51,6 @@ ClassBuilder & ClassBuilder::setBase(const Class & b)
   return (*this);
 }
 
-ClassBuilder& ClassBuilder::operator()(std::string n)
-{
-  this->base = Type::Null;
-  this->dataMembers.clear();
-  this->isFinal = false;
-  this->userdata = nullptr;
-
-  this->name = std::move(n);
-
-  return *this;
-}
-
 Class ClassBuilder::get()
 {
   Class ret{ std::make_shared<ClassImpl>(-1, std::move(name), symbol.engine()) };

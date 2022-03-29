@@ -176,16 +176,6 @@ EnumBuilder Symbol::newEnum(std::string && name)
   return EnumBuilder{ *this, std::move(name) };
 }
 
-FunctionTemplateBuilder Symbol::newFunctionTemplate(const std::string & name)
-{
-  return FunctionTemplateBuilder{ *this, name };
-}
-
-FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
-{
-  return FunctionTemplateBuilder{ *this, std::move(name) };
-}
-
 /*!
  * \endclass
  */

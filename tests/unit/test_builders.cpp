@@ -547,7 +547,7 @@ TEST(Builders, function_template_create) {
   const auto nb_templates = e.rootNamespace().templates().size();
 
   // We cannot use get() here because FunctionTemplate has not been defined yet
-  s.newFunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+  FunctionTemplateBuilder(s, "foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
     .withBackend<DummyFunctionTemplateBackend>()
     .setScope(e.rootNamespace()).create();
 
@@ -564,7 +564,7 @@ TEST(Builders, function_template_get) {
 
   Symbol s{ e.rootNamespace() };
 
-  FunctionTemplate foo = s.newFunctionTemplate("foo").params(
+  FunctionTemplate foo = FunctionTemplateBuilder(s, "foo").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
     .withBackend<DummyFunctionTemplateBackend>()
