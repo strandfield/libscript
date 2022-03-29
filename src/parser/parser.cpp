@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2020 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -6,6 +6,8 @@
 #include "script/parser/specific-parsers.h"
 
 #include "script/parser/lexer.h"
+
+#include "script/parser/delimiters-counter.h"
 
 namespace script
 {
@@ -125,6 +127,34 @@ ExpressionParser::ExpressionParser(std::shared_ptr<ParserContext> shared_context
   : ParserBase(shared_context, reader)
 {
 
+}
+
+bool ExpressionParser::isClearlyAnExpr(const Token& tok)
+{
+  if (tok.isLiteral())
+    return true;
+
+  // Warning: ~A() can be a destructor declaration
+  if (tok.isOperator() && tok != Token::Tilde)
+    return true;
+
+  return false;
+}
+
+bool ExpressionParser::detect() const
+{
+  if (isClearlyAnExpr(peek()))
+    return true;
+
+  if (peek() == Token::Const)
+    return false;
+
+  size_t n = fragment().size();
+
+  if (peek(0).isIdentifier() && peek(1).isIdentifier())
+    return false;
+
+  return true;
 }
 
 std::shared_ptr<ast::Expression> ExpressionParser::parse()
@@ -634,6 +664,10 @@ std::shared_ptr<ast::Statement> ProgramParser::parseStatement()
     break;
   }
 
+  // @TODO: the above switch could be improved as there are other cases 
+  // which are not ambiguous.
+  // e.g. ++d , "hello", true, etc...
+
   return parseAmbiguous();
 }
 
@@ -865,6 +899,28 @@ IdentifierParser::IdentifierParser(std::shared_ptr<ParserContext> shared_context
   , mOptions(opts)
 {
 
+}
+
+bool IdentifierParser::lookAhead() const
+{
+  Token t = peek();
+
+  switch (t.id)
+  {
+  case Token::Void:
+  case Token::Bool:
+  case Token::Char:
+  case Token::Int:
+  case Token::Float:
+  case Token::Double:
+  case Token::Auto:
+  case Token::This:
+  case Token::Operator:
+  case Token::UserDefinedName:
+    return true;
+  default:
+    return false;
+  }
 }
 
 std::shared_ptr<ast::Identifier> IdentifierParser::parse()
@@ -1108,7 +1164,7 @@ ast::QualifiedType TypeParser::parse()
   if (atEnd())
     return ret;
 
-  if (unsafe_peek() == Token::LeftPar && mReadFunctionSignature) {
+  if (mReadFunctionSignature && lookAheadFunctionSignature()) {
     auto save_point = iterator();
     try
     {
@@ -1124,11 +1180,101 @@ ast::QualifiedType TypeParser::parse()
 }
 
 
-bool TypeParser::detect()
+bool TypeParser::detect(Detection opt)
 {
-  if (peek() == Token::Const)
-    return true;
-  return peek().isIdentifier();
+  if (opt == LookAheadDetection)
+  {
+    if (peek() == Token::Const)
+      return true;
+    return peek().isIdentifier();
+  }
+  else
+  {
+    if (!detect(LookAheadDetection))
+      return false;
+
+    size_t n = std::distance(iterator(), end());
+
+    // 1. Check that there is not two consecutive identifier, 
+    //    as in 'int v'.
+    //    Note that 'const T' is valid so we need to take that into account.
+    // 2. Check that after an identifier, there is either a '<' or a '::'
+    //    or a reference sign.
+    // 3. Check that '&' or '&&' are at the end.
+    // 4. Check the proper nesting of '<' and '>'.
+
+    bool prev_was_identifier = false;
+    DelimitersCounter counter;
+    int template_delimiters = 0;
+
+    for (size_t i(0); i < n; ++i)
+    {
+      Token t = peek(i);
+
+      if (t == Token::Const)
+      {
+        prev_was_identifier = false;
+      }
+      else
+      {
+        if (prev_was_identifier && t != Token::LeftAngle && t != Token::ScopeResolution && t != Token::Ampersand && t != Token::LogicalAnd)
+          return false;
+
+        if (t == Token::Ampersand || t == Token::LogicalAnd)
+        {
+          if (i != n - 1)
+            return false;
+        }
+        
+        if (counter.balanced() && (t == Token::LeftAngle || t == Token::RightAngle || t == Token::RightShift))
+        {
+          if (t == Token::LeftAngle)
+            template_delimiters += 1;
+          else if (t == Token::RightAngle)
+            template_delimiters -= 1;
+          else if (t == Token::RightShift)
+            template_delimiters -= 2;
+        }
+
+        if (t.isIdentifier())
+        {
+          if (prev_was_identifier)
+            return false;
+
+          prev_was_identifier = true;
+        }
+        else
+        {
+          prev_was_identifier = false;
+        }
+      }
+    }
+
+    return template_delimiters == 0;
+  }
+}
+
+bool TypeParser::lookAheadFunctionSignature()
+{
+  if (unsafe_peek() != Token::LeftPar)
+    return false;
+
+  TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
+
+  while (!params_reader.atEnd())
+  {
+    TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
+
+    if (!tp.detect(FullFragmentDetection))
+      return false;
+   
+    params_reader.seek(tp.end());
+
+    if (!params_reader.atEnd())
+      params_reader.read(Token::Comma);
+  }
+
+  return true;
 }
 
 ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType & rt)
@@ -1139,7 +1285,7 @@ ast::QualifiedType TypeParser::tryReadFunctionSignature(const ast::QualifiedType
   
   TokenReader params_reader = subfragment<Fragment::DelimiterPair>();
 
-  unsafe_read();
+  unsafe_read(); // @TODO: is this read() required as we do a seek() after the loop ?
   while (!params_reader.atEnd())
   {
     TypeParser tp{ context(), params_reader.next<Fragment::ListElement>() };
@@ -1246,6 +1392,14 @@ DeclParser::~DeclParser()
 
 }
 
+bool DeclParser::obviouslyNotADecl()
+{
+  // @Note: could be moved outside of this class as such cases
+  // should be detected before creating a DeclParser.
+
+  return ExpressionParser::isClearlyAnExpr(peek());
+}
+
 void DeclParser::readOptionalAttribute()
 {
   AttributeParser parser{ context(), subfragment() };
@@ -1343,16 +1497,27 @@ bool DeclParser::readDeclarator()
   IdentifierParser ip{ context(), subfragment() };
   ip.setOptions(mDeclaratorOptions);
 
-  try
+  if (mDecision != Undecided)
   {
     mName = parse_and_seek(ip);
   }
-  catch (const SyntaxError&)
+  else
   {
-    if (mDecision != Undecided)
-      throw;
-    mDecision = NotADecl;
-    return false;
+    if (!ip.lookAhead())
+    {
+      mDecision = NotADecl;
+      return false;
+    }
+
+    try
+    {
+      mName = parse_and_seek(ip);
+    }
+    catch (const SyntaxError&)
+    {
+      mDecision = NotADecl;
+      return false;
+    }
   }
 
   return true;
@@ -1396,6 +1561,12 @@ bool DeclParser::detectFromDeclarator()
 
 bool DeclParser::detectDecl()
 {
+  if (obviouslyNotADecl())
+  {
+    mDecision = NotADecl;
+    return false;
+  }
+
   readOptionalAttribute();
 
   readOptionalDeclSpecifiers();
@@ -1707,6 +1878,47 @@ void DeclParser::readParams()
   read(Token::RightPar);
 }
 
+void DeclParser::tryDetectFromArgsOrParams(TokenReader args_or_params)
+{
+  assert(mDecision == Undecided);
+
+  while (!args_or_params.atEnd())
+  {
+    TokenReader listelem_reader = args_or_params.next<Fragment::ListElement>();
+
+    if (ExpressionParser::isClearlyAnExpr(listelem_reader.peek()))
+    {
+      mDecision = ParsingVariable;
+      return;
+    }
+    else
+    {
+      ExpressionParser ep{ context(), listelem_reader };
+
+      if (!ep.detect())
+      {
+        mVarDecl = nullptr;
+        mDecision = ParsingFunction;
+        return;
+      }
+    }
+
+    {
+      TypeParser tp{ context(), listelem_reader };
+
+      if (!tp.detect())
+      {
+        mDecision = ParsingVariable;
+        return;
+      }
+    }
+
+    args_or_params.seek(listelem_reader.end());
+
+    if (!args_or_params.atEnd())
+      args_or_params.read(Token::Comma);
+  }
+}
 
 void DeclParser::readArgsOrParams()
 {
@@ -1714,6 +1926,11 @@ void DeclParser::readArgsOrParams()
   assert(leftPar == Token::LeftPar);
 
   TokenReader args_or_params = next<Fragment::DelimiterPair>();
+
+  if (mDecision == Undecided)
+  {
+    tryDetectFromArgsOrParams(args_or_params);
+  }
 
   if (mDecision == Undecided || mDecision == ParsingVariable)
     mVarDecl->init = ast::ConstructorInitialization::New(leftPar, {}, parser::Token{});
