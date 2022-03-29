@@ -129,6 +129,34 @@ ExpressionParser::ExpressionParser(std::shared_ptr<ParserContext> shared_context
 
 }
 
+bool ExpressionParser::isClearlyAnExpr(const Token& tok)
+{
+  if (tok.isLiteral())
+    return true;
+
+  // Warning: ~A() can be a destructor declaration
+  if (tok.isOperator() && tok != Token::Tilde)
+    return true;
+
+  return false;
+}
+
+bool ExpressionParser::detect() const
+{
+  if (isClearlyAnExpr(peek()))
+    return true;
+
+  if (peek() == Token::Const)
+    return false;
+
+  size_t n = fragment().size();
+
+  if (peek(0).isIdentifier() && peek(1).isIdentifier())
+    return false;
+
+  return true;
+}
+
 std::shared_ptr<ast::Expression> ExpressionParser::parse()
 {
   std::vector<Token> operators;
@@ -1369,14 +1397,7 @@ bool DeclParser::obviouslyNotADecl()
   // @Note: could be moved outside of this class as such cases
   // should be detected before creating a DeclParser.
 
-  if (peek().isLiteral())
-    return true;
-
-  // Warning: ~A(); can be a destructor declaration
-  if (unsafe_peek().isOperator() && unsafe_peek() != Token::Tilde)
-    return true;
-
-  return false;
+  return ExpressionParser::isClearlyAnExpr(peek());
 }
 
 void DeclParser::readOptionalAttribute()
@@ -1857,6 +1878,47 @@ void DeclParser::readParams()
   read(Token::RightPar);
 }
 
+void DeclParser::tryDetectFromArgsOrParams(TokenReader args_or_params)
+{
+  assert(mDecision == Undecided);
+
+  while (!args_or_params.atEnd())
+  {
+    TokenReader listelem_reader = args_or_params.next<Fragment::ListElement>();
+
+    if (ExpressionParser::isClearlyAnExpr(listelem_reader.peek()))
+    {
+      mDecision = ParsingVariable;
+      return;
+    }
+    else
+    {
+      ExpressionParser ep{ context(), listelem_reader };
+
+      if (!ep.detect())
+      {
+        mVarDecl = nullptr;
+        mDecision = ParsingFunction;
+        return;
+      }
+    }
+
+    {
+      TypeParser tp{ context(), listelem_reader };
+
+      if (!tp.detect())
+      {
+        mDecision = ParsingVariable;
+        return;
+      }
+    }
+
+    args_or_params.seek(listelem_reader.end());
+
+    if (!args_or_params.atEnd())
+      args_or_params.read(Token::Comma);
+  }
+}
 
 void DeclParser::readArgsOrParams()
 {
@@ -1864,6 +1926,11 @@ void DeclParser::readArgsOrParams()
   assert(leftPar == Token::LeftPar);
 
   TokenReader args_or_params = next<Fragment::DelimiterPair>();
+
+  if (mDecision == Undecided)
+  {
+    tryDetectFromArgsOrParams(args_or_params);
+  }
 
   if (mDecision == Undecided || mDecision == ParsingVariable)
     mVarDecl->init = ast::ConstructorInitialization::New(leftPar, {}, parser::Token{});

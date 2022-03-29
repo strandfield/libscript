@@ -26,7 +26,11 @@ class LIBSCRIPT_API ExpressionParser : public ParserBase
 public:
   ExpressionParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
+  static bool isClearlyAnExpr(const Token& tok);
+  bool detect() const;
+
   std::shared_ptr<ast::Expression> parse();
+
 protected:
   std::shared_ptr<ast::Expression> readOperand();
   Token readBinaryOperator();
@@ -224,6 +228,7 @@ protected:
   bool readOptionalStatic();
   bool readOptionalExplicit();
   void readParams();
+  void tryDetectFromArgsOrParams(TokenReader args_or_params);
   void readArgsOrParams();
   bool readOptionalConst();
   bool readOptionalSpecifier(Token::Id id, Token& tok);
