@@ -18,12 +18,8 @@ class Class;
 class ClassBuilder;
 class ClassTemplateBuilder;
 class Engine;
-class EnumBuilder;
-class FunctionBuilder;
-class FunctionTemplateBuilder;
 class Name;
 class Namespace;
-class OperatorBuilder;
 class Script;
 class SymbolImpl;
 
@@ -66,7 +62,6 @@ public:
   ClassBuilder newClass(std::string && name);
   ClassTemplateBuilder newClassTemplate(const std::string & name);
   ClassTemplateBuilder newClassTemplate(std::string && name);
-  EnumBuilder newEnum(std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

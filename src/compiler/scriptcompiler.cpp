@@ -478,7 +478,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   // Does "id" attribute makes sense for enums ?
   //int id = getIdAttribute(decl->attribute);
-  Enum e = symbol.newEnum(enum_decl.name->getName())
+  Enum e = EnumBuilder(symbol, enum_decl.name->getName())
     //.setId(id)
     .get();
 

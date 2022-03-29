@@ -487,7 +487,7 @@ TEST(Builders, enums) {
 
   size_t nb_enums = e.rootNamespace().enums().size();
 
-  Enum A = Symbol{ e.rootNamespace() }.newEnum("A")
+  Enum A = EnumBuilder(Symbol(e.rootNamespace()), "A")
     .setEnumClass(true).get();
   A.addValue("A1", 1);
   A.addValue("A2", 2);

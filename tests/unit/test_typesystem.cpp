@@ -591,7 +591,7 @@ TEST(Initializations, list_initialization_not_convertible) {
   auto initlist = std::static_pointer_cast<program::InitializerList>(listexpr);
   initlist->elements.clear();
 
-  Enum Foo = Symbol{ e.rootNamespace() }.newEnum("Foo").get();
+  Enum Foo = EnumBuilder(Symbol(e.rootNamespace()), "Foo").get();
 
   init = Initialization::compute(Foo.id(), listexpr, &e);
   ASSERT_EQ(init.kind(), Initialization::InvalidInitialization);

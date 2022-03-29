@@ -171,11 +171,6 @@ ClassTemplateBuilder Symbol::newClassTemplate(std::string && name)
   return ClassTemplateBuilder{ *this, std::move(name) };
 }
 
-EnumBuilder Symbol::newEnum(std::string && name)
-{
-  return EnumBuilder{ *this, std::move(name) };
-}
-
 /*!
  * \endclass
  */
