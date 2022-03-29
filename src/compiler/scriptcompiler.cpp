@@ -506,7 +506,11 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   const std::string & name = tdef.name->getName();
 
   Symbol s = currentScope().symbol();
-  s.newTypedef(t, name).create();
+
+  if (s.isClass())
+    s.toClass().addTypedef(Typedef(name, t));
+  else if(s.isNamespace())
+    s.toNamespace().addTypedef(Typedef(name, t));
 
   mCurrentScope.invalidateCache(Scope::InvalidateTypedefCache);
 }

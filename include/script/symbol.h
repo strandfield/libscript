@@ -26,7 +26,6 @@ class Namespace;
 class OperatorBuilder;
 class Script;
 class SymbolImpl;
-class TypedefBuilder;
 
 /*!
  * \class Symbol
@@ -70,8 +69,6 @@ public:
   EnumBuilder newEnum(std::string && name);
   FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
   FunctionTemplateBuilder newFunctionTemplate(std::string && name);
-  TypedefBuilder newTypedef(const Type & t, const std::string & name);
-  TypedefBuilder newTypedef(const Type & t, std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

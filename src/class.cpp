@@ -71,6 +71,10 @@ AccessSpecifier StaticDataMember::accessibility() const
 }
 
 
+/*!
+ * \class Class
+ */
+
 Class::Class(const std::shared_ptr<ClassImpl> & impl)
   : d(impl)
 {
@@ -207,7 +211,20 @@ const std::vector<Template> & Class::templates() const
   return d->templates;
 }
 
-const std::vector<Typedef> & Class::typedefs() const
+/*!
+ * \fn void addTypedef(Typedef t)
+ * \brief adds a typedef to the class
+ */
+void Class::addTypedef(Typedef t)
+{
+  d->typedefs.push_back(std::move(t));
+}
+
+/*!
+ * \fn const std::vector<Typedef>& typedefs() const
+ * \brief returns the list of typedef in this class
+ */
+const std::vector<Typedef>& Class::typedefs() const
 {
   return d->typedefs;
 }
@@ -481,5 +498,9 @@ bool Class::operator<(const Class & other) const
 {
   return d < other.d;
 }
+
+/*!
+ * \endclass
+ */
 
 } // namespace script

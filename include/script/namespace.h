@@ -67,7 +67,9 @@ public:
   const std::vector<Class> & classes() const;
   const std::vector<Namespace> & namespaces() const;
   const std::vector<Template> & templates() const;
-  const std::vector<Typedef> & typedefs() const;
+
+  void addTypedef(Typedef t);
+  const std::vector<Typedef>& typedefs() const;
 
   Namespace enclosingNamespace() const;
 

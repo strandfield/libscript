@@ -7,6 +7,7 @@
 
 #include "script/ast.h"
 #include "script/engine.h"
+#include "script/symbol.h"
 
 #include "script/program/statements.h"
 

@@ -186,16 +186,6 @@ FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
   return FunctionTemplateBuilder{ *this, std::move(name) };
 }
 
-TypedefBuilder Symbol::newTypedef(const Type & t, const std::string & name)
-{
-  return TypedefBuilder{ *this, name, t };
-}
-
-TypedefBuilder Symbol::newTypedef(const Type & t, std::string && name)
-{
-  return TypedefBuilder{ *this, std::move(name), t };
-}
-
 /*!
  * \endclass
  */

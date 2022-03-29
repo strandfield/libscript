@@ -81,7 +81,9 @@ public:
   const std::vector<script::Enum> & enums() const;
 
   const std::vector<Template> & templates() const;
-  const std::vector<Typedef> & typedefs() const;
+
+  void addTypedef(Typedef t);
+  const std::vector<Typedef>& typedefs() const;
 
   const std::vector<Operator> & operators() const;
   const std::vector<Cast> & casts() const;
