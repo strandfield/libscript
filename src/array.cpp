@@ -187,7 +187,7 @@ ClassTemplate ArrayImpl::register_array_template(Engine *e)
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  ClassTemplate array_template = Symbol{ root }.newClassTemplate("Array")
+  ClassTemplate array_template = ClassTemplateBuilder(Symbol(root), "Array")
     .setParams(std::move(params))
     .setScope(Scope{ root })
     .withBackend<ArrayTemplate>()

@@ -43,7 +43,7 @@ TEST(Builders, functions) {
   e.setup();
 
   Namespace root = e.rootNamespace();
-  Class A = Symbol{ root }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
 
   FunctionBuilder fbuild{ Symbol(A) };
 
@@ -124,7 +124,7 @@ TEST(Builders, datamember) {
 
   size_t off = e.typeSystem()->reserve(Type::ObjectFlag, 1);
 
-  auto builder = Symbol{ e.rootNamespace() }.newClass("MyClass").setId(Type::ObjectFlag | off);
+  auto builder = ClassBuilder(Symbol(e.rootNamespace()), "MyClass").setId(Type::ObjectFlag | off);
   builder.setFinal();
   builder.addMember(Class::DataMember{ Type::Int, "n" });
 
@@ -278,7 +278,7 @@ TEST(Builders, builder_functions) {
   Engine engine;
   engine.setup();
 
-  Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(engine.rootNamespace()), "A").get();
   Type A_type = A.id();
 
   /* Constructors */
@@ -334,7 +334,7 @@ TEST(Builders, datamembers) {
   Engine engine;
   engine.setup();
 
-  auto b = Symbol{ engine.rootNamespace() }.newClass("A")
+  auto b = ClassBuilder(Symbol(engine.rootNamespace()), "A")
     .addMember(Class::DataMember{ Type::Int, "a" });
 
   Class A = b.get();
@@ -346,7 +346,7 @@ TEST(Builders, datamembers) {
   ASSERT_EQ(A.cumulatedDataMemberCount(), 1);
   ASSERT_EQ(A.attributesOffset(), 0);
 
-  b = Symbol{ engine.rootNamespace() }.newClass("B")
+  b = ClassBuilder(Symbol(engine.rootNamespace()), "B")
     .setBase(A.id())
     .addMember(Class::DataMember{ Type::Boolean, "b" })
     .setFinal();
@@ -372,7 +372,7 @@ TEST(Builders, virtual_members) {
   Engine engine;
   engine.setup();
 
-  auto b = Symbol{ engine.rootNamespace() }.newClass("A");
+  auto b = ClassBuilder(Symbol(engine.rootNamespace()), "A");
 
   Class A = b.get();
 
@@ -388,7 +388,7 @@ TEST(Builders, virtual_members) {
   ASSERT_EQ(A.vtable().size(), 1);
 
 
-  b = Symbol{ engine.rootNamespace() }.newClass("B")
+  b = ClassBuilder(Symbol(engine.rootNamespace()), "B")
     .setBase(A.id());
 
   Class B = b.get();
@@ -414,7 +414,7 @@ TEST(Builders, static_member_functions) {
   Engine engine;
   engine.setup();
 
-  Class A = Symbol{ engine.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(engine.rootNamespace()), "A").get();
 
   Function foo = FunctionBuilder::Fun(A, "foo")
     .setStatic()
@@ -455,7 +455,7 @@ TEST(Builders, inheritance2) {
   Engine e;
   e.setup();
 
-  auto builder = Symbol{ e.rootNamespace() }.newClass("Base");
+  auto builder = ClassBuilder(Symbol(e.rootNamespace()), "Base");
   builder.addMember(Class::DataMember{ Type::Int, "n" });
 
   Class base = builder.get();
@@ -467,7 +467,7 @@ TEST(Builders, inheritance2) {
   ASSERT_EQ(base.dataMembers().front().type, Type::Int);
   ASSERT_EQ(base.attributesOffset(), 0);
 
-  builder = Symbol{ e.rootNamespace() }.newClass("Derived").setBase(base).addMember(Class::DataMember{ Type::Boolean, "b" });
+  builder = ClassBuilder(Symbol(e.rootNamespace()), "Derived").setBase(base).addMember(Class::DataMember{ Type::Boolean, "b" });
   Class derived = builder.get();
 
   ASSERT_EQ(derived.parent(), base);
@@ -487,7 +487,7 @@ TEST(Builders, enums) {
 
   size_t nb_enums = e.rootNamespace().enums().size();
 
-  Enum A = Symbol{ e.rootNamespace() }.newEnum("A")
+  Enum A = EnumBuilder(Symbol(e.rootNamespace()), "A")
     .setEnumClass(true).get();
   A.addValue("A1", 1);
   A.addValue("A2", 2);
@@ -547,7 +547,7 @@ TEST(Builders, function_template_create) {
   const auto nb_templates = e.rootNamespace().templates().size();
 
   // We cannot use get() here because FunctionTemplate has not been defined yet
-  s.newFunctionTemplate("foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
+  FunctionTemplateBuilder(s, "foo").params(TemplateParameter{ TemplateParameter::TypeParameter{}, "T" })
     .withBackend<DummyFunctionTemplateBackend>()
     .setScope(e.rootNamespace()).create();
 
@@ -564,7 +564,7 @@ TEST(Builders, function_template_get) {
 
   Symbol s{ e.rootNamespace() };
 
-  FunctionTemplate foo = s.newFunctionTemplate("foo").params(
+  FunctionTemplate foo = FunctionTemplateBuilder(s, "foo").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
     .withBackend<DummyFunctionTemplateBackend>()
@@ -585,7 +585,7 @@ TEST(Builders, class_template_get) {
 
   Symbol s{ e.rootNamespace() };
 
-  ClassTemplate Bar = s.newClassTemplate("Bar").params(
+  ClassTemplate Bar = ClassTemplateBuilder(s, "Bar").params(
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
     TemplateParameter{ TemplateParameter::TypeParameter{}, "U" })
     .withBackend<DummyClassTemplateBackend>()

@@ -264,7 +264,7 @@ void Engine::setup()
 
   register_builtin_operators(d->rootNamespace);
 
-  Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
+  Class string = ClassBuilder(Symbol(d->rootNamespace), StringBackend::class_name()).setId(Type::String).get();
   StringBackend::register_string_type(string);
 
   d->templates.array = ArrayImpl::register_array_template(this);

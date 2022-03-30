@@ -95,7 +95,7 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
 
   overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").returns(Type::Int).params(Type::Float).get());
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").returns(Type::Int).params(Type::Boolean, A.id()).get());
 
   std::vector<Type> types{ Type::Int, Type::Float };

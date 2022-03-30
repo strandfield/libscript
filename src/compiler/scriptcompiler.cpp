@@ -407,7 +407,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 {
   assert(class_decl != nullptr);
 
-  ClassBuilder builder = currentScope().symbol().newClass("");
+  ClassBuilder builder = ClassBuilder(currentScope().symbol(), "");
   fill(builder, class_decl);
   builder.setId(getIdAttribute(class_decl->attribute));
 
@@ -478,7 +478,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   // Does "id" attribute makes sense for enums ?
   //int id = getIdAttribute(decl->attribute);
-  Enum e = symbol.newEnum(enum_decl.name->getName())
+  Enum e = EnumBuilder(symbol, enum_decl.name->getName())
     //.setId(id)
     .get();
 
@@ -506,7 +506,11 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   const std::string & name = tdef.name->getName();
 
   Symbol s = currentScope().symbol();
-  s.newTypedef(t, name).create();
+
+  if (s.isClass())
+    s.toClass().addTypedef(Typedef(name, t));
+  else if(s.isNamespace())
+    s.toNamespace().addTypedef(Typedef(name, t));
 
   mCurrentScope.invalidateCache(Scope::InvalidateTypedefCache);
 }
@@ -868,7 +872,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   std::string name = classdecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
+  ClassTemplate ct = ClassTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptClassTemplateBackend>()
@@ -886,7 +890,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
+  FunctionTemplate ft = FunctionTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptFunctionTemplateBackend>()
