@@ -12,6 +12,7 @@
 namespace script
 {
 
+class Engine;
 class Function;
 class Name;
 class Script;
@@ -20,17 +21,24 @@ class Symbol;
 class SymbolImpl
 {
 public:
+  Engine* engine = nullptr;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
 
 public:
-  SymbolImpl() = default;
-  explicit SymbolImpl(const std::shared_ptr<SymbolImpl> & parent) : enclosing_symbol(parent) { }
+  explicit SymbolImpl(Engine* e, std::shared_ptr<SymbolImpl> parent = nullptr);
   virtual ~SymbolImpl() = default;
 
   virtual Name get_name() const = 0;
 };
 
 void add_function_to_symbol(const Function& func, Symbol& parent);
+
+inline SymbolImpl::SymbolImpl(Engine* e, std::shared_ptr<SymbolImpl> parent) 
+  : engine(e),
+    enclosing_symbol(parent) 
+{ 
+
+}
 
 } // namespace script
 

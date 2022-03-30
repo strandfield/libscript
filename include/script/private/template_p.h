@@ -34,7 +34,6 @@ public:
 
   std::vector<TemplateParameter> parameters;
   Scope scope;
-  Engine *engine;
 
   Name get_name() const override;
 };

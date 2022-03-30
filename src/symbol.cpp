@@ -70,11 +70,7 @@ Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
  */
 Engine* Symbol::engine() const
 {
-  if (isClass())
-    return toClass().engine();
-  else if (isNamespace())
-    return toNamespace().engine();
-  return nullptr;
+  return d->engine;
 }
 
 /*!

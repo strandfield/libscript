@@ -34,7 +34,6 @@ public:
   std::weak_ptr<ClassImpl> parent;
   bool isFinal;
   bool isAbstract;
-  Engine *engine;
   Function defaultConstructor;
   Function copyConstructor;
   Function moveConstructor;
@@ -55,9 +54,9 @@ public:
   std::vector<Class> friend_classes;
 
   ClassImpl(int i, const std::string & n, Engine *e)
-    : id(i)
+    : SymbolImpl(e)
+    , id(i)
     , name(n)
-    , engine(e)
     , isFinal(false)
     , isAbstract(false)
   {
