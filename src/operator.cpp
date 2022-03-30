@@ -94,6 +94,11 @@ OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags)
 
 }
 
+SymbolKind OperatorImpl::get_kind() const
+{
+  return SymbolKind::Operator;
+}
+
 Name OperatorImpl::get_name() const
 {
   return operatorId;

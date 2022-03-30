@@ -49,6 +49,7 @@ public:
   NamespaceImpl(const NamespaceImpl &) = delete;
   virtual ~NamespaceImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 };
 

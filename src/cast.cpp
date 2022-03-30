@@ -17,6 +17,11 @@ CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionFlags f)
 
 }
 
+SymbolKind CastImpl::get_kind() const
+{
+  return SymbolKind::Cast;
+}
+
 Name CastImpl::get_name() const
 {
   return Name(SymbolKind::Cast, proto_.returnType());

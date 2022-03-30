@@ -57,6 +57,16 @@ bool FunctionImpl::is_function() const
   return true;
 }
 
+bool FunctionImpl::is_ctor() const
+{
+  return get_kind() == SymbolKind::Constructor;
+}
+
+bool FunctionImpl::is_dtor() const
+{
+  return get_kind() == SymbolKind::Destructor;
+}
+
 //bool FunctionImpl::is_native() const
 //{
 //  return true;
@@ -139,6 +149,11 @@ const std::string& RegularFunctionImpl::name() const
   return mName;
 }
 
+SymbolKind RegularFunctionImpl::get_kind() const
+{
+  return SymbolKind::Function;
+}
+
 Name RegularFunctionImpl::get_name() const
 {
   return Name(SymbolKind::Function, name());
@@ -192,6 +207,11 @@ ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
 
 }
 
+SymbolKind ScriptFunctionImpl::get_kind() const
+{
+  return SymbolKind::Function;
+}
+
 const std::string& ScriptFunctionImpl::name() const
 {
   static std::string static_name = "__root";
@@ -242,6 +262,11 @@ const Prototype& ConstructorImpl::prototype() const
   return this->prototype_;
 }
 
+SymbolKind ConstructorImpl::get_kind() const
+{
+  return SymbolKind::Constructor;
+}
+
 Name ConstructorImpl::get_name() const 
 {
   return Name(SymbolKind::Constructor, prototype().at(0));
@@ -260,25 +285,6 @@ void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> default
 void ConstructorImpl::add_default_argument(const DefaultArgument& da)
 {
   mDefaultArguments.push_back(da);
-}
-
-bool ConstructorImpl::is_default_ctor() const
-{
-  return this->prototype_.count() == 1;
-}
-
-bool ConstructorImpl::is_copy_ctor() const
-{
-  if (this->prototype_.count() != 2)
-    return false;
-  return this->prototype_.at(1) == Type::cref(getClass().id());
-}
-
-bool ConstructorImpl::is_move_ctor() const
-{
-  if (this->prototype_.count() != 2)
-    return false;
-  return this->prototype_.at(1) == Type::rref(getClass().id());
 }
 
 bool ConstructorImpl::is_native() const
@@ -303,6 +309,11 @@ DestructorImpl::DestructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
   , proto_{p.returnType(), p.at(0)}
 {
 
+}
+
+SymbolKind DestructorImpl::get_kind() const
+{
+  return SymbolKind::Destructor;
 }
 
 const Prototype & DestructorImpl::prototype() const
@@ -490,44 +501,31 @@ Attributes Function::attributes() const
 
 bool Function::isConstructor() const
 {
-  // THe following is incorrect I believe
-  // return d->prototype_.count() >= 1
-  //   & d->prototype_.at(0).testFlag(Type::ThisFlag)
-  //   & d->prototype_.returnType().isConstRef()
-  //   & d->prototype_.returnType().baseType() == d->prototype_.at(0).baseType();
-  
-  // correct implementation
-  // @TODO: not good... add virtual functions in FunctionImpl
-  return dynamic_cast<ConstructorImpl *>(d.get()) != nullptr;
+  return d && d->is_ctor();
 }
 
 bool Function::isDestructor() const
 {
-  // This is also incorrect
-  /*return d->prototype_.count() == 1
-    && d->prototype_.at(0).testFlag(Type::ThisFlag)
-    && d->prototype_.returnType() == Type::Void;*/
-
-  // correct implementation
-  return dynamic_cast<DestructorImpl *>(d.get()) != nullptr;
+  return d && d->is_dtor();
 }
 
 bool Function::isDefaultConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_default_ctor();
+  return isConstructor() && prototype().count() == 1;
 }
 
 bool Function::isCopyConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_copy_ctor();
+  return isConstructor()
+    && prototype().count() == 2
+    && prototype().at(1) == Type::cref(Symbol(d->enclosing_symbol.lock()).toClass().id());
 }
 
 bool Function::isMoveConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_move_ctor();
+  return isConstructor()
+    && prototype().count() == 2
+    && prototype().at(1) == Type::rref(Symbol(d->enclosing_symbol.lock()).toClass().id());
 }
 
 bool Function::isNative() const

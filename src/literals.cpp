@@ -18,6 +18,11 @@ LiteralOperatorImpl::LiteralOperatorImpl(std::string suffix, const Prototype & p
 
 }
 
+SymbolKind LiteralOperatorImpl::get_kind() const
+{
+  return SymbolKind::LiteralOperator;
+}
+
 Name LiteralOperatorImpl::get_name() const
 {
   return Name(SymbolKind::LiteralOperator, suffix);

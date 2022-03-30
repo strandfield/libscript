@@ -20,6 +20,7 @@ public:
   CastImpl(const Prototype &p, Engine *e, FunctionFlags f);
   ~CastImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
   const Prototype & prototype() const override;
 

@@ -29,6 +29,11 @@ TemplateImpl::TemplateImpl(std::vector<TemplateParameter>&& params, const Scope&
 
 }
 
+SymbolKind TemplateImpl::get_kind() const
+{
+  return SymbolKind::Template;
+}
+
 Name TemplateImpl::get_name() const
 {
   return Name(SymbolKind::Template, this->name());

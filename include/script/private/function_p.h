@@ -35,6 +35,9 @@ public:
   Name get_name() const override;
   bool is_function() const override;
 
+  bool is_ctor() const;
+  bool is_dtor() const;
+
   FunctionFlags flags;
   std::shared_ptr<UserData> data;
 
@@ -70,6 +73,7 @@ public:
   std::vector<DefaultArgument> mDefaultArguments;
 public:
   const std::string& name() const override;
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 
   bool is_native() const override;
@@ -94,6 +98,7 @@ public:
   ScriptFunctionImpl(Engine *e);
   ~ScriptFunctionImpl() = default;
 
+  SymbolKind get_kind() const override;
   const std::string& name() const override;
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;
@@ -115,6 +120,7 @@ public:
   Class getClass() const;
 
   const std::string& name() const override;
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 
   const Prototype& prototype() const override;
@@ -122,10 +128,6 @@ public:
   const std::vector<DefaultArgument>& default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> defaults) override;
   void add_default_argument(const DefaultArgument & da) override;
-
-  bool is_default_ctor() const;
-  bool is_copy_ctor() const;
-  bool is_move_ctor() const;
 
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;
@@ -141,6 +143,8 @@ public:
 
 public:
   DestructorImpl(const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
+
+  SymbolKind get_kind() const override;
 
   const Prototype& prototype() const override;
 

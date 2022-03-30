@@ -30,6 +30,7 @@ public:
   TemplateImpl(std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es);
   virtual ~TemplateImpl() {}
 
+  SymbolKind get_kind() const override;
   virtual const std::string& name() const = 0;
 
   std::vector<TemplateParameter> parameters;

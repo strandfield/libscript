@@ -1101,6 +1101,11 @@ public:
     proto.setReturnType(script::Type::Int);
   }
 
+  script::SymbolKind get_kind() const override
+  {
+    return script::SymbolKind::Function;
+  }
+
   const std::string& name() const override
   {
     return m_name;

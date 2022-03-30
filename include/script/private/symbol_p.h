@@ -7,6 +7,8 @@
 
 #include "libscriptdefs.h"
 
+#include "script/symbol-kind.h"
+
 #include <memory>
 
 namespace script
@@ -28,6 +30,7 @@ public:
   explicit SymbolImpl(Engine* e, std::shared_ptr<SymbolImpl> parent = nullptr);
   virtual ~SymbolImpl() = default;
 
+  virtual SymbolKind get_kind() const = 0;
   virtual Name get_name() const = 0;
 
   virtual bool is_function() const;

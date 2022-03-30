@@ -76,6 +76,7 @@ public:
   void register_function(const Function & f);
 
 protected:
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 };
 

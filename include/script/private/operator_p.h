@@ -22,6 +22,7 @@ public:
   OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags);
   ~OperatorImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 
   bool is_native() const override;

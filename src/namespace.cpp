@@ -20,6 +20,11 @@
 namespace script
 {
 
+SymbolKind NamespaceImpl::get_kind() const
+{
+  return SymbolKind::Namespace;
+}
+
 Name NamespaceImpl::get_name() const
 {
   return Name(SymbolKind::Namespace, this->name);

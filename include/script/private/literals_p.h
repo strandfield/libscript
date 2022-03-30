@@ -21,6 +21,7 @@ public:
   LiteralOperatorImpl(std::string suffix, const Prototype & proto, Engine *engine, FunctionFlags flags);
   ~LiteralOperatorImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
   const Prototype & prototype() const override;
 
