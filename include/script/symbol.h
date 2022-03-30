@@ -15,6 +15,7 @@ namespace script
 class Attributes;
 class Class;
 class Engine;
+class Function;
 class Name;
 class Namespace;
 class Script;
@@ -34,6 +35,7 @@ public:
 
   explicit Symbol(const script::Class & c);
   explicit Symbol(const Namespace & n);
+  Symbol(const Function& f);
 
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
 
@@ -48,6 +50,9 @@ public:
 
   bool isNamespace() const;
   Namespace toNamespace() const;
+
+  bool isFunction() const;
+  Function toFunction() const;
 
   Name name() const;
   Symbol parent() const;

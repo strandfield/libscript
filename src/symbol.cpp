@@ -8,6 +8,7 @@
 #include "script/name.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
+#include "script/private/function_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
 #include "script/script.h"
@@ -54,6 +55,16 @@ Symbol::Symbol(const script::Class & c)
  */
 Symbol::Symbol(const Namespace & n)
   : Symbol(n.impl())
+{
+
+}
+
+/*!
+ * \fn Symbol(const Function& f)
+ * \brief constructs a symbol from a function
+ */
+Symbol::Symbol(const Function& f)
+  : Symbol(std::shared_ptr<SymbolImpl>(f.impl()))
 {
 
 }
@@ -107,6 +118,24 @@ bool Symbol::isNamespace() const
 Namespace Symbol::toNamespace() const
 {
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
+}
+
+/*!
+ * \fn bool isFunction() const
+ * \brief returns whether the symbol is a function
+ */
+bool Symbol::isFunction() const
+{
+  return dynamic_cast<FunctionImpl*>(d.get()) != nullptr;
+}
+
+/*!
+ * \fn Function toFunction() const
+ * \brief retrieves the symbol as a function
+ */
+Function Symbol::toFunction() const
+{
+  return Function(std::dynamic_pointer_cast<FunctionImpl>(d));
 }
 
 /*!

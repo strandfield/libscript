@@ -31,7 +31,7 @@ namespace script
 {
 
 FunctionImpl::FunctionImpl(Engine *e, FunctionFlags f)
-  : engine(e)
+  : SymbolImpl(e)
   , flags(f)
 {
 

@@ -9,6 +9,7 @@
 #include "script/functionflags.h"
 #include "script/functiontemplate.h"
 #include "script/prototypes.h"
+#include "script/private/symbol_p.h"
 
 namespace script
 {
@@ -21,21 +22,18 @@ class Statement;
 
 class Class;
 class Name;
-class SymbolImpl;
 
 typedef std::shared_ptr<program::Expression> DefaultArgument;
 
-class LIBSCRIPT_API FunctionImpl
+class LIBSCRIPT_API FunctionImpl : public SymbolImpl
 {
 public:
   FunctionImpl(Engine *e, FunctionFlags f = FunctionFlags{});
-  virtual ~FunctionImpl();
+  ~FunctionImpl();
 
   virtual const std::string& name() const;
-  virtual Name get_name() const;
+  Name get_name() const override;
 
-  Engine *engine;
-  std::weak_ptr<SymbolImpl> enclosing_symbol;
   FunctionFlags flags;
   std::shared_ptr<UserData> data;
 
