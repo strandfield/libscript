@@ -17,6 +17,11 @@
 namespace script
 {
 
+bool SymbolImpl::is_function() const
+{
+  return false;
+}
+
 void add_function_to_symbol(const Function& func, Symbol& parent)
 {
   /// The following could be done here just in case 
@@ -126,7 +131,7 @@ Namespace Symbol::toNamespace() const
  */
 bool Symbol::isFunction() const
 {
-  return dynamic_cast<FunctionImpl*>(d.get()) != nullptr;
+  return d && d->is_function();
 }
 
 /*!
@@ -135,7 +140,7 @@ bool Symbol::isFunction() const
  */
 Function Symbol::toFunction() const
 {
-  return Function(std::dynamic_pointer_cast<FunctionImpl>(d));
+  return Function(isFunction() ? std::static_pointer_cast<FunctionImpl>(d) : nullptr);
 }
 
 /*!

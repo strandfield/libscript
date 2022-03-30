@@ -52,6 +52,11 @@ Name FunctionImpl::get_name() const
   throw std::runtime_error{ "This kind of function does not implement get_name()" };
 }
 
+bool FunctionImpl::is_function() const
+{
+  return true;
+}
+
 //bool FunctionImpl::is_native() const
 //{
 //  return true;

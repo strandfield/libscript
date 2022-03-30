@@ -33,6 +33,7 @@ public:
 
   virtual const std::string& name() const;
   Name get_name() const override;
+  bool is_function() const override;
 
   FunctionFlags flags;
   std::shared_ptr<UserData> data;

@@ -29,6 +29,8 @@ public:
   virtual ~SymbolImpl() = default;
 
   virtual Name get_name() const = 0;
+
+  virtual bool is_function() const;
 };
 
 void add_function_to_symbol(const Function& func, Symbol& parent);
