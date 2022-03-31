@@ -708,11 +708,13 @@ bool Function::isOperator() const
   return d && d->get_kind() == SymbolKind::Operator;
 }
 
+/*!
+ * \fn Operator toOperator() const
+ * \brief returns this function as an operator
+ */
 Operator Function::toOperator() const
 {
-  // @TODO: this is no longer correct as inheriting from OperatorImpl
-  // is not required to be an operator.
-  return Operator{ std::dynamic_pointer_cast<OperatorImpl>(d) };
+  return Operator(*this);
 }
 
 /*!
