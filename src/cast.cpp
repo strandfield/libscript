@@ -47,6 +47,9 @@ void CastImpl::set_body(std::shared_ptr<program::Statement> b)
   program_ = b;
 }
 
+/*!
+ * \class Cast
+ */
 
 Cast::Cast(const std::shared_ptr<CastImpl> & impl)
   : Function(impl)
@@ -54,20 +57,32 @@ Cast::Cast(const std::shared_ptr<CastImpl> & impl)
 
 }
 
+Cast::Cast(const Function& f)
+  : Function(f.isCast() ? f.impl() : nullptr)
+{
+
+}
+
+/*!
+ * \fn Type sourceType() const
+ * \brief returns the conversion source type
+ */
 Type Cast::sourceType() const
 {
   return d->prototype().at(0);
 }
 
+/*!
+ * \fn Type destType() const
+ * \brief returns the conversion destination type
+ */
 Type Cast::destType() const
 {
   return d->prototype().returnType();
 }
 
-
-std::shared_ptr<CastImpl> Cast::impl() const
-{
-  return std::static_pointer_cast<CastImpl>(d);
-}
+/*!
+ * \endclass
+ */
 
 } // namespace script
