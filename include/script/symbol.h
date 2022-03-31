@@ -45,6 +45,8 @@ public:
 
   Engine* engine() const;
 
+  Kind kind() const;
+
   bool isClass() const;
   script::Class toClass() const;
 

@@ -90,6 +90,15 @@ Engine* Symbol::engine() const
 }
 
 /*!
+ * \fn Symbol::Kind kind() const
+ * \brief returns the symbol's kind
+ */
+Symbol::Kind Symbol::kind() const
+{
+  return d ? d->get_kind() : SymbolKind::NotASymbol;
+}
+
+/*!
  * \fn bool isClass() const
  * \brief returns whether the symbol is a class
  */
