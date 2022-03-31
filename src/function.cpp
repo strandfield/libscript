@@ -47,6 +47,11 @@ const std::string & FunctionImpl::name() const
   throw std::runtime_error{ "This kind of function does not implement name()" };
 }
 
+const std::string& FunctionImpl::literal_operator_suffix() const
+{
+  throw std::runtime_error("This kind of function does not implement literal_operator_suffix()");
+}
+
 Name FunctionImpl::get_name() const
 {
   throw std::runtime_error{ "This kind of function does not implement get_name()" };
@@ -726,11 +731,13 @@ bool Function::isLiteralOperator() const
   return d && d->get_kind() == SymbolKind::LiteralOperator;
 }
 
+/*!
+ * \fn LiteralOperator toLiteralOperator() const
+ * \brief returns this function a literal operator
+ */
 LiteralOperator Function::toLiteralOperator() const
 {
-  // @TODO: this is no longer correct as inheriting from LiteralOperatorImpl
-  // is not required to be a literal operator.
-  return LiteralOperator{ std::dynamic_pointer_cast<LiteralOperatorImpl>(d) };
+  return LiteralOperator(*this);
 }
 
 /*!
@@ -742,11 +749,13 @@ bool Function::isCast() const
   return d && d->get_kind() == SymbolKind::Cast;
 }
 
+/*!
+ * \fn Cast toCast() const
+ * \brief returns this function as a conversion function
+ */
 Cast Function::toCast() const
 {
-  // @TODO: this is no longer correct as inheriting from CastImpl
-  // is not required to be a cast.
-  return Cast{ std::dynamic_pointer_cast<CastImpl>(d) };
+  return Cast(*this);
 }
 
 bool Function::isTemplateInstance() const

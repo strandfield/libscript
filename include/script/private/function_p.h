@@ -32,6 +32,7 @@ public:
   ~FunctionImpl();
 
   virtual const std::string& name() const;
+  virtual const std::string& literal_operator_suffix() const;
   Name get_name() const override;
   bool is_function() const override;
 
