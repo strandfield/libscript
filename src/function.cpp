@@ -760,6 +760,8 @@ Cast Function::toCast() const
 
 bool Function::isTemplateInstance() const
 {
+  // @TODO: add a virtual function in FunctionImpl for that and other
+  // template related functions
   return dynamic_cast<const FunctionTemplateInstance *>(d.get()) != nullptr;
 }
 
