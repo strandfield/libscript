@@ -121,11 +121,6 @@ void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
   throw std::runtime_error{ "Function does not support default arguments" };
 }
 
-void FunctionImpl::add_default_argument(const DefaultArgument &)
-{
-  throw std::runtime_error{ "Function does not support default arguments" };
-}
-
 void FunctionImpl::force_virtual()
 {
   this->flags.set(FunctionSpecifier::Virtual);
@@ -198,12 +193,6 @@ void RegularFunctionImpl::set_default_arguments(std::vector<DefaultArgument> def
 {
   mDefaultArguments = std::move(defaults);
 }
-
-void RegularFunctionImpl::add_default_argument(const DefaultArgument& da)
-{
-  mDefaultArguments.push_back(da);
-}
-
 
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
@@ -285,11 +274,6 @@ const std::vector<DefaultArgument>& ConstructorImpl::default_arguments() const
 void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
 {
   mDefaultArguments = std::move(defaults);
-}
-
-void ConstructorImpl::add_default_argument(const DefaultArgument& da)
-{
-  mDefaultArguments.push_back(da);
 }
 
 bool ConstructorImpl::is_native() const
@@ -438,62 +422,7 @@ const Type& Function::returnType() const
 }
 
 /*!
- * \fun bool hasDefaultArguments() const
- * \brief Returns whether the function has default arguments.
- *
- * This function is deprecated and might be removed in future versions; 
- * use this alternative \c{defaultArguments().size() != 0} instead.
- */
-bool Function::hasDefaultArguments() const
-{
-  return !d->default_arguments().empty();
-}
-
-/*!
-* \fun size_t defaultArgumentCount() const
-* \brief Returns the number of default arguments of the function.
-*
-* This function is deprecated and might be removed in future versions;
-* use this alternative \c{defaultArguments().size()} instead.
-*/
-size_t Function::defaultArgumentCount() const
-{
-  return d->default_arguments().size();
-}
-
-void Function::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
-{
-  /// TODO: add type-checking
-  d->add_default_argument(value);
-}
-
-/*!
- * \fn void addDefaultArgument(const script::Value & val, ParameterPolicy policy) 
- * \brief Adds a default argument to the function.
- * \param the value of the default argument
- * \param policy describing how the value is to be treated
- *
- * This function is deprecated and might be removed in future versions.
- * It is recommended to provide the default arguments at construction-time using the 
- * \t FunctionBuilder class.
- */
-void Function::addDefaultArgument(const script::Value & val, ParameterPolicy policy)
-{
-  /// TODO: add type-checking
-
-  if (policy == Value::Take)
-  {
-    d->add_default_argument(program::VariableAccess::New(val));
-  }
-  else if (policy == Value::Copy || policy == Value::Move) // move not well supported yet
-  {
-    Value v = engine()->copy(val);
-    d->add_default_argument(program::VariableAccess::New(val));
-  }
-}
-
-/*!
- * \fn const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
+ * \fn const std::vector<std::shared_ptr<program::Expression>>& defaultArguments() const
  * \brief Returns the function's default arguments.
  *
  * Note that you cannot concatenate this list to an existing list of arguments to make 
@@ -501,7 +430,7 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
  * is the default value for the last parameter, \c{defaultArguments()[1]} is the default value 
  * for the penultimate parameter and so on.
  */
-const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
+const std::vector<std::shared_ptr<program::Expression>>& Function::defaultArguments() const
 {
   return d->default_arguments();
 }

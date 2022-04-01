@@ -59,7 +59,6 @@ public:
   
   virtual const std::vector<DefaultArgument> & default_arguments() const;
   virtual void set_default_arguments(std::vector<DefaultArgument> defaults);
-  virtual void add_default_argument(const DefaultArgument & da);
 };
 
 class RegularFunctionImpl : public FunctionImpl
@@ -86,7 +85,6 @@ public:
 
   const std::vector<DefaultArgument>& default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> defaults) override;
-  void add_default_argument(const DefaultArgument & da) override;
 };
 
 class ScriptFunctionImpl : public FunctionImpl
@@ -128,7 +126,6 @@ public:
 
   const std::vector<DefaultArgument>& default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> defaults) override;
-  void add_default_argument(const DefaultArgument & da) override;
 
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;

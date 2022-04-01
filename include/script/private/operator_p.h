@@ -72,7 +72,6 @@ public:
 
   const std::vector<DefaultArgument> & default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> defaults) override;
-  void add_default_argument(const DefaultArgument & da) override;
 };
 
 } // namespace script

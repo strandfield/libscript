@@ -189,11 +189,6 @@ void FunctionCallOperatorImpl::set_default_arguments(std::vector<DefaultArgument
   defaultargs_ = std::move(defaults);
 }
 
-void FunctionCallOperatorImpl::add_default_argument(const DefaultArgument & da)
-{
-  defaultargs_.push_back(da);
-}
-
 /*!
  * \class Operator
  */
