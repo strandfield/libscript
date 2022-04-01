@@ -94,6 +94,11 @@ OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags)
 
 }
 
+SymbolKind OperatorImpl::get_kind() const
+{
+  return SymbolKind::Operator;
+}
+
 Name OperatorImpl::get_name() const
 {
   return operatorId;
@@ -189,7 +194,9 @@ void FunctionCallOperatorImpl::add_default_argument(const DefaultArgument & da)
   defaultargs_.push_back(da);
 }
 
-
+/*!
+ * \class Operator
+ */
 
 Operator::Operator(const std::shared_ptr<OperatorImpl> & impl)
   : Function(impl)
@@ -197,25 +204,44 @@ Operator::Operator(const std::shared_ptr<OperatorImpl> & impl)
 
 }
 
-OperatorName Operator::operatorId() const
+Operator::Operator(const Function& f)
+  : Function(f.isOperator() ? f.impl() : nullptr)
 {
-  if (d == nullptr)
-    return Null;
-  // @TODO: try to avoid repetitive call to static_pointer_cast in impl()
-  return impl()->operatorId;
+
 }
 
+/*!
+ * \fn OperatorName operatorId() const
+ * \brief returns the operator name
+ */
+OperatorName Operator::operatorId() const
+{
+  return d ? d->get_name().operatorName() : OperatorName::InvalidOperator;
+}
+
+/*!
+ * \fn bool isBinary() const
+ * \brief returns whether the operator is a binary operator
+ */
 bool Operator::isBinary() const
 {
   return d->prototype().count() == 2;
 }
 
+/*!
+ * \fn static bool isBinary(BuiltInOperator op)
+ * \brief returns whether the operator is a binary operator
+ */
 bool Operator::isBinary(BuiltInOperator op)
 {
   return !isUnary(op) && op != ConditionalOperator
     && op != FunctionCallOperator;
 }
 
+/*!
+ * \fn static bool isUnary(BuiltInOperator op)
+ * \brief returns whether the operator is an unary operator
+ */
 bool Operator::isUnary(BuiltInOperator op)
 {
   return op == PostIncrementOperator ||
@@ -228,32 +254,56 @@ bool Operator::isUnary(BuiltInOperator op)
     op == BitwiseNot;
 }
 
+/*!
+ * \fn static bool onlyAsMember(BuiltInOperator op)
+ * \brief returns whether the operator can only be defined as a member
+ */
 bool Operator::onlyAsMember(BuiltInOperator op)
 {
   return op == AssignmentOperator || op == FunctionCallOperator || op == SubscriptOperator;
 }
 
+/*!
+ * \fn static int precedence(BuiltInOperator op)
+ * \brief returns the precedence of an operator
+ */
 int Operator::precedence(BuiltInOperator op)
 {
   return script::precedence(op);
 }
 
+/*!
+ * \fn static Associativity associativity(int group)
+ * \brief returns the associativity of an operator given its precedence group
+ */
 Associativity Operator::associativity(int group)
 {
   return script::associativity(group);
 }
 
+/*!
+ * \fn Type firstOperand() const
+ * \brief returns the first operand of the operator
+ */
 Type Operator::firstOperand() const
 {
   return d->prototype().at(0);
 }
 
+/*!
+ * \fn Type secondOperand() const
+ * \brief returns the second operand of the operator
+ */
 Type Operator::secondOperand() const
 {
   return d->prototype().at(1);
 }
 
-const std::string & Operator::getSymbol(BuiltInOperator op)
+/*!
+ * \fn static const std::string& getSymbol(BuiltInOperator op)
+ * \brief returns a string representation of the operator
+ */
+const std::string& Operator::getSymbol(BuiltInOperator op)
 {
   if (op == Null)
     throw std::runtime_error{ "Invalid operator" };
@@ -303,10 +353,8 @@ bool Operator::operator!=(const Operator & other) const
   return d != other.d;
 }
 
-
-std::shared_ptr<OperatorImpl> Operator::impl() const
-{
-  return std::static_pointer_cast<OperatorImpl>(d);
-}
+/*!
+ * \endclass
+ */
 
 } // namespace script

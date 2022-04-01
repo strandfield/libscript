@@ -26,6 +26,11 @@
 namespace script
 {
 
+SymbolKind ClassImpl::get_kind() const
+{
+  return SymbolKind::Class;
+}
+
 Name ClassImpl::get_name() const
 {
   return Name(SymbolKind::Class, this->name);

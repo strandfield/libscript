@@ -9,6 +9,7 @@
 #include "script/functionflags.h"
 #include "script/functiontemplate.h"
 #include "script/prototypes.h"
+#include "script/private/symbol_p.h"
 
 namespace script
 {
@@ -21,21 +22,23 @@ class Statement;
 
 class Class;
 class Name;
-class SymbolImpl;
 
 typedef std::shared_ptr<program::Expression> DefaultArgument;
 
-class LIBSCRIPT_API FunctionImpl
+class LIBSCRIPT_API FunctionImpl : public SymbolImpl
 {
 public:
   FunctionImpl(Engine *e, FunctionFlags f = FunctionFlags{});
-  virtual ~FunctionImpl();
+  ~FunctionImpl();
 
   virtual const std::string& name() const;
-  virtual Name get_name() const;
+  virtual const std::string& literal_operator_suffix() const;
+  Name get_name() const override;
+  bool is_function() const override;
 
-  Engine *engine;
-  std::weak_ptr<SymbolImpl> enclosing_symbol;
+  bool is_ctor() const;
+  bool is_dtor() const;
+
   FunctionFlags flags;
   std::shared_ptr<UserData> data;
 
@@ -71,6 +74,7 @@ public:
   std::vector<DefaultArgument> mDefaultArguments;
 public:
   const std::string& name() const override;
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 
   bool is_native() const override;
@@ -95,6 +99,7 @@ public:
   ScriptFunctionImpl(Engine *e);
   ~ScriptFunctionImpl() = default;
 
+  SymbolKind get_kind() const override;
   const std::string& name() const override;
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;
@@ -116,6 +121,7 @@ public:
   Class getClass() const;
 
   const std::string& name() const override;
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 
   const Prototype& prototype() const override;
@@ -123,10 +129,6 @@ public:
   const std::vector<DefaultArgument>& default_arguments() const override;
   void set_default_arguments(std::vector<DefaultArgument> defaults) override;
   void add_default_argument(const DefaultArgument & da) override;
-
-  bool is_default_ctor() const;
-  bool is_copy_ctor() const;
-  bool is_move_ctor() const;
 
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;
@@ -142,6 +144,8 @@ public:
 
 public:
   DestructorImpl(const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
+
+  SymbolKind get_kind() const override;
 
   const Prototype& prototype() const override;
 

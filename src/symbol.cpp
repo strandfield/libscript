@@ -8,6 +8,7 @@
 #include "script/name.h"
 #include "script/namespace.h"
 #include "script/private/class_p.h"
+#include "script/private/function_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
 #include "script/script.h"
@@ -15,6 +16,11 @@
 
 namespace script
 {
+
+bool SymbolImpl::is_function() const
+{
+  return false;
+}
 
 void add_function_to_symbol(const Function& func, Symbol& parent)
 {
@@ -58,6 +64,16 @@ Symbol::Symbol(const Namespace & n)
 
 }
 
+/*!
+ * \fn Symbol(const Function& f)
+ * \brief constructs a symbol from a function
+ */
+Symbol::Symbol(const Function& f)
+  : Symbol(std::shared_ptr<SymbolImpl>(f.impl()))
+{
+
+}
+
 Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
   : d(impl)
 {
@@ -70,11 +86,16 @@ Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
  */
 Engine* Symbol::engine() const
 {
-  if (isClass())
-    return toClass().engine();
-  else if (isNamespace())
-    return toNamespace().engine();
-  return nullptr;
+  return d->engine;
+}
+
+/*!
+ * \fn Symbol::Kind kind() const
+ * \brief returns the symbol's kind
+ */
+Symbol::Kind Symbol::kind() const
+{
+  return d ? d->get_kind() : SymbolKind::NotASymbol;
 }
 
 /*!
@@ -111,6 +132,24 @@ bool Symbol::isNamespace() const
 Namespace Symbol::toNamespace() const
 {
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
+}
+
+/*!
+ * \fn bool isFunction() const
+ * \brief returns whether the symbol is a function
+ */
+bool Symbol::isFunction() const
+{
+  return d && d->is_function();
+}
+
+/*!
+ * \fn Function toFunction() const
+ * \brief retrieves the symbol as a function
+ */
+Function Symbol::toFunction() const
+{
+  return Function(isFunction() ? std::static_pointer_cast<FunctionImpl>(d) : nullptr);
 }
 
 /*!

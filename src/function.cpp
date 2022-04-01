@@ -31,7 +31,7 @@ namespace script
 {
 
 FunctionImpl::FunctionImpl(Engine *e, FunctionFlags f)
-  : engine(e)
+  : SymbolImpl(e)
   , flags(f)
 {
 
@@ -47,9 +47,29 @@ const std::string & FunctionImpl::name() const
   throw std::runtime_error{ "This kind of function does not implement name()" };
 }
 
+const std::string& FunctionImpl::literal_operator_suffix() const
+{
+  throw std::runtime_error("This kind of function does not implement literal_operator_suffix()");
+}
+
 Name FunctionImpl::get_name() const
 {
   throw std::runtime_error{ "This kind of function does not implement get_name()" };
+}
+
+bool FunctionImpl::is_function() const
+{
+  return true;
+}
+
+bool FunctionImpl::is_ctor() const
+{
+  return get_kind() == SymbolKind::Constructor;
+}
+
+bool FunctionImpl::is_dtor() const
+{
+  return get_kind() == SymbolKind::Destructor;
 }
 
 //bool FunctionImpl::is_native() const
@@ -134,6 +154,11 @@ const std::string& RegularFunctionImpl::name() const
   return mName;
 }
 
+SymbolKind RegularFunctionImpl::get_kind() const
+{
+  return SymbolKind::Function;
+}
+
 Name RegularFunctionImpl::get_name() const
 {
   return Name(SymbolKind::Function, name());
@@ -187,6 +212,11 @@ ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
 
 }
 
+SymbolKind ScriptFunctionImpl::get_kind() const
+{
+  return SymbolKind::Function;
+}
+
 const std::string& ScriptFunctionImpl::name() const
 {
   static std::string static_name = "__root";
@@ -237,6 +267,11 @@ const Prototype& ConstructorImpl::prototype() const
   return this->prototype_;
 }
 
+SymbolKind ConstructorImpl::get_kind() const
+{
+  return SymbolKind::Constructor;
+}
+
 Name ConstructorImpl::get_name() const 
 {
   return Name(SymbolKind::Constructor, prototype().at(0));
@@ -255,25 +290,6 @@ void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> default
 void ConstructorImpl::add_default_argument(const DefaultArgument& da)
 {
   mDefaultArguments.push_back(da);
-}
-
-bool ConstructorImpl::is_default_ctor() const
-{
-  return this->prototype_.count() == 1;
-}
-
-bool ConstructorImpl::is_copy_ctor() const
-{
-  if (this->prototype_.count() != 2)
-    return false;
-  return this->prototype_.at(1) == Type::cref(getClass().id());
-}
-
-bool ConstructorImpl::is_move_ctor() const
-{
-  if (this->prototype_.count() != 2)
-    return false;
-  return this->prototype_.at(1) == Type::rref(getClass().id());
 }
 
 bool ConstructorImpl::is_native() const
@@ -298,6 +314,11 @@ DestructorImpl::DestructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
   , proto_{p.returnType(), p.at(0)}
 {
 
+}
+
+SymbolKind DestructorImpl::get_kind() const
+{
+  return SymbolKind::Destructor;
 }
 
 const Prototype & DestructorImpl::prototype() const
@@ -369,26 +390,48 @@ bool Function::isNull() const
   return d == nullptr;
 }
 
-const std::string & Function::name() const
+/*!
+ * \fn const std::string& name() const
+ * \brief returns the function name as a string
+ * 
+ * Not all functions support this method.
+ */
+const std::string& Function::name() const
 {
   return d->name();
 }
 
+/*!
+ * \fn Name getName() const
+ * \brief returns the function name
+ */
 Name Function::getName() const
 {
   return d->get_name();
 }
 
+/*!
+ * \fn const Prototype& prototype() const
+ * \brief returns the function prototype
+ */
 const Prototype& Function::prototype() const
 {
   return d->prototype();
 }
 
+/*!
+ * \fn const Type& parameter(size_t index) const
+ * \brief returns the function parameter at a given index
+ */
 const Type& Function::parameter(size_t index) const
 {
   return prototype().at(index);
 }
 
+/*!
+ * \fn const Type& returnType() const
+ * \brief returns the function return type
+ */
 const Type& Function::returnType() const
 {
   return prototype().returnType();
@@ -463,7 +506,10 @@ const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArgum
   return d->default_arguments();
 }
 
-
+/*!
+ * \fn Script script() const
+ * \brief returns the script in which this function is defined
+ */
 Script Function::script() const
 {
   auto enclosing_symbol = d->enclosing_symbol.lock();
@@ -483,46 +529,53 @@ Attributes Function::attributes() const
   return script().getAttributes(*this);
 }
 
+/*!
+ * \fn bool isConstructor() const
+ * \brief returns whether the function is a constructor
+ */
 bool Function::isConstructor() const
 {
-  // THe following is incorrect I believe
-  // return d->prototype_.count() >= 1
-  //   & d->prototype_.at(0).testFlag(Type::ThisFlag)
-  //   & d->prototype_.returnType().isConstRef()
-  //   & d->prototype_.returnType().baseType() == d->prototype_.at(0).baseType();
-  
-  // correct implementation
-  // @TODO: not good... add virtual functions in FunctionImpl
-  return dynamic_cast<ConstructorImpl *>(d.get()) != nullptr;
+  return d && d->is_ctor();
 }
 
+/*!
+ * \fn bool isDestructor() const
+ * \brief returns whether the function is a destructor
+ */
 bool Function::isDestructor() const
 {
-  // This is also incorrect
-  /*return d->prototype_.count() == 1
-    && d->prototype_.at(0).testFlag(Type::ThisFlag)
-    && d->prototype_.returnType() == Type::Void;*/
-
-  // correct implementation
-  return dynamic_cast<DestructorImpl *>(d.get()) != nullptr;
+  return d && d->is_dtor();
 }
 
+/*!
+ * \fn bool isDefaultConstructor() const
+ * \brief returns whether the function is a default constructor
+ */
 bool Function::isDefaultConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_default_ctor();
+  return isConstructor() && prototype().count() == 1;
 }
 
+/*!
+ * \fn bool isCopyConstructor() const
+ * \brief returns whether the function is a copy constructor
+ */
 bool Function::isCopyConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_copy_ctor();
+  return isConstructor()
+    && prototype().count() == 2
+    && prototype().at(1) == Type::cref(Symbol(d->enclosing_symbol.lock()).toClass().id());
 }
 
+/*!
+ * \fn bool isMoveConstructor() const
+ * \brief returns whether the function is a move constructor
+ */
 bool Function::isMoveConstructor() const
 {
-  auto ctor = dynamic_cast<const ConstructorImpl *>(d.get());
-  return ctor != nullptr && ctor->is_move_ctor();
+  return isConstructor()
+    && prototype().count() == 2
+    && prototype().at(1) == Type::rref(Symbol(d->enclosing_symbol.lock()).toClass().id());
 }
 
 bool Function::isNative() const
@@ -530,59 +583,105 @@ bool Function::isNative() const
   return d->is_native();
 }
 
+/*!
+ * \fn bool isExplicit() const
+ * \brief returns whether the function is explicit
+ */
 bool Function::isExplicit() const
 {
   return d->flags.test(FunctionSpecifier::Explicit);
 }
 
+/*!
+ * \fn bool isConst() const
+ * \brief returns whether the function is a const member function
+ */
 bool Function::isConst() const
 {
   return isNonStaticMemberFunction() && d->prototype().at(0).isConstRef();
 }
 
+/*!
+ * \fn bool isVirtual() const
+ * \brief returns whether the function is virtual
+ */
 bool Function::isVirtual() const
 {
   return d->flags.test(FunctionSpecifier::Virtual);
 }
 
+/*!
+ * \fn bool isPureVirtual() const
+ * \brief returns whether the function is a pure virtual function
+ */
 bool Function::isPureVirtual() const
 {
   return d->flags.test(FunctionSpecifier::Pure);
 }
 
+/*!
+ * \fn bool isDefaulted() const
+ * \brief returns whether the function is defaulted
+ */
 bool Function::isDefaulted() const
 {
   return d->flags.test(FunctionSpecifier::Default);
 }
 
+/*!
+ * \fn bool isDeleted() const
+ * \brief returns whether the function is deleted
+ */
 bool Function::isDeleted() const
 {
   return d->flags.test(FunctionSpecifier::Delete);
 }
 
+/*!
+ * \fn bool isMemberFunction() const
+ * \brief returns whether the function is defined in a class
+ */
 bool Function::isMemberFunction() const
 {
-  return dynamic_cast<const ClassImpl *>(d->enclosing_symbol.lock().get()) != nullptr;
+  return Symbol(d->enclosing_symbol.lock()).isClass();
 }
 
+/*!
+ * \fn bool isStatic() const
+ * \brief returns whether the function is static
+ */
 bool Function::isStatic() const
 {
   return d->flags.test(FunctionSpecifier::Static);
 }
 
+/*!
+ * \fn bool isSpecial() const
+ * \brief returns whether the function is a constructor or a destructor
+ */
 bool Function::isSpecial() const
 {
   return isConstructor() || isDestructor();
 }
 
+/*!
+ * \fn bool hasImplicitObject() const
+ * \brief returns whether the function has an implicit object parameter
+ * 
+ * In other words, returns whether the function is a non-static member function.
+ */
 bool Function::hasImplicitObject() const
 {
   return isNonStaticMemberFunction();
 }
 
+/*!
+ * \fn Class memberOf() const
+ * \brief returns the class this function is a member of
+ */
 Class Function::memberOf() const
 {
-  return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
+  return Class(isMemberFunction() ? std::static_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) : nullptr);
 }
 
 AccessSpecifier Function::accessibility() const
@@ -590,6 +689,13 @@ AccessSpecifier Function::accessibility() const
   return d->flags.getAccess();
 }
 
+/*!
+ * \fn Namespace enclosingNamespace() const
+ * \brief returns the namespace in which the function is defined
+ * 
+ * If the function is a member function, this returns the namespace in 
+ * which the class is defined.
+ */
 Namespace Function::enclosingNamespace() const
 {
   Class c = memberOf();
@@ -598,40 +704,64 @@ Namespace Function::enclosingNamespace() const
   return c.enclosingNamespace();
 }
 
+/*!
+ * \fn bool isOperator() const
+ * \brief returns whether the function is an operator
+ */
 bool Function::isOperator() const
 {
-  return dynamic_cast<OperatorImpl*>(d.get()) != nullptr;
+  return d && d->get_kind() == SymbolKind::Operator;
 }
 
+/*!
+ * \fn Operator toOperator() const
+ * \brief returns this function as an operator
+ */
 Operator Function::toOperator() const
 {
-  return Operator{ std::dynamic_pointer_cast<OperatorImpl>(d) };
+  return Operator(*this);
 }
 
+/*!
+ * \fn bool isLiteralOperator() const
+ * \brief returns whether the function is a literal operator
+ */
 bool Function::isLiteralOperator() const
 {
-  return dynamic_cast<LiteralOperatorImpl*>(d.get()) != nullptr;
-
+  return d && d->get_kind() == SymbolKind::LiteralOperator;
 }
 
+/*!
+ * \fn LiteralOperator toLiteralOperator() const
+ * \brief returns this function a literal operator
+ */
 LiteralOperator Function::toLiteralOperator() const
 {
-  return LiteralOperator{ std::dynamic_pointer_cast<LiteralOperatorImpl>(d) };
+  return LiteralOperator(*this);
 }
 
-
+/*!
+ * \fn bool isCast() const
+ * \brief returns whether the function is a conversion function
+ */
 bool Function::isCast() const
 {
-  return dynamic_cast<CastImpl*>(d.get()) != nullptr;
+  return d && d->get_kind() == SymbolKind::Cast;
 }
 
+/*!
+ * \fn Cast toCast() const
+ * \brief returns this function as a conversion function
+ */
 Cast Function::toCast() const
 {
-  return Cast{ std::dynamic_pointer_cast<CastImpl>(d) };
+  return Cast(*this);
 }
 
 bool Function::isTemplateInstance() const
 {
+  // @TODO: add a virtual function in FunctionImpl for that and other
+  // template related functions
   return dynamic_cast<const FunctionTemplateInstance *>(d.get()) != nullptr;
 }
 
@@ -655,7 +785,11 @@ const std::shared_ptr<UserData> & Function::data() const
   return d->data;
 }
 
-Engine * Function::engine() const
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script engine
+ */
+Engine* Function::engine() const
 {
   return d->engine;
 }

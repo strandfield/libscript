@@ -22,12 +22,16 @@ namespace script
 {
 
 TemplateImpl::TemplateImpl(std::vector<TemplateParameter>&& params, const Scope& scp, Engine* e, std::shared_ptr<SymbolImpl> es)
-  : SymbolImpl(es)
+  : SymbolImpl(e, std::move(es))
   , parameters(std::move(params))
   , scope(scp)
-  , engine(e)
 {
 
+}
+
+SymbolKind TemplateImpl::get_kind() const
+{
+  return SymbolKind::Template;
 }
 
 Name TemplateImpl::get_name() const
