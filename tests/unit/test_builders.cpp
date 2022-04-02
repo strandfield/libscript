@@ -162,12 +162,6 @@ TEST(Builders, operators) {
   ASSERT_EQ(op.returnType(), A.id());
 }
 
-static std::shared_ptr<script::program::Expression> create_default_arg(script::Value val)
-{
-  using namespace script;
-  return program::VariableAccess::New(val);
-}
-
 TEST(Builders, functioncalloperator) {
   using namespace script;
 
@@ -183,13 +177,11 @@ TEST(Builders, functioncalloperator) {
   Operator op = b.setConst()
    .returns(Type::Int)
    .params(Type::Int, Type::Boolean)
-   .addDefaultArgument(create_default_arg(e.newBool(true)))
    .get()
    .toOperator();
 
   ASSERT_EQ(op.prototype().count(), 3);
   ASSERT_EQ(op.returnType(), Type::Int);
-  ASSERT_EQ(op.defaultArguments().size(), 1);
   ASSERT_TRUE(op.isConst());
 }
 
@@ -242,13 +234,11 @@ TEST(Builders, constructor) {
 
   FunctionBuilder b = FunctionBuilder::Constructor(A);
 
-  b.params(Type::Int, Type::Int)
-    .addDefaultArgument(create_default_arg(e.newInt(0)));
+  b.params(Type::Int, Type::Int);
 
   Function ctor = b.get();
 
   ASSERT_EQ(ctor.prototype().count(), 3);
-  ASSERT_EQ(ctor.defaultArguments().size(), 1);
   ASSERT_EQ(ctor.memberOf(), A);
 }
 

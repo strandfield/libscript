@@ -6,8 +6,9 @@
 
 #include "script/private/cast_p.h"
 #include "script/private/function_p.h"
-#include "script/private/operator_p.h"
 #include "script/private/literals_p.h"
+#include "script/private/operator_p.h"
+#include "script/private/script_p.h"
 
 #include "script/program/statements.h"
 
@@ -15,6 +16,7 @@
 
 #include "script/class.h"
 #include "script/namespace.h"
+#include "script/script.h"
 #include "script/symbol.h"
 
 namespace script
@@ -28,10 +30,6 @@ static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBlueprin
   impl->enclosing_symbol = opts.parent().impl();
 }
 
-inline static void set_default_args(Function& fun, std::vector<DefaultArgument>&& dargs)
-{
-  fun.impl()->set_default_arguments(std::move(dargs));
-}
 
 /*!
  * \class FunctionBuilder
@@ -67,7 +65,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<RegularFunctionImpl>(blueprint.name_.string(), std::move(blueprint.prototype_), blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    set_default_args(ret, std::move(blueprint.defaultargs_));
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Operator)
@@ -79,7 +76,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
       auto impl = std::make_shared<FunctionCallOperatorImpl>(OperatorName::FunctionCallOperator, std::move(blueprint.prototype_), blueprint.engine(), blueprint.flags_);
       generic_fill(impl, blueprint);
       Operator ret{ impl };
-      set_default_args(ret, std::move(blueprint.defaultargs_));
       return ret;
     }
     else
@@ -107,7 +103,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<ConstructorImpl>(blueprint.prototype_, blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    set_default_args(ret, std::move(blueprint.defaultargs_));
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Destructor)

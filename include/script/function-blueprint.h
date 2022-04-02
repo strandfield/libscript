@@ -21,7 +21,6 @@ namespace script
 
 namespace program
 {
-class Expression;
 class Statement;
 } // namespace program
 
@@ -38,7 +37,6 @@ public:
   Symbol parent_;
   Name name_;
   DynamicPrototype prototype_;
-  std::vector<std::shared_ptr<program::Expression>> defaultargs_;
   std::shared_ptr<program::Statement> body_;
   FunctionFlags flags_;
   std::shared_ptr<UserData> data_;
@@ -63,7 +61,6 @@ public:
   Symbol parent() const;
   const Name& name() const;
   const DynamicPrototype& prototype() const;
-  const std::vector<std::shared_ptr<program::Expression>>& defaultargs() const;
   const std::shared_ptr<program::Statement>& body() const;
   FunctionFlags flags() const;
   const std::shared_ptr<UserData>& data() const;
@@ -90,11 +87,6 @@ inline const Name& FunctionBlueprint::name() const
 inline const DynamicPrototype& FunctionBlueprint::prototype() const
 {
   return prototype_;
-}
-
-inline const std::vector<std::shared_ptr<program::Expression>>& FunctionBlueprint::defaultargs() const
-{
-  return defaultargs_;
 }
 
 inline const std::shared_ptr<program::Statement>& FunctionBlueprint::body() const

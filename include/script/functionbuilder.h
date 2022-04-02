@@ -93,8 +93,6 @@ public:
   FunctionBuilder& setReturnType(const Type & t);
   FunctionBuilder& addParam(const Type & t);
 
-  FunctionBuilder& addDefaultArgument(const std::shared_ptr<program::Expression> & value);
-
   // @TODO: remove
   [[deprecated("could be removed at any time")]]
   FunctionBuilder& operator()(std::string name);

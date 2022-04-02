@@ -107,25 +107,6 @@ void FunctionImpl::complete_instantiation()
   throw std::runtime_error{ "Bad call to FunctionImpl::complete_instantiation()" };
 }
 
-const std::vector<DefaultArgument> & FunctionImpl::default_arguments() const
-{
-  static const std::vector<DefaultArgument> defaults = {};
-  return defaults;
-}
-
-void FunctionImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
-{
-  if (defaults.empty())
-    return;
-
-  throw std::runtime_error{ "Function does not support default arguments" };
-}
-
-void FunctionImpl::add_default_argument(const DefaultArgument &)
-{
-  throw std::runtime_error{ "Function does not support default arguments" };
-}
-
 void FunctionImpl::force_virtual()
 {
   this->flags.set(FunctionSpecifier::Virtual);
@@ -188,23 +169,6 @@ void RegularFunctionImpl::set_return_type(const Type& t)
 {
   prototype_.setReturnType(t);
 }
-
-const std::vector<DefaultArgument> & RegularFunctionImpl::default_arguments() const
-{
-  return mDefaultArguments;
-}
-
-void RegularFunctionImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
-{
-  mDefaultArguments = std::move(defaults);
-}
-
-void RegularFunctionImpl::add_default_argument(const DefaultArgument& da)
-{
-  mDefaultArguments.push_back(da);
-}
-
-
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
   : FunctionImpl(e)
@@ -272,24 +236,9 @@ SymbolKind ConstructorImpl::get_kind() const
   return SymbolKind::Constructor;
 }
 
-Name ConstructorImpl::get_name() const 
+Name ConstructorImpl::get_name() const
 {
   return Name(SymbolKind::Constructor, prototype().at(0));
-}
-
-const std::vector<DefaultArgument>& ConstructorImpl::default_arguments() const
-{
-  return mDefaultArguments;
-}
-
-void ConstructorImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
-{
-  mDefaultArguments = std::move(defaults);
-}
-
-void ConstructorImpl::add_default_argument(const DefaultArgument& da)
-{
-  mDefaultArguments.push_back(da);
 }
 
 bool ConstructorImpl::is_native() const
@@ -438,62 +387,7 @@ const Type& Function::returnType() const
 }
 
 /*!
- * \fun bool hasDefaultArguments() const
- * \brief Returns whether the function has default arguments.
- *
- * This function is deprecated and might be removed in future versions; 
- * use this alternative \c{defaultArguments().size() != 0} instead.
- */
-bool Function::hasDefaultArguments() const
-{
-  return !d->default_arguments().empty();
-}
-
-/*!
-* \fun size_t defaultArgumentCount() const
-* \brief Returns the number of default arguments of the function.
-*
-* This function is deprecated and might be removed in future versions;
-* use this alternative \c{defaultArguments().size()} instead.
-*/
-size_t Function::defaultArgumentCount() const
-{
-  return d->default_arguments().size();
-}
-
-void Function::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
-{
-  /// TODO: add type-checking
-  d->add_default_argument(value);
-}
-
-/*!
- * \fn void addDefaultArgument(const script::Value & val, ParameterPolicy policy) 
- * \brief Adds a default argument to the function.
- * \param the value of the default argument
- * \param policy describing how the value is to be treated
- *
- * This function is deprecated and might be removed in future versions.
- * It is recommended to provide the default arguments at construction-time using the 
- * \t FunctionBuilder class.
- */
-void Function::addDefaultArgument(const script::Value & val, ParameterPolicy policy)
-{
-  /// TODO: add type-checking
-
-  if (policy == Value::Take)
-  {
-    d->add_default_argument(program::VariableAccess::New(val));
-  }
-  else if (policy == Value::Copy || policy == Value::Move) // move not well supported yet
-  {
-    Value v = engine()->copy(val);
-    d->add_default_argument(program::VariableAccess::New(val));
-  }
-}
-
-/*!
- * \fn const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const
+ * \fn DefaultArguments defaultArguments() const
  * \brief Returns the function's default arguments.
  *
  * Note that you cannot concatenate this list to an existing list of arguments to make 
@@ -501,9 +395,9 @@ void Function::addDefaultArgument(const script::Value & val, ParameterPolicy pol
  * is the default value for the last parameter, \c{defaultArguments()[1]} is the default value 
  * for the penultimate parameter and so on.
  */
-const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArguments() const
+DefaultArguments Function::defaultArguments() const
 {
-  return d->default_arguments();
+  return script().getDefaultArguments(*this);
 }
 
 /*!
@@ -512,12 +406,14 @@ const std::vector<std::shared_ptr<program::Expression>> & Function::defaultArgum
  */
 Script Function::script() const
 {
-  auto enclosing_symbol = d->enclosing_symbol.lock();
-  if (dynamic_cast<NamespaceImpl*>(enclosing_symbol.get()) != nullptr)
-    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(enclosing_symbol) }.script();
-  else if (dynamic_cast<ClassImpl*>(enclosing_symbol.get()) != nullptr)
-    return Class{ std::dynamic_pointer_cast<ClassImpl>(enclosing_symbol) }.script();
-  return Script{};
+  Symbol s{ d->enclosing_symbol.lock() };
+
+  if (s.isNamespace())
+    return s.toNamespace().script();
+  else if (s.isClass())
+    return s.toClass().script();
+
+  return {};
 }
 
 /*!

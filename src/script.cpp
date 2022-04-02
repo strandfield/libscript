@@ -178,6 +178,15 @@ Attributes Script::getAttributes(const Function& f) const
 }
 
 /*!
+ * \fn DefaultArguments getDefaultArguments(const Function& f) const
+ * \brief returns the default arguments for a given function
+ */
+DefaultArguments Script::getDefaultArguments(const Function& f) const
+{
+  return d ? d->defaultarguments.get(f.impl().get()) : DefaultArguments();
+}
+
+/*!
  * \fn Ast ast() const
  * \brief Returns the script ast.
  */

@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_OVERLOAD_RESOLUTION_H
 #define LIBSCRIPT_OVERLOAD_RESOLUTION_H
 
+#include "script/defaultarguments.h"
 #include "script/function.h"
 #include "script/initialization.h"
 #include "script/value.h"

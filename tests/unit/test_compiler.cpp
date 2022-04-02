@@ -8,6 +8,7 @@
 #include "script/cast.h"
 #include "script/class.h"
 #include "script/datamember.h"
+#include "script/defaultarguments.h"
 #include "script/engine.h"
 #include "script/enumerator.h"
 #include "script/function-impl.h"

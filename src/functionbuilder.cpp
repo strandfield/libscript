@@ -176,17 +176,10 @@ FunctionBuilder & FunctionBuilder::addParam(const Type & t)
   return *(this);
 }
 
-FunctionBuilder & FunctionBuilder::addDefaultArgument(const std::shared_ptr<program::Expression> & value)
-{
-  blueprint_.defaultargs_.push_back(value);
-  return *this;
-}
-
 FunctionBuilder& FunctionBuilder::operator()(std::string name)
 {
   blueprint_.flags_ = FunctionFlags();
   blueprint_.prototype_.clear();
-  blueprint_.defaultargs_.clear();
 
   if(blueprint_.parent_.isClass())
     blueprint_.prototype_.push(Type::ref(blueprint_.parent_.toClass().id()).withFlag(Type::ThisFlag));
