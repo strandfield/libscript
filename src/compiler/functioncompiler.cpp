@@ -31,6 +31,7 @@
 
 #include "script/private/function_p.h"
 #include "script/private/namelookup_p.h"
+#include "script/private/programfunction.h"
 #include "script/private/script_p.h"
 
 namespace script

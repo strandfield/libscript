@@ -9,6 +9,7 @@
 #include "script/private/function_p.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
+#include "script/private/programfunction.h"
 #include "script/private/template_p.h"
 #include "script/templateargumentdeduction.h"
 #include "script/private/templateargumentscope_p.h"

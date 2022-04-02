@@ -7,7 +7,6 @@
 
 #include "script/engine.h"
 #include "script/functionflags.h"
-#include "script/functiontemplate.h"
 #include "script/prototypes.h"
 #include "script/private/symbol_p.h"
 
@@ -59,110 +58,6 @@ public:
   virtual void complete_instantiation();
 };
 
-// @TODO: rename to make it clearer that this is a function defined in a script,
-// ProgramFunction ?
-class RegularFunctionImpl : public FunctionImpl
-{
-public:
-  RegularFunctionImpl(std::string name, const Prototype& p, Engine *e, FunctionFlags f = FunctionFlags{});
-  RegularFunctionImpl(std::string name, DynamicPrototype p, Engine *e, FunctionFlags f = FunctionFlags{});
-
-  std::string mName;
-  DynamicPrototype prototype_;
-  std::shared_ptr<program::Statement> program_;
-
-public:
-  const std::string& name() const override;
-  SymbolKind get_kind() const override;
-  Name get_name() const override;
-
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
-
-  const Prototype& prototype() const override;
-  void set_return_type(const Type& t) override;
-};
-
-class ScriptFunctionImpl : public FunctionImpl
-{
-public:
-  DynamicPrototype prototype_;
-  std::shared_ptr<program::Statement> program_;
-
-public:
-  ScriptFunctionImpl(Engine *e);
-  ~ScriptFunctionImpl() = default;
-
-  SymbolKind get_kind() const override;
-  const std::string& name() const override;
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
-  const Prototype& prototype() const override;
-};
-
-// @TODO: remove dllexport
-class LIBSCRIPT_API ConstructorImpl : public FunctionImpl
-{
-public:
-  ConstructorImpl(const Prototype& p, Engine *e, FunctionFlags f = FunctionFlags{});
-  
-  DynamicPrototype prototype_;
-  std::shared_ptr<program::Statement> program_;
-
-public:
-  
-  Class getClass() const;
-
-  const std::string& name() const override;
-  SymbolKind get_kind() const override;
-  Name get_name() const override;
-
-  const Prototype& prototype() const override;
-
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
-};
-
-
-class DestructorImpl : public FunctionImpl
-{
-public:
-  DestructorPrototype proto_;
-  std::shared_ptr<program::Statement> program_;
-
-public:
-  DestructorImpl(const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
-
-  SymbolKind get_kind() const override;
-
-  const Prototype& prototype() const override;
-
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
-};
-
-
-class FunctionTemplateInstance : public RegularFunctionImpl
-{
-public:
-  FunctionTemplateInstance(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const std::string & name, const Prototype &p, Engine *e, FunctionFlags f = FunctionFlags{});
-  ~FunctionTemplateInstance() = default;
-
-  FunctionTemplate mTemplate;
-  std::vector<TemplateArgument> mArgs;
-
-  static std::shared_ptr<FunctionTemplateInstance> create(const FunctionTemplate & ft, const std::vector<TemplateArgument> & targs, const FunctionBlueprint& blueprint);
-
-  bool is_template_instance() const override;
-  bool is_instantiation_completed() const override;
-  void complete_instantiation() override;
-};
-
 } // namespace script
-
 
 #endif // LIBSCRIPT_FUNCTION_P_H

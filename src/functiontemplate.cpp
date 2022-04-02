@@ -6,6 +6,7 @@
 #include "script/private/template_p.h"
 
 #include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 #include "script/function-blueprint.h"
 #include "script/functiontemplatenativebackend.h"
 #include "script/functiontemplateprocessor.h"

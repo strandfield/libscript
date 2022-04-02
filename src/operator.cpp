@@ -88,7 +88,7 @@ Associativity associativity(int group)
 }
 
 OperatorImpl::OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags)
-  : FunctionImpl(engine, flags)
+  : ProgramFunction(engine, flags)
   , operatorId(op)
 {
 
@@ -103,22 +103,6 @@ Name OperatorImpl::get_name() const
 {
   return operatorId;
 }
-
-bool OperatorImpl::is_native() const
-{
-  return false;
-}
-
-std::shared_ptr<program::Statement> OperatorImpl::body() const
-{
-  return program_;
-}
-
-void OperatorImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
-}
-
 
 
 UnaryOperatorImpl::UnaryOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags)

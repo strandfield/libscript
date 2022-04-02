@@ -32,6 +32,7 @@
 #include "script/private/class_p.h"
 #include "script/private/engine_p.h"
 #include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
 #include "script/private/script_p.h"
