@@ -23,6 +23,7 @@
 #include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/operator_p.h"
+#include "script/private/script_p.h"
 #include "script/private/typesystem_p.h"
 
 namespace script
@@ -178,10 +179,15 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   FunctionBuilder builder{ Symbol(Class(mLambda.impl())), SymbolKind::Operator, OperatorName::FunctionCallOperator };
   builder.blueprint_.prototype_ = computePrototype();
-  DefaultArgumentProcessor default_arguments{ compiler() };
-  default_arguments.generic_process(task.lexpr->params, builder.blueprint_, task.scope);
 
   Function function = builder.get();
+
+  if (function.script().impl())
+  {
+    expr_.setScope(task.scope);
+    DefaultArgumentVector defaultargs = script::compiler::process_default_arguments(expr_, task.lexpr->params, function);
+    function.script().impl()->defaultarguments.add(function.impl().get(), defaultargs);
+  }
 
   mFunction = function;
   expr_.setCaller(function);

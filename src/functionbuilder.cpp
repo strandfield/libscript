@@ -180,7 +180,6 @@ FunctionBuilder& FunctionBuilder::operator()(std::string name)
 {
   blueprint_.flags_ = FunctionFlags();
   blueprint_.prototype_.clear();
-  blueprint_.defaultargs_.clear();
 
   if(blueprint_.parent_.isClass())
     blueprint_.prototype_.push(Type::ref(blueprint_.parent_.toClass().id()).withFlag(Type::ThisFlag));

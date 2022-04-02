@@ -7,7 +7,6 @@
 
 #include "script/compiler/component.h"
 #include "script/compiler/compilefunctiontask.h"
-#include "script/compiler/defaultargumentprocessor.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
@@ -105,6 +104,7 @@ protected:
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
   std::vector<Attribute> computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl);
   void processAttribute(Function& f, const std::vector<Attribute>& attributes);
+  void processDefaultArguments(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl);
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);
   std::vector<TemplateParameter> processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl);
@@ -160,8 +160,6 @@ protected:
   ScopeStatementProcessor scope_statements_;
 
   ImportProcessor modules_;
-
-  DefaultArgumentProcessor default_arguments_;
 
   FunctionTemplateProcessor templates_;
 

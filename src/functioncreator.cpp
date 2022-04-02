@@ -30,13 +30,6 @@ static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBlueprin
   impl->enclosing_symbol = opts.parent().impl();
 }
 
-inline static void set_default_args(Function& fun, const std::vector<DefaultArgument>& dargs)
-{
-  Script s = fun.script();
-
-  if (!s.isNull())
-    s.impl()->defaultarguments.add(fun.impl().get(), dargs);
-}
 
 /*!
  * \class FunctionBuilder
@@ -72,7 +65,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<RegularFunctionImpl>(blueprint.name_.string(), std::move(blueprint.prototype_), blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    set_default_args(ret, blueprint.defaultargs_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Operator)
@@ -84,7 +76,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
       auto impl = std::make_shared<FunctionCallOperatorImpl>(OperatorName::FunctionCallOperator, std::move(blueprint.prototype_), blueprint.engine(), blueprint.flags_);
       generic_fill(impl, blueprint);
       Operator ret{ impl };
-      set_default_args(ret, blueprint.defaultargs_);
       return ret;
     }
     else
@@ -112,7 +103,6 @@ Function FunctionCreator::create(FunctionBlueprint& blueprint, const std::shared
     auto impl = std::make_shared<ConstructorImpl>(blueprint.prototype_, blueprint.engine(), blueprint.flags_);
     generic_fill(impl, blueprint);
     Function ret{ impl };
-    set_default_args(ret, blueprint.defaultargs_);
     return ret;
   }
   else if (blueprint.name_.kind() == SymbolKind::Destructor)

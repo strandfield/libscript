@@ -8,6 +8,8 @@
 #include "script/compiler/compilesession.h"
 
 #include "script/compiler/compiler.h"
+#include "script/compiler/defaultargumentprocessor.h"
+#include "script/compiler/diagnostichelper.h"
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/templatedefinition.h"
 #include "script/compiler/templatespecialization.h"
@@ -73,7 +75,6 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   , variable_(c)
   , function_processor_{ c }
   , modules_(c)
-  , default_arguments_(c)
   , mReprocessingIncompleteFunctions(false)
 {
 
@@ -598,13 +599,13 @@ void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::
   std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
   FunctionBlueprint blueprint{ symbol, SymbolKind::Function, name };
   function_processor_.generic_fill(blueprint, fundecl, scp);
-  default_arguments_.generic_process(fundecl->params, blueprint, scp);
 
   std::vector<Attribute> attrs = computeAttributes(fundecl);
 
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, fundecl, attrs);
 
   processAttribute(function, attrs);
+  processDefaultArguments(function, fundecl);
 
   script::add_function_to_symbol(function, symbol);
 
@@ -626,13 +627,13 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
 
   FunctionBlueprint blueprint = FunctionBlueprint::Constructor(current_class);
   function_processor_.generic_fill(blueprint, decl, scp);
-  default_arguments_.generic_process(decl->params, blueprint, scp);
 
   std::vector<Attribute> attrs = computeAttributes(decl);
 
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+  processDefaultArguments(function, decl);
 
   script::add_function_to_symbol(function, blueprint.parent_);
 
@@ -760,13 +761,13 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 
   FunctionBlueprint blueprint = FunctionBlueprint::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
   function_processor_.generic_fill(blueprint, decl, scp);
-  default_arguments_.generic_process(decl->params, blueprint, scp);
 
   std::vector<Attribute> attrs = computeAttributes(decl);
 
   Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
 
   processAttribute(function, attrs);
+  processDefaultArguments(function, decl);
 
   script::add_function_to_symbol(function, blueprint.parent_);
 
@@ -809,6 +810,13 @@ void ScriptCompiler::processAttribute(Function& f, const std::vector<Attribute>&
     return;
 
   mCurrentScript.impl()->attributes.add(f.impl().get(), attributes);
+}
+
+void ScriptCompiler::processDefaultArguments(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
+{
+  ExpressionCompiler ec{ compiler(), currentScope() };
+  DefaultArgumentVector defaultargs = script::compiler::process_default_arguments(ec, decl->params, f);
+  f.script().impl()->defaultarguments.add(f.impl().get(), defaultargs);
 }
 
 
