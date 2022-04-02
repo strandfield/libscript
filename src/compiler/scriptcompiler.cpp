@@ -32,6 +32,7 @@
 #include "script/private/class_p.h"
 #include "script/private/engine_p.h"
 #include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
 #include "script/private/script_p.h"
@@ -1011,7 +1012,7 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
   /// TODO: handle default arguments
   auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, blueprint.name_.string(), blueprint.prototype_, engine(), blueprint.flags_);
   impl->program_ = blueprint.body_;
-  impl->data = blueprint.data_;
+  impl->data_ = blueprint.data_;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };
 

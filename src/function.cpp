@@ -4,6 +4,7 @@
 
 #include "script/function.h"
 #include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 
 #include "script/cast.h"
 #include "script/class.h"
@@ -112,10 +113,52 @@ void FunctionImpl::force_virtual()
   this->flags.set(FunctionSpecifier::Virtual);
 }
 
+std::shared_ptr<UserData> FunctionImpl::get_user_data() const
+{
+  return nullptr;
+}
 
+void FunctionImpl::set_user_data(std::shared_ptr<UserData> d)
+{
+  throw std::runtime_error("Bad call to FunctionImpl::set_user_data()");
+}
+
+
+
+ProgramFunction::ProgramFunction(Engine* e, FunctionFlags f)
+  : FunctionImpl(e, f)
+{
+
+}
+
+
+bool ProgramFunction::is_native() const
+{
+  return false;
+}
+
+std::shared_ptr<program::Statement> ProgramFunction::body() const
+{
+  return program_;
+}
+
+void ProgramFunction::set_body(std::shared_ptr<program::Statement> b)
+{
+  program_ = b;
+}
+
+std::shared_ptr<UserData> ProgramFunction::get_user_data() const
+{
+  return data_;
+}
+
+void ProgramFunction::set_user_data(std::shared_ptr<UserData> d)
+{
+  data_ = d;
+}
 
 RegularFunctionImpl::RegularFunctionImpl(std::string name, const Prototype& p, Engine *e, FunctionFlags f)
-  : FunctionImpl(e, f)
+  : ProgramFunction(e, f)
   , prototype_(p)
   , mName(std::move(name))
 {
@@ -123,7 +166,7 @@ RegularFunctionImpl::RegularFunctionImpl(std::string name, const Prototype& p, E
 }
 
 RegularFunctionImpl::RegularFunctionImpl(std::string name, DynamicPrototype p, Engine *e, FunctionFlags f)
-  : FunctionImpl(e, f)
+  : ProgramFunction(e, f)
   , prototype_(std::move(p))
   , mName(std::move(name))
 {
@@ -145,21 +188,6 @@ Name RegularFunctionImpl::get_name() const
   return Name(SymbolKind::Function, name());
 }
 
-bool RegularFunctionImpl::is_native() const
-{
-  return false;
-}
-
-std::shared_ptr<program::Statement> RegularFunctionImpl::body() const
-{
-  return program_;
-}
-
-void RegularFunctionImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
-}
-
 const Prototype & RegularFunctionImpl::prototype() const
 {
   return prototype_;
@@ -171,7 +199,7 @@ void RegularFunctionImpl::set_return_type(const Type& t)
 }
 
 ScriptFunctionImpl::ScriptFunctionImpl(Engine *e)
-  : FunctionImpl(e)
+  : ProgramFunction(e)
 {
 
 }
@@ -187,21 +215,6 @@ const std::string& ScriptFunctionImpl::name() const
   return static_name;
 }
 
-bool ScriptFunctionImpl::is_native() const
-{
-  return false;
-}
-
-std::shared_ptr<program::Statement> ScriptFunctionImpl::body() const
-{
-  return program_;
-}
-
-void ScriptFunctionImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
-}
-
 const Prototype& ScriptFunctionImpl::prototype() const
 {
   return this->prototype_;
@@ -210,7 +223,7 @@ const Prototype& ScriptFunctionImpl::prototype() const
 
 
 ConstructorImpl::ConstructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
-  : FunctionImpl(e, f)
+  : ProgramFunction(e, f)
   , prototype_(p)
 {
 
@@ -241,25 +254,9 @@ Name ConstructorImpl::get_name() const
   return Name(SymbolKind::Constructor, prototype().at(0));
 }
 
-bool ConstructorImpl::is_native() const
-{
-  return false;
-}
-
-std::shared_ptr<program::Statement> ConstructorImpl::body() const
-{
-  return program_;
-}
-
-void ConstructorImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
-}
-
-
 
 DestructorImpl::DestructorImpl(const Prototype& p, Engine *e, FunctionFlags f)
-  : FunctionImpl(e, f)
+  : ProgramFunction(e, f)
   , proto_{p.returnType(), p.at(0)}
 {
 
@@ -273,21 +270,6 @@ SymbolKind DestructorImpl::get_kind() const
 const Prototype & DestructorImpl::prototype() const
 {
   return this->proto_;
-}
-
-bool DestructorImpl::is_native() const
-{
-  return false;
-}
-
-std::shared_ptr<program::Statement> DestructorImpl::body() const
-{
-  return program_;
-}
-
-void DestructorImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
 }
 
 
@@ -304,7 +286,7 @@ std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const
 {
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, blueprint.name_.string(), blueprint.prototype(), ft.engine(), blueprint.flags());
   impl->program_ = blueprint.body();
-  impl->data = blueprint.data();
+  impl->data_ = blueprint.data();
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }
@@ -678,7 +660,7 @@ std::shared_ptr<program::Statement> Function::program() const
 
 const std::shared_ptr<UserData> & Function::data() const
 {
-  return d->data;
+  return d->get_user_data();
 }
 
 /*!

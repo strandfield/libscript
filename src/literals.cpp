@@ -11,7 +11,7 @@ namespace script
 {
 
 LiteralOperatorImpl::LiteralOperatorImpl(std::string suffix, const Prototype & proto, Engine *engine, FunctionFlags flags)
-  : FunctionImpl(engine, flags)
+  : ProgramFunction(engine, flags)
   , suffix(std::move(suffix))
   , proto_(proto)
 {
@@ -41,16 +41,6 @@ const Prototype & LiteralOperatorImpl::prototype() const
 bool LiteralOperatorImpl::is_native() const
 {
   return false;
-}
-
-std::shared_ptr<program::Statement> LiteralOperatorImpl::body() const
-{
-  return program_;
-}
-
-void LiteralOperatorImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
 }
 
 /*!

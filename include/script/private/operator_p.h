@@ -5,18 +5,17 @@
 #ifndef LIBSCRIPT_OPERATOR_P_H
 #define LIBSCRIPT_OPERATOR_P_H
 
-#include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 
 #include "script/operator.h"
 
 namespace script
 {
 
-class OperatorImpl : public FunctionImpl
+class OperatorImpl : public ProgramFunction
 {
 public:
   OperatorName operatorId;
-  std::shared_ptr<program::Statement> program_;
 
 public:
   OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags);
@@ -24,10 +23,6 @@ public:
 
   SymbolKind get_kind() const override;
   Name get_name() const override;
-
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
 };
 
 class UnaryOperatorImpl : public OperatorImpl

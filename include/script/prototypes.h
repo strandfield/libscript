@@ -7,31 +7,62 @@
 
 #include "script/prototype.h"
 
+#include <algorithm>
+#include <array>
+#include <vector>
+
 namespace script
 {
 
-class LIBSCRIPT_API SingleParameterPrototype : public Prototype
+template<size_t N>
+class FixedSizePrototype : public Prototype
 {
 public:
-  SingleParameterPrototype();
-  SingleParameterPrototype(const Type & rt, const Type & param);
-  SingleParameterPrototype(const SingleParameterPrototype & other);
-  ~SingleParameterPrototype() = default;
+  FixedSizePrototype(Type rt = Type::Void)
+    : Prototype(rt)
+  {
+    setParameters(m_parameters.data(), m_parameters.data() + N);
+  }
 
-private:
-  Type mParameter;
+  FixedSizePrototype(const Prototype& other) 
+    : Prototype(other.returnType())
+  {
+    assert(other.size() <= N);
+    std::copy(other.begin(), other.end(), m_parameters.begin());
+    setParameters(m_parameters.data(), m_parameters.data() + other.size());
+  }
+
+  FixedSizePrototype(const FixedSizePrototype<N>& other)
+    : Prototype(other.returnType()),
+      m_parameters(other.m_parameters)
+  {
+    setParameters(m_parameters.data(), m_parameters.data() + N);
+  }
+
+  ~FixedSizePrototype() = default;
+
+  FixedSizePrototype<N>& operator=(const FixedSizePrototype<N>&) = default;
+
+protected:
+  std::array<Type, N> m_parameters;
 };
 
-class LIBSCRIPT_API TwoParametersPrototype : public Prototype
+class LIBSCRIPT_API SingleParameterPrototype : public FixedSizePrototype<1>
 {
 public:
-  TwoParametersPrototype();
-  TwoParametersPrototype(const Type & rt, const Type & p1, const Type & p2);
-  TwoParametersPrototype(const TwoParametersPrototype & other);
-  ~TwoParametersPrototype() = default;
+  SingleParameterPrototype() = default;
+  SingleParameterPrototype(const Type& rt, const Type& param);
+  SingleParameterPrototype(const SingleParameterPrototype&) = default;
+  ~SingleParameterPrototype() = default;
+};
 
-private:
-  Type mParameters[2];
+class LIBSCRIPT_API TwoParametersPrototype : public FixedSizePrototype<2>
+{
+public:
+  TwoParametersPrototype() = default;
+  TwoParametersPrototype(const Type& rt, const Type& p1, const Type& p2);
+  TwoParametersPrototype(const TwoParametersPrototype&) = default;
+  ~TwoParametersPrototype() = default;
 };
 
 class LIBSCRIPT_API CastPrototype : public SingleParameterPrototype
@@ -58,6 +89,11 @@ public:
   using TwoParametersPrototype::TwoParametersPrototype;
 };
 
+/*!
+ * \class DynamicPrototype
+ * \brief a prototype with an arbitrary number of parameters
+ */
+
 class LIBSCRIPT_API DynamicPrototype : public Prototype
 {
 public:
@@ -67,14 +103,14 @@ public:
   ~DynamicPrototype() = default;
 
   DynamicPrototype(const Prototype & other);
-  DynamicPrototype(const Type & rt, std::vector<Type> && params);
+  DynamicPrototype(const Type & rt, std::vector<Type> params);
 
   void push(const Type & p);
   Type pop();
   void set(size_t i, const Type & p);
   void clear();
 
-  void set(std::vector<Type> && params);
+  void set(std::vector<Type> params);
 
   DynamicPrototype& operator=(const Prototype & other);
   DynamicPrototype& operator=(const DynamicPrototype& other);
@@ -83,6 +119,10 @@ public:
 private:
   std::vector<Type> mParameters;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

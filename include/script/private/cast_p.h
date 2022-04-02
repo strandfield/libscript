@@ -5,16 +5,15 @@
 #ifndef LIBSCRIPT_CAST_P_H
 #define LIBSCRIPT_CAST_P_H
 
-#include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 
 namespace script
 {
 
-class CastImpl : public FunctionImpl
+class CastImpl : public ProgramFunction
 {
 public:
   CastPrototype proto_;
-  std::shared_ptr<program::Statement> program_;
 
 public:
   CastImpl(const Prototype &p, Engine *e, FunctionFlags f);
@@ -25,8 +24,6 @@ public:
   const Prototype & prototype() const override;
 
   bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
 };
 
 } // namespace script

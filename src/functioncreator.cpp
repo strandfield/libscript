@@ -26,7 +26,7 @@ template<typename FT>
 static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBlueprint& opts)
 {
   impl->program_ = opts.body();
-  impl->data = opts.data();
+  impl->data_ = opts.data();
   impl->enclosing_symbol = opts.parent().impl();
 }
 

@@ -204,8 +204,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
-  // @TODO: improve that, really ugly
-  dynamic_cast<FunctionCallOperatorImpl*>(function.impl().get())->program_ = body;
+  function.impl()->set_body(body);
+  assert(function.program() == body);
 
   removeUnusedCaptures();
 
