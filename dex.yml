@@ -1,0 +1,8 @@
+
+input: 
+  - include
+  - src
+output: doc
+variables:
+  project:
+    name: libscript

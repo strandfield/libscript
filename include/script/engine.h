@@ -245,7 +245,7 @@ protected:
 };
 
 /*!
- * \fn template<typename T> Type registerType(std::string name)
+ * \fn Type registerType(std::string name)
  * \brief register a new type
  */
 template<typename T>
@@ -257,7 +257,7 @@ inline Type Engine::registerType(const std::string& name)
 }
 
 /*!
- * \fn template<typename T> Type registerType(std::string name, Type::TypeFlag what)
+ * \fn Type registerType(std::string name, Type::TypeFlag what)
  * \param the name of the type
  * \param whether the type is enum or class
  * \brief register a new type
@@ -269,7 +269,7 @@ inline Type Engine::registerType(const std::string& name, Type::TypeFlag what)
 }
 
 /*!
- * \fn template<typename T> Type registerType()
+ * \fn Type registerType()
  * \brief register a new type
  */
 template<typename T>
@@ -279,7 +279,7 @@ inline Type Engine::registerType()
 }
 
 /*!
- * \fn template<typename T> Type getType() const
+ * \fn Type getType() const
  * \brief get a type
  * 
  * Throws \t UnknownTypeError if the type wasn't previously registered
@@ -355,7 +355,7 @@ template<> struct maketype_helper<double> { static Type get(const Engine&) { ret
 template<> struct maketype_helper<String> { static Type get(const Engine&) { return Type::String; } };
 
 /*!
- * \fn template<typename T> Type makeType() const
+ * \fn Type makeType() const
  * \brief constructs a Type from a C++ type
  *
  * This function may use \m getType and as such can raise 

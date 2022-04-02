@@ -187,6 +187,10 @@ std::shared_ptr<ast::Expression> Ast::expression() const
 }
 
 /*!
+ * \endclass
+ */
+
+/*!
  * \namespace ast
  */
 namespace ast
