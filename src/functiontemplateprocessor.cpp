@@ -57,7 +57,7 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   if(result.first)
     f.impl()->set_body(builders::make_body(result.first));
 
-  f.impl()->data = result.second;
+  f.impl()->set_user_data(result.second);
 
   //if (ft.is_native())
   //{

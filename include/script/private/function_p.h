@@ -39,8 +39,6 @@ public:
   bool is_dtor() const;
 
   FunctionFlags flags;
-  // @TODO: replace by a virtual function & move this field to RegularFunctionImpl
-  std::shared_ptr<UserData> data; 
 
   virtual bool is_native() const = 0;
   virtual std::shared_ptr<program::Statement> body() const;
@@ -56,6 +54,9 @@ public:
   virtual bool is_template_instance() const;
   virtual bool is_instantiation_completed() const;
   virtual void complete_instantiation();
+
+  virtual std::shared_ptr<UserData> get_user_data() const;
+  virtual void set_user_data(std::shared_ptr<UserData> d);
 };
 
 } // namespace script

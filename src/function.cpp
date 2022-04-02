@@ -113,6 +113,15 @@ void FunctionImpl::force_virtual()
   this->flags.set(FunctionSpecifier::Virtual);
 }
 
+std::shared_ptr<UserData> FunctionImpl::get_user_data() const
+{
+  return nullptr;
+}
+
+void FunctionImpl::set_user_data(std::shared_ptr<UserData> d)
+{
+  throw std::runtime_error("Bad call to FunctionImpl::set_user_data()");
+}
 
 
 
@@ -136,6 +145,16 @@ std::shared_ptr<program::Statement> ProgramFunction::body() const
 void ProgramFunction::set_body(std::shared_ptr<program::Statement> b)
 {
   program_ = b;
+}
+
+std::shared_ptr<UserData> ProgramFunction::get_user_data() const
+{
+  return data_;
+}
+
+void ProgramFunction::set_user_data(std::shared_ptr<UserData> d)
+{
+  data_ = d;
 }
 
 RegularFunctionImpl::RegularFunctionImpl(std::string name, const Prototype& p, Engine *e, FunctionFlags f)
@@ -267,7 +286,7 @@ std::shared_ptr<FunctionTemplateInstance> FunctionTemplateInstance::create(const
 {
   auto impl = std::make_shared<FunctionTemplateInstance>(ft, targs, blueprint.name_.string(), blueprint.prototype(), ft.engine(), blueprint.flags());
   impl->program_ = blueprint.body();
-  impl->data = blueprint.data();
+  impl->data_ = blueprint.data();
   impl->enclosing_symbol = ft.enclosingSymbol().impl();
   return impl;
 }
@@ -641,7 +660,7 @@ std::shared_ptr<program::Statement> Function::program() const
 
 const std::shared_ptr<UserData> & Function::data() const
 {
-  return d->data;
+  return d->get_user_data();
 }
 
 /*!

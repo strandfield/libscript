@@ -11,7 +11,7 @@ namespace script
 {
 
 CastImpl::CastImpl(const Prototype &p, Engine *e, FunctionFlags f)
-  : FunctionImpl(e, f)
+  : ProgramFunction(e, f)
   , proto_(p.returnType(), p.at(0))
 {
 
@@ -35,16 +35,6 @@ const Prototype & CastImpl::prototype() const
 bool CastImpl::is_native() const
 {
   return false;
-}
-
-std::shared_ptr<program::Statement> CastImpl::body() const
-{
-  return program_;
-}
-
-void CastImpl::set_body(std::shared_ptr<program::Statement> b)
-{
-  program_ = b;
 }
 
 /*!

@@ -17,11 +17,15 @@ public:
   ProgramFunction(Engine* e, FunctionFlags f = FunctionFlags{});
 
   std::shared_ptr<program::Statement> program_;
+  std::shared_ptr<UserData> data_;
 
 public:
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;
   void set_body(std::shared_ptr<program::Statement> b) override;
+
+  std::shared_ptr<UserData> get_user_data() const override;
+  void set_user_data(std::shared_ptr<UserData> d) override;
 };
 
 class RegularFunctionImpl : public ProgramFunction
