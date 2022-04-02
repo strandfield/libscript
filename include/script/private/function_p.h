@@ -40,7 +40,8 @@ public:
   bool is_dtor() const;
 
   FunctionFlags flags;
-  std::shared_ptr<UserData> data;
+  // @TODO: replace by a virtual function & move this field to RegularFunctionImpl
+  std::shared_ptr<UserData> data; 
 
   virtual bool is_native() const = 0;
   virtual std::shared_ptr<program::Statement> body() const;
@@ -56,11 +57,10 @@ public:
   virtual bool is_template_instance() const;
   virtual bool is_instantiation_completed() const;
   virtual void complete_instantiation();
-  
-  virtual const std::vector<DefaultArgument> & default_arguments() const;
-  virtual void set_default_arguments(std::vector<DefaultArgument> defaults);
 };
 
+// @TODO: rename to make it clearer that this is a function defined in a script,
+// ProgramFunction ?
 class RegularFunctionImpl : public FunctionImpl
 {
 public:
@@ -70,7 +70,7 @@ public:
   std::string mName;
   DynamicPrototype prototype_;
   std::shared_ptr<program::Statement> program_;
-  std::vector<DefaultArgument> mDefaultArguments;
+
 public:
   const std::string& name() const override;
   SymbolKind get_kind() const override;
@@ -82,9 +82,6 @@ public:
 
   const Prototype& prototype() const override;
   void set_return_type(const Type& t) override;
-
-  const std::vector<DefaultArgument>& default_arguments() const override;
-  void set_default_arguments(std::vector<DefaultArgument> defaults) override;
 };
 
 class ScriptFunctionImpl : public FunctionImpl
@@ -113,7 +110,7 @@ public:
   
   DynamicPrototype prototype_;
   std::shared_ptr<program::Statement> program_;
-  std::vector<DefaultArgument> mDefaultArguments;
+
 public:
   
   Class getClass() const;
@@ -123,9 +120,6 @@ public:
   Name get_name() const override;
 
   const Prototype& prototype() const override;
-
-  const std::vector<DefaultArgument>& default_arguments() const override;
-  void set_default_arguments(std::vector<DefaultArgument> defaults) override;
 
   bool is_native() const override;
   std::shared_ptr<program::Statement> body() const override;

@@ -19,6 +19,7 @@ class ScriptImpl;
 
 class Ast;
 class Attributes;
+class DefaultArguments;
 class Engine;
 class FunctionCreator;
 class Scope;
@@ -73,6 +74,8 @@ public:
 
   Attributes getAttributes(const Symbol& sym) const;
   Attributes getAttributes(const Function& f) const;
+
+  DefaultArguments getDefaultArguments(const Function& f) const;
 
   Ast ast() const;
   void clearAst();

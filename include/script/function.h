@@ -17,6 +17,7 @@ enum class AccessSpecifier;
 class Attributes;
 class Cast;
 class Class;
+class DefaultArguments;
 class Engine;
 namespace program { class Expression; class Statement; }
 class FunctionImpl;
@@ -55,7 +56,7 @@ public:
   const Type& parameter(size_t index) const;
   const Type& returnType() const;
 
-  const std::vector<std::shared_ptr<program::Expression>>& defaultArguments() const;
+  DefaultArguments defaultArguments() const;
 
   Script script() const;
 

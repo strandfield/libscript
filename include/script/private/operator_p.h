@@ -60,7 +60,6 @@ class FunctionCallOperatorImpl : public OperatorImpl
 {
 public:
   DynamicPrototype proto_;
-  std::vector<DefaultArgument> defaultargs_;
 
 public:
   FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags);
@@ -69,9 +68,6 @@ public:
 
   const Prototype & prototype() const override;
   void set_return_type(const Type & t) override;
-
-  const std::vector<DefaultArgument> & default_arguments() const override;
-  void set_default_arguments(std::vector<DefaultArgument> defaults) override;
 };
 
 } // namespace script

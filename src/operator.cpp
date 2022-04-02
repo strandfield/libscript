@@ -179,15 +179,6 @@ void FunctionCallOperatorImpl::set_return_type(const Type & t)
   this->proto_.setReturnType(t);
 }
 
-const std::vector<DefaultArgument> & FunctionCallOperatorImpl::default_arguments() const
-{
-  return defaultargs_;
-}
-
-void FunctionCallOperatorImpl::set_default_arguments(std::vector<DefaultArgument> defaults)
-{
-  defaultargs_ = std::move(defaults);
-}
 
 /*!
  * \class Operator
