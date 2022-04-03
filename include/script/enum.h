@@ -20,11 +20,16 @@ class Namespace;
 class Operator;
 class Script;
 
+/*!
+ * \class Enum
+ * \brief represents an enumeration type
+ */
+
 class LIBSCRIPT_API Enum
 {
 public:
   Enum() = default;
-  Enum(const Enum & other) = default;
+  Enum(const Enum &) = default;
   ~Enum() = default;
 
   explicit Enum(const std::shared_ptr<EnumImpl> & impl);
@@ -32,27 +37,25 @@ public:
   int id() const;
   bool isNull() const;
 
-  const std::string & name() const;
+  const std::string& name() const;
 
   bool isEnumClass() const;
 
-  const std::map<std::string, int> & values() const;
+  const std::map<std::string, int>& values() const;
   bool hasKey(const std::string & k) const;
   bool hasValue(int val) const;
-  int getValue(const std::string & k, int defaultValue = -1) const;
+  int getValue(const std::string& k, int defaultValue = -1) const;
   const std::string & getKey(int val) const;
-  int addValue(const std::string & key, int value = -1);
+  int addValue(const std::string& key, int value = -1);
 
   Operator getAssignmentOperator() const;
 
   Class memberOf() const;
   Namespace enclosingNamespace() const;
 
-  Enum & operator=(const Enum & other) = default;
-  bool operator==(const Enum & other) const;
-  inline bool operator!=(const Enum & other) const { return !operator==(other); }
+  Enum & operator=(const Enum &) = default;
 
-  Engine * engine() const;
+  Engine* engine() const;
   Script script() const;
 
   inline const std::shared_ptr<EnumImpl> & impl() const { return d; }
@@ -60,6 +63,20 @@ public:
 private:
   std::shared_ptr<EnumImpl> d;
 };
+
+inline bool operator==(const Enum& lhs, const Enum& rhs)
+{
+  return lhs.impl() == rhs.impl();
+}
+
+inline bool operator!=(const Enum& lhs, const Enum& rhs)
+{
+  return lhs.impl() != rhs.impl();
+}
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

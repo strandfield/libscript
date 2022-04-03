@@ -36,14 +36,19 @@ class Typedef;
 class UserData;
 class Value;
 
+/*!
+ * \class Class
+ * \brief represents a class
+ */
+
 class LIBSCRIPT_API Class
 {
 public:
   Class() = default;
-  Class(const Class & other) = default;
+  Class(const Class&) = default;
   ~Class() = default;
   
-  explicit Class(const std::shared_ptr<ClassImpl> & impl);
+  explicit Class(const std::shared_ptr<ClassImpl>& impl);
 
   bool isNull() const;
   int id() const;
@@ -137,6 +142,10 @@ public:
 private:
   std::shared_ptr<ClassImpl> d;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

@@ -26,46 +26,80 @@ EnumImpl::EnumImpl(int i, const std::string & n, Engine *e)
 
 }
 
+/*!
+ * \class Enum
+ */
+
 Enum::Enum(const std::shared_ptr<EnumImpl> & impl)
   : d(impl)
 {
 
 }
 
-
+/*!
+ * \fn int id() const
+ * \brief returns the id of this enumeration
+ */
 int Enum::id() const
 {
   return d->id;
 }
 
+/*!
+ * \fn bool isNull() const
+ * \brief returns whether this instance is null
+ * 
+ * Calling any other function than isNull() on a null instance 
+ * is undefined behavior.
+ */
 bool Enum::isNull() const
 {
   return d == nullptr;
 }
 
-const std::string & Enum::name() const
+/*!
+ * \fn const std::string& name() const
+ * \brief returns the enumeration's name
+ */
+const std::string& Enum::name() const
 {
   return d->name;
 }
 
+/*!
+ * \fn bool isEnumClass() const
+ * \brief returns whether the enumeration is an enum class
+ */
 bool Enum::isEnumClass() const
 {
   return d->enumClass;
 }
 
-const std::map<std::string, int> & Enum::values() const
+/*!
+ * \fn const std::map<std::string, int>& values() const
+ * \brief returns the enumeration's value
+ */
+const std::map<std::string, int>& Enum::values() const
 {
   return d->values;
 }
 
-bool Enum::hasKey(const std::string & k) const
+/*!
+ * \fn bool hasKey(const std::string& k) const
+ * \brief returns whether there is a value with a given key in the enum
+ */
+bool Enum::hasKey(const std::string& k) const
 {
   return d->values.find(k) != d->values.end();
 }
 
+/*!
+ * \fn bool hasValue(int val) const
+ * \brief returns whether the enum has a given value
+ */
 bool Enum::hasValue(int val) const
 {
-  for (const auto & pair : d->values)
+  for (const auto& pair : d->values)
   {
     if (pair.second == val)
       return true;
@@ -74,7 +108,13 @@ bool Enum::hasValue(int val) const
   return false;
 }
 
-int Enum::getValue(const std::string & k, int defaultValue) const
+/*!
+ * \fn int getValue(const std::string& k, int defaultValue = -1) const
+ * \brief returns a value given its key
+ * 
+ * If there is no value with the given key, \a defaultValue is returned.
+ */
+int Enum::getValue(const std::string& k, int defaultValue) const
 {
   auto it = d->values.find(k);
   if (it == d->values.end())
@@ -82,7 +122,13 @@ int Enum::getValue(const std::string & k, int defaultValue) const
   return it->second;
 }
 
-const std::string & Enum::getKey(int val) const
+/*!
+ * \fn const std::string& getKey(int val) const
+ * \brief returns the key given its value
+ * 
+ * If there is none, this function throws an exception.
+ */
+const std::string& Enum::getKey(int val) const
 {
   for (auto it = d->values.begin(); it != d->values.end(); ++it)
   {
@@ -90,10 +136,15 @@ const std::string & Enum::getKey(int val) const
       return it->first;
   }
 
+  // @TODO: throw a dedicated exception
   throw std::runtime_error{ "Enum::getKey() : no such value" };
 }
 
-int Enum::addValue(const std::string & key, int value)
+/*!
+ * \fn int addValue(const std::string& key, int value)
+ * \brief add a value to the enumeration
+ */
+int Enum::addValue(const std::string& key, int value)
 {
   if (value == -1)
   {
@@ -111,33 +162,57 @@ Operator Enum::getAssignmentOperator() const
   return d->assignment;
 }
 
-
+/*!
+ * \fn Class memberOf() const
+ * \brief returns the class in which this enum was defined
+ * 
+ * If this enum wasn't defined in a class, this returns a null Class.
+ */
 Class Enum::memberOf() const
 {
-  return Class{ std::dynamic_pointer_cast<ClassImpl>(d->enclosing_symbol.lock()) };
+  Symbol s{ d ? d->enclosing_symbol.lock() : nullptr };
+  return s.isClass() ? s.toClass() : Class();
 }
 
+/*!
+ * \fn Namespace enclosingNamespace() const
+ * \brief returns the namespace in which the enum is defined
+ * 
+ * If the enum was defined in a class, this returns the namespace in which the 
+ * class was defined.
+ */
 Namespace Enum::enclosingNamespace() const
 {
-  Class c = memberOf();
-  if (c.isNull())
-    return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d->enclosing_symbol.lock()) };
-  return c.enclosingNamespace();
+  Symbol s{ d ? d->enclosing_symbol.lock() : nullptr };
+
+  if (s.isClass())
+    return s.toClass().enclosingNamespace();
+  else if (s.isNamespace())
+    return s.toNamespace();
+  else
+    return {};
 }
 
-bool Enum::operator==(const Enum & other) const
-{
-  return d == other.d;
-}
-
-Engine * Enum::engine() const
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script engine
+ */
+Engine* Enum::engine() const
 {
   return d->engine;
 }
 
+/*!
+ * \fn Script script() const
+ * \brief returns the script in which this enum was defined
+ */
 Script Enum::script() const
 {
-  return Symbol{ d->enclosing_symbol.lock() }.script();
+  return Symbol(d ? d->enclosing_symbol.lock() : nullptr).script();
 }
+
+/*!
+ * \endclass
+ */
 
 } // namespace script

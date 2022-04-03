@@ -93,20 +93,43 @@ Value& IValue::at(size_t index)
   throw std::runtime_error{ "Value does not have any member" };
 }
 
+/*!
+ * \class Value
+ */
 
+/*!
+ * \fn Value()
+ * \brief constructs an invalid, null value
+ */
 Value::Value()
   : d(nullptr)
 {
 
 }
 
-Value::Value(const Value & other)
+/*!
+ * \fn Value(const Value& other)
+ * \brief constructs a new reference to a value
+ * 
+ * Note that because Value is implicitly shared, this does not copy 
+ * the underlying value but rather the pointer to the value.
+ * 
+ * Use Engine::copy() to create a true copy of the value.
+ */
+Value::Value(const Value& other)
   : d(other.d)
 {
   if (d)
     d->ref += 1;
 }
 
+/*!
+ * \fn ~Value()
+ * \brief destroys the reference to the value
+ * 
+ * If this instance was the last reference, the underlying value is 
+ * destroyed.
+ */
 Value::~Value()
 {
   if (d)
@@ -126,122 +149,257 @@ Value::Value(IValue* impl)
     d->ref += 1;
 }
 
-
+/*!
+ * \fn bool isNull() const
+ * \brief returns whether this instance does not reference a valid value
+ */
 bool Value::isNull() const
 {
   return d == nullptr;
 }
 
+/*!
+ * \fn Type type() const
+ * \brief returns the value's type
+ */
 Type Value::type() const
 {
   return d->type.withoutRef();
 }
 
+/*!
+ * \fn bool isConst() const
+ * \brief returns whether the value is marked as const
+ * 
+ * Note that this is just informative, the underlying value is never const 
+ * and can always be modified programmatically.
+ */
 bool Value::isConst() const
 {
   return type().isConst();
 }
 
+/*!
+ * \fn bool isReference() const
+ * \brief returns whether this instance stores a reference
+ * 
+ * When a Value stores a reference, it is not responsible for the lifetime 
+ * of the actual object; the object should outlive the Value.
+ */
 bool Value::isReference() const
 {
   return d->is_reference();
 }
 
+/*!
+ * \fn bool isBool() const
+ * \brief returns whether the value is a boolean
+ * 
+ * This is the C++ type \c bool.
+ */
 bool Value::isBool() const
 {
   return d->type.baseType() == Type::Boolean;
 }
 
+/*!
+ * \fn bool isChar() const
+ * \brief returns whether the value is a character
+ * 
+ * This is the C++ type \c char.
+ */
 bool Value::isChar() const
 {
   return d->type.baseType() == Type::Char;
 }
 
+/*!
+ * \fn bool isInt() const
+ * \brief returns whether the value is an integer.
+ * 
+ * This is the C++ type \c int.
+ */
 bool Value::isInt() const
 {
   return d->type.baseType() == Type::Int;
 }
 
+/*!
+ * \fn bool isFloat() const
+ * \brief returns whether the value is a floating point number
+ * 
+ * This is the C++ type \c float.
+ */
 bool Value::isFloat() const
 {
   return d->type.baseType() == Type::Float;
 }
 
+/*!
+ * \fn bool isDouble() const
+ * \brief returns whether the value is a double-precision floating point number
+ * 
+ * This is the C++ type \c double.
+ */
 bool Value::isDouble() const
 {
   return d->type.baseType() == Type::Double;
 }
 
+/*!
+ * \fn bool isPrimitive() const
+ * \brief returns whether the value is of fundamental type
+ * 
+ * Fundamental types are bool, char, int, float, double.
+ */
 bool Value::isPrimitive() const
 {
   return d->type.baseType().isFundamentalType();
 }
 
+/*!
+ * \fn bool isString() const
+ * \brief returns whether the value is a string
+ */
 bool Value::isString() const
 {
   return d->type.baseType() == Type::String;
 }
 
+/*!
+ * \fn bool isObject() const
+ * \brief returns whether the value is an object
+ */
 bool Value::isObject() const
 {
   return d->type.isObjectType();
 }
 
+/*!
+ * \fn bool isArray() const
+ * \brief returns whether the value is an array
+ * 
+ * See the Array class.
+ */
 bool Value::isArray() const
 {
   return d->is_array();
 }
 
+/*!
+ * \fn bool isInitializerList() const
+ * \brief returns whether the value is an initializer list
+ */
 bool Value::isInitializerList() const
 {
   return d->is_initializer_list();
 }
 
+/*!
+ * \fn bool toBool() const
+ * \brief returns the value as a boolean
+ * 
+ * Pre-condition: isBool() returns true.
+ */
 bool Value::toBool() const
 {
   return get<bool>(*this);
 }
 
+/*!
+ * \fn char toChar() const
+ * \brief returns the value as a character
+ *
+ * Pre-condition: isChar() returns true.
+ */
 char Value::toChar() const
 {
   return get<char>(*this);
 }
 
+/*!
+ * \fn int toInt() const
+ * \brief returns the value as an integer
+ *
+ * Pre-condition: isInt() returns true.
+ */
 int Value::toInt() const
 {
   return get<int>(*this);
 }
 
+/*!
+ * \fn float toFloat() const
+ * \brief returns the value as a floating point number
+ *
+ * Pre-condition: isFloat() returns true.
+ */
 float Value::toFloat() const
 {
   return get<float>(*this);
 }
 
+/*!
+ * \fn double toDouble() const
+ * \brief returns the value as a double-precision floating point number
+ *
+ * Pre-condition: isDouble() returns true.
+ */
 double Value::toDouble() const
 {
   return get<double>(*this);
 }
 
+/*!
+ * \fn String toString() const
+ * \brief returns the value as a string
+ *
+ * Pre-condition: isString() returns true.
+ */
 String Value::toString() const
 {
   return get<String>(*this);
 }
 
+/*!
+ * \fn Function toFunction() const
+ * \brief returns the value as a function
+ *
+ * If this value is not a function, this returns a null Function.
+ */
 Function Value::toFunction() const
 {
   return d->is_function() ? static_cast<FunctionValue*>(d)->function : Function();
 }
 
+/*!
+ * \fn Object toObject() const
+ * \brief returns the value as an object
+ *
+ * If this value is not an object, this returns a null Object.
+ */
 Object Value::toObject() const
 {
   return Object(*this);
 }
 
+/*!
+ * \fn Array toArray() const
+ * \brief returns the value as an array
+ *
+ * If this value is not an array, this returns a null Array.
+ */
 Array Value::toArray() const
 {
   return d->is_array() ? static_cast<ArrayValue*>(d)->array : Array();
 }
 
+/*!
+ * \fn Enumerator toEnumerator() const
+ * \brief returns the value as an enumerator
+ *
+ * If this value is not an enumerator, this returns a null Enumerator.
+ */
 Enumerator Value::toEnumerator() const
 {
   if (d->is_enumerator())
@@ -252,16 +410,32 @@ Enumerator Value::toEnumerator() const
     return Enumerator();
 }
 
+/*!
+ * \fn Lambda toLambda() const
+ * \brief returns the value as a lambda
+ *
+ * If this value is not a lambda, this returns a null Lambda.
+ */
 Lambda Value::toLambda() const
 {
   return d->is_lambda() ? static_cast<LambdaValue*>(d)->lambda : Lambda();
 }
 
+/*!
+ * \fn InitializerList toInitializerList() const
+ * \brief returns the value as an initializer list
+ *
+ * If this value is not an initializer list, this returns a null InitializerList.
+ */
 InitializerList Value::toInitializerList() const
 {
   return d->is_initializer_list() ? static_cast<InitializerListValue*>(d)->initlist : InitializerList();
 }
 
+/*!
+ * \fn void* data() const
+ * \brief returns a pointer to the value's underlying data
+ */
 void* Value::data() const
 {
   return d->ptr();
@@ -303,6 +477,10 @@ Value Value::fromLambda(const Lambda & obj)
   return Value(new LambdaValue(obj));
 }
 
+/*!
+ * \fn Engine* engine() const
+ * \brief returns a pointer to the script engine
+ */
 Engine* Value::engine() const
 {
   return d->engine;
@@ -321,6 +499,10 @@ Value & Value::operator=(const Value & other)
   }
   return *(this);
 }
+
+/*!
+ * \endclass
+ */
 
 /* get<T>() specializations */
 

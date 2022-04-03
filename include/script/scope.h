@@ -33,18 +33,27 @@ class Type;
 class NameLookup;
 class NameLookupImpl;
 
+/*!
+ * \class Scope
+ * \brief represents a scope
+ * 
+ * Scopes are used to resolve names.
+ * 
+ * Depending on the scope, the same name may identify different entities.
+ */
+
 class LIBSCRIPT_API Scope
 {
 public:
   Scope() = default;
-  Scope(const Scope & other) = default;
+  Scope(const Scope &) = default;
   ~Scope() = default;
   
-  Scope(const Enum & e, const Scope & parent = Scope());
-  Scope(const Class & cla, const Scope & parent = Scope());
-  Scope(const Namespace & na, const Scope & parent = Scope());
-  Scope(const Script & s, const Scope & parent = Scope());
-  explicit Scope(const std::shared_ptr<ScopeImpl> & impl);
+  Scope(const Enum& e, const Scope& parent = Scope());
+  Scope(const Class& cla, const Scope& parent = Scope());
+  Scope(const Namespace& na, const Scope& parent = Scope());
+  Scope(const Script& s, const Scope& parent = Scope());
+  explicit Scope(const std::shared_ptr<ScopeImpl>& impl);
 
   enum Type {
     InvalidScope,
@@ -138,6 +147,9 @@ private:
   std::shared_ptr<ScopeImpl> d;
 };
 
+/*!
+ * \endclass
+ */
 
 class LIBSCRIPT_API ScopeGuard
 {

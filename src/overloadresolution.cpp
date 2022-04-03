@@ -62,9 +62,4 @@ OverloadResolution::OverloadComparison OverloadResolution::compare(const Candida
   return first_diff == -1 ? OverloadResolution::FirstIsBetter : OverloadResolution::SecondIsBetter;
 }
 
-OverloadResolution::OverloadResolution()
-{
-
-}
-
 } // namespace script

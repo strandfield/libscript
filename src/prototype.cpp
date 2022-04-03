@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -9,14 +9,6 @@ namespace script
 
 /*!
  * \class Prototype
- * \brief Represents a function prototype.
- * 
- * The Prototype class describes the signature of any function; that is, 
- * its return type and parameters.
- *
- * This class does not own the list of parameters: it only holds a [begin, end) 
- * range of parameters. As such, a \t Prototype cannot be copied.
- * Subclasses are expected to actually hold the list of parameters.
  */
 
 Prototype::Prototype()
@@ -66,16 +58,16 @@ Prototype::Prototype(const Type & rt, Type *begin, Type *end)
 //  return *(this);
 //}
 
-bool Prototype::operator==(const Prototype & other) const
+bool operator==(const Prototype& lhs, const Prototype& rhs)
 {
-  if (other.count() != this->count())
+  if (lhs.count() != rhs.count())
     return false;
 
-  if (other.returnType() != mReturnType)
+  if (lhs.returnType() != rhs.returnType())
     return false;
 
-  auto oit = other.begin();
-  for (auto it = mBegin; it != mEnd; ++it)
+  auto oit = rhs.begin();
+  for (auto it = lhs.begin(); it != lhs.end(); ++it)
   {
     if (*(oit++) != *it)
       return false;
@@ -84,6 +76,9 @@ bool Prototype::operator==(const Prototype & other) const
   return true;
 }
 
+/*!
+ * \endclass
+ */
 
 
 SingleParameterPrototype::SingleParameterPrototype(const Type& rt, const Type& param)

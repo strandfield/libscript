@@ -125,12 +125,17 @@ inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcep
   return std::error_code(static_cast<int>(e), script::errors::engine_category());
 }
 
+/*!
+ * \class Engine
+ * \brief Script engine class
+ */
+
 class LIBSCRIPT_API Engine
 {
 public:
   Engine();
   ~Engine();
-  Engine(const Engine & other) = delete;
+  Engine(const Engine&) = delete;
 
   void setup();
   void tearDown();
@@ -368,7 +373,6 @@ inline Type Engine::makeType() const
   return cache;
 }
 
-
 template<> inline Value Engine::construct<bool>(const bool& x) { return newBool(x); }
 template<> inline Value Engine::construct<bool>(bool&& x) { return newBool(x); }
 template<> inline Value Engine::construct<char>(const char& c) { return newChar(c); }
@@ -389,6 +393,10 @@ inline Module Engine::newModule(Args&&... args)
   addModule(module_impl);
   return Module(module_impl);
 }
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 
