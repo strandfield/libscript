@@ -30,11 +30,11 @@ public:
   TemplateImpl(std::vector<TemplateParameter> && params, const Scope & scp, Engine *e, std::shared_ptr<SymbolImpl> es);
   virtual ~TemplateImpl() {}
 
+  SymbolKind get_kind() const override;
   virtual const std::string& name() const = 0;
 
   std::vector<TemplateParameter> parameters;
   Scope scope;
-  Engine *engine;
 
   Name get_name() const override;
 };
@@ -78,7 +78,7 @@ public:
   ~ScriptFunctionTemplateBackend() = default;
 
   void deduce(TemplateArgumentDeduction& deduction, const std::vector<TemplateArgument>& targs, const std::vector<Type>& itypes) override;
-  void substitute(FunctionBuilder& builder, const std::vector<TemplateArgument>& targs) override;
+  void substitute(FunctionBlueprint& blueprint, const std::vector<TemplateArgument>& targs) override;
   std::pair<NativeFunctionSignature, std::shared_ptr<UserData>> instantiate(Function& function) override;
 };
 

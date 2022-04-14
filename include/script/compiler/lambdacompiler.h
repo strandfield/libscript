@@ -7,6 +7,8 @@
 
 #include "script/compiler/functioncompiler.h"
 
+#include "script/prototypes.h"
+
 namespace script
 {
 

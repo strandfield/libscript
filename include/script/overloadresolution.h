@@ -5,6 +5,7 @@
 #ifndef LIBSCRIPT_OVERLOAD_RESOLUTION_H
 #define LIBSCRIPT_OVERLOAD_RESOLUTION_H
 
+#include "script/defaultarguments.h"
 #include "script/function.h"
 #include "script/initialization.h"
 #include "script/value.h"
@@ -20,9 +21,6 @@ namespace script
 class LIBSCRIPT_API OverloadResolution
 {
 public:
-  OverloadResolution();
-  OverloadResolution(const OverloadResolution &) = default;
-  ~OverloadResolution() = default;
 
   struct Candidate
   {

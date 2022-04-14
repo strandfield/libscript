@@ -558,13 +558,36 @@ Type TypeSystem::typeId(const std::string& typeName, const Scope& scope) const
 std::string TypeSystem::typeName(Type t) const
 {
   if (t.isObjectType())
-    return getClass(t).name();
+  {
+    Class c = getClass(t);
+
+    if (c.impl() == d->reservations.class_type.impl())
+    {
+      t = t.baseType();
+
+      for (const auto& pair : d->typemap_by_name)
+      {
+        if (pair.second == t)
+        {
+          return pair.first;
+        }
+      }
+    }
+
+    return c.name();
+  }
   else if (t.isEnumType())
+  {
     return getEnum(t).name();
+  }
   else if (t.isClosureType())
+  {
     throw std::runtime_error{ "Not implemented : name of closure type" };
+  }
   else if (t.isFunctionType())
+  {
     throw std::runtime_error{ "Not implemented : name of function type" };
+  }
 
   static const std::string types[] = {
     "Null",

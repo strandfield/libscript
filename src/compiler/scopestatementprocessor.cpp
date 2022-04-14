@@ -16,7 +16,7 @@ namespace compiler
 
 void ScopeStatementProcessor::processUsingDirective(const std::shared_ptr<ast::UsingDirective>& decl)
 {
-  NameLookup lookup = name_.resolve(decl->namespace_name, *scope_);
+  NameLookup lookup = script::resolve_name(decl->namespace_name, *scope_);
 
   if (lookup.resultType() != NameLookup::NamespaceName)
     throw CompilationFailure{ CompilerError::InvalidNameInUsingDirective, errors::InvalidName{dstr(decl->namespace_name)} };
@@ -26,7 +26,7 @@ void ScopeStatementProcessor::processUsingDirective(const std::shared_ptr<ast::U
 
 void ScopeStatementProcessor::processUsingDeclaration(const std::shared_ptr<ast::UsingDeclaration> & decl)
 {
-  NameLookup lookup = name_.resolve(decl->used_name, *scope_);
+  NameLookup lookup = script::resolve_name(decl->used_name, *scope_);
   /// TODO : throw exception if nothing found
   scope_->inject(lookup.impl().get());
 }
@@ -57,7 +57,7 @@ void ScopeStatementProcessor::processTypeAlias(const std::shared_ptr<ast::TypeAl
   /// TODO : check that alias_name is a simple identifier or enforce it in the parser
   const std::string& name = decl->alias_name->getName();
 
-  NameLookup lookup = name_.resolve(decl->aliased_type, *scope_);
+  NameLookup lookup = script::resolve_name(decl->aliased_type, *scope_);
   if (lookup.typeResult().isNull())
     throw CompilationFailure{ CompilerError::InvalidTypeName, errors::InvalidName{dstr(decl->aliased_type)} };
 

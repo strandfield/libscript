@@ -5,21 +5,40 @@
 #include "script/symbol.h"
 
 #include "script/class.h"
-#include "script/classbuilder.h"
-#include "script/enumbuilder.h"
-#include "script/functionbuilder.h"
 #include "script/name.h"
 #include "script/namespace.h"
-#include "script/operatorbuilder.h"
 #include "script/private/class_p.h"
+#include "script/private/function_p.h"
 #include "script/private/namespace_p.h"
 #include "script/private/script_p.h"
 #include "script/script.h"
-#include "script/templatebuilder.h"
 #include "script/typedefs.h"
 
 namespace script
 {
+
+bool SymbolImpl::is_function() const
+{
+  return false;
+}
+
+void add_function_to_symbol(const Function& func, Symbol& parent)
+{
+  /// The following could be done here just in case 
+  /// but is currently not necessary.
+  //func.impl()->enclosing_symbol = parent.impl();
+
+  if (parent.isClass())
+  {
+    Class cla = parent.toClass();
+    cla.addFunction(func);
+  }
+  else if (parent.isNamespace())
+  {
+    Namespace ns = parent.toNamespace();
+    ns.addFunction(func);
+  }
+}
 
 /*!
  * \class Symbol
@@ -45,19 +64,38 @@ Symbol::Symbol(const Namespace & n)
 
 }
 
+/*!
+ * \fn Symbol(const Function& f)
+ * \brief constructs a symbol from a function
+ */
+Symbol::Symbol(const Function& f)
+  : Symbol(std::shared_ptr<SymbolImpl>(f.impl()))
+{
+
+}
+
 Symbol::Symbol(const std::shared_ptr<SymbolImpl> & impl)
   : d(impl)
 {
 
 }
 
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script engine
+ */
 Engine* Symbol::engine() const
 {
-  if (isClass())
-    return toClass().engine();
-  else if (isNamespace())
-    return toNamespace().engine();
-  return nullptr;
+  return d->engine;
+}
+
+/*!
+ * \fn Symbol::Kind kind() const
+ * \brief returns the symbol's kind
+ */
+Symbol::Kind Symbol::kind() const
+{
+  return d ? d->get_kind() : SymbolKind::NotASymbol;
 }
 
 /*!
@@ -96,6 +134,28 @@ Namespace Symbol::toNamespace() const
   return Namespace{ std::dynamic_pointer_cast<NamespaceImpl>(d) };
 }
 
+/*!
+ * \fn bool isFunction() const
+ * \brief returns whether the symbol is a function
+ */
+bool Symbol::isFunction() const
+{
+  return d && d->is_function();
+}
+
+/*!
+ * \fn Function toFunction() const
+ * \brief retrieves the symbol as a function
+ */
+Function Symbol::toFunction() const
+{
+  return Function(isFunction() ? std::static_pointer_cast<FunctionImpl>(d) : nullptr);
+}
+
+/*!
+ * \fn Name name() const
+ * \brief returns the symbol's name
+ */
 Name Symbol::name() const
 {
   return d->get_name();
@@ -132,67 +192,6 @@ Script Symbol::script() const
 Attributes Symbol::attributes() const
 {
   return script().getAttributes(*this);
-}
-
-ClassBuilder Symbol::newClass(const std::string & name)
-{
-  return ClassBuilder{ *this, name };
-}
-
-ClassBuilder Symbol::newClass(std::string && name)
-{
-  return ClassBuilder{ *this, std::move(name) };
-}
-
-ClassTemplateBuilder Symbol::newClassTemplate(const std::string & name)
-{
-  return ClassTemplateBuilder{ *this, name };
-}
-
-ClassTemplateBuilder Symbol::newClassTemplate(std::string && name)
-{
-  return ClassTemplateBuilder{ *this, std::move(name) };
-}
-
-EnumBuilder Symbol::newEnum(std::string && name)
-{
-  return EnumBuilder{ *this, std::move(name) };
-}
-
-FunctionBuilder Symbol::newFunction(const std::string & name)
-{
-  if (isClass())
-    return FunctionBuilder(toClass(), name);
-  else if (isNamespace())
-    return FunctionBuilder(toNamespace(), name);
-  throw std::runtime_error{ "Cannot add function on null symbol" };
-}
-
-FunctionTemplateBuilder Symbol::newFunctionTemplate(const std::string & name)
-{
-  return FunctionTemplateBuilder{ *this, name };
-}
-
-FunctionTemplateBuilder Symbol::newFunctionTemplate(std::string && name)
-{
-  return FunctionTemplateBuilder{ *this, std::move(name) };
-}
-
-OperatorBuilder Symbol::newOperator(OperatorName op)
-{
-  if (isClass() || isNamespace())
-    return OperatorBuilder(*this, op);
-  throw std::runtime_error{ "Cannot add operator on null symbol" };
-}
-
-TypedefBuilder Symbol::newTypedef(const Type & t, const std::string & name)
-{
-  return TypedefBuilder{ *this, name, t };
-}
-
-TypedefBuilder Symbol::newTypedef(const Type & t, std::string && name)
-{
-  return TypedefBuilder{ *this, std::move(name), t };
 }
 
 /*!

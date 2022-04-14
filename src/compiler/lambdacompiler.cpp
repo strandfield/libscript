@@ -16,13 +16,14 @@
 
 #include "script/engine.h"
 #include "script/functionbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/private/lambda_p.h"
 #include "script/namelookup.h"
+#include "script/typesystem.h"
 
 #include "script/private/engine_p.h"
 #include "script/private/namelookup_p.h"
 #include "script/private/operator_p.h"
+#include "script/private/script_p.h"
 #include "script/private/typesystem_p.h"
 
 namespace script
@@ -176,12 +177,17 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   mCurrentScope = Scope{ std::make_shared<LambdaScope>(mLambda, mCurrentScope.impl()) };
 
-  FunctionCallOperatorBuilder builder{ Symbol(Class(mLambda.impl())) };
-  builder.proto_ = computePrototype();
-  DefaultArgumentProcessor default_arguments{ compiler() };
-  default_arguments.generic_process(task.lexpr->params, builder, task.scope);
+  FunctionBuilder builder{ Symbol(Class(mLambda.impl())), SymbolKind::Operator, OperatorName::FunctionCallOperator };
+  builder.blueprint_.prototype_ = computePrototype();
 
   Function function = builder.get();
+
+  if (function.script().impl())
+  {
+    expr_.setScope(task.scope);
+    DefaultArgumentVector defaultargs = script::compiler::process_default_arguments(expr_, task.lexpr->params, function);
+    function.script().impl()->defaultarguments.add(function.impl().get(), defaultargs);
+  }
 
   mFunction = function;
   expr_.setCaller(function);
@@ -198,8 +204,8 @@ LambdaCompilationResult LambdaCompiler::compile(const CompileLambdaTask & task)
 
   deduceReturnType(nullptr, nullptr); // deduces void if not already set
 
-  // @TODO: improve that, really ugly
-  dynamic_cast<FunctionCallOperatorImpl*>(function.impl().get())->program_ = body;
+  function.impl()->set_body(body);
+  assert(function.program() == body);
 
   removeUnusedCaptures();
 
@@ -325,7 +331,7 @@ DynamicPrototype LambdaCompiler::computePrototype()
 
   for (size_t i(0); i < lexpr->params.size(); ++i)
   {
-    Type paramtype = type_.resolve(lexpr->params.at(i).type, mCurrentScope);
+    Type paramtype = script::compiler::resolve_type(lexpr->params.at(i).type, mCurrentScope);
     result.push(paramtype);
   }
 

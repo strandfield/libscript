@@ -53,8 +53,7 @@ TEST(Scenarios, accessing_ast) {
 }
 
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
+#include "script/functionbuilder.h"
 #include "script/interpreter/executioncontext.h"
 
 struct SmallObject
@@ -100,8 +99,8 @@ TEST(Scenarios, custom_type) {
   
   Class largeobject = engine.rootNamespace()
     .newClass("LargeObject").setId(engine.registerType<LargeObject>("LargeObject").data()).get();
-  ConstructorBuilder(largeobject).setCallback(largeobject_default_ctor).create();
-  DestructorBuilder(largeobject).setCallback(largeobject_dtor).create();
+  FunctionBuilder::Constructor(largeobject).setCallback(largeobject_default_ctor).create();
+  FunctionBuilder::Destructor(largeobject).setCallback(largeobject_dtor).create();
 
   Value val = engine.construct(largeobject.id(), {});
   ASSERT_EQ(val.type(), largeobject.id());
@@ -109,8 +108,8 @@ TEST(Scenarios, custom_type) {
 
   Class smallobject = engine.rootNamespace()
     .newClass("SmallObject").setId(engine.registerType<SmallObject>().data()).get();
-  ConstructorBuilder(smallobject).setCallback(smallobject_default_ctor).create();
-  DestructorBuilder(smallobject).setCallback(smallobject_dtor).create();
+  FunctionBuilder::Constructor(smallobject).setCallback(smallobject_default_ctor).create();
+  FunctionBuilder::Destructor(smallobject).setCallback(smallobject_dtor).create();
 
   val = engine.construct(smallobject.id(), {});
   ASSERT_EQ(val.type(), smallobject.id());

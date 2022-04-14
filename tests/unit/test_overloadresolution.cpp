@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -25,12 +25,12 @@ TEST(OverloadResolution, test1) {
 
   std::vector<Function> overloads;
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").get());
 
   OverloadResolution::Candidate resol = resolve_overloads(overloads, std::vector<Type>{ Type::Int });
   ASSERT_FALSE(bool(resol));
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").params(Type::Int).get());
 
   resol = resolve_overloads(overloads, std::vector<Type>{ Type::Int });
   ASSERT_TRUE(bool(resol));
@@ -38,7 +38,7 @@ TEST(OverloadResolution, test1) {
   auto inits = resol.initializations;
   ASSERT_TRUE(inits.at(0).conversion().firstStandardConversion().isCopy());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Char).get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").params(Type::Char).get());
   resol = resolve_overloads(overloads, std::vector<Type>{ Type::Float });
   ASSERT_FALSE(bool(resol));
 }
@@ -72,9 +72,9 @@ TEST(OverloadResolution, failure_indistinguishable) {
 
   std::vector<Function> overloads;
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").get());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").returns(Type::Int).get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").returns(Type::Int).get());
 
   std::vector<Type> types{ };
   OverloadResolution::Candidate resol = resolve_overloads(overloads, types);
@@ -91,12 +91,12 @@ TEST(OverloadResolution, failure_no_viable_candidates) {
 
   std::vector<Function> overloads;
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").params(Type::Int).get());
 
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").returns(Type::Int).params(Type::Float).get());
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").returns(Type::Int).params(Type::Float).get());
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  overloads.push_back(Symbol{ e.rootNamespace() }.newFunction("foo").returns(Type::Int).params(Type::Boolean, A.id()).get());
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
+  overloads.push_back(FunctionBuilder::Fun(e.rootNamespace(), "foo").returns(Type::Int).params(Type::Boolean, A.id()).get());
 
   std::vector<Type> types{ Type::Int, Type::Float };
   OverloadResolution::Candidate resol = resolve_overloads(overloads, types);

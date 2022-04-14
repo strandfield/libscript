@@ -14,14 +14,19 @@ namespace script
 
 class OperatorImpl;
 
+/*!
+ * \class Operator
+ */
+
 class LIBSCRIPT_API Operator : public Function
 {
 public:
   Operator() = default;
-  Operator(const Operator & other) = default;
+  Operator(const Operator&) = default;
   ~Operator() = default;
 
-  Operator(const std::shared_ptr<OperatorImpl> & impl);
+  [[deprecated("use the more general overload")]] Operator(const std::shared_ptr<OperatorImpl>& impl);
+  Operator(const Function& f);
 
   typedef OperatorName BuiltInOperator;
 
@@ -52,9 +57,11 @@ public:
   bool operator==(const Operator & other) const;
   bool operator!=(const Operator & other) const;
   bool operator<(const Operator & other) const { return d < other.d; }
-
-  std::shared_ptr<OperatorImpl> impl() const;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

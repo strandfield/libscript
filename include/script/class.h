@@ -36,14 +36,19 @@ class Typedef;
 class UserData;
 class Value;
 
+/*!
+ * \class Class
+ * \brief represents a class
+ */
+
 class LIBSCRIPT_API Class
 {
 public:
   Class() = default;
-  Class(const Class & other) = default;
+  Class(const Class&) = default;
   ~Class() = default;
   
-  explicit Class(const std::shared_ptr<ClassImpl> & impl);
+  explicit Class(const std::shared_ptr<ClassImpl>& impl);
 
   bool isNull() const;
   int id() const;
@@ -81,7 +86,9 @@ public:
   const std::vector<script::Enum> & enums() const;
 
   const std::vector<Template> & templates() const;
-  const std::vector<Typedef> & typedefs() const;
+
+  void addTypedef(Typedef t);
+  const std::vector<Typedef>& typedefs() const;
 
   const std::vector<Operator> & operators() const;
   const std::vector<Cast> & casts() const;
@@ -96,7 +103,7 @@ public:
 
   Function destructor() const;
   
-  ClassBuilder newNestedClass(const std::string & name) const;
+  ClassBuilder newNestedClass(std::string name) const;
 
   const std::vector<Function> & memberFunctions() const;
   inline const std::vector<Function> & methods() const { return memberFunctions(); }
@@ -135,6 +142,10 @@ public:
 private:
   std::shared_ptr<ClassImpl> d;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

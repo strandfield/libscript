@@ -8,7 +8,7 @@ namespace script
 {
 
 /*!
- * \enumclass FunctionSpecifier
+ * \enum FunctionSpecifier
  * \brief Enumeration describing function specifiers.
  * 
  * \begin{list}

@@ -16,13 +16,7 @@
 namespace script
 {
 
-FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, const std::string & n)
-  : Base(s, n)
-{
-
-}
-
-FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, std::string && n)
+FunctionTemplateBuilder::FunctionTemplateBuilder(const Symbol & s, std::string n)
   : Base(s, std::move(n))
 {
 

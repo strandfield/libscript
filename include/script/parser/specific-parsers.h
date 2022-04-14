@@ -26,7 +26,11 @@ class LIBSCRIPT_API ExpressionParser : public ParserBase
 public:
   ExpressionParser(std::shared_ptr<ParserContext> shared_context, const TokenReader& reader);
 
+  static bool isClearlyAnExpr(const Token& tok);
+  bool detect() const;
+
   std::shared_ptr<ast::Expression> parse();
+
 protected:
   std::shared_ptr<ast::Expression> readOperand();
   Token readBinaryOperator();
@@ -94,6 +98,9 @@ public:
   void setOptions(int opts) { mOptions = opts; }
   inline bool testOption(int opt) const { return (mOptions & opt) != 0; }
 
+  // Quickly look ahead to see if the next tokens are possibly an identifier 
+  bool lookAhead() const;
+
   /// TODO : add support for things like ::foo
   std::shared_ptr<ast::Identifier> parse();
 
@@ -121,13 +128,20 @@ public:
 
   ast::QualifiedType parse();
 
-  bool detect();
+  enum Detection
+  {
+    LookAheadDetection, // check that the next tokens can be a type
+    FullFragmentDetection, // check that the whole fragment can be a type
+  };
+
+  bool detect(Detection opt = LookAheadDetection);
 
   inline bool readFunctionSignature() const { return mReadFunctionSignature;  }
   inline void setReadFunctionSignature(bool on) { mReadFunctionSignature = on; }
 
 protected:
   bool mReadFunctionSignature;
+  bool lookAheadFunctionSignature();
   ast::QualifiedType tryReadFunctionSignature(const ast::QualifiedType & rt);
 };
 
@@ -200,6 +214,7 @@ public:
 
 protected:
   // detectDecl() implementation
+  bool obviouslyNotADecl();
   void readOptionalAttribute();
   void readOptionalDeclSpecifiers();
   bool detectBeforeReadingTypeSpecifier();
@@ -213,6 +228,7 @@ protected:
   bool readOptionalStatic();
   bool readOptionalExplicit();
   void readParams();
+  void tryDetectFromArgsOrParams(TokenReader args_or_params);
   void readArgsOrParams();
   bool readOptionalConst();
   bool readOptionalSpecifier(Token::Id id, Token& tok);

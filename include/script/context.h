@@ -20,27 +20,45 @@ class Script;
 
 class ContextImpl;
 
+/*!
+ * \class Context
+ * \brief represents the context of evaluation of an expression
+ * 
+ * This class represents the context of Engine::eval().
+ * 
+ * The default constructor constructs a null context (see isNull()).
+ * Calling any other function than isNull() on a null context 
+ * is undefined behavior.
+ * 
+ * Use addVar() to add variables to the context and clear() to remove 
+ * to clear the context.
+ * 
+ * Use exists() to test for the existence of a variable and 
+ * get() to retrieve the value of a variable.
+ * 
+ */
+
 class LIBSCRIPT_API Context
 {
 public:
   Context() = default;
-  Context(const Context & other) = default;
+  Context(const Context&) = default;
   ~Context() = default;
 
-  explicit Context(const std::shared_ptr<ContextImpl> & impl);
+  explicit Context(const std::shared_ptr<ContextImpl>& impl);
 
   int id() const;
   bool isNull() const;
 
-  Engine * engine() const;
+  Engine* engine() const;
 
-  const std::string & name() const;
-  void setName(const std::string & name);
+  const std::string& name() const;
+  void setName(const std::string& name);
 
-  const std::map<std::string, Value> & vars() const;
-  void addVar(const std::string & name, const Value & val);
-  bool exists(const std::string & name) const;
-  Value get(const std::string & name) const;
+  const std::map<std::string, Value>& vars() const;
+  void addVar(const std::string& name, const Value& val);
+  bool exists(const std::string& name) const;
+  Value get(const std::string& name) const;
 
   void use(const Module &m);
   void use(const Script &s);
@@ -48,13 +66,16 @@ public:
 
   void clear();
 
-  inline const std::shared_ptr<ContextImpl> & impl() const { return d; }
+  inline const std::shared_ptr<ContextImpl>& impl() const { return d; }
 
 private:
   std::shared_ptr<ContextImpl> d;
 };
 
-} // namespace script
+/*!
+ * \endclass
+ */
 
+} // namespace script
 
 #endif // LIBSCRIPT_CONTEXT_H

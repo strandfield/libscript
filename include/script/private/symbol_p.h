@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -7,26 +7,43 @@
 
 #include "libscriptdefs.h"
 
+#include "script/symbol-kind.h"
+
 #include <memory>
 
 namespace script
 {
 
+class Engine;
+class Function;
 class Name;
 class Script;
+class Symbol;
 
 class SymbolImpl
 {
 public:
+  Engine* engine = nullptr;
   std::weak_ptr<SymbolImpl> enclosing_symbol;
 
 public:
-  SymbolImpl() = default;
-  explicit SymbolImpl(const std::shared_ptr<SymbolImpl> & parent) : enclosing_symbol(parent) { }
+  explicit SymbolImpl(Engine* e, std::shared_ptr<SymbolImpl> parent = nullptr);
   virtual ~SymbolImpl() = default;
 
+  virtual SymbolKind get_kind() const = 0;
   virtual Name get_name() const = 0;
+
+  virtual bool is_function() const;
 };
+
+void add_function_to_symbol(const Function& func, Symbol& parent);
+
+inline SymbolImpl::SymbolImpl(Engine* e, std::shared_ptr<SymbolImpl> parent) 
+  : engine(e),
+    enclosing_symbol(parent) 
+{ 
+
+}
 
 } // namespace script
 

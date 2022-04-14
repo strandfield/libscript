@@ -29,7 +29,6 @@ class Context;
 class Conversion;
 class EngineImpl;
 class Enum;
-class FunctionBuilder;
 class FunctionType;
 class ModuleInterface;
 class Namespace;
@@ -126,12 +125,17 @@ inline std::error_code make_error_code(script::EngineError::ErrorCode e) noexcep
   return std::error_code(static_cast<int>(e), script::errors::engine_category());
 }
 
+/*!
+ * \class Engine
+ * \brief Script engine class
+ */
+
 class LIBSCRIPT_API Engine
 {
 public:
   Engine();
   ~Engine();
-  Engine(const Engine & other) = delete;
+  Engine(const Engine&) = delete;
 
   void setup();
   void tearDown();
@@ -246,7 +250,7 @@ protected:
 };
 
 /*!
- * \fn template<typename T> Type registerType(std::string name)
+ * \fn Type registerType(std::string name)
  * \brief register a new type
  */
 template<typename T>
@@ -258,7 +262,7 @@ inline Type Engine::registerType(const std::string& name)
 }
 
 /*!
- * \fn template<typename T> Type registerType(std::string name, Type::TypeFlag what)
+ * \fn Type registerType(std::string name, Type::TypeFlag what)
  * \param the name of the type
  * \param whether the type is enum or class
  * \brief register a new type
@@ -270,7 +274,7 @@ inline Type Engine::registerType(const std::string& name, Type::TypeFlag what)
 }
 
 /*!
- * \fn template<typename T> Type registerType()
+ * \fn Type registerType()
  * \brief register a new type
  */
 template<typename T>
@@ -280,7 +284,7 @@ inline Type Engine::registerType()
 }
 
 /*!
- * \fn template<typename T> Type getType() const
+ * \fn Type getType() const
  * \brief get a type
  * 
  * Throws \t UnknownTypeError if the type wasn't previously registered
@@ -356,7 +360,7 @@ template<> struct maketype_helper<double> { static Type get(const Engine&) { ret
 template<> struct maketype_helper<String> { static Type get(const Engine&) { return Type::String; } };
 
 /*!
- * \fn template<typename T> Type makeType() const
+ * \fn Type makeType() const
  * \brief constructs a Type from a C++ type
  *
  * This function may use \m getType and as such can raise 
@@ -368,7 +372,6 @@ inline Type Engine::makeType() const
   static const script::Type cache = maketype_helper<T>::get(*this);
   return cache;
 }
-
 
 template<> inline Value Engine::construct<bool>(const bool& x) { return newBool(x); }
 template<> inline Value Engine::construct<bool>(bool&& x) { return newBool(x); }
@@ -390,6 +393,10 @@ inline Module Engine::newModule(Args&&... args)
   addModule(module_impl);
   return Module(module_impl);
 }
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

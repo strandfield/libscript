@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -11,10 +11,8 @@
 
 #include "script/array.h"
 #include "script/cast.h"
-#include "script/castbuilder.h"
 #include "script/class.h"
 #include "script/classbuilder.h"
-#include "script/constructorbuilder.h"
 #include "script/datamember.h"
 #include "script/diagnosticmessage.h"
 #include "script/enum.h"
@@ -24,12 +22,10 @@
 #include "script/functionbuilder.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
-#include "script/literaloperatorbuilder.h"
 #include "script/name.h"
 #include "script/namelookup.h"
 #include "script/namespace.h"
 #include "script/namespacealias.h"
-#include "script/operatorbuilder.h"
 #include "script/script.h"
 #include "script/sourcefile.h"
 #include "script/staticdatamember.h"
@@ -124,18 +120,18 @@ TEST(CoreUtilsTests, access_specifiers) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
-  Function foo = FunctionBuilder(A, "foo").setProtected().get();
-  Function bar = FunctionBuilder(A, "bar").setPrivate().get();
-  Function qux = FunctionBuilder(A, "qux").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").setProtected().get();
+  Function bar = FunctionBuilder::Fun(A, "bar").setPrivate().get();
+  Function qux = FunctionBuilder::Fun(A, "qux").get();
 
   ASSERT_EQ(foo.accessibility(), AccessSpecifier::Protected);
   ASSERT_EQ(bar.accessibility(), AccessSpecifier::Private);
   ASSERT_EQ(qux.accessibility(), AccessSpecifier::Public);
 
-  Class B = Symbol{ e.rootNamespace() }.newClass("B").setBase(A).get();
-  Function slurm = FunctionBuilder(B, "slurm").get();
-  Function bender = FunctionBuilder(B, "bender").get();
+  Class B = ClassBuilder(Symbol(e.rootNamespace()), "B").setBase(A).get();
+  Function slurm = FunctionBuilder::Fun(B, "slurm").get();
+  Function bender = FunctionBuilder::Fun(B, "bender").get();
 
   ASSERT_TRUE(Accessibility::check(slurm, qux));
   ASSERT_TRUE(Accessibility::check(slurm, foo));
@@ -157,7 +153,7 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
   Engine e;
   e.setup();
 
-  ClassBuilder builder = Symbol{e.rootNamespace()}.newClass("A")
+  ClassBuilder builder = ClassBuilder(Symbol(e.rootNamespace()), "A")
     .addMember(Class::DataMember{ Type::Double, "x" })
     .addMember(Class::DataMember{ Type::Double, "y", AccessSpecifier::Protected })
     .addMember(Class::DataMember{ Type::Double, "z", AccessSpecifier::Private });
@@ -187,42 +183,42 @@ TEST(CoreUtilsTests, access_specifiers_data_members) {
 TEST(CoreUtilsTests, test_names) {
   using namespace script;
 
-  Name a{ "foo" };
-  Name b{ "bar" };
+  Name a{ SymbolKind::Function, "foo" };
+  Name b{ SymbolKind::Function, "bar" };
 
-  ASSERT_EQ(a.kind(), Name::StringName);
+  ASSERT_EQ(a.kind(), SymbolKind::Function);
   ASSERT_FALSE(a == b);
 
   a = AssignmentOperator; // operator=
-  ASSERT_EQ(a.kind(), Name::OperatorName);
+  ASSERT_EQ(a.kind(), SymbolKind::Operator);
   ASSERT_FALSE(a == b);
 
   ASSERT_TRUE(a == AssignmentOperator);
 
-  a = "foo";
-  b = Name{ Name::LiteralOperatorTag{}, "foo" }; // operator"" foo;
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::LiteralOperator, "foo"); // operator"" foo;
   ASSERT_FALSE(a == b);
 
   a = Name{};
   b = Name{};
   ASSERT_TRUE(a == b);
 
-  a = Name{ Name::CastTag{}, Type::Int }; // operator int
-  b = Name{ Name::CastTag{}, Type::Int };
-  ASSERT_EQ(a.kind(), Name::CastName);
+  a = Name(SymbolKind::Cast, Type::Int); // operator int
+  b = Name(SymbolKind::Cast, Type::Int);
+  ASSERT_EQ(a.kind(), SymbolKind::Cast);
   ASSERT_TRUE(a == b);
 
-  a = "foo";
-  b = "foo";
+  a = Name(SymbolKind::Function, "foo");
+  b = Name(SymbolKind::Function, "foo");
   ASSERT_TRUE(a == b);
 
   a = b;
-  ASSERT_TRUE(b.kind() != Name::InvalidName);
+  ASSERT_TRUE(b.kind() != SymbolKind::NotASymbol);
   a = std::move(b);
-  ASSERT_EQ(b.kind(), Name::InvalidName);
+  ASSERT_EQ(b.kind(), SymbolKind::NotASymbol);
 
-  Name c{std::move(a)}; // operator""km
-  ASSERT_EQ(a.kind(), Name::InvalidName);
+  Name c{ std::move(a) };
+  ASSERT_EQ(a.kind(), SymbolKind::NotASymbol);
 };
 
 
@@ -232,23 +228,23 @@ TEST(CoreUtilsTests, function_names) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
 
-  Function foo = FunctionBuilder(A, "foo").get();
-  Function eq = OperatorBuilder(Symbol(A), EqualOperator).params(Type::Int).get();
-  Function to_int = CastBuilder(A).setReturnType(Type::Int).get();
-  Function ctor = ConstructorBuilder(A).get();
-  Function a = FunctionBuilder(A, "A").get();
+  Function foo = FunctionBuilder::Fun(A, "foo").get();
+  Function eq = FunctionBuilder::Op(A, EqualOperator).params(Type::Int).get();
+  Function to_int = FunctionBuilder::Cast(A).setReturnType(Type::Int).get();
+  Function ctor = FunctionBuilder::Constructor(A).get();
+  Function a = FunctionBuilder::Fun(A, "A").get();
 
-  Function km = LiteralOperatorBuilder(e.rootNamespace(), "km").get();
+  Function km = FunctionBuilder::LiteralOp(e.rootNamespace(), "km").get();
 
   ASSERT_NE(foo.getName(), eq.getName());
   ASSERT_NE(eq.getName(), a.getName());
   ASSERT_NE(km.getName(), to_int.getName());
   ASSERT_NE(to_int.getName(), eq.getName());
 
-  // Still some limitations ?
-  ASSERT_EQ(a.getName(), ctor.getName());
+  // Class name & function name can be distinguished
+  ASSERT_NE(a.getName(), ctor.getName());
   
   /// TODO : make this work !
   Function dtor = e.typeSystem()->getClass(Type::String).destructor();
@@ -286,65 +282,21 @@ TEST(CoreUtilsTests, symbols) {
 
   /* Testing builder functions */
 
-  s = Symbol{ string };
-  Function length = s.newFunction("length").returns(Type::Int).setConst().get();
+  Function length = FunctionBuilder::Fun(string, "length").returns(Type::Int).setConst().get();
   ASSERT_TRUE(length.isMemberFunction());
   ASSERT_EQ(length.memberOf(), string);
 
-  Function assign = s.newOperator(AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).get();
+  Function assign = FunctionBuilder::Op(string, AssignmentOperator).returns(Type::ref(string.id())).params(Type::Int).get();
   ASSERT_TRUE(assign.isMemberFunction());
   ASSERT_EQ(assign.prototype().count(), 2);
   ASSERT_EQ(assign.memberOf(), string);
 
-  s = Symbol{ ns };
-  Function max = s.newFunction("max").returns(Type::Int).params(Type::Int, Type::Int).get();
+  Function max = FunctionBuilder::Fun(ns, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
   ASSERT_FALSE(max.isMemberFunction());
   ASSERT_EQ(max.enclosingNamespace(), ns);
 
-  Function eq = s.newOperator(EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).get();
+  Function eq = FunctionBuilder::Op(ns, EqualOperator).returns(Type::Boolean).params(Type::String, Type::String).get();
   ASSERT_FALSE(eq.isMemberFunction());
   ASSERT_EQ(eq.enclosingNamespace(), ns);
   ASSERT_EQ(eq.prototype().count(), 2);
-};
-
-
-static script::Value incr_callback(script::FunctionCall *c)
-{
-  int n = c->arg(1).toInt();
-  script::get<int>(c->arg(0)) += n;
-  return c->arg(0);
-}
-
-#include "script/program/expression.h"
-
-TEST(CoreUtilsTests, default_arguments) {
-  using namespace script;
-
-  Engine e;
-  e.setup();
-
-  Value default_arg = e.newInt(1);
-
-  Function incr = Symbol{ e.rootNamespace() }.newFunction("incr")
-    .returns(Type::ref(Type::Int))
-    .params(Type::ref(Type::Int), Type::cref(Type::Int))
-    .addDefaultArgument(program::VariableAccess::New(default_arg))
-    .setCallback(incr_callback).get();
-
-  const char *src =
-    "  int a = 0;     \n"
-    "  incr(a, 2);    \n"
-    "  incr(a);       \n";
-
-  Script s = e.newScript(SourceFile::fromString(src));
-  const bool success = s.compile();
-  ASSERT_TRUE(success);
-
-  s.run();
-
-  ASSERT_EQ(s.globals().size(), 1);
-  
-  Value a = s.globals().front();
-  ASSERT_EQ(a.type(), Type::Int);
-  ASSERT_EQ(a.toInt(), 3);
 };

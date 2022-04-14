@@ -7,7 +7,6 @@
 
 #include "script/compiler/component.h"
 #include "script/compiler/compilefunctiontask.h"
-#include "script/compiler/defaultargumentprocessor.h"
 #include "script/compiler/expressioncompiler.h"
 #include "script/compiler/functionprocessor.h"
 #include "script/compiler/importprocessor.h"
@@ -16,6 +15,7 @@
 #include "script/compiler/variableprocessor.h"
 
 #include "script/engine.h"
+#include "script/functioncreator.h"
 #include "script/script.h"
 #include "script/templateargumentprocessor.h"
 #include "script/types.h"
@@ -92,6 +92,8 @@ protected:
   void processNamespaceDecl(const std::shared_ptr<ast::NamespaceDeclaration> & decl);
   void processImportDirective(const std::shared_ptr<ast::ImportDirective> & decl);
 
+  FunctionCreator& getFunctionCreator(const Script& s);
+
   void processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
   void processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & decl);
   void processConstructorDeclaration(const std::shared_ptr<ast::ConstructorDecl> & decl);
@@ -100,7 +102,9 @@ protected:
   void processOperatorOverloadingDeclaration(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processFunctionCallOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl);
   void processCastOperatorDeclaration(const std::shared_ptr<ast::CastDecl> & decl);
-  void processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl);
+  std::vector<Attribute> computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl);
+  void processAttribute(Function& f, const std::vector<Attribute>& attributes);
+  void processDefaultArguments(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl);
 
   void processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl);
   std::vector<TemplateParameter> processTemplateParameters(const std::shared_ptr<ast::TemplateDeclaration> & decl);
@@ -151,17 +155,15 @@ protected:
   /// TODO: maybe merge this with 'mProcessingQueue'
   std::queue<ScopedDeclaration> mIncompleteFunctionDeclarations;
 
-  TypeResolver type_resolver;
-
   FunctionProcessor function_processor_;
 
   ScopeStatementProcessor scope_statements_;
 
   ImportProcessor modules_;
 
-  DefaultArgumentProcessor default_arguments_;
-
   FunctionTemplateProcessor templates_;
+
+  FunctionCreator function_creator_;
 
   bool mReprocessingIncompleteFunctions;
 };

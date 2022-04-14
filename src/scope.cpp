@@ -972,38 +972,65 @@ bool ContextScope::lookup(const std::string & name, NameLookupImpl *nl) const
   return true;
 }
 
+/*!
+ * \class Scope
+ */
 
-Scope::Scope(const Enum & e, const Scope & parent)
+/*!
+ * \fn Scope(const Enum& e, const Scope& parent = Scope())
+ * \brief construct a scope from an enum
+ */
+Scope::Scope(const Enum& e, const Scope& parent)
 {
   d = std::make_shared<script::EnumScope>(e, parent.impl());
 }
 
-Scope::Scope(const Class & cla, const Scope & parent)
+/*!
+ * \fn Scope(const Class& cla, const Scope& parent = Scope())
+ * \brief construct a scope from a class
+ */
+Scope::Scope(const Class& cla, const Scope& parent)
 {
   d = std::make_shared<script::ClassScope>(cla, parent.impl());
 }
 
-Scope::Scope(const Namespace & na, const Scope & parent)
+/*!
+ * \fn Scope(const Namespace& na, const Scope& parent = Scope())
+ * \brief construct a scope from a namespace
+ */
+Scope::Scope(const Namespace& na, const Scope& parent)
 {
   d = std::make_shared<script::NamespaceScope>(na, parent.impl());
 }
 
-Scope::Scope(const Script & s, const Scope & parent)
+/*!
+ * \fn Scope(const Script& s, const Scope& parent = Scope())
+ * \brief construct a scope from a script
+ */
+Scope::Scope(const Script& s, const Scope& parent)
 {
   d = std::make_shared<script::ScriptScope>(s, parent.impl());
 }
 
-Scope::Scope(const std::shared_ptr<ScopeImpl> & impl)
+Scope::Scope(const std::shared_ptr<ScopeImpl>& impl)
   : d(impl)
 {
 
 }
 
+/*!
+ * \fn bool isNull() const
+ * \brief returns whether this scope is null
+ */
 bool Scope::isNull() const
 {
   return d == nullptr;
 }
 
+/*!
+ * \fn Scope::Type type() const
+ * \brief returns the scope's type
+ */
 Scope::Type Scope::type() const
 {
   if (isNull())
@@ -1011,59 +1038,100 @@ Scope::Type Scope::type() const
   return static_cast<Scope::Type>(d->kind());
 }
 
-
-Engine * Scope::engine() const
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script engine
+ */
+Engine* Scope::engine() const
 {
   return d->engine();
 }
 
+/*!
+ * \fn bool hasParent() const
+ * \brief returns whether the scope as a parent scope
+ */
 bool Scope::hasParent() const
 {
-  return d->parent != nullptr;
+  return d && d->parent != nullptr;
 }
 
+/*!
+ * \fn Scope parent() const
+ * \brief returns the parent of this scope
+ */
 Scope Scope::parent() const
 {
-  return Scope{ d->parent };
+  return Scope(d->parent);
 }
 
-
+/*!
+ * \fn bool isClass() const
+ * \brief returns whether this scope is a class
+ */
 bool Scope::isClass() const
 {
   return dynamic_cast<const script::ClassScope*>(d.get()) != nullptr;
 }
 
+/*!
+ * \fn bool isNamespace() const
+ * \brief returns whether this scope is a namespace
+ */
 bool Scope::isNamespace() const
 {
   return dynamic_cast<const script::NamespaceScope*>(d.get()) != nullptr;
 }
 
+/*!
+ * \fn bool isScript() const
+ * \brief returns whether this scope is a script
+ */
 bool Scope::isScript() const
 {
   return dynamic_cast<const script::ScriptScope*>(d.get()) != nullptr;
 }
 
-
+/*!
+ * \fn Class asClass() const
+ * \brief returns this scope as a class
+ */
 Class Scope::asClass() const
 {
   return std::dynamic_pointer_cast<script::ClassScope>(d)->mClass;
 }
 
+/*!
+ * \fn Namespace asNamespace() const
+ * \brief returns this scope as a namespace
+ */
 Namespace Scope::asNamespace() const
 {
   return std::dynamic_pointer_cast<script::NamespaceScope>(d)->mNamespace;
 }
 
+/*!
+ * \fn Enum asEnum() const
+ * \brief returns this scope as an enumeration
+ */
 Enum Scope::asEnum() const
 {
   return std::dynamic_pointer_cast<script::EnumScope>(d)->mEnum;
 }
 
+/*!
+ * \fn Script asScript()
+ * \brief returns this scope as a script
+ */
 Script Scope::asScript() const
 {
   return std::dynamic_pointer_cast<script::NamespaceScope>(d)->mNamespace.asScript();
 }
 
+/*!
+ * \fn Symbol symbol() const
+ * \brief returns the symbol that is enclosing this scope
+ */
 Symbol Scope::symbol() const
 {
   if (isNull())
@@ -1072,6 +1140,7 @@ Symbol Scope::symbol() const
     return Symbol{ asClass() };
   else if (isNamespace())
     return Symbol{ asNamespace() };
+  // @TODO: add the function
   return parent().symbol();
 }
 
@@ -1089,41 +1158,72 @@ Script Scope::script() const
     return parent().script();
 }
 
-const std::vector<Class> & Scope::classes() const
+/*!
+ * \fn const std::vector<Class>& classes() const
+ * \brief returns the classes in this scope
+ */
+const std::vector<Class>& Scope::classes() const
 {
   return d->classes();
 }
 
-const std::vector<Enum> & Scope::enums() const
+/*!
+ * \fn const std::vector<Enum>& enums() const
+ * \brief returns the enums in this scope
+ */
+const std::vector<Enum>& Scope::enums() const
 {
   return d->enums();
 }
 
-const std::vector<Function> & Scope::functions() const
+/*!
+ * \fn const std::vector<Function>& functions() const
+ * \brief returns the functions in this scope
+ */
+const std::vector<Function>& Scope::functions() const
 {
   return d->functions();
 }
 
-const std::vector<Namespace> & Scope::namespaces() const
+/*!
+ * \fn const std::vector<Namespace>& namespaces() const
+ * \brief returns the namespaces in this scope
+ */
+const std::vector<Namespace>& Scope::namespaces() const
 {
   return d->namespaces();
 }
 
-const std::vector<Operator> & Scope::operators() const
+/*!
+ * \fn const std::vector<Operator>& operators() const
+ * \brief returns the operators in this scope
+ */
+const std::vector<Operator>& Scope::operators() const
 {
   return d->operators();
 }
 
-const std::vector<LiteralOperator> & Scope::literalOperators() const
+/*!
+ * \fn const std::vector<LiteralOperator>& literalOperators() const
+ * \brief returns the literal operators in this scope
+ */
+const std::vector<LiteralOperator>& Scope::literalOperators() const
 {
   return d->literal_operators();
 }
 
-const std::vector<Template> & Scope::templates() const
+/*!
+ * \fn const std::vector<Template>& templates() const
+ * \brief returns the templates in this scope
+ */
+const std::vector<Template>& Scope::templates() const
 {
   return d->templates();
 }
 
+/*!
+ * \fn AccessSpecifier accessibility() const
+ */
 AccessSpecifier Scope::accessibility() const
 {
   if (!isClass())
@@ -1132,6 +1232,13 @@ AccessSpecifier Scope::accessibility() const
   return std::static_pointer_cast<script::ClassScope>(impl())->mAccessibility;
 }
 
+/*!
+ * \fn std::vector<Function> operators(OperatorName op) const
+ * \brief get all operators of a given name in this scope
+ * 
+ * This function only returns operators in this scope and excludes 
+ * operators from the parent scope.
+ */
 std::vector<Function> Scope::operators(OperatorName op) const
 {
   const std::vector<Operator> & candidates = operators();
@@ -1146,7 +1253,11 @@ std::vector<Function> Scope::operators(OperatorName op) const
   return ret;
 }
 
-Scope Scope::child(const std::string & name) const
+/*!
+ * \fn Scope child(const std::string& name) const
+ * \brief returns a child scope of this scope
+ */
+Scope Scope::child(const std::string& name) const
 {
   if (isNull())
     return Scope{};
@@ -1184,7 +1295,7 @@ Scope Scope::child(const std::string & name) const
   return Scope{};
 }
 
-Scope Scope::child(const std::vector<std::string> & name) const
+Scope Scope::child(const std::vector<std::string>& name) const
 {
   Scope ret = *this;
   for (size_t i(0); i < name.size(); ++i)
@@ -1197,7 +1308,11 @@ Scope Scope::child(const std::vector<std::string> & name) const
   return ret;
 }
 
-void Scope::inject(const std::string & name, const script::Type & t)
+/*!
+ * \fn void inject(const std::string& name, const script::Type& t)
+ * \brief inject a type alias in this scope
+ */
+void Scope::inject(const std::string& name, const script::Type& t)
 {
   if (d->handle_injections())
   {
@@ -1214,7 +1329,11 @@ void Scope::inject(const std::string & name, const script::Type & t)
   }
 }
 
-void Scope::inject(const Class & cla)
+/*!
+ * \fn void inject(const Class& cla)
+ * \brief inject a class in this scope
+ */
+void Scope::inject(const Class& cla)
 {
   NameLookupImpl lookup;
   lookup.typeResult = cla.id();
@@ -1233,7 +1352,11 @@ void Scope::inject(const Class & cla)
   }
 }
 
-void Scope::inject(const Enum & e)
+/*!
+ * \fn void inject(const Enum& e)
+ * \brief inject an enum in this scope
+ */
+void Scope::inject(const Enum& e)
 {
   NameLookupImpl lookup;
   lookup.typeResult = e.id();
@@ -1269,7 +1392,11 @@ void Scope::inject(const NameLookupImpl *nl)
   }
 }
 
-void Scope::inject(const Scope & scp)
+/*!
+ * \fn void inject(const Scope& scp)
+ * \brief inject a namespace scope in this scope
+ */
+void Scope::inject(const Scope& scp)
 {
   if (!scp.isNamespace())
     throw std::runtime_error{ "Cannot inject non-namespace scope" };
@@ -1289,7 +1416,13 @@ void Scope::inject(const Scope & scp)
   nam_scope->import_namespace(dynamic_cast<const script::NamespaceScope &>(*scp.impl()));
 }
 
-void Scope::merge(const Scope & scp)
+/*!
+ * \fn void merge(const Scope& scp)
+ * \brief merge with another scope
+ * 
+ * TODO: clarify difference with inject()
+ */
+void Scope::merge(const Scope& scp)
 {
   if (!scp.parent().isNull())
     throw std::runtime_error{ "Scope::merge() : Cannot merge scope with parent" };
@@ -1323,7 +1456,11 @@ void Scope::merge(const Scope & scp)
   }
 }
 
-void Scope::inject(const NamespaceAlias & alias)
+/*!
+ * \fn void inject(const NamespaceAlias& alias)
+ * \brief inject a namespace alias in this scope
+ */
+void Scope::inject(const NamespaceAlias& alias)
 {
   d = std::shared_ptr<ScopeImpl>(d->clone());
   auto target = d;
@@ -1366,7 +1503,14 @@ Namespace Scope::enclosingNamespace(const script::Type& t, Engine* e)
   return e->rootNamespace();
 }
 
-std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string & suffix) const
+/*!
+ * \fn std::vector<Function> lookup(const LiteralOperator&, const std::string& suffix) const
+ * \brief lookup literal operators with a given suffix
+ * 
+ * This will search for literal operators in this scope, and, if none was found, in 
+ * the parent scope.
+ */
+std::vector<Function> Scope::lookup(const LiteralOperator&, const std::string& suffix) const
 {
   std::vector<Function> ret;
   for (const auto & lop : literalOperators())
@@ -1381,6 +1525,13 @@ std::vector<Function> Scope::lookup(const LiteralOperator &, const std::string &
   return ret;
 }
 
+/*!
+ * \fn std::vector<Function> lookup(OperatorName op) const
+ * \brief lookup operators with a given name
+ *
+ * This will search for operators in this scope, and, if none was found, in
+ * the parent scope.
+ */
 std::vector<Function> Scope::lookup(OperatorName op) const
 {
   std::vector<Function> ret;
@@ -1396,7 +1547,11 @@ std::vector<Function> Scope::lookup(OperatorName op) const
   return ret;
 }
 
-NameLookup Scope::lookup(const std::string & name) const
+/*!
+ * \fn NameLookup lookup(const std::string& name) const
+ * \brief perform name lookup in this scope
+ */
+NameLookup Scope::lookup(const std::string& name) const
 {
   auto nl = std::make_shared<NameLookupImpl>();
   lookup(name, nl);
@@ -1434,6 +1589,10 @@ const std::shared_ptr<ScopeImpl> & Scope::impl() const
 {
   return d;
 }
+
+/*!
+ * \endclass
+ */
 
 ScopeGuard::ScopeGuard(Scope & gs)
 {

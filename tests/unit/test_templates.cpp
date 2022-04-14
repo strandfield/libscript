@@ -101,17 +101,17 @@ class MaxFunctionTemplate : public script::FunctionTemplateNativeBackend
     return deduction.set_success(true);
   }
 
-  void substitute(script::FunctionBuilder& builder, const std::vector<script::TemplateArgument>& targs) override
+  void substitute(script::FunctionBlueprint& blueprint, const std::vector<script::TemplateArgument>& targs) override
   {
     using namespace script;
 
     Type T = functionTemplate().get("T", targs).type;
     int N = functionTemplate().get("N", targs).integer;
 
-    builder.setReturnType(T);
+    blueprint.prototype_.setReturnType(T);
 
     for (size_t i(0); i < size_t(N); ++i)
-      builder.addParam(Type::cref(T));
+      blueprint.prototype_.push(Type::cref(T));
   }
 
   std::pair<script::NativeFunctionSignature, std::shared_ptr<script::UserData>> instantiate(script::Function& function) override
@@ -146,7 +146,7 @@ TEST(TemplateTests, call_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<MaxFunctionTemplate>()
@@ -172,7 +172,7 @@ TEST(TemplateTests, call_to_template_with_no_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<MaxFunctionTemplate>()
@@ -198,7 +198,7 @@ TEST(TemplateTests, call_to_template_with_one_arg) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<MaxFunctionTemplate>()
@@ -224,7 +224,7 @@ TEST(TemplateTests, call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<MaxFunctionTemplate>()
@@ -250,7 +250,7 @@ TEST(TemplateTests, invalid_call_to_template_with_all_args) {
     TemplateParameter{ Type::Int, "N" },
   };
 
-  Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<MaxFunctionTemplate>()
@@ -272,7 +272,7 @@ class DummyFunctionTemplateBackend : public script::FunctionTemplateNativeBacken
     throw std::runtime_error{ "dummy" };
   }
 
-  void substitute(script::FunctionBuilder & builder, const std::vector<script::TemplateArgument> & targs) override
+  void substitute(script::FunctionBlueprint& blueprint, const std::vector<script::TemplateArgument> & targs) override
   {
     throw std::runtime_error{ "dummy" };
   }
@@ -300,7 +300,7 @@ TEST(TemplateTests, argument_deduction_1) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("abs")
+  FunctionTemplate function_template = FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "abs")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<DummyFunctionTemplateBackend>()
@@ -343,7 +343,7 @@ TEST(TemplateTests, argument_deduction_2) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("swap")
+  FunctionTemplate function_template = FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "swap")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<DummyFunctionTemplateBackend>()
@@ -385,7 +385,7 @@ TEST(TemplateTests, argument_deduction_3) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "T" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("max")
+  FunctionTemplate function_template = FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "max")
     .setParams(std::move(params))
     .setScope(Scope{engine.rootNamespace()})
     .withBackend<DummyFunctionTemplateBackend>()
@@ -429,7 +429,7 @@ TEST(TemplateTests, argument_deduction_4) {
     TemplateParameter{ TemplateParameter::TypeParameter{}, "A" },
   };
 
-  FunctionTemplate function_template = Symbol{ engine.rootNamespace() }.newFunctionTemplate("apply")
+  FunctionTemplate function_template = FunctionTemplateBuilder(Symbol(engine.rootNamespace()), "apply")
     .setParams(std::move(params))
     .setScope(Scope{})
     .withBackend<DummyFunctionTemplateBackend>()

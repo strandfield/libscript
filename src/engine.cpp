@@ -225,9 +225,14 @@ EngineError::EngineError(ErrorCode ec)
 
 /*!
  * \class Engine
- * \brief Script engine class
  */
 
+/*!
+ * \fn Engine()
+ * \brief default constructor
+ * 
+ * You must call setup() before using the engine.
+ */
 Engine::Engine()
 {
   d = std::unique_ptr<EngineImpl>(new EngineImpl{ this });
@@ -247,6 +252,10 @@ Engine::~Engine()
 
 ClassTemplate register_initialize_list_template(Engine*); // defined in initializerlist.cpp
 
+/*! 
+ * \fn void setup()
+ * \brief setups the script engine
+ */
 void Engine::setup()
 {
   d->typesystem = std::unique_ptr<TypeSystem>(new TypeSystem(TypeSystemImpl::create(this)));
@@ -264,7 +273,7 @@ void Engine::setup()
 
   register_builtin_operators(d->rootNamespace);
 
-  Class string = Symbol{ d->rootNamespace }.newClass(StringBackend::class_name()).setId(Type::String).get();
+  Class string = ClassBuilder(Symbol(d->rootNamespace), StringBackend::class_name()).setId(Type::String).get();
   StringBackend::register_string_type(string);
 
   d->templates.array = ArrayImpl::register_array_template(this);
@@ -955,7 +964,7 @@ const std::map<std::type_index, Template>& Engine::templateMap() const
  * \brief Returns all list of all existing scripts.
  *
  */
-const std::vector<Script> & Engine::scripts() const
+const std::vector<Script>& Engine::scripts() const
 {
   return d->scripts;
 }

@@ -1,0 +1,6 @@
+engine: liquid
+
+output:
+  class: classes
+  namespace: namespaces
+  document: documents

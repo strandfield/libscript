@@ -9,6 +9,7 @@
 #include "script/private/function_p.h"
 #include "script/functionbuilder.h"
 #include "script/namelookup.h"
+#include "script/private/programfunction.h"
 #include "script/private/template_p.h"
 #include "script/templateargumentdeduction.h"
 #include "script/private/templateargumentscope_p.h"
@@ -56,7 +57,7 @@ void FunctionTemplateProcessor::instantiate(Function & f)
   if(result.first)
     f.impl()->set_body(builders::make_body(result.first));
 
-  f.impl()->data = result.second;
+  f.impl()->set_user_data(result.second);
 
   //if (ft.is_native())
   //{
@@ -128,9 +129,9 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
   if (ft.hasInstance(*template_args, &f))
     return f;
   
-  FunctionBuilder builder = Symbol{ ft.impl()->enclosing_symbol.lock() }.newFunction(std::string{});
+  FunctionBlueprint blueprint{ Symbol(ft.impl()->enclosing_symbol.lock()), SymbolKind::Function, std::string{} };
 
-  ft.backend()->substitute(builder, *template_args);
+  ft.backend()->substitute(blueprint, *template_args);
 
  /* if (is_native)
   {
@@ -146,9 +147,8 @@ Function FunctionTemplateProcessor::deduce_substitute(const FunctionTemplate & f
     fp.generic_fill(builder, fundecl, tparamscope);
   }*/
 
-  // We construct the function manually.
-  // We don't use create() to avoid adding the function to the namespace or class.
-  auto impl = FunctionTemplateInstance::create(ft, *template_args, builder);
+  // We create a Function that is not goind to be added to the namespace or class (yet)
+  auto impl = FunctionTemplateInstance::create(ft, *template_args, blueprint);
   return Function{ impl };
 }
 

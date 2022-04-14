@@ -12,6 +12,10 @@ namespace script
 
 class LiteralOperatorImpl;
 
+/*!
+ * \class LiteralOperator
+ */
+
 class LIBSCRIPT_API LiteralOperator : public Function
 {
 public:
@@ -19,7 +23,8 @@ public:
   LiteralOperator(const LiteralOperator & other) = default;
   ~LiteralOperator() = default;
 
-  explicit LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl);
+  [[deprecated("use more general overload")]] explicit LiteralOperator(const std::shared_ptr<LiteralOperatorImpl> & impl);
+  LiteralOperator(const Function& f);
 
   Type input() const;
   Type output() const;
@@ -27,9 +32,11 @@ public:
   const std::string & suffix() const;
 
   LiteralOperator & operator=(const LiteralOperator & other) = default;
-
-  LiteralOperatorImpl * impl() const;
 };
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

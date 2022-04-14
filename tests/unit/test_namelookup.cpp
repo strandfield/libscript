@@ -1,4 +1,4 @@
-// Copyright (C) 2018-2021 Vincent Chambrin
+// Copyright (C) 2018-2022 Vincent Chambrin
 // This file is part of the libscript library
 // For conditions of distribution and use, see copyright notice in LICENSE
 
@@ -25,7 +25,7 @@ TEST(NameLookup, simple_function) {
   Engine e;
   e.setup();
 
-  Symbol{ e.rootNamespace() }.newFunction("foo").create();
+  FunctionBuilder::Fun(e.rootNamespace(), "foo").create();
 
   NameLookup lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -34,7 +34,7 @@ TEST(NameLookup, simple_function) {
   lookup = NameLookup::resolve("bar", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::UnknownName);
 
-  Symbol{ e.rootNamespace() }.newFunction("foo").params(Type::Int).create();
+  FunctionBuilder::Fun(e.rootNamespace(), "foo").params(Type::Int).create();
 
   lookup = NameLookup::resolve("foo", e.rootNamespace());
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -188,11 +188,11 @@ TEST(NameLookup, member_lookup) {
 
   Symbol gns{ e.rootNamespace() };
 
-  Class foo = gns.newClass("foo").get();
-  FunctionBuilder(foo, "f").create();
+  Class foo = ClassBuilder(gns, "foo").get();
+  FunctionBuilder::Fun(foo, "f").create();
 
-  Class bar = gns.newClass("bar").setBase(foo).get();
-  FunctionBuilder(bar, "g").create();
+  Class bar = ClassBuilder(gns, "bar").setBase(foo).get();
+  FunctionBuilder::Fun(bar, "g").create();
 
   NameLookup lookup = NameLookup::member("g", bar);
   ASSERT_EQ(lookup.resultType(), NameLookup::FunctionName);
@@ -213,7 +213,7 @@ TEST(NameLookup, scopes) {
   Engine e;
   e.setup();
 
-  Class A = Symbol{ e.rootNamespace() }.newClass("A").get();
+  Class A = ClassBuilder(Symbol(e.rootNamespace()), "A").get();
   Enum E = e.rootNamespace().newEnum("E").get();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
@@ -284,7 +284,7 @@ TEST(NameLookup, scope_class_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_C = Symbol{ foo }.newClass("C").get();
+  Class foo_C = ClassBuilder(Symbol(foo), "C").get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
 
@@ -323,13 +323,13 @@ TEST(NameLookup, scope_namespace_injection) {
   e.setup();
 
   Namespace foo = e.rootNamespace().newNamespace("foo");
-  Class foo_A = Symbol{ foo }.newClass("A").get();
-  Class foo_B = Symbol{ foo }.newClass("B").get();
-  Function foo_max_int = FunctionBuilder(foo, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
-  Function foo_max_double = FunctionBuilder(foo, "max").returns(Type::Double).params(Type::Double, Type::Double).get();
+  Class foo_A = ClassBuilder(Symbol(foo), "A").get();
+  Class foo_B = ClassBuilder(Symbol(foo), "B").get();
+  Function foo_max_int = FunctionBuilder::Fun(foo, "max").returns(Type::Int).params(Type::Int, Type::Int).get();
+  Function foo_max_double = FunctionBuilder::Fun(foo, "max").returns(Type::Double).params(Type::Double, Type::Double).get();
 
   Namespace bar = e.rootNamespace().newNamespace("bar");
-  Function bar_max_float = FunctionBuilder(bar, "max").returns(Type::Float).params(Type::Float, Type::Float).get();
+  Function bar_max_float = FunctionBuilder::Fun(bar, "max").returns(Type::Float).params(Type::Float, Type::Float).get();
 
   Scope s{ e.rootNamespace() };
 
@@ -373,11 +373,11 @@ TEST(NameLookup, scope_merge) {
 
   Namespace anon_1 = e.rootNamespace().newNamespace("anon1");
   Namespace anon_1_bar = anon_1.newNamespace("bar");
-  Function anon_1_bar_func = FunctionBuilder(anon_1_bar, "func").get();
+  Function anon_1_bar_func = FunctionBuilder::Fun(anon_1_bar, "func").get();
 
   Namespace anon_2 = e.rootNamespace().newNamespace("anon2");
   Namespace anon_2_bar = anon_2.newNamespace("bar");
-  Function anon_2_bar_func = FunctionBuilder(anon_2_bar, "func").get();
+  Function anon_2_bar_func = FunctionBuilder::Fun(anon_2_bar, "func").get();
 
   Scope base{ anon_1 };
 
@@ -421,7 +421,7 @@ TEST(NameLookup, scope_namespace_alias) {
   Namespace bar = foo.newNamespace("bar");
   Namespace qux = bar.newNamespace("qux");
 
-  Function func = FunctionBuilder(qux, "func").get();
+  Function func = FunctionBuilder::Fun(qux, "func").get();
 
   Scope base{ e.rootNamespace() };
   Scope s = base.child("foo");

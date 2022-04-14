@@ -8,6 +8,8 @@
 #include "script/compiler/compilesession.h"
 
 #include "script/compiler/compiler.h"
+#include "script/compiler/defaultargumentprocessor.h"
+#include "script/compiler/diagnostichelper.h"
 #include "script/compiler/functioncompiler.h"
 #include "script/compiler/templatedefinition.h"
 #include "script/compiler/templatespecialization.h"
@@ -20,12 +22,9 @@
 
 #include "script/program/expression.h"
 
-#include "script/castbuilder.h"
 #include "script/classbuilder.h"
 #include "script/classtemplateinstancebuilder.h"
 #include "script/classtemplatespecializationbuilder.h"
-#include "script/constructorbuilder.h"
-#include "script/destructorbuilder.h"
 #include "script/enumbuilder.h"
 #include "script/errors.h"
 #include "script/functionbuilder.h"
@@ -33,15 +32,15 @@
 #include "script/private/class_p.h"
 #include "script/private/engine_p.h"
 #include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 #include "script/functiontype.h"
 #include "script/literals.h"
-#include "script/literaloperatorbuilder.h"
-#include "script/operatorbuilder.h"
 #include "script/private/script_p.h"
 #include "script/private/template_p.h"
 #include "script/symbol.h"
 #include "script/templatebuilder.h"
 #include "script/templateargumentprocessor.h"
+#include "script/typesystem.h"
 
 namespace script
 {
@@ -77,7 +76,6 @@ ScriptCompiler::ScriptCompiler(Compiler *c)
   , variable_(c)
   , function_processor_{ c }
   , modules_(c)
-  , default_arguments_(c)
   , mReprocessingIncompleteFunctions(false)
 {
 
@@ -127,6 +125,7 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
     StateGuard guard{ this };
     mCurrentScope = selected_specialization.first.argumentScope(selected_specialization.second);
+    mCurrentScript = mCurrentScope.script();
 
     readClassContent(result, class_decl);
 
@@ -144,6 +143,7 @@ Class ScriptCompiler::instantiate(const ClassTemplate & ct, const std::vector<Te
 
     StateGuard guard{ this };
     mCurrentScope = ct.argumentScope(args);
+    mCurrentScript = mCurrentScope.script();
 
     readClassContent(result, class_decl);
 
@@ -201,7 +201,7 @@ void ScriptCompiler::processNext()
 
 Type ScriptCompiler::resolve(const ast::QualifiedType & qt)
 {
-  return type_resolver.resolve(qt, mCurrentScope);
+  return script::compiler::resolve_type(qt, mCurrentScope);
 }
 
 NameLookup ScriptCompiler::resolve(const std::shared_ptr<ast::Identifier> & id)
@@ -213,6 +213,7 @@ Function ScriptCompiler::registerRootFunction()
 {
   auto scriptfunc = std::make_shared<ScriptFunctionImpl>(engine());
   scriptfunc->enclosing_symbol = mCurrentScript.impl();
+  scriptfunc->set_body(FunctionCreator::compile_later());
 
   // @TODO: remove this fake decl, it causes a crash when using compile mode debug
   auto fakedecl = ast::FunctionDecl::New();
@@ -263,6 +264,8 @@ void ScriptCompiler::processOrCollectScriptDeclarations(const Script & task)
 
 bool ScriptCompiler::processOrCollectScriptDeclarations()
 {
+  TranslationTarget target{ this, mCurrentScript, currentAst()->root };
+
   for (const auto & decl : currentAst()->root->as<ast::ScriptRootNode>().declarations)
     processOrCollectDeclaration(decl);
 
@@ -406,7 +409,7 @@ void ScriptCompiler::processClassDeclaration(const std::shared_ptr<ast::ClassDec
 {
   assert(class_decl != nullptr);
 
-  ClassBuilder builder = currentScope().symbol().newClass("");
+  ClassBuilder builder = ClassBuilder(currentScope().symbol(), "");
   fill(builder, class_decl);
   builder.setId(getIdAttribute(class_decl->attribute));
 
@@ -477,7 +480,7 @@ void ScriptCompiler::processEnumDeclaration(const std::shared_ptr<ast::EnumDecla
 
   // Does "id" attribute makes sense for enums ?
   //int id = getIdAttribute(decl->attribute);
-  Enum e = symbol.newEnum(enum_decl.name->getName())
+  Enum e = EnumBuilder(symbol, enum_decl.name->getName())
     //.setId(id)
     .get();
 
@@ -505,7 +508,11 @@ void ScriptCompiler::processTypedef(const std::shared_ptr<ast::Typedef> & decl)
   const std::string & name = tdef.name->getName();
 
   Symbol s = currentScope().symbol();
-  s.newTypedef(t, name).create();
+
+  if (s.isClass())
+    s.toClass().addTypedef(Typedef(name, t));
+  else if(s.isNamespace())
+    s.toNamespace().addTypedef(Typedef(name, t));
 
   mCurrentScope.invalidateCache(Scope::InvalidateTypedefCache);
 }
@@ -550,6 +557,11 @@ void ScriptCompiler::processImportDirective(const std::shared_ptr<ast::ImportDir
   mCurrentScope.merge(imported);
 }
 
+FunctionCreator& ScriptCompiler::getFunctionCreator(const Script& s)
+{
+  return s.impl() && s.impl()->function_creator ? *s.impl()->function_creator : function_creator_;
+}
+
 void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & declaration)
 {
   try
@@ -584,12 +596,19 @@ void ScriptCompiler::processFunctionDeclaration(const std::shared_ptr<ast::Funct
 void ScriptCompiler::processBasicFunctionDeclaration(const std::shared_ptr<ast::FunctionDecl> & fundecl)
 {
   Scope scp = currentScope();
-  FunctionBuilder builder = scp.symbol().newFunction(fundecl->name->as<ast::SimpleIdentifier>().getName());
-  function_processor_.generic_fill(builder, fundecl, scp);
-  default_arguments_.generic_process(fundecl->params, builder, scp);
-  Function function = builder.get();
+  Symbol symbol{ scp.symbol() };
+  std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
+  FunctionBlueprint blueprint{ symbol, SymbolKind::Function, name };
+  function_processor_.generic_fill(blueprint, fundecl, scp);
 
-  processAttribute(function, fundecl);
+  std::vector<Attribute> attrs = computeAttributes(fundecl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, fundecl, attrs);
+
+  processAttribute(function, attrs);
+  processDefaultArguments(function, fundecl);
+
+  script::add_function_to_symbol(function, symbol);
 
   scp.invalidateCache(Scope::InvalidateFunctionCache);
 
@@ -607,14 +626,19 @@ void ScriptCompiler::processConstructorDeclaration(const std::shared_ptr<ast::Co
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  ConstructorBuilder b{ current_class };
-  function_processor_.generic_fill(b, decl, scp);
-  default_arguments_.generic_process(decl->params, b, scp);
-  Function ctor = b.get();
+  FunctionBlueprint blueprint = FunctionBlueprint::Constructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
 
-  processAttribute(ctor, decl);
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  schedule(ctor, decl, scp);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+  processDefaultArguments(function, decl);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
+
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::DestructorDecl> & decl)
@@ -622,22 +646,26 @@ void ScriptCompiler::processDestructorDeclaration(const std::shared_ptr<ast::Des
   const Scope scp = currentScope();
   Class current_class = scp.asClass();
 
-  DestructorBuilder b{ current_class };
-  function_processor_.generic_fill(b, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Destructor(current_class);
+  function_processor_.generic_fill(blueprint, decl, scp);
 
   if (!current_class.parent().isNull())
   {
     Function parent_dtor = current_class.parent().destructor();
     if (!parent_dtor.isNull() && parent_dtor.isVirtual())
-      b.setVirtual();
+      blueprint.flags_.set(FunctionSpecifier::Virtual);
   }
 
   /// TODO : check if a destructor already exists
-  Function dtor = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
 
-  processAttribute(dtor, decl);
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
   
-  schedule(dtor, decl, scp);
+  schedule(function, decl, scp);
 }
 
 void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::OperatorOverloadDecl> & decl)
@@ -649,16 +677,20 @@ void ScriptCompiler::processLiteralOperatorDecl(const std::shared_ptr<ast::Opera
 
   std::string suffix_name = decl->name->as<ast::LiteralOperatorName>().suffix_string();
 
-  LiteralOperatorBuilder b{ scp.asNamespace(), std::move(suffix_name) };
-  function_processor_.generic_fill(b, decl, currentScope());
+  FunctionBlueprint blueprint = FunctionBlueprint::LiteralOp(scp.asNamespace(), std::move(suffix_name));
+  function_processor_.generic_fill(blueprint, decl, currentScope());
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = b.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
 
   scp.invalidateCache(Scope::InvalidateLiteralOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
@@ -695,26 +727,31 @@ void ScriptCompiler::processOperatorOverloadingDeclaration(const std::shared_ptr
   if (opname == OperatorName::FunctionCallOperator)
     return processFunctionCallOperatorDecl(decl);
 
-  auto builder = scp.symbol().newOperator(opname);
-  function_processor_.generic_fill(builder, decl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Operator, opname };
+  function_processor_.generic_fill(blueprint, decl, scp);
   
   const bool is_member = currentScope().isClass();
+  OperatorName operation = blueprint.name_.operatorName();
 
-  if (Operator::isBinary(builder.operation) && arity != 2)
+  if (Operator::isBinary(operation) && arity != 2)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 2} };
-  else if (Operator::isUnary(builder.operation) && builder.proto_.count() != 1)
+  else if (Operator::isUnary(operation) && blueprint.prototype().count() != 1)
     throw CompilationFailure{ CompilerError::InvalidParamCountInOperatorOverload, errors::ParameterCount{int(arity), 1} };
 
-  if (Operator::onlyAsMember(builder.operation) && !is_member)
+  if (Operator::onlyAsMember(operation) && !is_member)
     throw CompilationFailure{ CompilerError::OpOverloadMustBeDeclaredAsMember };
 
   /// TODO: check that the user does not declare any default arguments
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
 
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-
-  processAttribute(function, decl);
 
   schedule(function, decl, scp);
 }
@@ -723,13 +760,20 @@ void ScriptCompiler::processFunctionCallOperatorDecl(const std::shared_ptr<ast::
 {
   Scope scp = currentScope();
 
-  FunctionCallOperatorBuilder builder{ scp.symbol() };
-  function_processor_.generic_fill(builder, decl, scp);
-  default_arguments_.generic_process(decl->params, builder, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Op(scp.symbol().toClass(), OperatorName::FunctionCallOperator);
+  function_processor_.generic_fill(blueprint, decl, scp);
 
-  Function function = builder.get();
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+  processDefaultArguments(function, decl);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
+
   scp.invalidateCache(Scope::InvalidateOperatorCache);
-  processAttribute(function, decl);
+
   schedule(function, decl, scp);
 }
 
@@ -740,21 +784,42 @@ void ScriptCompiler::processCastOperatorDeclaration(const std::shared_ptr<ast::C
   const bool is_member = scp.isClass();
   assert(is_member); /// TODO : is this necessary (should be enforced by the parser)
 
-  CastBuilder builder{ scp.symbol() };
-  function_processor_.generic_fill(builder, decl, scp);
+  FunctionBlueprint blueprint = FunctionBlueprint::Cast(scp.symbol().toClass());
+  function_processor_.generic_fill(blueprint, decl, scp);
+
   /// TODO: check that the user does not declare any default arguments
-  Function cast = builder.get();
+
+  std::vector<Attribute> attrs = computeAttributes(decl);
+
+  Function function = getFunctionCreator(mCurrentScript).create(blueprint, decl, attrs);
+
+  processAttribute(function, attrs);
+
+  script::add_function_to_symbol(function, blueprint.parent_);
   
-  schedule(cast, decl, scp);
+  schedule(function, decl, scp);
 }
 
-void ScriptCompiler::processAttribute(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
+std::vector<Attribute> ScriptCompiler::computeAttributes(const std::shared_ptr<ast::FunctionDecl>& decl)
 {
-  if (decl->attribute)
-  {
-    mCurrentScript.impl()->attributes.add(f.impl().get(), { decl->attribute->attribute });
-  }
+  return decl->attribute ? std::vector<Attribute>{ decl->attribute->attribute } : std::vector<Attribute>{ };
 }
+
+void ScriptCompiler::processAttribute(Function& f, const std::vector<Attribute>& attributes)
+{
+  if (attributes.empty())
+    return;
+
+  mCurrentScript.impl()->attributes.add(f.impl().get(), attributes);
+}
+
+void ScriptCompiler::processDefaultArguments(Function& f, const std::shared_ptr<ast::FunctionDecl>& decl)
+{
+  ExpressionCompiler ec{ compiler(), currentScope() };
+  DefaultArgumentVector defaultargs = script::compiler::process_default_arguments(ec, decl->params, f);
+  f.script().impl()->defaultarguments.add(f.impl().get(), defaultargs);
+}
+
 
 void ScriptCompiler::processTemplateDeclaration(const std::shared_ptr<ast::TemplateDeclaration> & decl)
 {
@@ -816,7 +881,7 @@ void ScriptCompiler::processClassTemplateDeclaration(const std::shared_ptr<ast::
   std::string name = classdecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  ClassTemplate ct = scp.symbol().newClassTemplate(std::move(name))
+  ClassTemplate ct = ClassTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptClassTemplateBackend>()
@@ -834,7 +899,7 @@ void ScriptCompiler::processFunctionTemplateDeclaration(const std::shared_ptr<as
   std::string name = fundecl->name->as<ast::SimpleIdentifier>().getName();
   std::vector<TemplateParameter> params = processTemplateParameters(decl);
 
-  FunctionTemplate ft = scp.symbol().newFunctionTemplate(std::move(name))
+  FunctionTemplate ft = FunctionTemplateBuilder(scp.symbol(), std::move(name))
     .setParams(std::move(params))
     .setScope(scp)
     .withBackend<ScriptFunctionTemplateBackend>()
@@ -931,22 +996,23 @@ void ScriptCompiler::processFunctionTemplateFullSpecialization(const std::shared
     args = TemplateArgumentProcessor::arguments(scp, template_full_name->arguments);
   }
 
-  FunctionBuilder builder{ scp.symbol(), std::string{} };
-  function_processor_.generic_fill(builder, fundecl, scp);
+  FunctionBlueprint blueprint{ scp.symbol(), SymbolKind::Function, std::string{} };
+  blueprint.body_ = FunctionCreator::compile_later();
+  function_processor_.generic_fill(blueprint, fundecl, scp);
   /// TODO : the previous statement may throw an exception if some type name cannot be resolved, 
   // to avoid this error, we should process all specializations at the end !
 
   TemplateOverloadSelector selector;
-  auto selection = selector.select(tmplts, args, builder.proto_);
+  auto selection = selector.select(tmplts, args, blueprint.prototype_);
 
   if(selection.first.isNull())
     throw CompilationFailure{ CompilerError::CouldNotFindPrimaryFunctionTemplate };
 
   /// TODO : merge this duplicate of FunctionTemplateProcessor
   /// TODO: handle default arguments
-  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, builder.name_, builder.proto_, engine(), builder.flags);
-  impl->program_ = builder.body;
-  impl->data = builder.data;
+  auto impl = std::make_shared<FunctionTemplateInstance>(selection.first, selection.second, blueprint.name_.string(), blueprint.prototype_, engine(), blueprint.flags_);
+  impl->program_ = blueprint.body_;
+  impl->data_ = blueprint.data_;
   impl->enclosing_symbol = scp.symbol().impl();
   Function result = Function{ impl };
 
@@ -970,6 +1036,10 @@ void ScriptCompiler::schedule(Function & f, const std::shared_ptr<ast::FunctionD
 {
   if (f.isDeleted() || f.isPureVirtual())
     return;
+
+  if (f.impl()->body() != FunctionCreator::compile_later())
+    return;
+
   mCompilationTasks.push(CompileFunctionTask{ f, fundecl, scp });
 }
 

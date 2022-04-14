@@ -16,7 +16,7 @@ namespace script
 {
 
 class Function;
-class FunctionBuilder;
+class FunctionBlueprint;
 class FunctionTemplate;
 class FunctionTemplateImpl;
 class TemplateArgument;
@@ -33,7 +33,7 @@ public:
 
   virtual void deduce(TemplateArgumentDeduction& deduction, const std::vector<TemplateArgument>& targs, const std::vector<Type>& itypes) = 0;
 
-  virtual void substitute(FunctionBuilder& builder, const std::vector<TemplateArgument>& targs) = 0;
+  virtual void substitute(FunctionBlueprint& blueprint, const std::vector<TemplateArgument>& targs) = 0;
 
   virtual std::pair<NativeFunctionSignature, std::shared_ptr<UserData>> instantiate(Function& function) = 0;
 

@@ -17,6 +17,7 @@ enum class AccessSpecifier;
 class Attributes;
 class Cast;
 class Class;
+class DefaultArguments;
 class Engine;
 namespace program { class Expression; class Statement; }
 class FunctionImpl;
@@ -55,15 +56,7 @@ public:
   const Type& parameter(size_t index) const;
   const Type& returnType() const;
 
-  [[deprecated("Use defaultArguments().size() != 0 instead")]]
-  bool hasDefaultArguments() const;
-  [[deprecated("Use defaultArguments().size() instead")]]
-  size_t defaultArgumentCount() const;
-  [[deprecated("default arguments should be processed before the Function object is constructed")]]
-  void addDefaultArgument(const std::shared_ptr<program::Expression> & value);
-  [[deprecated("default arguments should be processed before the Function object is constructed")]]
-  void addDefaultArgument(const script::Value & val, ParameterPolicy policy = ParameterPolicy::Copy);
-  const std::vector<std::shared_ptr<program::Expression>> & defaultArguments() const;
+  DefaultArguments defaultArguments() const;
 
   Script script() const;
 
@@ -107,7 +100,7 @@ public:
 
   std::shared_ptr<program::Statement> program() const;
 
-  const std::shared_ptr<UserData> & data() const;
+  std::shared_ptr<UserData> data() const;
 
   Engine* engine() const;
   inline const std::shared_ptr<FunctionImpl> & impl() const { return d; }

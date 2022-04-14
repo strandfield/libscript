@@ -20,10 +20,19 @@
 namespace script
 {
 
+SymbolKind NamespaceImpl::get_kind() const
+{
+  return SymbolKind::Namespace;
+}
+
 Name NamespaceImpl::get_name() const
 {
-  return Name{ this->name };
+  return Name(SymbolKind::Namespace, this->name);
 }
+
+/*!
+ * \class Namespace
+ */
 
 Namespace::Namespace(const std::shared_ptr<NamespaceImpl> & impl)
   : d(impl)
@@ -139,7 +148,20 @@ const std::vector<Template> & Namespace::templates() const
   return d->templates;
 }
 
-const std::vector<Typedef> & Namespace::typedefs() const
+/*!
+ * \fn void addTypedef(Typedef t)
+ * \brief adds a typedef to the namespace
+ */
+void Namespace::addTypedef(Typedef t)
+{
+  d->typedefs.push_back(std::move(t));
+}
+
+/*!
+ * \fn const std::vector<Typedef>& typedefs() const
+ * \brief returns the list of typedef in this namespace
+ */
+const std::vector<Typedef>& Namespace::typedefs() const
 {
   return d->typedefs;
 }
@@ -217,5 +239,10 @@ bool Namespace::operator!=(const Namespace & other) const
 {
   return d != other.d;
 }
+
+
+/*!
+ * \endclass
+ */
 
 } // namespace script

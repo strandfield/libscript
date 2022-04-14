@@ -6,6 +6,7 @@
 #define LIBSCRIPT_SCRIPT_P_H
 
 #include "script/attributes-map.h"
+#include "script/defaultargumentsmap.h"
 #include "script/namespace.h"
 #include "script/private/namespace_p.h"
 #include "script/scope.h"
@@ -25,6 +26,7 @@ namespace program
 struct Breakpoint;
 } // namespace program
 
+class FunctionCreator;
 class ModuleInterface;
 
 class ScriptImpl : public NamespaceImpl
@@ -46,6 +48,8 @@ public:
   std::shared_ptr<ast::AST> ast;
   Scope exports;
   AttributesMap attributes;
+  DefaultArgumentsMap defaultarguments;
+  FunctionCreator* function_creator = nullptr;
 
   std::map<std::shared_ptr<FunctionImpl>, std::vector<std::shared_ptr<program::Breakpoint>>> breakpoints_map;
 

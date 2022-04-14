@@ -22,40 +22,6 @@ SourceFileImpl::SourceFileImpl(const std::string & path)
 
 /*!
  * \class SourceFile
- * \brief Represents a source file.
- *
- * The SourceFile class represents a source file for a \t Script.
- * The actual source can currently be either a file on the local file system 
- * or an in-memory string (see \m fromString method).
- *
- * The scripting engine assumes that source files are encoded in UTF-8, 
- * and thus uses a \t{std::string} as the underlying storage type.
- *
- * If the input is a local file, it is not loaded until \m load is called.
- * After a call to \m load, the entire file is stored in memory.
- * Memory can be released by calling \m unload unless the source file 
- * \m isLocked, meaning that the system needs the source to be available
- * (this is the case, for example, if your script contains templates).
- *
- * The SourceFile class is an implicitely shared class: it can be null constructed 
- * and copy and assignment do not create true copies but rather new reference to the 
- * same object.
- */
-
-/*!
- * \fn SourceFile()
- * \brief Null-constructs a source file.
- *
- * The only thing you can do safely on a null source file is to 
- * test for nullity.
- * \sa isNull.
- */
-
-/*!
- * \fn SourceFile(const SourceFile &)
- * \brief Copy constructor
- *
- * Constructs a new reference to the same source file.
  */
 
 /*!

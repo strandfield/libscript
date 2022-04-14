@@ -7,6 +7,7 @@
 
 #include "script/ast.h"
 #include "script/engine.h"
+#include "script/symbol.h"
 
 #include "script/program/statements.h"
 
@@ -59,7 +60,6 @@ void ScriptImpl::add_breakpoint(script::Function f, std::shared_ptr<program::Bre
 
 /*!
  * \class Script
- * \brief Represents an executable script
  */
 
 Script::Script(const std::shared_ptr<ScriptImpl> & impl)
@@ -68,34 +68,68 @@ Script::Script(const std::shared_ptr<ScriptImpl> & impl)
 
 }
 
+/*!
+ * \fn int id() const
+ * \brief returns the script's id
+ */
 int Script::id() const
 {
   return d->id;
 }
 
-const std::string & Script::path() const
+/*!
+ * \fn const std::string& path() const
+ * \brief returns the script's filepath
+ */
+const std::string& Script::path() const
 {
   return d->source.filepath();
 }
 
+/**
+ * \fn void attach(FunctionCreator& fcreator)
+ * \brief attach a function creator to this script
+ * 
+ * This creator will be used while compiling the script.
+ * The creator does not need to outlive the Script but must be alive 
+ * when \m compile() is called.
+ */
+void Script::attach(FunctionCreator& fcreator)
+{
+  d->function_creator = &fcreator;
+}
+
 /*!
- * \fn bool compile(CompileMode mode)
+ * \fn bool compile(CompileMode mode, FunctionCreator* fcreator = nullptr)
  * \brief Compiles the script
  * Returns true on success, false otherwise. 
  * If the compilation failed, use messages() to retrieve the error messages.
  * Warning: Calling this function while a script is compiling is undefined behavior.
  */
-bool Script::compile(CompileMode mode)
+bool Script::compile(CompileMode mode, FunctionCreator* fcreator)
 {
   Engine *e = d->engine;
+  d->function_creator = fcreator ? fcreator : d->function_creator;
   return e->compile(*this, mode);
 }
 
+/*!
+ * \fn bool isReady() const
+ * \brief returns whether the script is ready to be executed
+ */
 bool Script::isReady() const
 {
   return !d->program.isNull();
 }
 
+/*!
+ * \fn void run()
+ * \brief runs the script
+ * 
+ * The script must have been compiled beforehand.
+ * Calling run() on a script for which isReady() is false will 
+ * result in an exception being thrown.
+ */
 void Script::run()
 {
   if (d->program.isNull())
@@ -106,6 +140,10 @@ void Script::run()
   d->program.invoke({});
 }
 
+/*!
+ * \fn void clear()
+ * \brief clears the script
+ */
 void Script::clear()
 {
   // @TODO: unregister types
@@ -122,31 +160,57 @@ void Script::clear()
   d->attributes.clear();
 }
 
-const SourceFile & Script::source() const
+/*!
+ * \fn const SourceFile& source() const
+ * \brief returns the script' source
+ */
+const SourceFile& Script::source() const
 {
   return d->source;
 }
 
+/*!
+ * \fn Namespace rootNamespace() const
+ * \brief returns the script's root namespace
+ */
 Namespace Script::rootNamespace() const
 {
   return Namespace{ d };
 }
 
-const std::map<std::string, int> & Script::globalNames() const
+/*!
+ * \fn const std::map<std::string, int>& globalNames() const
+ * \brief returns the name of the global variables defined in the script
+ */
+const std::map<std::string, int>& Script::globalNames() const
 {
   return d->globalNames;
 }
 
-const std::vector<Value> & Script::globals() const
+/*!
+ * \fn const std::vector<Value>& globals() const
+ * \brief returns the script's global variables
+ * 
+ * This vector is filled during a call to run().
+ */
+const std::vector<Value>& Script::globals() const
 {
   return d->globals;
 }
 
-const std::vector<diagnostic::DiagnosticMessage> & Script::messages() const
+/*!
+ * \fn const std::vector<diagnostic::DiagnosticMessage>& messages() const
+ * \brief returns the diagnostic messages produced while compiling the script
+ */
+const std::vector<diagnostic::DiagnosticMessage>& Script::messages() const
 {
   return d->messages;
 }
 
+/*!
+ * \fn Scope exports() const
+ * \brief returns the script exported symbols
+ */
 Scope Script::exports() const
 {
   return d->exports;
@@ -160,6 +224,15 @@ Attributes Script::getAttributes(const Symbol& sym) const
 Attributes Script::getAttributes(const Function& f) const
 {
   return d->attributes.getAttributesFor(f.impl().get());
+}
+
+/*!
+ * \fn DefaultArguments getDefaultArguments(const Function& f) const
+ * \brief returns the default arguments for a given function
+ */
+DefaultArguments Script::getDefaultArguments(const Function& f) const
+{
+  return d ? d->defaultarguments.get(f.impl().get()) : DefaultArguments();
 }
 
 /*!
@@ -250,19 +323,13 @@ std::vector<std::pair<Function, std::shared_ptr<program::Breakpoint>>> Script::b
   return fetcher.result;
 }
 
-Engine * Script::engine() const
+/*!
+ * \fn Engine* engine() const
+ * \brief returns the script's engine
+ */
+Engine* Script::engine() const
 {
   return d->engine;
-}
-
-bool Script::operator==(const Script & other) const
-{
-  return d == other.d;
-}
-
-bool Script::operator!=(const Script & other) const
-{
-  return d != other.d;
 }
 
 } // namespace script

@@ -27,7 +27,6 @@ class ModuleInterface;
 class NamespaceImpl : public SymbolImpl
 {
 public:
-  Engine *engine;
   std::string name;
   std::map<std::string, Value> variables;
   std::vector<Enum> enums;
@@ -42,7 +41,7 @@ public:
 
 public:
   NamespaceImpl(const std::string & n, Engine *e)
-    : engine(e)
+    : SymbolImpl(e)
     , name(n)
   {
 
@@ -50,6 +49,7 @@ public:
   NamespaceImpl(const NamespaceImpl &) = delete;
   virtual ~NamespaceImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
 };
 

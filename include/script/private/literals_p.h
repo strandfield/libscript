@@ -5,28 +5,27 @@
 #ifndef LIBSCRIPT_LITERALS_P_H
 #define LIBSCRIPT_LITERALS_P_H
 
-#include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 
 namespace script
 {
 
-class LiteralOperatorImpl : public FunctionImpl
+class LiteralOperatorImpl : public ProgramFunction
 {
 public:
   std::string suffix;
   DynamicPrototype proto_;
-  std::shared_ptr<program::Statement> program_;
 
 public:
-  LiteralOperatorImpl(std::string && suffix, const Prototype & proto, Engine *engine, FunctionFlags flags);
+  LiteralOperatorImpl(std::string suffix, const Prototype & proto, Engine *engine, FunctionFlags flags);
   ~LiteralOperatorImpl() = default;
 
+  SymbolKind get_kind() const override;
+  const std::string& literal_operator_suffix() const override;
   Name get_name() const override;
   const Prototype & prototype() const override;
 
   bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
 };
 
 } // namespace script

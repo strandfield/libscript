@@ -6,7 +6,7 @@
 #define LIBSCRIPT_SYMBOL_H
 
 #include "libscriptdefs.h"
-#include "script/operators.h"
+#include "script/symbol-kind.h"
 #include "script/types.h"
 
 namespace script
@@ -14,18 +14,12 @@ namespace script
 
 class Attributes;
 class Class;
-class ClassBuilder;
-class ClassTemplateBuilder;
 class Engine;
-class EnumBuilder;
-class FunctionBuilder;
-class FunctionTemplateBuilder;
+class Function;
 class Name;
 class Namespace;
-class OperatorBuilder;
 class Script;
 class SymbolImpl;
-class TypedefBuilder;
 
 /*!
  * \class Symbol
@@ -41,12 +35,17 @@ public:
 
   explicit Symbol(const script::Class & c);
   explicit Symbol(const Namespace & n);
+  Symbol(const Function& f);
 
   explicit Symbol(const std::shared_ptr<SymbolImpl> & impl);
+
+  typedef SymbolKind Kind;
 
   inline bool isNull() const { return d == nullptr; }
 
   Engine* engine() const;
+
+  Kind kind() const;
 
   bool isClass() const;
   script::Class toClass() const;
@@ -54,23 +53,14 @@ public:
   bool isNamespace() const;
   Namespace toNamespace() const;
 
+  bool isFunction() const;
+  Function toFunction() const;
+
   Name name() const;
   Symbol parent() const;
   Script script() const;
 
   Attributes attributes() const;
-
-  ClassBuilder newClass(const std::string & name);
-  ClassBuilder newClass(std::string && name);
-  ClassTemplateBuilder newClassTemplate(const std::string & name);
-  ClassTemplateBuilder newClassTemplate(std::string && name);
-  EnumBuilder newEnum(std::string && name);
-  FunctionBuilder newFunction(const std::string & name);
-  FunctionTemplateBuilder newFunctionTemplate(const std::string & name);
-  FunctionTemplateBuilder newFunctionTemplate(std::string && name);
-  OperatorBuilder newOperator(OperatorName op);
-  TypedefBuilder newTypedef(const Type & t, const std::string & name);
-  TypedefBuilder newTypedef(const Type & t, std::string && name);
 
   Symbol & operator=(const Symbol &) = default;
 

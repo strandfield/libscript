@@ -5,28 +5,24 @@
 #ifndef LIBSCRIPT_OPERATOR_P_H
 #define LIBSCRIPT_OPERATOR_P_H
 
-#include "script/private/function_p.h"
+#include "script/private/programfunction.h"
 
 #include "script/operator.h"
 
 namespace script
 {
 
-class OperatorImpl : public FunctionImpl
+class OperatorImpl : public ProgramFunction
 {
 public:
   OperatorName operatorId;
-  std::shared_ptr<program::Statement> program_;
 
 public:
   OperatorImpl(OperatorName op, Engine *engine, FunctionFlags flags);
   ~OperatorImpl() = default;
 
+  SymbolKind get_kind() const override;
   Name get_name() const override;
-
-  bool is_native() const override;
-  std::shared_ptr<program::Statement> body() const override;
-  void set_body(std::shared_ptr<program::Statement> b) override;
 };
 
 class UnaryOperatorImpl : public OperatorImpl
@@ -59,7 +55,6 @@ class FunctionCallOperatorImpl : public OperatorImpl
 {
 public:
   DynamicPrototype proto_;
-  std::vector<DefaultArgument> defaultargs_;
 
 public:
   FunctionCallOperatorImpl(OperatorName op, const Prototype & proto, Engine *engine, FunctionFlags flags);
@@ -68,10 +63,6 @@ public:
 
   const Prototype & prototype() const override;
   void set_return_type(const Type & t) override;
-
-  const std::vector<DefaultArgument> & default_arguments() const override;
-  void set_default_arguments(std::vector<DefaultArgument> defaults) override;
-  void add_default_argument(const DefaultArgument & da) override;
 };
 
 } // namespace script
