@@ -21,6 +21,14 @@ class Lambda;
 class Object;
 class ThisObject;
 
+/*!
+ * \class Value
+ * \brief represents a value
+ * 
+ * The Value class stores an implicitly-shared value of any C++ type as well 
+ * as values created from the scripting system.
+ */
+
 class LIBSCRIPT_API Value
 {
 public:
@@ -83,9 +91,40 @@ private:
   IValue* d;
 };
 
-inline bool operator==(const Value& lhs, const Value& rhs) { return lhs.impl() == rhs.impl(); }
-inline bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
+/*!
+ * \fn bool operator==(const Value& lhs, const Value& rhs) 
+ * \brief returns whether two Values are the same
+ * \nonmember
+ * 
+ * Note that this does not compare the two values for equality but rather 
+ * whether \a lhs and \a rhs have the same memory address.
+ */
+inline bool operator==(const Value& lhs, const Value& rhs) 
+{ 
+  return lhs.impl() == rhs.impl(); 
+}
 
+/*!
+ * \fn bool operator!=(const Value& lhs, const Value& rhs)
+ * \brief returns whether two Values are different
+ * \nonmember
+ *
+ * Note that this does not compare the two values for inequality but rather
+ * whether \a lhs and \a rhs have a different memory address.
+ */
+inline bool operator!=(const Value& lhs, const Value& rhs) 
+{ 
+  return !(lhs == rhs); 
+}
+
+/*!
+ * \fn T& get<T>(const Value& val)
+ * \brief template function to retrieve a value stored in the Value class
+ * \nonmember
+ * 
+ * Calling this function with a type that does not match with the 
+ * actual type of the value stored in the Value is undefined behavior.
+ */
 template<typename T>
 T& get(const Value& val)
 {
@@ -97,6 +136,10 @@ template<> LIBSCRIPT_API Array& get<Array>(const Value& val);
 template<> LIBSCRIPT_API Enumerator& get<Enumerator>(const Value& val);
 template<> LIBSCRIPT_API Lambda& get<Lambda>(const Value& val);
 template<> LIBSCRIPT_API InitializerList& get<InitializerList>(const Value& val);
+
+/*!
+ * \endclass
+ */
 
 } // namespace script
 

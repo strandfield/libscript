@@ -445,7 +445,7 @@ StandardConversion StandardConversion::NotConvertible()
  * Note that unlike the constructor taking two fundamental \t Type, this function 
  * can take arbitrary types (hence the last \t Engine parameter).
  *
- * This function takes into account the \c{const}-ness and \c{&}.
+ * This function takes into account the \c{const}-ness and \c{\&}.
  */
 StandardConversion StandardConversion::compute(const Type & src, const Type & dest, Engine *e)
 {

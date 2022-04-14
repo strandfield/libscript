@@ -2,3 +2,4 @@ ignore/*
 build/*
 backup/*
 tests/errors/test-list.h
+doc/_output

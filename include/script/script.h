@@ -30,6 +30,11 @@ namespace program
 struct Breakpoint;
 } // namespace program
 
+/*!
+ * \class Script
+ * \brief represents an executable script
+ */
+
 class LIBSCRIPT_API Script
 {
 public:
@@ -39,14 +44,14 @@ public:
 
   explicit Script(const std::shared_ptr<ScriptImpl> & impl);
 
-  inline bool isNull() const { return d == nullptr; }
+  bool isNull() const;
 
   int id() const;
 
   void attach(FunctionCreator& fcreator);
   bool compile(CompileMode mode = CompileMode::Release, FunctionCreator* fcreator = nullptr);
   bool isReady() const;
-  inline bool isCompiled() const { return isReady(); }
+  bool isCompiled() const;
   void run();
 
   void clear();
@@ -85,14 +90,43 @@ public:
   Engine * engine() const;
   inline const std::shared_ptr<ScriptImpl> & impl() const { return d; }
 
-  Script & operator=(const Script &) = default;
-
-  bool operator==(const Script & other) const;
-  bool operator!=(const Script & other) const;
+  Script& operator=(const Script &) = default;
 
 private:
   std::shared_ptr<ScriptImpl> d;
 };
+
+/*!
+ * \fn bool isNull() const
+ * \brief returns whether this instance is null
+ */
+inline bool Script::isNull() const 
+{ 
+  return d == nullptr; 
+}
+
+/*!
+ *`\fn bool isCompiled() const
+ * \brief returns whether the script was compiled
+ */
+inline bool Script::isCompiled() const
+{ 
+  return isReady(); 
+}
+
+/*!
+ * \endclass
+ */
+
+inline bool operator==(const Script& lhs, const Script& rhs)
+{
+  return lhs.impl() == rhs.impl();
+}
+
+inline bool operator!=(const Script& lhs, const Script& rhs)
+{
+  return lhs.impl() != rhs.impl();
+}
 
 } // namespace script
 

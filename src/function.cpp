@@ -658,7 +658,11 @@ std::shared_ptr<program::Statement> Function::program() const
   return d->body();
 }
 
-const std::shared_ptr<UserData> & Function::data() const
+/*!
+ * \fn std::shared_ptr<UserData> data() const
+ * \brief returns the function's user data
+ */
+std::shared_ptr<UserData> Function::data() const
 {
   return d->get_user_data();
 }

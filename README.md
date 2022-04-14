@@ -10,14 +10,33 @@ It aims at providing all the building blocks necessary to create
 statically typed languages that interface well with C++ : its goal
 is not to be a full-featured language.
 
-## Compiling and using the library
+The library is licensed under the permissive MIT license and can therefore be 
+used freely. 
+However, it is still under development and is far from being stable enough 
+for use in production.
 
-No binaries are provided. To use the library, you are invited to clone 
-this repository and compile the code yourself. 
+The library follows the [Semantic Versioning](https://semver.org/).
+The current version is `0.2.0`.
+The API is subject to a lot a change.
+
+
+## Using the library
+
+No binaries are provided, you must compile the library by yourself.
+
+### Building
+
+**Requirements:**
+- CMake
+- C++14
+
+**Cloning:**
 
 ```bash
 git clone http://github.com/strandfield/libscript.git
 ```
+
+**Build files:**
 
 You can then use CMake to generate project files for your favorite build system 
 with the following commands or using `cmake-gui`.
@@ -27,22 +46,36 @@ mkdir build && cd build
 cmake ..
 ```
 
-The library requires a C\++14 compiler.
+**Building on Linux:**
 
-The library is distributed under the MIT license and can therefore be used 
-freely. 
-However, it is still under active development and is far from being stable.
-The API is subject to a lot a change.
-Using the library other than for testing is not recommended.
+```bash
+make
+```
+
+### CMake
+
+Alternatively, you can add this repository as a subdirectory of a CMake project:
+
+```cmake
+add_subdirectory(libscript)
+```
+
+### Documentation
+
+An incomplete, very basic documentation is available at [strandfield.github.io/libscript-docs](https://strandfield.github.io/libscript-docs/).
+
+This documentation was generated from the source files using [dex](https://github.com/strandfield/dex/tree/develop).
 
 ## Example
 
-The classical Hello World program:
+### Hello World!
+
+The classical "Hello World!" program:
 ```cpp
 print("Hello World!");
 ```
 
-And the C++ code required to run it:
+And the C++ code required to run it (see [examples/helloworld.cpp](examples/helloworld.cpp)):
 ```cpp
 #include "script/engine.h"
 #include "script/function.h"
@@ -53,7 +86,7 @@ And the C++ code required to run it:
 
 #include <iostream>
 
-script::Value print_callback(script::FunctionCall *c)
+script::Value print_callback(script::FunctionCall* c)
 {
   std::cout << c->arg(0).toString() << std::endl;
   return script::Value::Void;
@@ -66,21 +99,37 @@ int main()
   Engine e;
   e.setup();
 
-  e.rootNamespace().newFunction("print", print_callback)
+  FunctionBuilder::Fun(e.rootNamespace(), "print")
+    .setCallback(print_callback)
     .params(Type::cref(Type::String))
     .create();
+
+  const char* source = R"(
+     print("Hello World!");
+  )";
+
+  Script s = e.newScript(SourceFile::fromString(source));
   
-  Script s = e.newScript(SourceFile{ "script.txt" });
-  const bool result = s.compile();
-  if (result)
+  if (s.compile())
     s.run();
 }
 ```
 
+### Gonk!
+
+For a more realistic example, see the [gonk](https://github.com/strandfield/gonk) 
+project.
+
+`gonk` is a scripting language built with `libscript`.
+It has a module system based on plugins (dynamic libraries).
+
+`gonk` also provides an interactive mode and a basic GUI debugger written 
+with `Qt`.
+
 ## Features
 
 The language is statically typed and has a C++ like syntax.
-The idea is to have a good type system that can catch a good number of errors 
+The idea is to have a good type system that can catch a many errors 
 before ever running the code.
 
 The language provides 5 fundamental types:
@@ -149,11 +198,6 @@ int foo() { return 42; }
 import a;
 int n = foo();
 ```
-
-All theses features are still under development and have some restrictions (compared to C++).
-No exhaustive feature-list is available yet. 
-Please have a look at the tests to get a better taste of what's in there and what isn't - and 
-do not hesitate to suggest improvements.
 
 ## How it works
 
@@ -229,3 +273,12 @@ If you want to learn more about overload resolution and name lookup, you can
 read how they work in C++ on [cppreference.com](http://en.cppreference.com/w/):
 [name lookup](http://en.cppreference.com/w/cpp/language/lookup); 
 [overload resolution](http://en.cppreference.com/w/cpp/language/overload_resolution) .
+
+# Goals & next steps
+
+The goal of this project was to get a better understanding of how C++ works 
+by implementing some of its features as a (C++) library.
+
+Some feature ideas are listed in the [project's backlog](https://github.com/strandfield/libscript/projects/1), 
+including implementing iterators and a simple exception system; but there is 
+no deadline or real schedule on when this will be done.

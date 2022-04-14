@@ -21,9 +21,6 @@ namespace script
 class LIBSCRIPT_API OverloadResolution
 {
 public:
-  OverloadResolution();
-  OverloadResolution(const OverloadResolution &) = default;
-  ~OverloadResolution() = default;
 
   struct Candidate
   {

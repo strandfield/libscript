@@ -1,0 +1,14 @@
+
+{% assign enum = include.enum %}
+
+### {{ enum.name }}
+
+{% if enum.brief %}
+**Brief:** {{ enum.brief }}
+{% endif %}
+
+{{ enum.description }}
+
+{% for v in enum.values %}
+   - {{ v.name }}
+{% endfor %}

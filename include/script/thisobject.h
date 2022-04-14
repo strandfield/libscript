@@ -27,7 +27,7 @@ public:
   void destroy();
   
   /*!
-   * \fn template<typename T, typename...Args> void init<T>(Args &&...)
+   * \fn void init<T>(Args &&...)
    * \brief initializes this with a C++ object
    */
   template<typename T, typename...Args>

@@ -100,7 +100,7 @@ public:
 
   std::shared_ptr<program::Statement> program() const;
 
-  const std::shared_ptr<UserData> & data() const;
+  std::shared_ptr<UserData> data() const;
 
   Engine* engine() const;
   inline const std::shared_ptr<FunctionImpl> & impl() const { return d; }

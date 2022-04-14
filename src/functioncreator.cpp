@@ -32,7 +32,7 @@ static void generic_fill(const std::shared_ptr<FT>& impl, const FunctionBlueprin
 
 
 /*!
- * \class FunctionBuilder
+ * \class FunctionCreator
  */
 
 FunctionCreator::~FunctionCreator()
