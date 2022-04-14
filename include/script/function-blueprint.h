@@ -30,6 +30,8 @@ class Namespace;
 /*!
  * \class FunctionBlueprint
  * \brief describe everything needed to build a function
+ * 
+ * @TODO: add a ConsistencyCheck struct and related functions ? 
  */
 class FunctionBlueprint
 {

@@ -62,7 +62,7 @@ add_subdirectory(libscript)
 
 ### Documentation
 
-A incomplete, very basic documentation is available at [strandfield.github.io/libscript-docs](https://strandfield.github.io/libscript-docs/).
+An incomplete, very basic documentation is available at [strandfield.github.io/libscript-docs](https://strandfield.github.io/libscript-docs/).
 
 This documentation was generated from the source files using [dex](https://github.com/strandfield/dex/tree/develop).
 
